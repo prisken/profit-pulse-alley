@@ -6,8 +6,11 @@ export const metadata = {
   title: "Blog | Profit Pulse Ally",
 };
 
-export default async function BlogIndexPage() {
-  const posts = await getAllPosts();
+export default async function BlogLanguageChooserPage() {
+  const [zhPosts, enPosts] = await Promise.all([
+    getAllPosts("zh-hk"),
+    getAllPosts("en"),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
@@ -16,50 +19,75 @@ export default async function BlogIndexPage() {
           Blog
         </h1>
         <p className="max-w-2xl text-pretty text-base leading-7 text-foreground/70">
-          最新文章與觀點更新。
+          Choose a language to read.
         </p>
       </header>
 
-      <section className="mt-10">
-        {posts.length === 0 ? (
-          <div className="rounded-xl border bg-background p-6 text-sm text-foreground/70">
-            目前未有文章。請在專案根目錄的 <code className="font-mono">posts/</code>{" "}
-            新增 <code className="font-mono">.md</code> 檔案。
+      <section className="mt-8 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border bg-background p-6">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="text-lg font-semibold">中文（香港）</h2>
+            <Link
+              href="/blog/zh-hk"
+              className="text-sm text-foreground/70 hover:underline"
+            >
+              Browse →
+            </Link>
           </div>
-        ) : (
-          <div className="grid gap-4">
-            {posts.map((post) => (
-              <article key={post.slug} className="rounded-xl border p-6">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
-                  <h2 className="text-lg font-semibold">
-                    <Link
-                      href={`/blog/${post.slug}`}
-                      className="underline-offset-4 hover:underline"
-                    >
-                      {post.title}
-                    </Link>
-                  </h2>
-                  {post.date ? (
-                    <time
-                      className="text-sm text-foreground/60"
-                      dateTime={post.date}
-                    >
-                      {post.date}
-                    </time>
-                  ) : null}
-                </div>
-
-                {post.excerpt ? (
-                  <p className="mt-3 text-sm leading-6 text-foreground/70">
-                    {post.excerpt}
-                  </p>
+          <ul className="mt-4 space-y-3">
+            {zhPosts.slice(0, 3).map((p) => (
+              <li key={p.slug}>
+                <Link
+                  href={`/blog/zh-hk/${p.slug}`}
+                  className="text-sm font-medium underline-offset-4 hover:underline"
+                >
+                  {p.title}
+                </Link>
+                {p.date ? (
+                  <div className="text-xs text-foreground/60">{p.date}</div>
                 ) : null}
-              </article>
+              </li>
             ))}
+            {zhPosts.length === 0 ? (
+              <li className="text-sm text-foreground/70">
+                No posts yet.
+              </li>
+            ) : null}
+          </ul>
+        </div>
+
+        <div className="rounded-xl border bg-background p-6">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="text-lg font-semibold">English</h2>
+            <Link
+              href="/blog/en"
+              className="text-sm text-foreground/70 hover:underline"
+            >
+              Browse →
+            </Link>
           </div>
-        )}
+          <ul className="mt-4 space-y-3">
+            {enPosts.slice(0, 3).map((p) => (
+              <li key={p.slug}>
+                <Link
+                  href={`/blog/en/${p.slug}`}
+                  className="text-sm font-medium underline-offset-4 hover:underline"
+                >
+                  {p.title}
+                </Link>
+                {p.date ? (
+                  <div className="text-xs text-foreground/60">{p.date}</div>
+                ) : null}
+              </li>
+            ))}
+            {enPosts.length === 0 ? (
+              <li className="text-sm text-foreground/70">
+                No posts yet.
+              </li>
+            ) : null}
+          </ul>
+        </div>
       </section>
     </main>
   );
 }
-

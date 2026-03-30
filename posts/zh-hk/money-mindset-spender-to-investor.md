@@ -1,9 +1,10 @@
 ---
-title: 從消費者到投資者：如何重塑你的金錢心態，實現「零成本人生」 / From Spender to Investor: How to Rewire Your Money Mindset for a "Zero‑Cost Life"
+title: 從消費者到投資者：如何重塑你的金錢心態，實現「零成本人生」
 date: 2026-03-30
+cover: /blog/03.png
 ---
 
-## 中文（香港）｜80% 係心理，20% 先係方法
+## 80% 係心理，20% 先係方法
 
 如果你覺得財務自由距離你好遠，未必係因為你唔夠聰明，而係因為你一直被一套「無形劇本」牽住走：  
 **錢一入嚟就應該用嚟消費；儲錢只係「未花出去嘅錢」；投資好危險，等我有錢先再諗。**
@@ -91,54 +92,4 @@ date: 2026-03-30
 
 你唔需要一夜之間改變人生。你只需要由今日開始，做一個小動作：  
 設定一個自動轉帳，讓你每月都有一部分錢，開始為你工作。
-
----
-
-## English｜80% psychology, 20% mechanics
-
-Financial freedom often feels far away not because you’re incapable, but because you’re running on invisible scripts:
-
-- Money is for spending.
-- Savings are “unused money.”
-- Investing is for experts.
-- “I’ll invest when I have more money.”
-
-To build a Zero‑Cost Life, your first investment is your **mindset**.  
-Educational only; not financial advice.
-
-### 1) Invisible scripts: trained to be consumers
-
-We’re taught to be good employees, not asset owners.
-
-### 2) Diagnose the spender mindset
-
-Common traits:
-
-- paycheck‑to‑paycheck planning
-- fear of markets (“it’s gambling”)
-- chasing instant gratification
-- feeling “not qualified” to invest
-
-The problem isn’t spending—it’s staying stuck in a survival engine.
-
-### 3) The investor mindset
-
-Investors see money differently:
-
-- every dollar is a seed
-- assets are employees working 24/7
-- risk is managed, not avoided
-- long‑term freedom beats short‑term thrills
-
-### 4) Practical rewiring steps
-
-- **Pay yourself first**: automate transfers on payday.  
-- **Reframe purchases**: what could this money become if invested?  
-- **Start small**: build confidence and learn the process.  
-- **Change your information diet**: follow quality finance and builder content.
-
-### Closing: identity shift
-
-A Zero‑Cost Life isn’t just a number—it’s an identity shift:
-from passive consumer to active asset builder.
 

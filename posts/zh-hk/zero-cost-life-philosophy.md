@@ -1,9 +1,10 @@
 ---
-title: 「零成本人生」的哲學：重點不是不花錢，而是擁有你自己的時間 / The Philosophy of a "Zero-Cost Life": It’s Not About Spending Nothing, It’s About Owning Your Time
+title: 「零成本人生」的哲學：重點不是不花錢，而是擁有你自己的時間
 date: 2026-03-30
+cover: /blog/01.png
 ---
 
-## 中文（香港）｜先講清楚：零成本唔係「零消費」
+## 先講清楚：零成本唔係「零消費」
 
 你有冇試過咁：  
 星期一開始就衝刺到星期五，出糧嗰一刻鬆一口氣，跟住就係交租、供樓、信用卡、保險、交通、餐飲……轉眼又要等下一份糧。你以為你係用時間換錢，但其實更像係——**用你最清醒、最有活力嘅時間，換一個「繼續生存」嘅資格**。
@@ -68,70 +69,4 @@ date: 2026-03-30
 3. 呢個數字就係你嘅 **Freedom Number（每月目標被動現金流）**
 
 你唔需要今日就達標，但你可以今日就開始清晰。
-
----
-
-## English｜“Zero‑Cost Life” isn’t about spending nothing
-
-Have you felt stuck in the loop?  
-Work hard → get paid → pay bills → recover → repeat.  
-It’s not just tiring. It quietly trains you to accept that your best hours must be traded just to maintain basic life.
-
-A “Zero‑Cost Life” is **not** extreme frugality. It’s not about refusing joy.  
-It’s a practical milestone:
-
-**When your passive cash flow covers your monthly living expenses, you start buying back your time.**
-
-### 1) The modern trap: running fast with no direction
-
-Most people live on a paycheck engine:
-
-- Work for income  
-- Spend income to maintain life  
-- Have little energy left  
-- Repeat
-
-The escape isn’t “work more.”  
-It’s **build a system that can work without your daily presence.**
-
-### 2) Redefining “cost”: the biggest cost is time
-
-Money can be earned again. Time cannot.  
-So “zero‑cost” doesn’t mean zero spending—it means reducing the **time‑for‑survival trade**.
-
-### 3) The mechanism: a passive income engine
-
-Passive income doesn’t mean “do nothing.”  
-It means you **build assets/systems upfront**, then your cash flow becomes less dependent on your daily labor.
-
-Examples:
-
-- Investing: interest, dividends, index funds (risk exists; returns are not guaranteed)
-- Business systems: subscriptions, licensing, scalable operations
-- Creative assets: templates, courses, ebooks, content licensing
-
-The goal is not “more work.”  
-The goal is **a cash‑flow system**.
-
-### 4) The true goal: value creation
-
-When your monthly expenses are no longer fully tied to a 9‑to‑5, you regain a rare freedom: **time ownership**.
-
-You can use it to:
-
-- build a passion project
-- spend meaningful time with family
-- learn skills for fulfillment
-- contribute to a cause
-- build community and share what works
-
-### 5) Your first step: calculate your Freedom Number
-
-Start simple:
-
-1. Track spending for 30–90 days  
-2. Calculate your average monthly cost (needs + reasonable enjoyment)  
-3. That number is your **Freedom Number** (your passive‑income target)
-
-Clarity comes before speed.
 
