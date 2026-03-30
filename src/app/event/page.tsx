@@ -24,12 +24,54 @@ function Card({
   );
 }
 
+function RegistrationCard({ className = "" }: { className?: string }) {
+  return (
+    <Card className={`border-foreground/10 p-6 shadow-md sm:p-7 ${className}`}>
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold tracking-tight">立即報名</h2>
+        <p className="text-xs font-medium uppercase tracking-wide text-foreground/45">
+          Register now
+        </p>
+      </div>
+
+      <div className="mt-6 rounded-xl border border-foreground/10 bg-gradient-to-b from-foreground/[0.04] to-foreground/[0.02] p-6 sm:p-7">
+        <p className="text-center text-sm leading-relaxed text-foreground/70">
+          報名及購票（將於新分頁開啟）
+        </p>
+        <a
+          href={LUMA_REGISTRATION_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3.5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          立即留位
+          <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+        </a>
+      </div>
+
+      <div className="mt-6">
+        <a
+          href="/game"
+          className="inline-flex w-full items-center justify-center rounded-full border border-foreground/20 bg-transparent px-6 py-3.5 text-sm font-semibold text-foreground/85 transition-colors hover:border-foreground/35 hover:bg-foreground/5 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          挑戰贏取免費門票
+        </a>
+      </div>
+
+      <p className="mt-6 border-t border-foreground/10 pt-5 text-xs leading-relaxed text-foreground/55">
+        P.S. Keep an eye out for our &apos;Investment Challenge&apos; – coming
+        soon! You&apos;ll have a chance to win a free spot to this event.
+      </p>
+    </Card>
+  );
+}
+
 export default function EventPage() {
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(17.5rem,20rem)] lg:items-start lg:gap-12 xl:gap-16">
-        {/* Main column */}
-        <section className="flex min-w-0 flex-col gap-8 lg:gap-10">
+    <>
+      <main className="mx-auto w-full max-w-6xl px-4 py-12 pb-28 sm:px-6 sm:py-16 sm:pb-32 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(17.5rem,20rem)] lg:items-start lg:gap-12 lg:pb-20 xl:gap-16">
+        {/* 1. Key visual — row 1 col 1 on lg */}
+        <div className="min-w-0 lg:col-start-1 lg:row-start-1">
           <div className="overflow-hidden rounded-2xl border border-foreground/10 bg-foreground/[0.03] shadow-sm">
             <div className="relative aspect-[3/4] w-full sm:aspect-[16/10] md:aspect-[3/4]">
               <Image
@@ -42,7 +84,15 @@ export default function EventPage() {
               />
             </div>
           </div>
+        </div>
 
+        {/* 2. Registration — after hero on mobile; right column spanning 2 rows on lg */}
+        <aside className="mt-8 min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:sticky lg:top-24 lg:self-start">
+          <RegistrationCard />
+        </aside>
+
+        {/* 3. Copy + details — row 2 col 1 on lg */}
+        <section className="mt-8 flex min-w-0 flex-col gap-8 lg:col-start-1 lg:row-start-2 lg:mt-0 lg:gap-10">
           <Card>
             <p className="text-balance text-lg font-semibold leading-snug tracking-tight text-foreground sm:text-xl">
               一次為你度身訂造的戰略會議。
@@ -146,51 +196,30 @@ export default function EventPage() {
             </Card>
           </div>
         </section>
+      </main>
 
-        {/* Registration column */}
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <Card className="border-foreground/10 p-6 shadow-md sm:p-7">
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold tracking-tight">
-                立即報名
-              </h2>
-              <p className="text-xs font-medium uppercase tracking-wide text-foreground/45">
-                Register now
-              </p>
-            </div>
-
-            <div className="mt-6 rounded-xl border border-foreground/10 bg-gradient-to-b from-foreground/[0.04] to-foreground/[0.02] p-6 sm:p-7">
-              <p className="text-center text-sm leading-relaxed text-foreground/70">
-                報名及購票（將於新分頁開啟）
-              </p>
-              <a
-                href={LUMA_REGISTRATION_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3.5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                立即留位
-                <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
-              </a>
-            </div>
-
-            <div className="mt-6">
-              <a
-                href="/game"
-                className="inline-flex w-full items-center justify-center rounded-full border border-foreground/20 bg-transparent px-6 py-3.5 text-sm font-semibold text-foreground/85 transition-colors hover:border-foreground/35 hover:bg-foreground/5 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                挑戰贏取免費門票
-              </a>
-            </div>
-
-            <p className="mt-6 border-t border-foreground/10 pt-5 text-xs leading-relaxed text-foreground/55">
-              P.S. Keep an eye out for our &apos;Investment Challenge&apos; –
-              coming soon! You&apos;ll have a chance to win a free spot to this
-              event.
-            </p>
-          </Card>
-        </aside>
+      {/* Mobile / small tablet: fixed bottom bar so register stays one tap away while scrolling */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 lg:hidden">
+        <div className="pointer-events-auto border-t border-foreground/10 bg-background/90 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-md dark:shadow-[0_-8px_30px_rgba(0,0,0,0.35)]">
+          <div className="mx-auto flex max-w-6xl items-center gap-3">
+            <a
+              href={LUMA_REGISTRATION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              立即留位
+              <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+            </a>
+            <a
+              href="/game"
+              className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-full border border-foreground/25 px-4 text-xs font-semibold text-foreground/80 transition-colors hover:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              免費門票
+            </a>
+          </div>
+        </div>
       </div>
-    </main>
+    </>
   );
 }
