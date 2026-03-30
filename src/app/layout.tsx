@@ -68,6 +68,12 @@ export default function RootLayout({
               >
                 Blog
               </Link>
+              <Link
+                href="/event"
+                className="rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
+              >
+                活動:我兩樣都要
+              </Link>
             </nav>
           </div>
         </header>
