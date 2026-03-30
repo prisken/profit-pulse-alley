@@ -29,7 +29,7 @@ export default function ConceptPage() {
     <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
       <header className="space-y-3">
         <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-          Profit Pulse Alley 的盈利哲學
+          Profit Pulse Ally 的盈利哲學
         </h1>
         <p className="max-w-2xl text-pretty text-base leading-7 text-foreground/70">
           這裡以「清晰、節奏、成就」為核心：用可執行的觀點，把資訊轉化成你的下一步。

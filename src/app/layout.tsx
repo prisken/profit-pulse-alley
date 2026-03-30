@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
 
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Profit Pulse Alley",
+  title: "Profit Pulse Ally",
   description: "News, insights, and events for profit-minded builders.",
 };
 
@@ -34,9 +35,17 @@ export default function RootLayout({
             <Link
               href="/"
               className="flex items-center gap-2 font-semibold tracking-tight"
-              aria-label="Profit Pulse Alley home"
+              aria-label="Profit Pulse Ally home"
             >
-              <span className="text-base sm:text-lg">Profit Pulse Alley</span>
+              <Image
+                src="/logo.png"
+                alt="Profit Pulse Ally logo"
+                width={32}
+                height={32}
+                priority
+                className="h-8 w-8 rounded-sm"
+              />
+              <span className="text-base sm:text-lg">Profit Pulse Ally</span>
             </Link>
 
             <nav className="flex flex-wrap items-center gap-4 text-sm font-medium sm:justify-end sm:gap-6">
@@ -73,7 +82,7 @@ export default function RootLayout({
         <footer className="border-t">
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p className="text-sm text-foreground/70">
-              Copyright {new Date().getFullYear()} Profit Pulse Alley. All
+              Copyright {new Date().getFullYear()} Profit Pulse Ally. All
               rights reserved.
             </p>
 

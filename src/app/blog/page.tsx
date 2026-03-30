@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getAllPosts } from "@/lib/blog";
 
 export const metadata = {
-  title: "Blog | Profit Pulse Alley",
+  title: "Blog | Profit Pulse Ally",
 };
 
 export default async function BlogIndexPage() {
