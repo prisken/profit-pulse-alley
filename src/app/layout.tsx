@@ -67,12 +67,6 @@ export default function RootLayout({
               >
                 Blog
               </Link>
-              <Link
-                href="/event"
-                className="text-foreground/70 transition-colors hover:text-foreground"
-              >
-                Event
-              </Link>
             </nav>
           </div>
         </header>
@@ -88,11 +82,12 @@ export default function RootLayout({
 
             <div className="flex items-center gap-3">
               <a
-                href="#"
-                aria-label="Twitter / X"
+                href="https://www.instagram.com/profitpulseally?igsh=MWY5NWV6dHYzemoxaA%3D%3D&utm_source=qr"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
               >
-                {/* Placeholder social icon */}
                 <svg
                   viewBox="0 0 24 24"
                   width="18"
@@ -104,15 +99,18 @@ export default function RootLayout({
                   strokeLinejoin="round"
                   aria-hidden="true"
                 >
-                  <path d="M16 4l-4 6 8 10-3 0-6-8-4 6H4l6-9L5 4h3l4 6 4-6h0z" />
+                  <rect x="7" y="7" width="10" height="10" rx="3" />
+                  <path d="M16.2 7.8h.01" />
+                  <circle cx="12" cy="12" r="2.7" />
                 </svg>
               </a>
               <a
-                href="#"
-                aria-label="GitHub"
+                href="https://www.facebook.com/profile.php?id=61582209732918"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
               >
-                {/* Placeholder social icon */}
                 <svg
                   viewBox="0 0 24 24"
                   width="18"
@@ -124,15 +122,16 @@ export default function RootLayout({
                   strokeLinejoin="round"
                   aria-hidden="true"
                 >
-                  <path d="M9 19c-4 1.5-4-2.5-5-3m10 6v-3.5c0-1 .1-1.4-.5-2 2-.2 4-.9 4-4a3.1 3.1 0 0 0-.9-2.1 3 3 0 0 0-.1-2.1s-.8-.3-2.5 1a8.5 8.5 0 0 0-4.6 0c-1.7-1.3-2.5-1-2.5-1a3 3 0 0 0-.1 2.1A3.1 3.1 0 0 0 6 11.9c0 3.1 2 3.8 4 4-.4.3-.5.8-.5 1.6V22" />
+                  <path d="M14 8h2V5h-2a4 4 0 0 0-4 4v2H8v3h2v5h3v-5h2.5l.5-3H13V9a1 1 0 0 1 1-1z" />
                 </svg>
               </a>
               <a
-                href="#"
-                aria-label="YouTube"
+                href="https://www.threads.com/@profitpulseally?igshid=NTc4MTIwNjQ2YQ=="
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Threads"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
               >
-                {/* Placeholder social icon */}
                 <svg
                   viewBox="0 0 24 24"
                   width="18"
@@ -144,8 +143,7 @@ export default function RootLayout({
                   strokeLinejoin="round"
                   aria-hidden="true"
                 >
-                  <path d="M22 12s0-4-1-5-4-1-9-1-8 0-9 1-1 5-1 5 0 4 1 5 4 1 9 1 8 0 9-1 1-5 1-5z" />
-                  <path d="M10 15l5-3-5-3v6z" />
+                  <path d="M8.2 12c0-2.4 1.7-4.2 4.1-4.2 2.5 0 4.2 1.8 4.2 4.2 0 2.9-2.1 4.9-5.1 4.9-3.1 0-5.4-2.2-5.4-5.4 0-3.9 3.1-7 7.3-7 3.3 0 6.2 1.8 7.2 4.9" />
                 </svg>
               </a>
             </div>
