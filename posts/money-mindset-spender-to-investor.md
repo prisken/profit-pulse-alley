@@ -1,0 +1,144 @@
+---
+title: 從消費者到投資者：如何重塑你的金錢心態，實現「零成本人生」 / From Spender to Investor: How to Rewire Your Money Mindset for a "Zero‑Cost Life"
+date: 2026-03-30
+---
+
+## 中文（香港）｜80% 係心理，20% 先係方法
+
+如果你覺得財務自由距離你好遠，未必係因為你唔夠聰明，而係因為你一直被一套「無形劇本」牽住走：  
+**錢一入嚟就應該用嚟消費；儲錢只係「未花出去嘅錢」；投資好危險，等我有錢先再諗。**
+
+呢篇文章想講清楚：  
+要做到「零成本人生」，你第一個要投資嘅，係你嘅**心態**。
+
+（教育用途，唔構成投資建議；投資涉及風險。）
+
+---
+
+### 1) 無形劇本：我哋點樣被訓練成消費者
+
+由細到大，我哋聽到最多嘅理財訊息係：
+
+- 好好讀書 → 搵份穩定工  
+- 出糧 → 交費用 → 有剩先儲  
+- 「投資」係高手先玩  
+
+結果係：  
+我哋學識咗點樣做一個好員工，但冇學識點樣做資產擁有人。
+
+---
+
+### 2) 診斷「消費者心態」（Spender Mindset）
+
+以下有幾多句你覺得熟口熟面？
+
+- 每月出糧後先諗「今個月點樣分配」  
+- 儲蓄係「錢擺喺度冇用」  
+- 覺得股市等於賭博  
+- 追求即時滿足（買到就開心，但開心好短）  
+- 覺得自己「未夠資格」投資
+
+消費者心態最大問題唔係花錢，而係：  
+**它令你永遠停留喺「靠出糧生存」嘅模式。**
+
+---
+
+### 3) 培養「投資者心態」（Investor Mindset）
+
+投資者唔係天生冷血，而係學識用另一種角度睇錢：
+
+- 每一蚊都係「種子」，可以長出更多現金流  
+- 資產就係「員工」，24/7 為你工作  
+- 風險唔係要避免，而係要管理（分散、時間、紀律）  
+- 長期焦點係自由，而唔係即時刺激
+
+一句話總結：  
+**消費者用錢買感覺；投資者用錢買時間。**
+
+---
+
+### 4) 4 個實用方法：重塑你嘅大腦
+
+#### A) 「先付錢俾自己」（Pay Yourself First）
+
+最強規則：  
+出糧當日就自動轉一部分去儲蓄／投資帳戶。  
+你唔需要靠意志力，只需要靠設定。
+
+#### B) 改寫你對購物嘅語言
+
+下次買嘢之前，問自己：
+
+- 呢 $X 係「一件物件」，定係「一個可以增值嘅資產」？  
+- 呢筆錢如果投入資產，五年後可能變成咩？
+
+#### C) 由細開始，建立信心（而唔係追求一鋪致富）
+
+用一個你輸得起嘅小額開始。  
+目標係學流程、學波動、學紀律——唔係即刻發達。
+
+#### D) 轉換資訊飲食（Information Diet）
+
+你睇咩內容，你就會變成點樣嘅人。  
+多啲接觸理財、投資、商業、創作變現內容；少啲被消費主義推着走。
+
+---
+
+## 結語｜你最重要嘅投資：身份轉換
+
+「零成本人生」最後唔係一個數字，而係一個身份：  
+**由被動嘅消費者，變成主動嘅資產建造者。**
+
+你唔需要一夜之間改變人生。你只需要由今日開始，做一個小動作：  
+設定一個自動轉帳，讓你每月都有一部分錢，開始為你工作。
+
+---
+
+## English｜80% psychology, 20% mechanics
+
+Financial freedom often feels far away not because you’re incapable, but because you’re running on invisible scripts:
+
+- Money is for spending.
+- Savings are “unused money.”
+- Investing is for experts.
+- “I’ll invest when I have more money.”
+
+To build a Zero‑Cost Life, your first investment is your **mindset**.  
+Educational only; not financial advice.
+
+### 1) Invisible scripts: trained to be consumers
+
+We’re taught to be good employees, not asset owners.
+
+### 2) Diagnose the spender mindset
+
+Common traits:
+
+- paycheck‑to‑paycheck planning
+- fear of markets (“it’s gambling”)
+- chasing instant gratification
+- feeling “not qualified” to invest
+
+The problem isn’t spending—it’s staying stuck in a survival engine.
+
+### 3) The investor mindset
+
+Investors see money differently:
+
+- every dollar is a seed
+- assets are employees working 24/7
+- risk is managed, not avoided
+- long‑term freedom beats short‑term thrills
+
+### 4) Practical rewiring steps
+
+- **Pay yourself first**: automate transfers on payday.  
+- **Reframe purchases**: what could this money become if invested?  
+- **Start small**: build confidence and learn the process.  
+- **Change your information diet**: follow quality finance and builder content.
+
+### Closing: identity shift
+
+A Zero‑Cost Life isn’t just a number—it’s an identity shift:
+from passive consumer to active asset builder.
+
