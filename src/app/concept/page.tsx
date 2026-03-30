@@ -1,28 +1,5 @@
 import { Award, Target, TrendingUp } from "lucide-react";
-
-function Badge({
-  label,
-  className,
-}: {
-  label: string;
-  className: string;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-3">
-      <div
-        className={[
-          "grid h-24 w-24 place-items-center rounded-full ring-1 ring-black/10 dark:ring-white/10",
-          className,
-        ].join(" ")}
-      >
-        <span className="text-xs font-medium text-black/70 dark:text-white/80">
-          徽章
-        </span>
-      </div>
-      <div className="text-sm font-medium text-foreground/80">{label}</div>
-    </div>
-  );
-}
+import { ConceptBadgesGrid } from "@/components/ConceptBadges";
 
 export default function ConceptPage() {
   return (
@@ -32,7 +9,7 @@ export default function ConceptPage() {
           Profit Pulse Ally 的盈利哲學
         </h1>
         <p className="max-w-2xl text-pretty text-base leading-7 text-foreground/70">
-          這裡以「清晰、節奏、成就」為核心：用可執行的觀點，把資訊轉化成你的下一步。
+          「清晰、節奏、成就」為核心：用可執行的節奏，成就零成本人生!
         </p>
       </header>
 
@@ -89,16 +66,10 @@ export default function ConceptPage() {
             解鎖你的成就
           </h2>
           <p className="max-w-2xl text-sm leading-6 text-foreground/70">
-            下面的徽章暫時使用佔位文字與顏色；之後可以換成真實成就、條件與解鎖動畫。
+            下面的徽章示範「零成本人生」的里程碑概念。
           </p>
         </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-6 sm:grid-cols-4">
-          <Badge label="佔位成就 A" className="bg-amber-200/70" />
-          <Badge label="佔位成就 B" className="bg-emerald-200/70" />
-          <Badge label="佔位成就 C" className="bg-sky-200/70" />
-          <Badge label="佔位成就 D" className="bg-fuchsia-200/70" />
-        </div>
+        <ConceptBadgesGrid />
       </section>
     </main>
   );
