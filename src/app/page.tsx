@@ -2,8 +2,24 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="flex flex-1 items-center bg-zinc-950 text-zinc-50">
-      <section className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 sm:py-24">
+    <main className="relative flex flex-1 items-center overflow-hidden bg-zinc-950 text-zinc-50">
+      <video
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+      >
+        <source src="/hero-loop.mp4" type="video/mp4" />
+      </video>
+      <div
+        className="absolute inset-0 bg-black/70"
+        aria-hidden="true"
+      />
+
+      <section className="relative mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 sm:py-24">
         <div className="max-w-3xl space-y-6">
           <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
             零成本人生 (Zero-Cost Life)
@@ -16,7 +32,7 @@ export default function Home() {
           <div className="pt-2">
             <Link
               href="/event"
-              className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+              className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
             >
               Join Our First Event -&gt;
             </Link>
