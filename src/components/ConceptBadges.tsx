@@ -64,11 +64,11 @@ function CoffeeBadge() {
   } as const;
 
   return (
-    <div className="relative h-28 w-28 sm:h-32 sm:w-32">
+    <div className="relative h-24 w-24 sm:h-32 sm:w-32">
       <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-500 via-yellow-700 to-amber-800 shadow-md" />
       <div className="absolute inset-1.5 flex items-center justify-center rounded-full bg-stone-900">
         <div className="relative">
-          <Coffee className="h-14 w-14 text-amber-200" strokeWidth={1.5} />
+          <Coffee className="h-12 w-12 text-amber-200 sm:h-14 sm:w-14" strokeWidth={1.5} />
           <div className="absolute -top-7 left-1/2 flex w-full -translate-x-1/2 flex-col items-center">
             {[0, 1, 2].map((i) => (
               <motion.div
@@ -92,7 +92,7 @@ function CommuterBadge() {
   const clipId = useId();
 
   return (
-    <div className="relative h-28 w-28 sm:h-32 sm:w-32">
+    <div className="relative h-24 w-24 sm:h-32 sm:w-32">
       <svg width="0" height="0" aria-hidden="true">
         <defs>
           <clipPath id={clipId} clipPathUnits="objectBoundingBox">
@@ -111,7 +111,7 @@ function CommuterBadge() {
       >
         <div className="relative flex items-center justify-center">
           <Link2Off
-            className="absolute h-12 w-12 rotate-45 text-slate-200/80"
+            className="absolute h-10 w-10 rotate-45 text-slate-200/80 sm:h-12 sm:w-12"
             strokeWidth={1.5}
           />
           <motion.div
@@ -124,7 +124,10 @@ function CommuterBadge() {
               ease: "easeInOut",
             }}
           >
-            <TrainFront className="relative h-16 w-16 text-white" strokeWidth={1.5} />
+            <TrainFront
+              className="relative h-14 w-14 text-white sm:h-16 sm:w-16"
+              strokeWidth={1.5}
+            />
           </motion.div>
         </div>
       </div>
@@ -134,11 +137,11 @@ function CommuterBadge() {
 
 function WifiBadge() {
   return (
-    <div className="relative h-28 w-28 sm:h-32 sm:w-32">
+    <div className="relative h-24 w-24 sm:h-32 sm:w-32">
       <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-300 via-slate-500 to-cyan-600 shadow-md" />
       <div className="absolute inset-1.5 flex items-center justify-center rounded-full bg-blue-950">
         <div className="relative">
-          <Wifi className="h-16 w-16 text-cyan-300" strokeWidth={1.5} />
+          <Wifi className="h-14 w-14 text-cyan-300 sm:h-16 sm:w-16" strokeWidth={1.5} />
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
@@ -166,7 +169,7 @@ function HouseBadge() {
   const clipId = useId();
 
   return (
-    <div className="relative h-28 w-28 sm:h-32 sm:w-32">
+    <div className="relative h-24 w-24 sm:h-32 sm:w-32">
       <svg width="0" height="0" aria-hidden="true">
         <defs>
           <clipPath id={clipId} clipPathUnits="objectBoundingBox">
@@ -201,11 +204,11 @@ function HouseBadge() {
             transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
           >
             <Hexagon
-              className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 text-yellow-400"
+              className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 text-yellow-400 sm:h-20 sm:w-20"
               strokeWidth={1.5}
             />
           </motion.div>
-          <Home className="relative h-14 w-14 text-amber-700" strokeWidth={1.5} />
+          <Home className="relative h-12 w-12 text-amber-700 sm:h-14 sm:w-14" strokeWidth={1.5} />
         </div>
       </div>
     </div>

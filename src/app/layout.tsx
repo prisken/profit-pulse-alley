@@ -48,22 +48,22 @@ export default function RootLayout({
               <span className="text-base sm:text-lg">Profit Pulse Ally</span>
             </Link>
 
-            <nav className="flex flex-wrap items-center gap-4 text-sm font-medium sm:justify-end sm:gap-6">
+            <nav className="flex flex-wrap items-center gap-1 text-sm font-medium sm:justify-end sm:gap-2">
               <Link
                 href="/"
-                className="text-foreground/70 transition-colors hover:text-foreground"
+                className="rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
               >
                 Home
               </Link>
               <Link
                 href="/concept"
-                className="text-foreground/70 transition-colors hover:text-foreground"
+                className="rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
               >
                 The Concept
               </Link>
               <Link
                 href="/blog"
-                className="text-foreground/70 transition-colors hover:text-foreground"
+                className="rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
               >
                 Blog
               </Link>
