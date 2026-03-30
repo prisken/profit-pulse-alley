@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Profit Pulse Ally",
   description: "News, insights, and events for profit-minded builders.",
+  metadataBase: new URL("https://profit-pulse-alley.vercel.app"),
 };
 
 export default function RootLayout({
