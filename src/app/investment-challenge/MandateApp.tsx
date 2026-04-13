@@ -410,7 +410,7 @@ const RISK_MANDATES: Array<{
 ];
 
 export default function MandateApp() {
-  const INTERVENTION_COST = 35;
+  const INTERVENTION_COST = 1;
   const LIVE_PROCESSING_MS = 1500;
   const [currentScreen, setCurrentScreen] = useState<Screen>("welcome");
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
@@ -431,9 +431,9 @@ export default function MandateApp() {
   const [portfolioHistory, setPortfolioHistory] = useState<number[]>([100000]);
   const [benchmarkHistory, setBenchmarkHistory] = useState<number[]>([100000]);
   const [liveLog, setLiveLog] = useState<LiveLogEntry[]>([]);
-  const [focus, setFocus] = useState<number>(100);
+  const [focus, setFocus] = useState<number>(3);
   const [interventionCooldownUntilDay, setInterventionCooldownUntilDay] =
-    useState<number>(0);
+    useState<number>(0); // legacy (kept for now)
   const [isDisciplinedEligible, setIsDisciplinedEligible] = useState(true);
   const [interventions, setInterventions] = useState<
     Array<{
@@ -462,7 +462,11 @@ export default function MandateApp() {
   >(null);
   const [scoreTicker, setScoreTicker] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [decisionSecondsLeft, setDecisionSecondsLeft] = useState<number | null>(null);
+  const [actionStamp, setActionStamp] = useState<string | null>(null);
   const processingTimeoutRef = useRef<number | null>(null);
+  const decisionTimeoutRef = useRef<number | null>(null);
+  const decisionTickRef = useRef<number | null>(null);
   const dailyChangeFlashTimeoutRef = useRef<number | null>(null);
   const chartWrapperRef = useRef<HTMLDivElement | null>(null);
   const [chartSize, setChartSize] = useState<{ width: number; height: number }>({
@@ -753,8 +757,8 @@ export default function MandateApp() {
       currentScreen === "live" &&
       (lockedWarPlan?.length ?? 0) > 0 &&
       currentDayIndex < (lockedWarPlan?.length ?? 0) &&
-      focus >= INTERVENTION_COST &&
-      currentDayIndex >= interventionCooldownUntilDay
+      focus > 0 &&
+      decisionSecondsLeft != null
     );
   }
 
@@ -778,6 +782,14 @@ export default function MandateApp() {
     if (processingTimeoutRef.current) {
       window.clearTimeout(processingTimeoutRef.current);
       processingTimeoutRef.current = null;
+    }
+    if (decisionTimeoutRef.current) {
+      window.clearTimeout(decisionTimeoutRef.current);
+      decisionTimeoutRef.current = null;
+    }
+    if (decisionTickRef.current) {
+      window.clearInterval(decisionTickRef.current);
+      decisionTickRef.current = null;
     }
     if (dailyChangeFlashTimeoutRef.current) {
       window.clearTimeout(dailyChangeFlashTimeoutRef.current);
@@ -1064,7 +1076,7 @@ export default function MandateApp() {
     setBenchmarkHistory([100000]);
     setLiveLog([]);
 
-    setFocus(100);
+    setFocus(3);
     setInterventionCooldownUntilDay(0);
     setIsDisciplinedEligible(true);
     setInterventions([]);
@@ -1098,7 +1110,7 @@ export default function MandateApp() {
     setBenchmarkHistory([initial]);
     setLiveLog([]);
 
-    setFocus(100);
+    setFocus(3);
     setInterventionCooldownUntilDay(0);
     setIsDisciplinedEligible(true);
     setInterventions([]);
@@ -1130,31 +1142,146 @@ export default function MandateApp() {
     setCurrentScreen("planning");
   }
 
-  function startNextDay() {
+  const getImpactForDay = useCallback((dayIdx: number) => {
+    const ev = eventsData[dayIdx];
+    const base = ev?.impact ?? (sp500Benchmark[dayIdx] ?? 0);
+    const dnaImpact = applyMarketDNA(base, marketCondition);
+    const mult = corePhilosophy
+      ? philosophyModifiers[corePhilosophy][ev?.category ?? "market"] ?? 1.0
+      : 1.0;
+    const afterPhilosophy = dnaImpact * mult;
+    return criticalDays.includes(dayIdx) ? afterPhilosophy * 2.0 : afterPhilosophy;
+  }, [corePhilosophy, criticalDays, marketCondition]);
+
+  const resolveDay = useCallback((dayIdx: number, useIntervention: boolean) => {
+    if (!lockedWarPlan || !corePhilosophy || !gameConfig) return;
+    const mandate = lockedWarPlan[dayIdx] ?? lockedWarPlan[lockedWarPlan.length - 1];
+    const openValue = portfolioValue;
+
+    const baseImpact = getImpactForDay(dayIdx);
+    const interventionImpact = (() => {
+      if (!useIntervention) return baseImpact;
+      if (corePhilosophy === "growth") return baseImpact * 1.5;
+      // value + balanced both reduce volatility in this ruleset
+      return baseImpact * 0.5;
+    })();
+
+    advanceOneDay({
+      dayIdx,
+      mandate,
+      valueAtStartOfDay: openValue,
+      impactOverride: interventionImpact,
+      bonusOverride: 0,
+      interventionContext: useIntervention
+        ? {
+            originalMandateLabel:
+              corePhilosophy === "growth"
+                ? "激進加碼"
+                : corePhilosophy === "value"
+                  ? "危機入市"
+                  : "資產再平衡",
+            newMandateLabel: `影響×${corePhilosophy === "growth" ? "1.5" : "0.5"}`,
+            feeCost: 0,
+          }
+        : undefined,
+    });
+  }, [advanceOneDay, corePhilosophy, gameConfig, getImpactForDay, lockedWarPlan, portfolioValue]);
+
+  const beginProcessingThenResolve = useCallback((dayIdx: number, useIntervention: boolean) => {
+    stopTimers();
+    setDecisionSecondsLeft(null);
+    setIsProcessing(true);
+    processingTimeoutRef.current = window.setTimeout(() => {
+      processingTimeoutRef.current = null;
+      setIsProcessing(false);
+      setCurrentNews(null);
+      resolveDay(dayIdx, useIntervention);
+    }, LIVE_PROCESSING_MS);
+  }, [resolveDay, stopTimers]);
+
+  const startDecisionWindow = useCallback((dayIdx: number) => {
+    // 5-second decision window
+    const total = 5;
+    setDecisionSecondsLeft(total);
+    const startedAt = Date.now();
+    decisionTickRef.current = window.setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      const left = Math.max(0, total - elapsed);
+      setDecisionSecondsLeft(left);
+    }, 250);
+    decisionTimeoutRef.current = window.setTimeout(() => {
+      decisionTimeoutRef.current = null;
+      if (decisionTickRef.current) {
+        window.clearInterval(decisionTickRef.current);
+        decisionTickRef.current = null;
+      }
+      setDecisionSecondsLeft(null);
+      beginProcessingThenResolve(dayIdx, false);
+    }, total * 1000);
+  }, [beginProcessingThenResolve]);
+
+  const onInterveneNow = useCallback(() => {
+    if (!lockedWarPlan || currentDayIndex >= lockedWarPlan.length) return;
+    if (focus <= 0) return;
+    // must be within decision window
+    if (decisionSecondsLeft == null) return;
+
+    if (decisionTimeoutRef.current) {
+      window.clearTimeout(decisionTimeoutRef.current);
+      decisionTimeoutRef.current = null;
+    }
+    if (decisionTickRef.current) {
+      window.clearInterval(decisionTickRef.current);
+      decisionTickRef.current = null;
+    }
+    setDecisionSecondsLeft(null);
+    setFocus((f) => Math.max(0, f - INTERVENTION_COST));
+    setActionStamp(
+      corePhilosophy === "growth"
+        ? "激進加碼！"
+        : corePhilosophy === "value"
+          ? "危機入市成功！"
+          : "資產再平衡！",
+    );
+    window.setTimeout(() => setActionStamp(null), 900);
+    beginProcessingThenResolve(currentDayIndex, true);
+  }, [beginProcessingThenResolve, corePhilosophy, currentDayIndex, decisionSecondsLeft, focus, lockedWarPlan]);
+
+  useEffect(() => {
+    if (currentScreen !== "live") return;
     if (!lockedWarPlan || !corePhilosophy || !gameConfig) return;
     if (currentDayIndex >= lockedWarPlan.length) return;
     if (isProcessing) return;
+    if (decisionSecondsLeft != null) return;
+    if (isInterventionModalOpen) return;
 
-    stopTimers();
-    setIsProcessing(true);
+    // Start-of-day: show headline immediately.
     setCurrentNews(eventsData[currentDayIndex] ?? null);
 
-    processingTimeoutRef.current = window.setTimeout(() => {
-      processingTimeoutRef.current = null;
-      const dayIdx = currentDayIndex;
-      const mandate = lockedWarPlan[dayIdx] ?? lockedWarPlan[lockedWarPlan.length - 1];
-      const openValue = portfolioValue;
+    if (focus <= 0) {
+      // Passive observer: read 3s then resolve automatically.
+      decisionTimeoutRef.current = window.setTimeout(() => {
+        decisionTimeoutRef.current = null;
+        beginProcessingThenResolve(currentDayIndex, false);
+      }, 3000);
+      return;
+    }
 
-      setIsProcessing(false);
-      setCurrentNews(null);
-
-      advanceOneDay({
-        dayIdx,
-        mandate,
-        valueAtStartOfDay: openValue,
-      });
-    }, LIVE_PROCESSING_MS);
-  }
+    // Focus available: pause for decision with a 5s countdown.
+    startDecisionWindow(currentDayIndex);
+  }, [
+    beginProcessingThenResolve,
+    corePhilosophy,
+    currentDayIndex,
+    currentScreen,
+    decisionSecondsLeft,
+    focus,
+    gameConfig,
+    isInterventionModalOpen,
+    isProcessing,
+    lockedWarPlan,
+    startDecisionWindow,
+  ]);
 
   return (
     <main className="relative flex min-h-[calc(100dvh-1px)] flex-1 items-center justify-center overflow-hidden bg-zinc-950 px-4 py-14 text-zinc-50 sm:py-16">
@@ -1183,7 +1310,7 @@ export default function MandateApp() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.08),rgba(0,0,0,0))]" />
       </div>
 
-      <section className="relative w-full max-w-xl">
+      <section className="relative w-full max-w-xl lg:max-w-5xl">
         <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/30 sm:p-8">
           <div className="flex items-start gap-4">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10">
@@ -1278,7 +1405,7 @@ export default function MandateApp() {
                       </p>
                       <div className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                         <p className="text-xs font-semibold text-zinc-200/85">
-                          Focus：初始 100（每次干预消耗 {INTERVENTION_COST}）
+                          Focus：初始 3（每次干預消耗 1）
                         </p>
                       </div>
                       <button
@@ -1310,7 +1437,7 @@ export default function MandateApp() {
                       </p>
                       <div className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                         <p className="text-xs font-semibold text-zinc-200/85">
-                          Focus：初始 100（每次干预消耗 {INTERVENTION_COST}）
+                          Focus：初始 3（每次干預消耗 1）
                         </p>
                       </div>
                       <button
@@ -1769,7 +1896,7 @@ export default function MandateApp() {
                                 setPortfolioHistory([initial]);
                                 setBenchmarkHistory([initial]);
                                 setLiveLog([]);
-                                setFocus(100);
+                                setFocus(3);
                                 setInterventionCooldownUntilDay(0);
                                 setIsDisciplinedEligible(true);
                                 setInterventions([]);
@@ -1844,38 +1971,33 @@ export default function MandateApp() {
                   <div className="mx-auto flex max-w-xl items-center gap-3">
                     <button
                       type="button"
-                      disabled={
-                        focus < INTERVENTION_COST ||
-                        currentDayIndex < interventionCooldownUntilDay ||
-                        !isProcessing
-                      }
+                      disabled={focus <= 0 || decisionSecondsLeft == null || isProcessing}
                       onClick={() => {
-                        if (!isProcessing) return;
-                        setIsInterventionModalOpen(true);
+                        onInterveneNow();
                       }}
                       className={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/35 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
-                        focus < INTERVENTION_COST ||
-                        currentDayIndex < interventionCooldownUntilDay ||
-                        !isProcessing
+                        focus <= 0 || decisionSecondsLeft == null || isProcessing
                           ? "cursor-not-allowed bg-white/10 text-white/50"
                           : "bg-amber-300 text-zinc-950 hover:bg-amber-200"
                       }`}
                     >
                       <CirclePause className="h-5 w-5" aria-hidden="true" />
-                      <span className="font-mono text-xs">-{INTERVENTION_COST}</span>
+                      <span className="font-mono text-xs">
+                        {decisionSecondsLeft != null ? `${decisionSecondsLeft}s` : "-"}
+                      </span>
                     </button>
 
                     <button
                       type="button"
-                      disabled={isProcessing || currentDayIndex >= (lockedWarPlan?.length ?? 0)}
-                      onClick={() => startNextDay()}
+                      disabled={true}
+                      onClick={() => {}}
                       className={`inline-flex flex-1 items-center justify-center rounded-full px-4 py-3 text-sm font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
                         isProcessing || currentDayIndex >= (lockedWarPlan?.length ?? 0)
                           ? "cursor-not-allowed bg-white/10 text-white/50"
                           : "bg-emerald-300 text-zinc-950 hover:bg-emerald-200"
                       }`}
                     >
-                      Next Day
+                      自動進行中
                     </button>
                   </div>
                 </div>
@@ -1905,6 +2027,22 @@ export default function MandateApp() {
                         <p className="text-sm font-semibold text-white">
                           Market is Live
                         </p>
+                      </div>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+                <AnimatePresence>
+                  {actionStamp ? (
+                    <motion.div
+                      key="stamp"
+                      className="pointer-events-none absolute inset-x-0 top-16 z-40 flex justify-center px-4"
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 220, damping: 18 }}
+                    >
+                      <div className="rounded-full border border-amber-300/30 bg-amber-300/15 px-4 py-2 text-sm font-semibold text-amber-100 shadow-lg shadow-black/30">
+                        {actionStamp}
                       </div>
                     </motion.div>
                   ) : null}
@@ -1995,7 +2133,7 @@ export default function MandateApp() {
                       Focus
                     </p>
                     <p className="font-mono text-xs font-semibold text-white">
-                      {focus}/100
+                      {focus}
                     </p>
                   </div>
                   <div className="mt-2 h-2 w-full rounded-full bg-white/10">
@@ -2220,23 +2358,18 @@ export default function MandateApp() {
                     <button
                       type="button"
                       disabled={
-                        focus < INTERVENTION_COST ||
+                        focus <= 0 ||
                         !lockedWarPlan ||
                         !gameConfig ||
                         currentDayIndex >= (lockedWarPlan?.length ?? 0) ||
-                        currentDayIndex < interventionCooldownUntilDay ||
-                        !isProcessing
+                        decisionSecondsLeft == null ||
+                        isProcessing
                       }
                       onClick={() => {
-                        if (focus < INTERVENTION_COST) return;
-                        if (!lockedWarPlan || !gameConfig) return;
-                        if (currentDayIndex < interventionCooldownUntilDay) return;
-                        if (!isProcessing) return;
-                        setIsInterventionModalOpen(true);
+                        onInterveneNow();
                       }}
                       className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/35 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:w-auto ${
-                        focus < INTERVENTION_COST ||
-                        currentDayIndex < interventionCooldownUntilDay
+                        focus <= 0 || decisionSecondsLeft == null || isProcessing
                           ? "cursor-not-allowed bg-white/10 text-white/50"
                           : "bg-amber-300 text-zinc-950 hover:bg-amber-200"
                       }`}
@@ -2250,22 +2383,20 @@ export default function MandateApp() {
                             : "精准择时"}
                       </span>
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-black/15 bg-black/10 px-2 py-1 text-xs font-semibold text-zinc-950">
-                        <span className="font-mono">-{INTERVENTION_COST}</span>
+                        <span className="font-mono">
+                          {decisionSecondsLeft != null ? `${decisionSecondsLeft}s` : "-"}
+                        </span>
                       </span>
                     </button>
-                    {currentDayIndex < interventionCooldownUntilDay ? (
-                      <span className="text-xs text-zinc-200/55">
-                        冷却中（下一交易日不可干预）
+                    {decisionSecondsLeft != null && focus > 0 ? (
+                      <span className="text-xs font-semibold text-amber-200/80">
+                        {decisionSecondsLeft}s 內可出手（不操作將自動結算）
                       </span>
                     ) : null}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => startNextDay()}
-                    className="inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-transparent px-5 py-3 text-sm font-semibold text-white/90 transition-colors hover:border-white/25 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/25 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:w-auto"
-                  >
-                    Next Day
-                  </button>
+                  <span className="inline-flex w-full items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-white/70 sm:w-auto">
+                    自動進行中
+                  </span>
                 </div>
 
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
@@ -2346,7 +2477,7 @@ export default function MandateApp() {
                   </div>
                 </div>
 
-                {isInterventionModalOpen && lockedWarPlan && gameConfig ? (
+                {false && isInterventionModalOpen && lockedWarPlan && gameConfig ? (
                   <div
                     className="fixed inset-0 z-50 flex items-center justify-center px-4"
                     role="dialog"
@@ -2412,7 +2543,11 @@ export default function MandateApp() {
                         <p className="mt-1 text-sm text-zinc-200/70">
                           Day {currentDayIndex + 1} · 当前指令：{" "}
                           <span className="font-semibold text-white">
-                            {mandateToLabel(lockedWarPlan[currentDayIndex])}
+                            {(() => {
+                              const m = lockedWarPlan?.[currentDayIndex] ?? null;
+                              if (m === null) return "-";
+                              return mandateToLabel(m as RiskMandate);
+                            })()}
                           </span>
                           {" · "}新闻影响将被你的哲学规则重新定价。
                         </p>
@@ -2653,6 +2788,35 @@ export default function MandateApp() {
                       ) : null}
                       <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                         <p className="text-xs font-semibold text-zinc-200/70">
+                          Investor Profile
+                        </p>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                            <p className="text-xs font-semibold text-zinc-200/70">
+                              最終資產
+                            </p>
+                            <p className="mt-1 text-2xl font-semibold tracking-tight text-white">
+                              {formatCurrency(portfolioValue)}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                            <p className="text-xs font-semibold text-zinc-200/70">
+                              總計盈虧
+                            </p>
+                            <p
+                              className={`mt-1 text-2xl font-semibold tracking-tight ${
+                                portfolioValue - 100000 >= 0
+                                  ? "text-emerald-200"
+                                  : "text-rose-200"
+                              }`}
+                            >
+                              {formatSignedCurrency(portfolioValue - 100000)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                        <p className="text-xs font-semibold text-zinc-200/70">
                           Philosophy Lens
                         </p>
                         <p className="mt-2 text-sm leading-6 text-zinc-200/70">
@@ -2704,10 +2868,10 @@ export default function MandateApp() {
                 })()}
 
                 {/* Performance Evaluation */}
-                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                  <p className="text-xs font-semibold text-zinc-200/70">
-                    Performance Evaluation
-                  </p>
+                <details className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <summary className="cursor-pointer select-none text-xs font-semibold text-zinc-200/70">
+                    Performance Snapshot（點擊展開/收合）
+                  </summary>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -2820,7 +2984,7 @@ export default function MandateApp() {
                       S&amp;P 500
                     </span>
                   </div>
-                </div>
+                </details>
 
                 <DailyReviewTable
                   days={lockedWarPlan?.length ?? liveLog.length}
@@ -2830,10 +2994,10 @@ export default function MandateApp() {
                 />
 
                 {/* Attribution Analysis */}
-                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                  <p className="text-xs font-semibold text-zinc-200/70">
-                    Attribution Analysis
-                  </p>
+                <details className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <summary className="cursor-pointer select-none text-xs font-semibold text-zinc-200/70">
+                    Deep Dive（分析與歸因）
+                  </summary>
 
                   <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
                     <p className="text-sm font-semibold text-white">
@@ -2970,7 +3134,7 @@ export default function MandateApp() {
                       </div>
                     )}
                   </div>
-                </div>
+                </details>
 
                 {/* Final Prototype */}
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
