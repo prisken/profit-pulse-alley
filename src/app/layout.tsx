@@ -31,11 +31,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-dvh flex flex-col bg-background text-foreground">
-        <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <header className="sticky top-0 z-50 border-b border-foreground/10 bg-background/90 backdrop-blur">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-3">
             <Link
               href="/"
-              className="flex items-center gap-2 font-semibold tracking-tight"
+              className="flex items-center gap-2 font-semibold tracking-tight transition-opacity active:opacity-80"
               aria-label="Profit Pulse Ally home"
             >
               <Image
@@ -44,35 +44,37 @@ export default function RootLayout({
                 width={32}
                 height={32}
                 priority
-                className="h-8 w-8 rounded-sm"
+                className="h-7 w-7 rounded-sm sm:h-8 sm:w-8"
               />
-              <span className="text-base sm:text-lg">Profit Pulse Ally</span>
+              <span className="text-sm sm:text-base md:text-lg">
+                Profit Pulse Ally
+              </span>
             </Link>
 
-            <nav className="flex flex-wrap items-center gap-1 text-sm font-medium sm:justify-end sm:gap-2">
+            <nav className="flex flex-wrap items-center gap-0.5 text-[13px] font-medium sm:justify-end sm:gap-1 sm:text-sm">
               <Link
                 href="/"
-                className="rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                className="rounded-md px-2.5 py-1.5 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 sm:px-3 sm:py-2"
               >
                 Home
               </Link>
               <Link
                 href="/concept"
-                className="rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                className="rounded-md px-2.5 py-1.5 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 sm:px-3 sm:py-2"
               >
                 The Concept
               </Link>
               <Link
                 href="/blog"
-                className="rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                className="rounded-md px-2.5 py-1.5 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 sm:px-3 sm:py-2"
               >
                 Blog
               </Link>
               <Link
                 href="/event"
-                className="rounded-md px-3 py-2 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                className="rounded-md px-2.5 py-1.5 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 sm:px-3 sm:py-2"
               >
-                活動:我兩樣都要
+                活動
               </Link>
             </nav>
           </div>
@@ -80,20 +82,57 @@ export default function RootLayout({
 
         <div className="flex-1">{children}</div>
 
-        <footer className="border-t">
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <p className="text-sm text-foreground/70">
-              Copyright {new Date().getFullYear()} Profit Pulse Ally. All
-              rights reserved.
-            </p>
+        <footer className="border-t border-foreground/10 bg-background">
+          <div className="mx-auto w-full max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
+            <nav
+              aria-label="Footer"
+              className="flex flex-wrap gap-x-4 gap-y-2 border-b border-foreground/10 pb-4 text-[13px] font-medium sm:text-sm"
+            >
+              <Link
+                href="/"
+                className="text-foreground/70 transition-colors hover:text-foreground active:text-foreground/90"
+              >
+                Home
+              </Link>
+              <Link
+                href="/concept"
+                className="text-foreground/70 transition-colors hover:text-foreground active:text-foreground/90"
+              >
+                The Concept
+              </Link>
+              <Link
+                href="/event"
+                className="text-foreground/70 transition-colors hover:text-foreground active:text-foreground/90"
+              >
+                《我兩樣都要》活動
+              </Link>
+              <Link
+                href="/game"
+                className="text-foreground/70 transition-colors hover:text-foreground active:text-foreground/90"
+              >
+                城堡攻防戰
+              </Link>
+              <Link
+                href="/blog"
+                className="text-foreground/70 transition-colors hover:text-foreground active:text-foreground/90"
+              >
+                Blog
+              </Link>
+            </nav>
 
-            <div className="flex items-center gap-3">
+            <div className="mt-4 flex flex-col gap-4 sm:mt-5 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs leading-snug text-foreground/65 sm:text-sm sm:leading-relaxed">
+                © {new Date().getFullYear()} Profit Pulse Ally. All rights
+                reserved.
+              </p>
+
+              <div className="flex items-center gap-2 sm:gap-3">
               <a
                 href="https://www.instagram.com/profitpulseally?igsh=MWY5NWV6dHYzemoxaA%3D%3D&utm_source=qr"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                className="inline-flex h-10 min-w-10 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -116,7 +155,7 @@ export default function RootLayout({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                className="inline-flex h-10 min-w-10 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -137,7 +176,7 @@ export default function RootLayout({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Threads"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                className="inline-flex h-10 min-w-10 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -153,6 +192,7 @@ export default function RootLayout({
                   <path d="M8.2 12c0-2.4 1.7-4.2 4.1-4.2 2.5 0 4.2 1.8 4.2 4.2 0 2.9-2.1 4.9-5.1 4.9-3.1 0-5.4-2.2-5.4-5.4 0-3.9 3.1-7 7.3-7 3.3 0 6.2 1.8 7.2 4.9" />
                 </svg>
               </a>
+              </div>
             </div>
           </div>
         </footer>
