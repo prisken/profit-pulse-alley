@@ -104,14 +104,25 @@ export default function EventPage() {
             </div>
             <div className="order-1 min-w-0 lg:order-2">
               <div className="overflow-hidden rounded-xl border border-foreground/10 bg-foreground/[0.03] shadow-sm sm:rounded-2xl">
-                <div className="relative aspect-[16/11] w-full sm:aspect-[16/10] lg:aspect-[4/5]">
+                {/* Square promo art — stacked / mobile & tablet (below lg) */}
+                <div className="relative aspect-square w-full max-w-md mx-auto lg:hidden">
                   <Image
-                    src="/event/key-visual.png"
+                    src="/event/key-visual-mobile.png"
                     alt="《我兩樣都要》活動主視覺"
                     fill
                     priority
                     className="object-cover"
-                    sizes="(min-width: 1024px) 40vw, 100vw"
+                    sizes="(max-width: 1023px) 100vw, 1px"
+                  />
+                </div>
+                {/* Original wide/tall art — desktop two-column layout */}
+                <div className="relative hidden aspect-[4/5] w-full lg:block">
+                  <Image
+                    src="/event/key-visual.png"
+                    alt="《我兩樣都要》活動主視覺"
+                    fill
+                    className="object-cover"
+                    sizes="(min-width: 1024px) 40vw, 1px"
                   />
                 </div>
               </div>
@@ -202,7 +213,7 @@ export default function EventPage() {
                 </h3>
                 <p className="mt-1.5 text-[13px] leading-snug text-foreground/80 sm:mt-2 sm:text-sm sm:leading-relaxed">
                   由專業攝影師操刀，即場獲取你的 Business Headshot
-                  (價值$XXX)，即時提升專業形象。
+                  (價值$600)，即時提升專業形象。
                 </p>
               </div>
             </Card>

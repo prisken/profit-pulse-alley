@@ -219,7 +219,7 @@ export default async function Home() {
                 </h3>
                 <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
                   由專業攝影師操刀，即場獲取你的 Business Headshot
-                  (價值$XXX)，即時提升專業形象。
+                  (價值$600)，即時提升專業形象。
                 </p>
               </div>
             </article>
