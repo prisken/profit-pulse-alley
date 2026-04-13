@@ -22,7 +22,7 @@ export default function Home() {
             【城堡攻防戰】現已開打！
           </h1>
           <p className="text-pretty text-base leading-7 text-zinc-300 sm:text-lg sm:leading-8">
-            贏取一百萬虛擬資金，證明你的投資眼光。總冠軍將於4月27日《我兩樣都要》活動現場揭曉！
+            一百萬資金，證明你的投資眼光。獲取4月27日《我兩樣都要》活動門票！
           </p>
 
           <div className="pt-2">
@@ -31,13 +31,13 @@ export default function Home() {
                 href="/game"
                 className="inline-flex w-full items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:w-auto"
               >
-                立即參賽，領取$1,000,000
+                立即參賽!
               </a>
               <a
                 href="/event"
                 className="inline-flex w-full items-center justify-center rounded-full border border-white/40 bg-white/0 px-6 py-3 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:w-auto"
               >
-                了解線下活動詳情
+                了解活動詳情
               </a>
             </div>
           </div>
