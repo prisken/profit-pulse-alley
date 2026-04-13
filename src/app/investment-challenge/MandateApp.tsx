@@ -6,6 +6,8 @@ import {
   Activity,
   BarChart2,
   Briefcase,
+  ChevronLeft,
+  ChevronRight,
   CirclePause,
   Cpu,
   Crown,
@@ -22,7 +24,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { AnimatePresence, motion, useAnimate } from "framer-motion";
 import {
   calculateDailyPerformance,
@@ -119,6 +121,67 @@ function applyMarketDNA(baseImpact: number, condition: MarketCondition) {
   if (condition === "bear") return baseImpact >= 0 ? baseImpact * 0.9 : baseImpact * 1.1;
   if (condition === "volatile") return baseImpact * 1.25;
   return baseImpact;
+}
+
+function ScrollEdgeArrows({
+  targetRef,
+  scrollByPx = 260,
+  className = "",
+}: {
+  targetRef: RefObject<HTMLElement | null>;
+  scrollByPx?: number;
+  className?: string;
+}) {
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const el = targetRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      const maxLeft = scrollWidth - clientWidth;
+      const hasOverflow = scrollWidth > clientWidth + 2;
+      setCanScrollLeft(hasOverflow && scrollLeft > 2);
+      setCanScrollRight(hasOverflow && scrollLeft < maxLeft - 2);
+    };
+
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, [targetRef]);
+
+  return (
+    <div className={`pointer-events-none absolute inset-y-0 left-0 right-0 ${className}`}>
+      {canScrollLeft ? (
+        <button
+          type="button"
+          onClick={() => targetRef.current?.scrollBy({ left: -scrollByPx, behavior: "smooth" })}
+          className="pointer-events-auto absolute left-1 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-black/40 p-2 text-white/90 shadow-lg shadow-black/30 backdrop-blur hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+          aria-label="向左捲動"
+        >
+          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+        </button>
+      ) : null}
+
+      {canScrollRight ? (
+        <button
+          type="button"
+          onClick={() => targetRef.current?.scrollBy({ left: scrollByPx, behavior: "smooth" })}
+          className="pointer-events-auto absolute right-1 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-black/40 p-2 text-white/90 shadow-lg shadow-black/30 backdrop-blur hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+          aria-label="向右捲動"
+        >
+          <ChevronRight className="h-5 w-5" aria-hidden="true" />
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 function calculateFinalScore(
@@ -469,6 +532,8 @@ export default function MandateApp() {
   const decisionTickRef = useRef<number | null>(null);
   const dailyChangeFlashTimeoutRef = useRef<number | null>(null);
   const chartWrapperRef = useRef<HTMLDivElement | null>(null);
+  const warPlanTimelineScrollRef = useRef<HTMLDivElement | null>(null);
+  const liveLogScrollRef = useRef<HTMLDivElement | null>(null);
   const [chartSize, setChartSize] = useState<{ width: number; height: number }>({
     width: 0,
     height: 0,
@@ -1747,14 +1812,18 @@ export default function MandateApp() {
                         </p>
                       </div>
 
-                      <div className="mt-4 overflow-x-auto pb-2">
+                      <div className="relative mt-4">
                         <div
-                          className="grid gap-3"
-                          style={{
-                            gridAutoFlow: "column",
-                            gridAutoColumns: "minmax(220px, 1fr)",
-                          }}
+                          ref={warPlanTimelineScrollRef}
+                          className="overflow-x-auto pb-2"
                         >
+                          <div
+                            className="grid gap-3"
+                            style={{
+                              gridAutoFlow: "column",
+                              gridAutoColumns: "minmax(220px, 1fr)",
+                            }}
+                          >
                           {warPlanDraft.map((mandate, idx) => (
                             <div
                               key={idx}
@@ -1826,7 +1895,9 @@ export default function MandateApp() {
                               </div>
                             </div>
                           ))}
+                          </div>
                         </div>
+                        <ScrollEdgeArrows targetRef={warPlanTimelineScrollRef} />
                       </div>
 
                       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -2015,7 +2086,7 @@ export default function MandateApp() {
             </div>
           ) : currentScreen === "live" ? (
             <div className="mt-6">
-              <div className="relative rounded-2xl border border-white/10 bg-black/20 p-5">
+              <div className="relative rounded-2xl border border-white/10 bg-black/20 p-4 pb-24 sm:p-5 sm:pb-5">
                 <AnimatePresence>
                   {isProcessing ? (
                     <motion.div
@@ -2102,7 +2173,7 @@ export default function MandateApp() {
                     {lockedWarPlan?.length ?? 0}
                   </div>
                 </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-zinc-200/70">
+                <div className="mt-3 hidden flex-wrap items-center gap-2 text-xs font-semibold text-zinc-200/70 sm:flex">
                   <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1">
                     {marketCondition === "bull" ? (
                       <TrendingUp className="h-4 w-4 text-emerald-200" aria-hidden="true" />
@@ -2137,7 +2208,7 @@ export default function MandateApp() {
                   </span>
                 </div>
 
-                <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="mt-3 hidden rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:block">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-semibold text-zinc-200/70">
                       專注力
@@ -2158,7 +2229,7 @@ export default function MandateApp() {
 
                 {/* Mobile-first: daily event card lives in content area below */}
 
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                <div className="mt-3 hidden flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 sm:flex">
                   <p className="text-xs font-semibold text-zinc-200/70">
                     狀態：{" "}
                     <span className="font-semibold text-white">
@@ -2181,11 +2252,11 @@ export default function MandateApp() {
 
                 {/* Mobile-first: chart (top) + compact stats bar (below chart) */}
 
-                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <p className="text-xs font-semibold text-zinc-200/70">
                     資產曲線圖
                   </p>
-                  <div className="relative mt-3 h-56 w-full" ref={chartWrapperRef}>
+                  <div className="relative mt-3 h-[32svh] min-h-[220px] w-full sm:h-56" ref={chartWrapperRef}>
                     <motion.div
                       ref={dotScope}
                       className={`pointer-events-none absolute top-0 left-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ${
@@ -2300,34 +2371,18 @@ export default function MandateApp() {
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                      <p className="text-[11px] font-semibold text-zinc-200/60">
-                        資產
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-white">
-                        {formatCurrency(animatedPortfolioValue)}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                      <p className="text-[11px] font-semibold text-zinc-200/60">
-                        天數
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-white">
-                        {Math.min(currentDayIndex + 1, lockedWarPlan?.length ?? 0)}/
-                        {lockedWarPlan?.length ?? 0}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                      <p className="text-[11px] font-semibold text-zinc-200/60">
-                        專注力
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-white">
-                        {focus}
-                      </p>
-                    </div>
-                  </div>
+                <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-xs font-semibold text-zinc-200/80">
+                  <span className="text-zinc-200/60">資產：</span>{" "}
+                  <span className="text-white">{formatCurrency(animatedPortfolioValue)}</span>
+                  <span className="mx-2 text-white/15">|</span>
+                  <span className="text-zinc-200/60">天數：</span>{" "}
+                  <span className="text-white">
+                    {Math.min(currentDayIndex + 1, lockedWarPlan?.length ?? 0)}/
+                    {lockedWarPlan?.length ?? 0}
+                  </span>
+                  <span className="mx-2 text-white/15">|</span>
+                  <span className="text-zinc-200/60">專注點：</span>{" "}
+                  <span className="text-white">{focus}</span>
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
@@ -2363,7 +2418,7 @@ export default function MandateApp() {
                   </div>
                 </div>
 
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-5 hidden flex-col gap-3 sm:flex sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
                     <button
                       type="button"
@@ -2409,13 +2464,14 @@ export default function MandateApp() {
                   </span>
                 </div>
 
-                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="mt-5 hidden rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:block">
                   <p className="text-xs font-semibold text-zinc-200/70">
                     交易 / 每日紀錄
                   </p>
 
-                  <div className="mt-3 overflow-x-auto">
-                    <table className="w-full min-w-[720px] border-separate border-spacing-0 text-left text-xs">
+                  <div className="relative mt-3">
+                    <div ref={liveLogScrollRef} className="overflow-x-auto">
+                      <table className="w-full min-w-[720px] border-separate border-spacing-0 text-left text-xs">
                       <thead>
                         <tr className="text-zinc-200/60">
                           <th className="border-b border-white/10 px-3 py-2 font-semibold">
@@ -2483,7 +2539,9 @@ export default function MandateApp() {
                           ))
                         )}
                       </tbody>
-                    </table>
+                      </table>
+                    </div>
+                    <ScrollEdgeArrows targetRef={liveLogScrollRef} scrollByPx={360} />
                   </div>
                 </div>
 
@@ -2696,6 +2754,42 @@ export default function MandateApp() {
                     </div>
                   </div>
                 ) : null}
+
+                {/* Mobile sticky action footer: always visible, no-scroll cockpit */}
+                <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-zinc-950/80 p-3 backdrop-blur sm:hidden">
+                  <div className="mx-auto flex max-w-xl items-center gap-3">
+                    {decisionSecondsLeft != null ? (
+                      <button
+                        type="button"
+                        disabled={focus <= 0 || isProcessing}
+                        onClick={() => {
+                          onInterveneNow();
+                        }}
+                        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/35 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
+                          focus <= 0 || isProcessing
+                            ? "cursor-not-allowed bg-white/10 text-white/50"
+                            : "bg-amber-300 text-zinc-950 hover:bg-amber-200"
+                        }`}
+                      >
+                        <CirclePause className="h-5 w-5" aria-hidden="true" />
+                        <span className="text-sm font-semibold">
+                          {corePhilosophy === "value"
+                            ? "穩健化重組"
+                            : corePhilosophy === "growth"
+                              ? "激進交易"
+                              : "精準擇時"}
+                        </span>
+                        <span className="rounded-full border border-black/15 bg-black/10 px-2 py-0.5 font-mono text-xs font-semibold text-zinc-950">
+                          {decisionSecondsLeft}s
+                        </span>
+                      </button>
+                    ) : (
+                      <div className="flex-1 rounded-full border border-white/10 bg-white/[0.03] px-4 py-3 text-center text-sm font-semibold text-white/70">
+                        {isProcessing ? "處理中…" : "自動進行中"}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           ) : currentScreen === "voucher" ? (
@@ -2796,40 +2890,158 @@ export default function MandateApp() {
                           liveLog={liveLog}
                         />
                       ) : null}
-                      <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                        <p className="text-xs font-semibold text-zinc-200/70">
-                          Investor Profile
-                        </p>
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                            <p className="text-xs font-semibold text-zinc-200/70">
-                              最終資產
-                            </p>
-                            <p className="mt-1 text-2xl font-semibold tracking-tight text-white">
-                              {formatCurrency(portfolioValue)}
-                            </p>
+                      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                          <p className="text-[11px] font-semibold text-zinc-200/70">
+                            最終資產曲線
+                          </p>
+                          <div className="mt-3 h-56 w-full sm:h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart
+                                data={portfolioHistory.map((v, i) => ({
+                                  day: i,
+                                  portfolio: v,
+                                  benchmark:
+                                    benchmarkHistory[i] ??
+                                    benchmarkHistory[benchmarkHistory.length - 1],
+                                }))}
+                                margin={{ top: 8, right: 10, left: 0, bottom: 0 }}
+                              >
+                                <XAxis
+                                  dataKey="day"
+                                  tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
+                                  axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
+                                  tickLine={{ stroke: "rgba(255,255,255,0.12)" }}
+                                  tickFormatter={(d) => (d === 0 ? "起點" : `第${d}天`)}
+                                />
+                                <YAxis
+                                  tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
+                                  axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
+                                  tickLine={{ stroke: "rgba(255,255,255,0.12)" }}
+                                  width={70}
+                                  tickFormatter={(n) =>
+                                    n.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                                  }
+                                />
+                                <Tooltip
+                                  contentStyle={{
+                                    background: "rgba(9,9,11,0.9)",
+                                    border: "1px solid rgba(255,255,255,0.12)",
+                                    borderRadius: 12,
+                                  }}
+                                  labelStyle={{ color: "rgba(255,255,255,0.75)" }}
+                                  formatter={(value, name) => {
+                                    const valueLabel =
+                                      typeof value === "number"
+                                        ? formatCurrency(value)
+                                        : String(value);
+                                    const nameLabel =
+                                      name === "portfolio" ? "資產" : "標普500";
+                                    return [valueLabel, nameLabel];
+                                  }}
+                                  labelFormatter={(label) =>
+                                    label === 0 ? "起點" : `第${label}天`
+                                  }
+                                />
+                                <Line
+                                  type="monotone"
+                                  dataKey="benchmark"
+                                  stroke="rgba(56,189,248,0.85)"
+                                  strokeWidth={2}
+                                  dot={false}
+                                  isAnimationActive={true}
+                                  animationDuration={1200}
+                                  animationEasing="ease-in-out"
+                                  activeDot={{ r: 5, strokeWidth: 2, fill: "#fff" }}
+                                />
+                                <Line
+                                  type="monotone"
+                                  dataKey="portfolio"
+                                  stroke="rgba(110,231,183,0.9)"
+                                  strokeWidth={2.5}
+                                  dot={false}
+                                  isAnimationActive={true}
+                                  animationDuration={1200}
+                                  animationEasing="ease-in-out"
+                                  activeDot={{ r: 6, strokeWidth: 2, fill: "#fff" }}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
                           </div>
-                          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                            <p className="text-xs font-semibold text-zinc-200/70">
-                              總計盈虧
-                            </p>
-                            <p
-                              className={`mt-1 text-2xl font-semibold tracking-tight ${
-                                portfolioValue - 100000 >= 0
-                                  ? "text-emerald-200"
-                                  : "text-rose-200"
-                              }`}
-                            >
-                              {formatSignedCurrency(portfolioValue - 100000)}
-                            </p>
+                          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-200/60">
+                            <span className="inline-flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-emerald-300/80" />
+                              資產
+                            </span>
+                            <span className="inline-flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-sky-300/80" />
+                              標普500
+                            </span>
                           </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                          <p className="text-[11px] font-semibold text-zinc-200/70">
+                            投資者概覽
+                          </p>
+                          {(() => {
+                            const pls = liveLog.map((r) => r.dailyPL);
+                            const best = pls.length ? Math.max(...pls) : 0;
+                            const worst = pls.length ? Math.min(...pls) : 0;
+                            return (
+                              <div className="mt-3 grid grid-cols-2 gap-3">
+                                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                                  <p className="flex items-center gap-2 text-[11px] font-semibold text-zinc-200/60">
+                                    <Briefcase className="h-4 w-4 text-zinc-200/70" aria-hidden="true" />
+                                    最終資產
+                                  </p>
+                                  <p className="mt-1 text-lg font-semibold tracking-tight text-white">
+                                    {formatCurrency(portfolioValue)}
+                                  </p>
+                                </div>
+                                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                                  <p className="flex items-center gap-2 text-[11px] font-semibold text-zinc-200/60">
+                                    <BarChart2 className="h-4 w-4 text-zinc-200/70" aria-hidden="true" />
+                                    總計盈虧
+                                  </p>
+                                  <p
+                                    className={`mt-1 text-lg font-semibold tracking-tight ${
+                                      portfolioValue - 100000 >= 0
+                                        ? "text-emerald-200"
+                                        : "text-rose-200"
+                                    }`}
+                                  >
+                                    {formatSignedCurrency(portfolioValue - 100000)}
+                                  </p>
+                                </div>
+                                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                                  <p className="flex items-center gap-2 text-[11px] font-semibold text-zinc-200/60">
+                                    <TrendingUp className="h-4 w-4 text-emerald-200" aria-hidden="true" />
+                                    最佳單日
+                                  </p>
+                                  <p className="mt-1 text-lg font-semibold tracking-tight text-emerald-200">
+                                    {formatSignedCurrency(best)}
+                                  </p>
+                                </div>
+                                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                                  <p className="flex items-center gap-2 text-[11px] font-semibold text-zinc-200/60">
+                                    <TrendingDown className="h-4 w-4 text-rose-200" aria-hidden="true" />
+                                    最差單日
+                                  </p>
+                                  <p className="mt-1 text-lg font-semibold tracking-tight text-rose-200">
+                                    {formatSignedCurrency(worst)}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                         <p className="text-xs font-semibold text-zinc-200/70">
                           Philosophy Lens
                         </p>
-                        <p className="mt-2 text-sm leading-6 text-zinc-200/70">
+                        <p className="mt-2 text-xs leading-5 text-zinc-200/70">
                           {(() => {
                             if (!corePhilosophy || !lockedWarPlan) return "";
                             const label = philosophyToLabel(corePhilosophy);
@@ -2876,125 +3088,6 @@ export default function MandateApp() {
                     </>
                   );
                 })()}
-
-                {/* Performance Evaluation */}
-                <details className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                  <summary className="cursor-pointer select-none text-xs font-semibold text-zinc-200/70">
-                    績效快照（點擊展開/收合）
-                  </summary>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <p className="text-xs font-semibold text-zinc-200/70">
-                        最終資產
-                      </p>
-                      <p className="mt-1 text-2xl font-semibold tracking-tight text-white">
-                        {formatCurrency(portfolioValue)}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                      <p className="text-xs font-semibold text-zinc-200/70">
-                        總計盈虧
-                      </p>
-                      <p
-                        className={`mt-1 text-2xl font-semibold tracking-tight ${
-                          portfolioValue - 100000 >= 0
-                            ? "text-emerald-200"
-                            : "text-rose-200"
-                        }`}
-                      >
-                        {formatSignedCurrency(portfolioValue - 100000)}
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-200/55">
-                        ({(((portfolioValue - 100000) / 100000) * 100).toFixed(2)}%)
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={portfolioHistory.map((v, i) => ({
-                          day: i,
-                          portfolio: v,
-                          benchmark:
-                            benchmarkHistory[i] ??
-                            benchmarkHistory[benchmarkHistory.length - 1],
-                        }))}
-                        margin={{ top: 8, right: 10, left: 0, bottom: 0 }}
-                      >
-                        <XAxis
-                          dataKey="day"
-                          tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
-                          axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
-                          tickLine={{ stroke: "rgba(255,255,255,0.12)" }}
-                          tickFormatter={(d) => (d === 0 ? "起點" : `第${d}天`)}
-                        />
-                        <YAxis
-                          tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
-                          axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
-                          tickLine={{ stroke: "rgba(255,255,255,0.12)" }}
-                          width={70}
-                          tickFormatter={(n) =>
-                            n.toLocaleString(undefined, { maximumFractionDigits: 0 })
-                          }
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            background: "rgba(9,9,11,0.9)",
-                            border: "1px solid rgba(255,255,255,0.12)",
-                            borderRadius: 12,
-                          }}
-                          labelStyle={{ color: "rgba(255,255,255,0.75)" }}
-                          formatter={(value, name) => {
-                            const valueLabel =
-                              typeof value === "number"
-                                ? formatCurrency(value)
-                                : String(value);
-                            const nameLabel =
-                              name === "portfolio" ? "資產" : "標普500";
-                            return [valueLabel, nameLabel];
-                          }}
-                          labelFormatter={(label) =>
-                            label === 0 ? "起點" : `第${label}天`
-                          }
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="benchmark"
-                          stroke="rgba(56,189,248,0.85)"
-                          strokeWidth={2}
-                          dot={false}
-                          isAnimationActive={true}
-                          animationDuration={1200}
-                          animationEasing="ease-in-out"
-                          activeDot={{ r: 5, strokeWidth: 2, fill: "#fff" }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="portfolio"
-                          stroke="rgba(110,231,183,0.9)"
-                          strokeWidth={2.5}
-                          dot={false}
-                          isAnimationActive={true}
-                          animationDuration={1200}
-                          animationEasing="ease-in-out"
-                          activeDot={{ r: 6, strokeWidth: 2, fill: "#fff" }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-200/60">
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-300/80" />
-                      資產
-                    </span>
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-sky-300/80" />
-                      標普500
-                    </span>
-                  </div>
-                </details>
 
                 <DailyReviewTable
                   days={lockedWarPlan?.length ?? liveLog.length}
