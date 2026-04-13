@@ -98,28 +98,26 @@ export default function EventPage() {
               一次為你度身訂造的戰略會議。
             </p>
             <p className="mt-5 text-sm leading-7 text-foreground/80">
-              徹底解放思維，讓你學會：
+              徹底解放思維:
             </p>
             <ul className="mt-5 space-y-3.5 text-sm leading-7 text-foreground/80">
               <li className="flex gap-3">
                 <span className="mt-0.5 shrink-0" aria-hidden="true">
                   ✅
                 </span>
-                <span>進攻策略：如何擴張版圖，抓住市場機遇？</span>
+                <span>策略深度： 與創辦人探討「攻守兼備」的商業模式。</span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-0.5 shrink-0" aria-hidden="true">
                   ✅
                 </span>
-                <span>防守策略：如何建立壁壘，抵禦風險，穩固現金流？</span>
+                <span>星級嘉賓： 投資作家 Marcy Chan 親自分享新世代的被動收入心法。</span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-0.5 shrink-0" aria-hidden="true">
                   ✅
                 </span>
-                <span>
-                  思維融合：如何將夢想（城堡）與現實（城市）完美結合，打造可持續的成功？
-                </span>
+                <span>價值升級： 現場免費專業商業照拍攝 + 精緻餐飲社交環節。</span>
               </li>
             </ul>
             <p className="mt-8 border-t border-foreground/10 pt-6 text-sm font-medium italic leading-relaxed text-foreground/90">
@@ -162,7 +160,7 @@ export default function EventPage() {
                       日期時間
                     </span>
                     <p className="mt-0.5 text-sm leading-6 text-foreground/85">
-                      4月27日 · 14:30–17:30
+                      4月27日 · 19:30–21:30
                     </p>
                   </div>
                 </li>
@@ -175,7 +173,9 @@ export default function EventPage() {
                       地點
                     </span>
                     <p className="mt-0.5 text-sm leading-6 text-foreground/85">
-                      The Upper House, Pacific Place
+                      塔冷通心靈書舍
+                      <br />
+                      九龍油麻地窩打老道20號金輝大廈一樓6室
                     </p>
                   </div>
                 </li>
