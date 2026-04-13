@@ -44,7 +44,7 @@ import {
   YAxis,
 } from "recharts";
 
-type Screen = "welcome" | "modeSelection" | "planning" | "live" | "review";
+type Screen = "welcome" | "modeSelection" | "planning" | "live" | "review" | "voucher";
 
 type GameMode = "standard" | "sprint";
 type GameConfig = {
@@ -88,25 +88,29 @@ const philosophyDetails: Record<
   }
 > = {
   growth: {
-    name: "成长型投资",
-    description: "专注于高潜力、高风险的创新领域。",
+    name: "成長型投資",
+    description:
+      "我追求全壘打，不是安打。我相信未來，並願意為高成長潛力冒險。目標：指數級增長！",
     advantages: ["科技/行业新闻收益 x1.5"],
-    disadvantages: ["对监管/地缘政治更敏感"],
-    ability: { name: "激进交易", effect: "将当日的市场波动放大50%！" },
+    disadvantages: ["對監管/地緣政治更敏感"],
+    ability: { name: "激進交易", effect: "將當日的市場波動放大 50%！" },
   },
   value: {
-    name: "价值型投资",
-    description: "寻找被低估的、基本面稳固的资产。",
+    name: "價值型投資",
+    description:
+      "別人恐懼我貪婪。我專注於在沙礫中尋找被低估的黃金，然後耐心等待市場發現它的價值。",
     advantages: ["经济/基本面新闻收益 x1.4"],
-    disadvantages: ["对科技炒作反应迟钝"],
-    ability: { name: "稳健化重组", effect: "将当日的市场波动削减50%。" },
+    disadvantages: ["對科技炒作反應較慢"],
+    ability: { name: "穩健化重組", effect: "將當日的市場波動削減 50%。" },
   },
   technical: {
-    name: "技术分析",
-    description: "忽略基本面，从市场趋势和情绪中寻找机会。",
-    advantages: ["精准择时可获得额外奖励"],
-    disadvantages: ["可能错过基本面驱动的大行情"],
-    ability: { name: "精准择时", effect: "在正确时机干预以获取额外收益。" },
+    // Copy shift: present this role as "Balanced" to reduce jargon.
+    name: "穩健平衡",
+    description:
+      "穩健是我的代名詞。我尋求在風險與回報之間取得完美的平衡，追求長期、穩定的複利增長。",
+    advantages: ["精準出手可獲得額外獎勵"],
+    disadvantages: ["可能錯過基本面驅動的大行情"],
+    ability: { name: "精準擇時", effect: "在關鍵時機干預以獲取額外收益。" },
   },
 };
 
@@ -163,11 +167,11 @@ function scoreToPercentile(score: number) {
 
 function GradeBadge({ score, displayScore }: { score: number; displayScore?: number }) {
   const grade = (() => {
-    if (score > 1500) return { letter: "S", title: "传奇操盘手", ring: "ring-amber-300/30", bg: "bg-amber-300/15", text: "text-amber-200" };
-    if (score > 800) return { letter: "A", title: "资深专家", ring: "ring-sky-300/30", bg: "bg-sky-300/15", text: "text-sky-200" };
-    if (score > 300) return { letter: "B", title: "合格投资者", ring: "ring-emerald-300/30", bg: "bg-emerald-300/15", text: "text-emerald-200" };
-    if (score > 0) return { letter: "C", title: "市场新人", ring: "ring-zinc-200/20", bg: "bg-white/10", text: "text-zinc-100" };
-    return { letter: "D", title: "韭菜", ring: "ring-rose-300/30", bg: "bg-rose-300/15", text: "text-rose-200" };
+    if (score > 1500) return { letter: "S", title: "投資之神", ring: "ring-amber-300/30", bg: "bg-amber-300/15", text: "text-amber-200" };
+    if (score > 800) return { letter: "A", title: "華爾街巨星", ring: "ring-sky-300/30", bg: "bg-sky-300/15", text: "text-sky-200" };
+    if (score > 300) return { letter: "B", title: "市場菁英", ring: "ring-emerald-300/30", bg: "bg-emerald-300/15", text: "text-emerald-200" };
+    if (score > 0) return { letter: "C", title: "合格操盤手", ring: "ring-zinc-200/20", bg: "bg-white/10", text: "text-zinc-100" };
+    return { letter: "D", title: "待磨練的新手", ring: "ring-rose-300/30", bg: "bg-rose-300/15", text: "text-rose-200" };
   })();
 
   return (
@@ -407,6 +411,7 @@ const RISK_MANDATES: Array<{
 
 export default function MandateApp() {
   const INTERVENTION_COST = 35;
+  const LIVE_PROCESSING_MS = 1500;
   const [currentScreen, setCurrentScreen] = useState<Screen>("welcome");
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [planningStep, setPlanningStep] = useState<PlanningStep>("philosophy");
@@ -456,6 +461,8 @@ export default function MandateApp() {
     "value" | "growth" | "technical" | null
   >(null);
   const [scoreTicker, setScoreTicker] = useState<number>(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const processingTimeoutRef = useRef<number | null>(null);
   const dailyChangeFlashTimeoutRef = useRef<number | null>(null);
   const chartWrapperRef = useRef<HTMLDivElement | null>(null);
   const [chartSize, setChartSize] = useState<{ width: number; height: number }>({
@@ -482,7 +489,7 @@ export default function MandateApp() {
   const [hoveredMode, setHoveredMode] = useState<GameMode | null>(null);
   const [selectedMode, setSelectedMode] = useState<GameMode | null>(null);
 
-  const title = useMemo(() => "The Mandate", []);
+  const title = useMemo(() => "《決戰投報率》", []);
 
   function isTouchDevice() {
     if (typeof window === "undefined") return false;
@@ -768,6 +775,10 @@ export default function MandateApp() {
       window.clearTimeout(newsTimeoutRef.current);
       newsTimeoutRef.current = null;
     }
+    if (processingTimeoutRef.current) {
+      window.clearTimeout(processingTimeoutRef.current);
+      processingTimeoutRef.current = null;
+    }
     if (dailyChangeFlashTimeoutRef.current) {
       window.clearTimeout(dailyChangeFlashTimeoutRef.current);
       dailyChangeFlashTimeoutRef.current = null;
@@ -1000,13 +1011,11 @@ export default function MandateApp() {
     if (currentScreen !== "live") return;
     if (!lockedWarPlan || !corePhilosophy || !gameConfig) return;
     if (currentDayIndex >= lockedWarPlan.length) return;
+    // Manual progression: no auto-run loop on Live screen.
     if (dayPhase !== "idle") return;
     if (isInterventionModalOpen) return;
-
-    beginMorningNews();
     return undefined;
   }, [
-    beginMorningNews,
     corePhilosophy,
     currentDayIndex,
     currentScreen,
@@ -1104,6 +1113,7 @@ export default function MandateApp() {
     setMarketMoveSign(null);
     setFlashEffect(null);
     setScoreTicker(0);
+    setIsProcessing(false);
 
     // re-roll replay randomness
     const dnaPool: MarketCondition[] = ["bull", "bear", "volatile", "neutral"];
@@ -1118,6 +1128,32 @@ export default function MandateApp() {
     setCriticalDays(Array.from(picked.values()).sort((a, b) => a - b));
 
     setCurrentScreen("planning");
+  }
+
+  function startNextDay() {
+    if (!lockedWarPlan || !corePhilosophy || !gameConfig) return;
+    if (currentDayIndex >= lockedWarPlan.length) return;
+    if (isProcessing) return;
+
+    stopTimers();
+    setIsProcessing(true);
+    setCurrentNews(eventsData[currentDayIndex] ?? null);
+
+    processingTimeoutRef.current = window.setTimeout(() => {
+      processingTimeoutRef.current = null;
+      const dayIdx = currentDayIndex;
+      const mandate = lockedWarPlan[dayIdx] ?? lockedWarPlan[lockedWarPlan.length - 1];
+      const openValue = portfolioValue;
+
+      setIsProcessing(false);
+      setCurrentNews(null);
+
+      advanceOneDay({
+        dayIdx,
+        mandate,
+        valueAtStartOfDay: openValue,
+      });
+    }, LIVE_PROCESSING_MS);
   }
 
   return (
@@ -1166,14 +1202,29 @@ export default function MandateApp() {
           {currentScreen === "welcome" ? (
             <div className="mt-6">
               <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-                <p className="text-pretty text-sm leading-7 text-zinc-200/75">
-                  Welcome to &apos;The Mandate&apos;. This is your chance to test your
-                  investment strategy and emotional discipline. Complete the
-                  challenge to receive a special code for a complimentary ticket
-                  to our exclusive &apos;我兩樣都要&apos; founder&apos;s meetup.
+                <p className="text-pretty text-base font-semibold leading-7 text-white">
+                  歡迎來到《決戰投報率》！
                 </p>
-                <p className="mt-3 text-pretty text-sm leading-7 text-zinc-200/70">
-                  欢迎来到“投资指令”。这是你考验自己投资策略与情绪纪律的机会。完成挑战，即可获得一个特殊代码，用于兑换我们独家的‘我兩樣都要’创始人交流会的免费门票。
+                <p className="mt-2 text-pretty text-sm leading-7 text-zinc-200/75">
+                  一場證明你投資直覺的挑戰，一場通往知識殿堂的冒險。
+                </p>
+
+                <p className="mt-4 text-pretty text-sm leading-7 text-zinc-200/70">
+                  在這裡，你將執掌百萬資金，應對瞬息萬變的市場。你的每一個決策，都將決定你是成為傳奇，還是黯然離場。
+                </p>
+
+                <div className="mt-5 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4">
+                  <p className="text-sm font-semibold text-amber-100">
+                    完成挑戰，即可獲得...
+                  </p>
+                  <p className="mt-2 text-pretty text-sm leading-7 text-amber-50/85">
+                    一張 <span className="font-semibold text-white">免費的線下投資講座電子入場券</span>！
+                    沒有抽獎，沒有門檻，只要完成遊戲，獎勵就是你的！
+                  </p>
+                </div>
+
+                <p className="mt-4 text-pretty text-sm leading-7 text-zinc-200/70">
+                  準備好開始你的傳奇之旅了嗎？
                 </p>
 
                 <button
@@ -1194,9 +1245,9 @@ export default function MandateApp() {
                   </span>
                   <div className="min-w-0">
                     <h2 className="text-base font-semibold">游戏模式选择</h2>
-                    <p className="mt-0.5 text-sm text-zinc-200/70">
-                      新手建议先从 5 天开始，熟悉规则后再挑战 10 天完整版。
-                    </p>
+                      <p className="mt-0.5 text-sm text-zinc-200/70">
+                        新手建議先從 5 天開始，快速上手後再挑戰 10 天完整版。
+                      </p>
                   </div>
                 </div>
 
@@ -1223,7 +1274,7 @@ export default function MandateApp() {
                         </span>
                       </div>
                       <p className="mt-1 text-xs font-medium text-zinc-200/70">
-                        从这里开始你的投资之旅！
+                          一場閃電戰！最適合用來快速上手，或是在午休時間證明你的膽識。完成即可領取獎勵！
                       </p>
                       <div className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                         <p className="text-xs font-semibold text-zinc-200/85">
@@ -1255,7 +1306,7 @@ export default function MandateApp() {
                         10-Day Marathon
                       </p>
                       <p className="mt-1 text-xs font-medium text-zinc-200/70">
-                        这是对你投资智慧的终极考验。
+                        一場真正的耐力賽！在這裡，你的遠見將受到終極考驗。完成即可領取獎勵！
                       </p>
                       <div className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                         <p className="text-xs font-semibold text-zinc-200/85">
@@ -1289,26 +1340,26 @@ export default function MandateApp() {
                             <p className="text-sm font-semibold text-white">
                               5-Day Sprint{" "}
                               <span className="font-semibold text-emerald-200">
-                                （推荐新手）
+                                （推薦新手）
                               </span>
                             </p>
                             {hint}
                             <p className="mt-3 text-sm leading-6 text-zinc-200/70">
-                              从这里开始你的投资之旅！
+                              從這裡開始你的投資之旅！
                             </p>
                             <p className="mt-3 text-sm leading-6 text-zinc-200/70">
-                              这是一个简短、快节奏的教程模式，旨在让你快速掌握核心玩法。
+                              這是一個簡短、快節奏的教程模式，旨在讓你快速掌握核心玩法。
                             </p>
                             <p className="mt-4 text-xs font-semibold text-zinc-200/70">
                               为何选择它?
                             </p>
                             <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-zinc-200/70">
-                              <li>完美上手: 在几分钟内完成你的第一场游戏。</li>
-                              <li>学习规则: 无压力地理解不同投资哲学的影响。</li>
-                              <li>快速反馈: 立即看到你的决策结果。</li>
+                              <li>完美上手: 在幾分鐘內完成你的第一場遊戲。</li>
+                              <li>學習規則: 無壓力地理解不同投資信仰的影響。</li>
+                              <li>快速回饋: 立即看到你的決策結果。</li>
                             </ul>
                             <p className="mt-3 text-xs font-semibold text-zinc-200/70">
-                              这是你进入投资世界的第一步。
+                              這是你進入投資世界的第一步。
                             </p>
                           </div>
                         );
@@ -1321,21 +1372,21 @@ export default function MandateApp() {
                           </p>
                           {hint}
                           <p className="mt-3 text-sm leading-6 text-zinc-200/70">
-                            准备好迎接真正的市场挑战了吗？
+                            準備好迎接真正的市場挑戰了嗎？
                           </p>
                           <p className="mt-3 text-sm leading-6 text-zinc-200/70">
-                            这是完整的、更具深度的游戏体验，专为想要测试自己策略的玩家设计。
+                            這是完整的、更具深度的遊戲體驗，專為想要測試自己策略的玩家設計。
                           </p>
                           <p className="mt-4 text-xs font-semibold text-zinc-200/70">
                             为何选择它?
                           </p>
                           <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-zinc-200/70">
-                            <li>完整体验: 经历更长的市场周期、关键日和意外事件。</li>
-                            <li>考验策略: 精心管理你的“专注力”资源，做出影响深远的决策。</li>
-                            <li>证明自己: 在更复杂的“市场环境”中，争取获得最高评级。</li>
+                            <li>完整體驗: 經歷更長的市場週期、關鍵日和意外事件。</li>
+                            <li>考驗策略: 精心管理你的「專注力」資源，做出影響深遠的決策。</li>
+                            <li>證明自己: 在更複雜的「市場環境」中，爭取獲得最高評級。</li>
                           </ul>
                           <p className="mt-3 text-xs font-semibold text-zinc-200/70">
-                            这是对你投资智慧的终极考验。
+                            這是對你投資智慧的終極考驗。
                           </p>
                         </div>
                       );
@@ -1357,7 +1408,7 @@ export default function MandateApp() {
           ) : currentScreen === "planning" ? (
             <div className="mt-6">
               <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-                <p className="text-sm font-semibold text-white">Planning Phase</p>
+                <p className="text-sm font-semibold text-white">選擇你的投資信仰</p>
 
                 <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:grid-cols-2">
                   <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3">
@@ -1383,7 +1434,7 @@ export default function MandateApp() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <h3 className="text-base font-semibold text-white">
-                          设定你的核心投资哲学
+                          選擇你的投資信仰
                         </h3>
                         <p className="mt-1 text-sm leading-6 text-zinc-200/70">
                           这项选择在本局游戏中不可更改。
@@ -1467,9 +1518,9 @@ export default function MandateApp() {
                           const d = philosophyDetails[key];
                           return (
                             <div>
-                              <p className="text-xs font-semibold text-zinc-200/70">
-                                Pre-flight Check
-                              </p>
+                      <p className="text-xs font-semibold text-zinc-200/70">
+                        角色卡（點選查看，再點一次確認）
+                      </p>
                               <p className="mt-2 text-base font-semibold text-white">
                                 {d.name}
                               </p>
@@ -1787,11 +1838,77 @@ export default function MandateApp() {
                     返回模式选择
                   </button>
                 </div>
+
+                {/* Sticky mobile footer actions */}
+                <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-zinc-950/80 p-3 backdrop-blur sm:hidden">
+                  <div className="mx-auto flex max-w-xl items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={
+                        focus < INTERVENTION_COST ||
+                        currentDayIndex < interventionCooldownUntilDay ||
+                        !isProcessing
+                      }
+                      onClick={() => {
+                        if (!isProcessing) return;
+                        setIsInterventionModalOpen(true);
+                      }}
+                      className={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/35 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
+                        focus < INTERVENTION_COST ||
+                        currentDayIndex < interventionCooldownUntilDay ||
+                        !isProcessing
+                          ? "cursor-not-allowed bg-white/10 text-white/50"
+                          : "bg-amber-300 text-zinc-950 hover:bg-amber-200"
+                      }`}
+                    >
+                      <CirclePause className="h-5 w-5" aria-hidden="true" />
+                      <span className="font-mono text-xs">-{INTERVENTION_COST}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={isProcessing || currentDayIndex >= (lockedWarPlan?.length ?? 0)}
+                      onClick={() => startNextDay()}
+                      className={`inline-flex flex-1 items-center justify-center rounded-full px-4 py-3 text-sm font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
+                        isProcessing || currentDayIndex >= (lockedWarPlan?.length ?? 0)
+                          ? "cursor-not-allowed bg-white/10 text-white/50"
+                          : "bg-emerald-300 text-zinc-950 hover:bg-emerald-200"
+                      }`}
+                    >
+                      Next Day
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           ) : currentScreen === "live" ? (
             <div className="mt-6">
               <div className="relative rounded-2xl border border-white/10 bg-black/20 p-5">
+                <AnimatePresence>
+                  {isProcessing ? (
+                    <motion.div
+                      key="processing"
+                      className="absolute inset-0 z-50 grid place-items-center rounded-2xl bg-[rgba(200,0,0,0.10)]"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      aria-hidden="true"
+                    >
+                      <div className="flex flex-col items-center gap-3">
+                        <motion.div
+                          className="grid h-14 w-14 place-items-center rounded-3xl border border-white/10 bg-black/30"
+                          animate={{ scale: [1, 1.08, 1] }}
+                          transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          <Activity className="h-7 w-7 text-rose-200" aria-hidden="true" />
+                        </motion.div>
+                        <p className="text-sm font-semibold text-white">
+                          Market is Live
+                        </p>
+                      </div>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -1891,59 +2008,7 @@ export default function MandateApp() {
                   </div>
                 </div>
 
-                <AnimatePresence>
-                  {dayPhase === "news" && currentNews ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: -50 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 50, transition: { duration: 0.5 } }}
-                      transition={{ type: "spring", stiffness: 100 }}
-                      className="pointer-events-none absolute left-1/2 top-4 w-11/12 max-w-2xl -translate-x-1/2 rounded-2xl border border-sky-300/25 bg-zinc-900/90 p-4 shadow-xl backdrop-blur-md z-50"
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-white/10 bg-black/20">
-                          {(() => {
-                            const icons: Record<MarketEventCategory, React.ReactNode> = {
-                              economy: (
-                                <BarChart2 className="h-6 w-6 text-blue-300" aria-hidden="true" />
-                              ),
-                              monetary: (
-                                <Landmark className="h-6 w-6 text-emerald-300" aria-hidden="true" />
-                              ),
-                              industry: (
-                                <Briefcase className="h-6 w-6 text-yellow-300" aria-hidden="true" />
-                              ),
-                              tech: (
-                                <Cpu className="h-6 w-6 text-purple-300" aria-hidden="true" />
-                              ),
-                              geopolitics: (
-                                <Flame className="h-6 w-6 text-rose-300" aria-hidden="true" />
-                              ),
-                              regulation: (
-                                <ShieldAlert className="h-6 w-6 text-orange-300" aria-hidden="true" />
-                              ),
-                              market: (
-                                <TrendingUp className="h-6 w-6 text-zinc-200/70" aria-hidden="true" />
-                              ),
-                            };
-                            return icons[currentNews.category] ?? (
-                              <Newspaper className="h-6 w-6 text-sky-200" aria-hidden="true" />
-                            );
-                          })()}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-sky-100/80">
-                            Morning News
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-white">
-                            {currentNews.headline}
-                          </p>
-                          {/* Description removed: icon-driven alert */}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
+                {/* Mobile-first: daily event card lives in content area below */}
 
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                   <p className="text-xs font-semibold text-zinc-200/70">
@@ -1966,70 +2031,11 @@ export default function MandateApp() {
                   </p>
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                    <p className="text-xs font-semibold text-zinc-200/70">
-                      投资组合价值
-                    </p>
-                    <p className="mt-1 text-xl font-semibold tracking-tight text-white">
-                      {formatCurrency(
-                        dayPhase === "marketOpen" || dayPhase === "intervening"
-                          ? displayedPortfolioValue
-                          : animatedPortfolioValue,
-                      )}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                    <p className="text-xs font-semibold text-zinc-200/70">
-                      总盈亏
-                    </p>
-                    <p
-                      className={`mt-1 text-xl font-semibold tracking-tight ${
-                        portfolioValue - 100000 >= 0
-                          ? "text-emerald-200"
-                          : "text-rose-200"
-                      }`}
-                    >
-                      {formatSignedCurrency(portfolioValue - 100000)}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                    <p className="text-xs font-semibold text-zinc-200/70">
-                      当日盈亏
-                    </p>
-                    <AnimatePresence>
-                      {dailyChangeFlash !== null ? (
-                        <motion.div
-                          key="daily-pl"
-                          initial={{ opacity: 0, scale: 0.5 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.5 }}
-                          className={`mt-1 text-xl font-semibold tracking-tight ${
-                            dailyChangeFlash >= 0
-                              ? "text-emerald-200"
-                              : "text-rose-200"
-                          }`}
-                        >
-                          {formatSignedCurrency(dailyChangeFlash)}
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="daily-pl-empty"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="mt-1 text-xl font-semibold tracking-tight text-white/30"
-                        >
-                          --
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
+                {/* Mobile-first: chart (top) + compact stats bar (below chart) */}
 
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <p className="text-xs font-semibold text-zinc-200/70">
-                    Performance Chart
+                    Portfolio Chart
                   </p>
                   <div className="relative mt-3 h-56 w-full" ref={chartWrapperRef}>
                     <motion.div
@@ -2146,6 +2152,69 @@ export default function MandateApp() {
                   </div>
                 </div>
 
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <p className="text-[11px] font-semibold text-zinc-200/60">
+                        Portfolio
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-white">
+                        {formatCurrency(animatedPortfolioValue)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <p className="text-[11px] font-semibold text-zinc-200/60">
+                        Day
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-white">
+                        {Math.min(currentDayIndex + 1, lockedWarPlan?.length ?? 0)}/
+                        {lockedWarPlan?.length ?? 0}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <p className="text-[11px] font-semibold text-zinc-200/60">
+                        Focus
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-white">
+                        {focus}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-xs font-semibold text-zinc-200/70">
+                    今日事件
+                  </p>
+                  <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <span className="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/5">
+                      {(() => {
+                        const ev = eventsData[currentDayIndex] ?? eventsData[0];
+                        const icons: Record<MarketEventCategory, React.ReactNode> = {
+                          economy: <BarChart2 className="h-6 w-6 text-blue-300" aria-hidden="true" />,
+                          monetary: <Landmark className="h-6 w-6 text-emerald-300" aria-hidden="true" />,
+                          industry: <Briefcase className="h-6 w-6 text-yellow-300" aria-hidden="true" />,
+                          tech: <Cpu className="h-6 w-6 text-purple-300" aria-hidden="true" />,
+                          geopolitics: <Flame className="h-6 w-6 text-rose-300" aria-hidden="true" />,
+                          regulation: <ShieldAlert className="h-6 w-6 text-orange-300" aria-hidden="true" />,
+                          market: <TrendingUp className="h-6 w-6 text-zinc-200/70" aria-hidden="true" />,
+                        };
+                        return icons[ev?.category ?? "market"] ?? (
+                          <Newspaper className="h-6 w-6 text-sky-200" aria-hidden="true" />
+                        );
+                      })()}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-sky-100/70">
+                        Morning News
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-white">
+                        {(eventsData[currentDayIndex] ?? eventsData[0])?.headline ?? "-"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
                     <button
@@ -2156,19 +2225,13 @@ export default function MandateApp() {
                         !gameConfig ||
                         currentDayIndex >= (lockedWarPlan?.length ?? 0) ||
                         currentDayIndex < interventionCooldownUntilDay ||
-                        dayPhase !== "marketOpen"
+                        !isProcessing
                       }
                       onClick={() => {
                         if (focus < INTERVENTION_COST) return;
                         if (!lockedWarPlan || !gameConfig) return;
                         if (currentDayIndex < interventionCooldownUntilDay) return;
-                        if (dayPhase !== "marketOpen") return;
-                        const endsAt = marketOpenEndsAtRef.current;
-                        const remaining =
-                          endsAt != null ? Math.max(0, endsAt - Date.now()) : 0;
-                        marketOpenRemainingMsRef.current = remaining;
-                        stopTimers();
-                        setDayPhase("intervening");
+                        if (!isProcessing) return;
                         setIsInterventionModalOpen(true);
                       }}
                       className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/35 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:w-auto ${
@@ -2198,13 +2261,10 @@ export default function MandateApp() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      setCurrentScreen("planning");
-                      setPlanningStep("timeline");
-                    }}
+                    onClick={() => startNextDay()}
                     className="inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-transparent px-5 py-3 text-sm font-semibold text-white/90 transition-colors hover:border-white/25 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/25 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:w-auto"
                   >
-                    查看计划
+                    Next Day
                   </button>
                 </div>
 
@@ -2493,6 +2553,71 @@ export default function MandateApp() {
                 ) : null}
               </div>
             </div>
+          ) : currentScreen === "voucher" ? (
+            <div className="mt-6">
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white">
+                      免費線下投資講座電子入場券
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-zinc-200/70">
+                      恭喜你完成《決戰投報率》！這張入場券是你「參與即獲得」的獎勵。
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-100">
+                    GUARANTEED
+                  </span>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4">
+                  <p className="text-xs font-semibold text-amber-100/80">VOUCHER</p>
+                  <p className="mt-2 font-mono text-2xl font-semibold tracking-wider text-white">
+                    2CastleFreeTix2026
+                  </p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText("2CastleFreeTix2026");
+                        setRewardCopied(true);
+                        window.setTimeout(() => setRewardCopied(false), 1500);
+                      } catch {
+                        // ignore clipboard errors (e.g., insecure context)
+                      }
+                    }}
+                    className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-amber-300 px-6 py-3.5 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                  >
+                    {rewardCopied ? "已複製" : "複製兌換碼"}
+                  </button>
+                  <a
+                    href="https://luma.com/vbjuzo79"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-transparent px-6 py-3.5 text-sm font-semibold text-white/90 shadow-sm transition-colors hover:border-white/25 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/35 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                  >
+                    前往領取入場券
+                  </a>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentScreen("review")}
+                    className="inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-transparent px-6 py-3.5 text-sm font-semibold text-white/90 transition-colors hover:border-white/25 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/25 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                  >
+                    返回成績頁
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => replaySameSettings()}
+                    className="inline-flex w-full items-center justify-center rounded-full bg-emerald-300 px-6 py-3.5 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                  >
+                    再玩一次（相同設定）
+                  </button>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="mt-6">
               <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
@@ -2500,7 +2625,7 @@ export default function MandateApp() {
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-white">Review Phase</p>
                     <p className="mt-1 text-sm leading-6 text-zinc-200/70">
-                      这是一份你的完整复盘报告。向下滚动查看分析与归因。
+                      恭喜完成挑戰！現在，來領取你的專屬獎勵。
                     </p>
                   </div>
                   <div className="shrink-0 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-semibold text-zinc-200/80">
@@ -2889,47 +3014,34 @@ export default function MandateApp() {
                   })()}
                 </div>
 
-                {/* Your Reward */}
+                {/* Guaranteed Reward */}
                 <div className="mt-5 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4">
                   <p className="text-sm font-semibold text-amber-100">
-                    恭喜！这是你的奖励
+                    感謝你完成挑戰！這是你的專屬獎勵！
                   </p>
-                  <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3 rounded-2xl border border-amber-300/25 bg-black/20 px-4 py-3">
-                      <span className="text-xs font-semibold text-amber-100/80">
-                        CODE
-                      </span>
-                      <span className="font-mono text-base font-semibold tracking-wider text-white">
-                        2CastleFreeTix2026
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText("2CastleFreeTix2026");
-                          setRewardCopied(true);
-                          window.setTimeout(() => setRewardCopied(false), 1500);
-                        } catch {
-                          // ignore clipboard errors (e.g., insecure context)
-                        }
-                      }}
-                      className="inline-flex w-full items-center justify-center rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:w-auto"
-                    >
-                      {rewardCopied ? "已复制" : "复制"}
-                    </button>
-                  </div>
-                  <p className="mt-4 text-sm leading-6 text-amber-50/80">
-                    请在 Luma 活动注册页面输入此代码，以兑换您的‘我兩樣都要’创始人交流会免费门票。
+                  <p className="mt-2 text-sm leading-6 text-amber-50/85">
+                    你的投資之旅值得讚賞。作為謝禮，我們將贈送你一張{" "}
+                    <span className="font-semibold text-white">
+                      免費線下投資講座的電子入場券
+                    </span>
+                    。
                   </p>
-                  <a
-                    href="https://luma.com/vbjuzo79"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3.5 text-sm font-semibold text-background shadow-sm transition-colors hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                  <button
+                    type="button"
+                    onClick={() => setCurrentScreen("voucher")}
+                    className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-amber-300 px-6 py-3.5 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                   >
-                    前往 Luma 活动注册页面
-                  </a>
+                    按此領取您的入場券
+                  </button>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-sm font-semibold text-white">
+                    想挑戰更高的評級嗎？
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-zinc-200/70">
+                    你的投資之旅尚未結束！試試用不同的「投資信仰」再玩一次，看看你能否超越這次的成績，衝擊「投資之神」的稱號！
+                  </p>
                 </div>
 
                 {/* Replay System */}

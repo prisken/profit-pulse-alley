@@ -35,61 +35,61 @@ export const eventsData: MarketEvent[] = [
   // Day 1: Positive Start
   {
     category: "economy",
-    headline: "经济数据强于预期",
+    headline: "經濟數據強於預期！市場情緒瞬間升溫！",
     impact: 0.018,
   },
   // Day 2: Correction
   {
     category: "monetary",
-    headline: "通胀担忧重燃",
+    headline: "通膨疑雲再起！資金開始撤退！",
     impact: -0.022,
   },
   // Day 3: Sector-Specific Good News
   {
     category: "industry",
-    headline: "全球供应链压力缓解",
+    headline: "供應鏈解凍！產業鏈迎來喘息！",
     impact: 0.012,
   },
   // Day 4: Tech Boom
   {
     category: "tech",
-    headline: "AI 取得重大技术突破",
+    headline: "科技巨頭發布革命性產品！市場為之瘋狂！",
     impact: 0.03,
   },
   // Day 5: Black Swan Event
   {
     category: "geopolitics",
-    headline: "地缘政治危机爆发",
+    headline: "地緣政治風暴來襲！避險情緒急劇升溫！",
     impact: -0.05,
   },
   // Day 6: Cautious Recovery
   {
     category: "monetary",
-    headline: "各国央行承诺注入流动性",
+    headline: "央行救市訊號釋出！市場暫時止血！",
     impact: 0.022,
   },
   // Day 7: Momentum Trap
   {
     category: "market",
-    headline: "市场在不确定性中反弹",
+    headline: "反彈是真是假？多空拉鋸進入白熱化！",
     impact: -0.028,
   },
   // Day 8: Tech Hit Again
   {
     category: "regulation",
-    headline: "主要经济体考虑加强科技监管",
+    headline: "監管重拳落下？科技板塊瞬間失速！",
     impact: 0.006,
   },
   // Day 9: Unexpected Strength
   {
     category: "industry",
-    headline: "企业盈利季节开局强劲",
+    headline: "財報季開局炸裂！市場重燃信心！",
     impact: 0.02,
   },
   // Day 10: Final Volatility
   {
     category: "economy",
-    headline: "关键通胀数据发布在即",
+    headline: "關鍵數據公布前夕！波動拉滿、人人緊張！",
     impact: -0.024,
   },
 ];
