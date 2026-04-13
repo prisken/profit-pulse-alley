@@ -79,6 +79,9 @@ type LiveLogEntry = {
 
 type MarketCondition = "neutral" | "bull" | "bear" | "volatile";
 
+/** Starting portfolio balance (displayed as 起始資金 in planning UI). */
+const INITIAL_CAPITAL = 1_000_000;
+
 const philosophyDetails: Record<
   PlayerPhilosophy,
   {
@@ -489,10 +492,10 @@ export default function MandateApp() {
   const [lockedWarPlan, setLockedWarPlan] = useState<RiskMandate[] | null>(null);
   const [isLockConfirmOpen, setIsLockConfirmOpen] = useState(false);
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
-  const [portfolioValue, setPortfolioValue] = useState(100000);
-  const [, setPreviousValue] = useState(100000);
-  const [portfolioHistory, setPortfolioHistory] = useState<number[]>([100000]);
-  const [benchmarkHistory, setBenchmarkHistory] = useState<number[]>([100000]);
+  const [portfolioValue, setPortfolioValue] = useState(INITIAL_CAPITAL);
+  const [, setPreviousValue] = useState(INITIAL_CAPITAL);
+  const [portfolioHistory, setPortfolioHistory] = useState<number[]>([INITIAL_CAPITAL]);
+  const [benchmarkHistory, setBenchmarkHistory] = useState<number[]>([INITIAL_CAPITAL]);
   const [liveLog, setLiveLog] = useState<LiveLogEntry[]>([]);
   const [focus, setFocus] = useState<number>(3);
   const [interventionCooldownUntilDay, setInterventionCooldownUntilDay] =
@@ -515,9 +518,9 @@ export default function MandateApp() {
     "idle" | "news" | "marketOpen" | "pause" | "intervening"
   >("idle");
   const [displayedPortfolioValue, setDisplayedPortfolioValue] =
-    useState<number>(100000);
+    useState<number>(INITIAL_CAPITAL);
   const [animatedPortfolioValue, setAnimatedPortfolioValue] =
-    useState<number>(100000);
+    useState<number>(INITIAL_CAPITAL);
   const [dailyChangeFlash, setDailyChangeFlash] = useState<number | null>(null);
   const [marketMoveSign, setMarketMoveSign] = useState<"up" | "down" | null>(null);
   const [flashEffect, setFlashEffect] = useState<
@@ -547,8 +550,8 @@ export default function MandateApp() {
   const marketOpenEndsAtRef = useRef<number | null>(null);
   const marketOpenRemainingMsRef = useRef<number | null>(null);
   const plannedMandateRef = useRef<RiskMandate | null>(null);
-  const plannedOpenValueRef = useRef<number>(100000);
-  const plannedTargetValueRef = useRef<number>(100000);
+  const plannedOpenValueRef = useRef<number>(INITIAL_CAPITAL);
+  const plannedTargetValueRef = useRef<number>(INITIAL_CAPITAL);
   const [currentNews, setCurrentNews] = useState<MarketEvent | null>(null);
   const [hoveredPhilosophy, setHoveredPhilosophy] =
     useState<PlayerPhilosophy | null>(null);
@@ -684,7 +687,7 @@ export default function MandateApp() {
   }
 
   function computePrototypeLabel(): { title: string; description: string } {
-    const finalPLPct = (portfolioValue - 100000) / 100000;
+    const finalPLPct = (portfolioValue - INITIAL_CAPITAL) / INITIAL_CAPITAL;
     const interventionsCount = interventions.length;
 
   const highRiskPhilosophy = corePhilosophy === "growth";
@@ -786,7 +789,7 @@ export default function MandateApp() {
     const newValueWithBonus = result.newValue + bonus;
 
     const nextBenchmarkPrev =
-      benchmarkHistory[benchmarkHistory.length - 1] ?? 100000;
+      benchmarkHistory[benchmarkHistory.length - 1] ?? INITIAL_CAPITAL;
     const benchReturn = sp500Benchmark[dayIdx] ?? 0;
     const nextBenchmark = nextBenchmarkPrev * (1 + benchReturn);
 
@@ -1130,7 +1133,7 @@ export default function MandateApp() {
 
   useEffect(() => {
     if (currentScreen !== "review") return;
-    const finalScore = calculateFinalScore(portfolioHistory, 100000, interventions.length);
+    const finalScore = calculateFinalScore(portfolioHistory, INITIAL_CAPITAL, interventions.length);
     setScoreTicker(0);
     const start = performance.now();
     const duration = 900;
@@ -1155,10 +1158,10 @@ export default function MandateApp() {
     setIsLockConfirmOpen(false);
 
     setCurrentDayIndex(0);
-    setPreviousValue(100000);
-    setPortfolioValue(100000);
-    setPortfolioHistory([100000]);
-    setBenchmarkHistory([100000]);
+    setPreviousValue(INITIAL_CAPITAL);
+    setPortfolioValue(INITIAL_CAPITAL);
+    setPortfolioHistory([INITIAL_CAPITAL]);
+    setBenchmarkHistory([INITIAL_CAPITAL]);
     setLiveLog([]);
 
     setFocus(3);
@@ -1169,8 +1172,8 @@ export default function MandateApp() {
     setExecutedMandates([]);
     setRewardCopied(false);
     setDayPhase("idle");
-    setDisplayedPortfolioValue(100000);
-    setAnimatedPortfolioValue(100000);
+    setDisplayedPortfolioValue(INITIAL_CAPITAL);
+    setAnimatedPortfolioValue(INITIAL_CAPITAL);
     setDailyChangeFlash(null);
     setCurrentNews(null);
     setMarketCondition("neutral");
@@ -1187,7 +1190,7 @@ export default function MandateApp() {
     setLockedWarPlan(null);
     setIsLockConfirmOpen(false);
 
-    const initial = 100000;
+    const initial = INITIAL_CAPITAL;
     setCurrentDayIndex(0);
     setPreviousValue(initial);
     setPortfolioValue(initial);
@@ -1614,7 +1617,7 @@ export default function MandateApp() {
                       起始資金
                     </p>
                     <p className="mt-1 text-sm font-semibold text-white">
-                      $100,000
+                      {`$${INITIAL_CAPITAL.toLocaleString("en-US")}`}
                     </p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3">
@@ -1966,7 +1969,7 @@ export default function MandateApp() {
                                 );
                                 setLockedWarPlan(plan);
                                 setIsLockConfirmOpen(false);
-                                const initial = 100000;
+                                const initial = INITIAL_CAPITAL;
                                 setCurrentDayIndex(0);
                                 setPreviousValue(initial);
                                 setPortfolioValue(initial);
@@ -2680,7 +2683,7 @@ export default function MandateApp() {
 
                             const interventionBonus = (() => {
                               if (corePhilosophy !== "technical") return 0;
-                              return finalImpact < 0 ? 100000 * 0.02 : 100000 * 0.01;
+                              return finalImpact < 0 ? INITIAL_CAPITAL * 0.02 : INITIAL_CAPITAL * 0.01;
                             })();
 
                             const withoutResult = calculateDailyPerformance({
@@ -2875,7 +2878,7 @@ export default function MandateApp() {
                 {(() => {
                   const score = calculateFinalScore(
                     portfolioHistory,
-                    100000,
+                    INITIAL_CAPITAL,
                     interventions.length,
                   );
                   return (
@@ -3006,12 +3009,12 @@ export default function MandateApp() {
                                   </p>
                                   <p
                                     className={`mt-1 text-lg font-semibold tracking-tight ${
-                                      portfolioValue - 100000 >= 0
+                                      portfolioValue - INITIAL_CAPITAL >= 0
                                         ? "text-emerald-200"
                                         : "text-rose-200"
                                     }`}
                                   >
-                                    {formatSignedCurrency(portfolioValue - 100000)}
+                                    {formatSignedCurrency(portfolioValue - INITIAL_CAPITAL)}
                                   </p>
                                 </div>
                                 <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
