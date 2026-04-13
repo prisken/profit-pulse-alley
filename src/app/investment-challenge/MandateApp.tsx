@@ -91,7 +91,7 @@ const philosophyDetails: Record<
     name: "成長型投資",
     description:
       "我追求全壘打，不是安打。我相信未來，並願意為高成長潛力冒險。目標：指數級增長！",
-    advantages: ["科技/行业新闻收益 x1.5"],
+    advantages: ["科技/產業新聞收益 x1.5"],
     disadvantages: ["對監管/地緣政治更敏感"],
     ability: { name: "激進交易", effect: "將當日的市場波動放大 50%！" },
   },
@@ -99,7 +99,7 @@ const philosophyDetails: Record<
     name: "價值型投資",
     description:
       "別人恐懼我貪婪。我專注於在沙礫中尋找被低估的黃金，然後耐心等待市場發現它的價值。",
-    advantages: ["经济/基本面新闻收益 x1.4"],
+    advantages: ["經濟/基本面新聞收益 x1.4"],
     disadvantages: ["對科技炒作反應較慢"],
     ability: { name: "穩健化重組", effect: "將當日的市場波動削減 50%。" },
   },
@@ -176,7 +176,7 @@ function GradeBadge({ score, displayScore }: { score: number; displayScore?: num
 
   return (
     <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-xs font-semibold text-zinc-200/70">Performance Grade</p>
+      <p className="text-xs font-semibold text-zinc-200/70">最終評級</p>
       <div className="mt-4 flex flex-col items-center gap-3 text-center">
         <motion.div
           initial={{ scale: 0.85, opacity: 0 }}
@@ -191,7 +191,7 @@ function GradeBadge({ score, displayScore }: { score: number; displayScore?: num
         <div>
           <p className="text-lg font-semibold tracking-tight text-white">{grade.title}</p>
           <p className="mt-1 font-mono text-xs font-semibold text-zinc-200/70">
-            SCORE: {(displayScore ?? score).toLocaleString()}
+            分數：{(displayScore ?? score).toLocaleString()}
           </p>
         </div>
       </div>
@@ -204,7 +204,7 @@ function PeerComparison({ score }: { score: number }) {
   const left = `${percentile}%`;
   return (
     <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-xs font-semibold text-zinc-200/70">Peer Comparison</p>
+      <p className="text-xs font-semibold text-zinc-200/70">市場同儕比較</p>
 
       <div className="mt-4">
         <div className="relative h-10 w-full overflow-hidden rounded-full border border-white/10 bg-black/20">
@@ -221,14 +221,14 @@ function PeerComparison({ score }: { score: number }) {
         </div>
 
         <div className="mt-3 flex items-center justify-between text-xs font-semibold text-zinc-200/60">
-          <span>Novice</span>
-          <span>Legendary</span>
+          <span>新手</span>
+          <span>傳奇</span>
         </div>
 
         <p className="mt-3 text-sm leading-6 text-zinc-200/70">
-          你的表现超过了市场上{" "}
+          你的表現超過了市場上{" "}
           <span className="font-mono font-semibold text-white">{percentile}%</span>{" "}
-          的投资者
+          的投資者
         </p>
       </div>
     </div>
@@ -248,10 +248,10 @@ function NarrativeSummary({
 }) {
   const label =
     philosophy === "growth"
-      ? "成长型投资者"
+      ? "成長型投資者"
       : philosophy === "value"
-        ? "价值型投资者"
-        : "技术分析师";
+        ? "價值型投資者"
+        : "穩健平衡投資者";
 
   const keyMoments = (() => {
     if (liveLog.length === 0) return null;
@@ -266,32 +266,32 @@ function NarrativeSummary({
 
   const styleLine =
     interventionsCount === 0
-      ? "你几乎没有出手，坚持计划，像“钻石手”一样忍住了噪音。"
+      ? "你幾乎沒有出手，堅持計畫，像「鑽石手」一樣忍住了噪音。"
       : interventionsCount >= 3
-        ? "你频繁出手，主动交易来对抗波动——这很强势，但也更容易被情绪牵引。"
-        : "你在关键时刻出手一次或两次，既保留框架，也愿意为确定性付出代价。";
+        ? "你頻繁出手，主動交易來對抗波動——這很強勢，但也更容易被情緒牽引。"
+        : "你在關鍵時刻出手一次或兩次，既保留框架，也願意為確定性付出代價。";
 
   const momentLine = (() => {
     if (!keyMoments) return "";
     const bestEv = eventsData[keyMoments.best.day - 1];
     const worstEv = eventsData[keyMoments.worst.day - 1];
-    return `你的转折点出现在 Day ${keyMoments.best.day}（${bestEv?.headline ?? "重大事件"}），你拿到了本轮最大单日上涨；但 Day ${keyMoments.worst.day}（${worstEv?.headline ?? "冲击事件"}）也给了你最沉重的一击。`;
+    return `你的轉折點出現在第 ${keyMoments.best.day} 天（${bestEv?.headline ?? "重大事件"}），你拿到了本輪最大單日上漲；但第 ${keyMoments.worst.day} 天（${worstEv?.headline ?? "衝擊事件"}）也給了你最沉重的一擊。`;
   })();
 
   const philosophyLine =
     philosophy === "growth"
-      ? "成长型策略会放大创新/科技与监管叙事的影响：赢的时候赢很大，输的时候也更痛。"
+      ? "成長型策略會放大創新/科技與監管敘事的影響：贏的時候贏很大，輸的時候也更痛。"
       : philosophy === "value"
-        ? "价值型策略更偏好基本面与确定性：在宏观/产业利好里更稳健，在风险日更能“压波动”。"
-        : "技术分析更偏中性：你不会被某类新闻天然放大，但择时能力会决定你能否把波动变成优势。";
+        ? "價值型策略更偏好基本面與確定性：在宏觀/產業利好裡更穩健，在風險日更能「壓波動」。"
+        : "穩健平衡更偏中性：你不會被某類新聞天然放大，但出手時機會決定你能否把波動變成優勢。";
 
   return (
     <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
       <p className="text-xs font-semibold text-zinc-200/70">
-        The Investor&apos;s Narrative
+        投資者敘事
       </p>
       <p className="mt-2 text-sm leading-6 text-zinc-200/70">
-        作为一个 <span className="font-semibold text-white">{label}</span>，
+        作為一個 <span className="font-semibold text-white">{label}</span>，
         {philosophyLine} {styleLine} {momentLine} 最终，这种路径把你带向了{" "}
         <span className="font-semibold text-white">{prototypeTitle}</span>。
       </p>
@@ -341,7 +341,7 @@ function DailyReviewTable({
   return (
     <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
       <p className="text-xs font-semibold text-zinc-200/70">
-        {days}日交易复盘 ({days}-Day Performance Review)
+        {days}日交易復盤
       </p>
 
       <div className="mt-4 grid gap-2">
@@ -354,9 +354,9 @@ function DailyReviewTable({
               key={idx}
               className="grid grid-cols-[72px_40px_1fr_auto] items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-3 py-3"
             >
-              <div className="text-xs font-semibold text-zinc-200/70">
-                {`Day ${idx + 1}`}
-              </div>
+                  <div className="text-xs font-semibold text-zinc-200/70">
+                    {`第${idx + 1}天`}
+                  </div>
               <div className="grid h-9 w-9 place-items-center rounded-2xl border border-white/10 bg-white/5">
                 {eventIcons[category]}
               </div>
@@ -387,24 +387,24 @@ const RISK_MANDATES: Array<{
   detail: string;
   ratioTag: string;
 }> = [
-  { value: "fullDefense", label: "全面防御", detail: "100% 现金", ratioTag: "0/100" },
+  { value: "fullDefense", label: "全面防禦", detail: "100% 現金", ratioTag: "0/100" },
   {
     value: "cautious",
-    label: "谨慎",
-    detail: "30% 投资, 70% 现金",
+    label: "謹慎",
+    detail: "30% 投資、70% 現金",
     ratioTag: "30/70",
   },
   {
     value: "balanced",
     label: "平衡",
-    detail: "60% 投资, 40% 现金",
+    detail: "60% 投資、40% 現金",
     ratioTag: "60/40",
   },
-  { value: "aggressive", label: "进取", detail: "100% 投资", ratioTag: "100/0" },
+  { value: "aggressive", label: "進取", detail: "100% 投資", ratioTag: "100/0" },
   {
     value: "leveragedAggressive",
-    label: "杠杆进取",
-    detail: "150% 投资（使用杠杆）",
+    label: "槓桿進取",
+    detail: "150% 投資（使用槓桿）",
     ratioTag: "150/0",
   },
 ];
@@ -547,11 +547,11 @@ export default function MandateApp() {
   function philosophyToLabel(philosophy: CorePhilosophy): string {
     switch (philosophy) {
       case "growth":
-        return "成长型 (Growth)";
+        return "成長型";
       case "value":
-        return "价值型 (Value)";
+        return "價值型";
       case "technical":
-        return "技术派 (Technical)";
+        return "穩健平衡";
       default: {
         const _exhaustive: never = philosophy;
         return _exhaustive;
@@ -571,6 +571,25 @@ export default function MandateApp() {
         return "Aggressive";
       case "leveragedAggressive":
         return "Leveraged Aggressive";
+      default: {
+        const _exhaustive: never = mandate;
+        return _exhaustive;
+      }
+    }
+  }
+
+  function mandateToDisplayLabel(mandate: RiskMandate): string {
+    switch (mandate) {
+      case "fullDefense":
+        return "全面防禦";
+      case "cautious":
+        return "謹慎";
+      case "balanced":
+        return "平衡";
+      case "aggressive":
+        return "進取";
+      case "leveragedAggressive":
+        return "槓桿進取";
       default: {
         const _exhaustive: never = mandate;
         return _exhaustive;
@@ -618,48 +637,48 @@ export default function MandateApp() {
 
     if (finalPLPct > 0.15) {
       return {
-        title: "卓越的预测者",
+        title: "卓越的預測者",
         description:
-          "你的结果显著跑赢基准，说明你不仅有计划，更能在关键时刻把风险押在正确的方向上。",
+          "你的結果顯著跑贏基準，說明你不僅有計畫，更能在關鍵時刻把風險押在正確的方向上。",
       };
     }
 
     if (interventionsCount === 0) {
       return {
-        title: "纪律严明的规划者",
+        title: "紀律嚴明的規劃者",
         description:
-          "你在波动中坚持计划，不靠临场反应取胜，而是靠结构化决策与长期一致性。",
+          "你在波動中堅持計畫，不靠臨場反應取勝，而是靠結構化決策與長期一致性。",
       };
     }
 
     if (interventionsCount >= 3) {
       return {
-        title: "情绪化的反应者",
+        title: "情緒化的反應者",
         description:
-          "你将干预令牌用尽，说明你更容易在噪音中改变计划。下一阶段的关键是建立更可执行的规则。",
+          "你將干預令牌用盡，說明你更容易在噪音中改變計畫。下一階段的關鍵是建立更可執行的規則。",
       };
     }
 
     if (gameConfig?.mode === "standard" && interventionsCount === 1) {
       return {
-        title: "犹豫的战术家",
+        title: "猶豫的戰術家",
         description:
-          "你大多数时间坚持原计划，但在某个关键节点选择调整。你已经具备框架，只需提升触发条件的清晰度。",
+          "你大多數時間堅持原計畫，但在某個關鍵節點選擇調整。你已經具備框架，只需提升觸發條件的清晰度。",
       };
     }
 
     if (mismatched) {
       return {
-        title: "错配的策略师",
+        title: "錯配的策略師",
         description:
-          "你的哲学与风险指令长期不一致：要么高波动哲学配防御，要么低波动哲学配激进。统一你的‘信念’与‘执行’，收益会更稳定。",
+          "你的哲學與風險指令長期不一致：要麼高波動哲學配防禦，要麼低波動哲學配激進。統一你的「信念」與「執行」，收益會更穩定。",
       };
     }
 
     return {
-      title: "稳健的执行者",
+      title: "穩健的執行者",
       description:
-        "你在计划与执行之间保持了基本一致性。下一步是优化触发条件与仓位节奏，让策略更具可重复性。",
+        "你在計畫與執行之間保持了基本一致性。下一步是優化觸發條件與倉位節奏，讓策略更具可重複性。",
     };
   }
 
@@ -681,7 +700,8 @@ export default function MandateApp() {
     if (!corePhilosophy) return;
     if (!lockedWarPlan) return;
 
-    const mandateLabel = mandateToLabel(mandate);
+    const mandateCalcLabel = mandateToLabel(mandate);
+    const mandateDisplayLabel = mandateToDisplayLabel(mandate);
     const event = eventsData[dayIdx];
     const baseImpact = event?.impact ?? (sp500Benchmark[dayIdx] ?? 0);
     const dnaImpact = applyMarketDNA(baseImpact, marketCondition);
@@ -694,7 +714,7 @@ export default function MandateApp() {
 
     const result = calculateDailyPerformance({
       currentValue: valueAtStartOfDay,
-      riskMandate: mandateLabel,
+      riskMandate: mandateCalcLabel,
       impact,
     });
     const bonus = bonusOverride ?? 0;
@@ -736,7 +756,7 @@ export default function MandateApp() {
       ...prev,
       {
         day: dayIdx + 1,
-        mandateLabel,
+        mandateLabel: mandateDisplayLabel,
         philosophyReturn: result.strategyReturn,
         dailyPL: newValueWithBonus - valueAtStartOfDay,
         endValue: newValueWithBonus,
@@ -1321,7 +1341,7 @@ export default function MandateApp() {
                 {title}
               </h1>
               <p className="mt-1 text-sm leading-6 text-zinc-200/75">
-                Prove Your Skills. Win Your Seat.
+                證明你的實力，贏下你的入場券。
               </p>
             </div>
           </div>
@@ -1333,11 +1353,7 @@ export default function MandateApp() {
                   歡迎來到《決戰投報率》！
                 </p>
                 <p className="mt-2 text-pretty text-sm leading-7 text-zinc-200/75">
-                  一場證明你投資直覺的挑戰，一場通往知識殿堂的冒險。
-                </p>
-
-                <p className="mt-4 text-pretty text-sm leading-7 text-zinc-200/70">
-                  在這裡，你將執掌百萬資金，應對瞬息萬變的市場。你的每一個決策，都將決定你是成為傳奇，還是黯然離場。
+                  一場證明你投資直覺的挑戰，執掌百萬資金，應對瞬息萬變的市場
                 </p>
 
                 <div className="mt-5 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4">
@@ -1346,20 +1362,15 @@ export default function MandateApp() {
                   </p>
                   <p className="mt-2 text-pretty text-sm leading-7 text-amber-50/85">
                     一張 <span className="font-semibold text-white">免費的線下投資講座電子入場券</span>！
-                    沒有抽獎，沒有門檻，只要完成遊戲，獎勵就是你的！
                   </p>
                 </div>
-
-                <p className="mt-4 text-pretty text-sm leading-7 text-zinc-200/70">
-                  準備好開始你的傳奇之旅了嗎？
-                </p>
 
                 <button
                   type="button"
                   onClick={() => setCurrentScreen("modeSelection")}
                   className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-emerald-300 px-6 py-3.5 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                 >
-                  开始挑战
+                    開始挑戰
                 </button>
               </div>
             </div>
@@ -1371,10 +1382,10 @@ export default function MandateApp() {
                     <Crown className="h-5 w-5 text-emerald-200" aria-hidden="true" />
                   </span>
                   <div className="min-w-0">
-                    <h2 className="text-base font-semibold">游戏模式选择</h2>
-                      <p className="mt-0.5 text-sm text-zinc-200/70">
-                        新手建議先從 5 天開始，快速上手後再挑戰 10 天完整版。
-                      </p>
+                    <h2 className="text-base font-semibold">遊戲模式</h2>
+                    <p className="mt-0.5 text-sm text-zinc-200/70">
+                      新手建議從 5 天開始，上手後挑戰 10 天完整版
+                    </p>
                   </div>
                 </div>
 
@@ -1394,18 +1405,18 @@ export default function MandateApp() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-white">
-                          5-Day Sprint
+                          5日衝刺
                         </p>
                         <span className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-100">
-                          推荐新手
+                          推薦新手
                         </span>
                       </div>
                       <p className="mt-1 text-xs font-medium text-zinc-200/70">
-                          一場閃電戰！最適合用來快速上手，或是在午休時間證明你的膽識。完成即可領取獎勵！
+                        完成即可領取獎勵！
                       </p>
                       <div className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                         <p className="text-xs font-semibold text-zinc-200/85">
-                          Focus：初始 3（每次干預消耗 1）
+                          專注力：初始 3（每次干預消耗 1）
                         </p>
                       </div>
                       <button
@@ -1413,7 +1424,7 @@ export default function MandateApp() {
                         onClick={() => handleModeClick("sprint")}
                         className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-emerald-300 px-5 py-3 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                       >
-                        选择 5-Day Sprint
+                        選擇5日衝刺戰
                       </button>
                     </div>
 
@@ -1430,14 +1441,14 @@ export default function MandateApp() {
                       }`}
                     >
                       <p className="text-sm font-semibold text-white">
-                        10-Day Marathon
+                        10日馬拉松
                       </p>
                       <p className="mt-1 text-xs font-medium text-zinc-200/70">
-                        一場真正的耐力賽！在這裡，你的遠見將受到終極考驗。完成即可領取獎勵！
+                        你的遠見受到終極考驗。完成即可領取獎勵！
                       </p>
                       <div className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                         <p className="text-xs font-semibold text-zinc-200/85">
-                          Focus：初始 3（每次干預消耗 1）
+                          專注力：初始 3（每次干預消耗 1）
                         </p>
                       </div>
                       <button
@@ -1445,7 +1456,7 @@ export default function MandateApp() {
                         onClick={() => handleModeClick("standard")}
                         className="mt-5 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-transparent px-5 py-3 text-sm font-semibold text-white/90 transition-colors hover:border-white/25 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/25 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                       >
-                        选择 10-Day Marathon
+                        選擇10日馬拉松戰爭
                       </button>
                     </div>
                   </div>
@@ -1457,7 +1468,7 @@ export default function MandateApp() {
                       const hint =
                         selectedMode !== null ? (
                           <p className="mt-2 text-xs font-semibold text-emerald-200/90">
-                            再次点击以确认
+                            再次點擊以確認
                           </p>
                         ) : null;
 
@@ -1465,29 +1476,25 @@ export default function MandateApp() {
                         return (
                           <div>
                             <p className="text-sm font-semibold text-white">
-                              5-Day Sprint{" "}
+                              5日衝刺{" "}
                               <span className="font-semibold text-emerald-200">
                                 （推薦新手）
                               </span>
                             </p>
                             {hint}
                             <p className="mt-3 text-sm leading-6 text-zinc-200/70">
-                              從這裡開始你的投資之旅！
+                              開始你的投資之旅！
                             </p>
                             <p className="mt-3 text-sm leading-6 text-zinc-200/70">
-                              這是一個簡短、快節奏的教程模式，旨在讓你快速掌握核心玩法。
+                              簡短、快節奏，旨在讓你快速掌握核心玩法
                             </p>
                             <p className="mt-4 text-xs font-semibold text-zinc-200/70">
-                              为何选择它?
+                              為何選擇它？
                             </p>
                             <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-zinc-200/70">
-                              <li>完美上手: 在幾分鐘內完成你的第一場遊戲。</li>
-                              <li>學習規則: 無壓力地理解不同投資信仰的影響。</li>
-                              <li>快速回饋: 立即看到你的決策結果。</li>
+                              <li>幾分鐘內完成你的第一場遊戲</li>
+                              <li>學習規則: 無壓力地理解不同投資信仰的影響</li>
                             </ul>
-                            <p className="mt-3 text-xs font-semibold text-zinc-200/70">
-                              這是你進入投資世界的第一步。
-                            </p>
                           </div>
                         );
                       }
@@ -1495,25 +1502,24 @@ export default function MandateApp() {
                       return (
                         <div>
                           <p className="text-sm font-semibold text-white">
-                            10-Day Marathon
+                            10日馬拉松
                           </p>
                           {hint}
                           <p className="mt-3 text-sm leading-6 text-zinc-200/70">
-                            準備好迎接真正的市場挑戰了嗎？
+                            真正的市場挑戰!
                           </p>
                           <p className="mt-3 text-sm leading-6 text-zinc-200/70">
-                            這是完整的、更具深度的遊戲體驗，專為想要測試自己策略的玩家設計。
+                            完整、更具深度的遊戲體驗，為測試自己策略的玩家設計。
                           </p>
                           <p className="mt-4 text-xs font-semibold text-zinc-200/70">
-                            为何选择它?
+                            為何選擇它？
                           </p>
                           <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-zinc-200/70">
                             <li>完整體驗: 經歷更長的市場週期、關鍵日和意外事件。</li>
-                            <li>考驗策略: 精心管理你的「專注力」資源，做出影響深遠的決策。</li>
-                            <li>證明自己: 在更複雜的「市場環境」中，爭取獲得最高評級。</li>
+                            <li>精心管理你的「專注力」資源，做出影響深遠的決策。</li>
                           </ul>
                           <p className="mt-3 text-xs font-semibold text-zinc-200/70">
-                            這是對你投資智慧的終極考驗。
+                            對你投資智慧的考驗。
                           </p>
                         </div>
                       );
@@ -1528,7 +1534,7 @@ export default function MandateApp() {
                   onClick={() => resetToWelcome()}
                   className="text-xs font-semibold text-zinc-200/70 underline-offset-4 hover:text-white hover:underline"
                 >
-                  返回欢迎页
+                  返回歡迎頁
                 </button>
               </div>
             </div>
@@ -1540,7 +1546,7 @@ export default function MandateApp() {
                 <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:grid-cols-2">
                   <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                     <p className="text-xs font-semibold text-zinc-200/80">
-                      起始资金 (Starting Capital)
+                      起始資金
                     </p>
                     <p className="mt-1 text-sm font-semibold text-white">
                       $100,000
@@ -1548,10 +1554,10 @@ export default function MandateApp() {
                   </div>
                   <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                     <p className="text-xs font-semibold text-zinc-200/80">
-                      市场 (Market)
+                      市場
                     </p>
                     <p className="mt-1 text-sm font-semibold text-white">
-                      模拟美国股市 (Simulated U.S. Stock Market)
+                      模擬美國股市
                     </p>
                   </div>
                 </div>
@@ -1564,12 +1570,12 @@ export default function MandateApp() {
                           選擇你的投資信仰
                         </h3>
                         <p className="mt-1 text-sm leading-6 text-zinc-200/70">
-                          这项选择在本局游戏中不可更改。
+                          這項選擇在本局遊戲中不可更改。
                         </p>
                       </div>
                       {corePhilosophy ? (
                         <span className="shrink-0 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-100">
-                          已锁定
+                          已鎖定
                         </span>
                       ) : null}
                     </div>
@@ -1580,21 +1586,21 @@ export default function MandateApp() {
                           [
                             {
                               key: "growth",
-                              title: "成长型投资 (Growth)",
+                              title: "成長型投資",
                               icon: (
                                 <Flame className="h-5 w-5 text-rose-200" aria-hidden="true" />
                               ),
                             },
                             {
                               key: "value",
-                              title: "价值型投资 (Value)",
+                              title: "價值型投資",
                               icon: (
                                 <Landmark className="h-5 w-5 text-emerald-200" aria-hidden="true" />
                               ),
                             },
                             {
                               key: "technical",
-                              title: "技术分析 (Technical)",
+                              title: "穩健平衡",
                               icon: (
                                 <TrendingUp className="h-5 w-5 text-sky-200" aria-hidden="true" />
                               ),
@@ -1658,7 +1664,7 @@ export default function MandateApp() {
                               <div className="mt-4 grid gap-3">
                                 <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                                   <p className="text-xs font-semibold text-emerald-200/90">
-                                    优势
+                                    優勢
                                   </p>
                                   <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-zinc-200/70">
                                     {d.advantages.map((t) => (
@@ -1668,7 +1674,7 @@ export default function MandateApp() {
                                 </div>
                                 <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                                   <p className="text-xs font-semibold text-rose-200/90">
-                                    劣势
+                                    劣勢
                                   </p>
                                   <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-zinc-200/70">
                                     {d.disadvantages.map((t) => (
@@ -1709,7 +1715,7 @@ export default function MandateApp() {
                           : "cursor-not-allowed bg-white/10 text-white/50"
                       }`}
                     >
-                      确认并继续
+                      確認並繼續
                     </button>
                   </div>
                 ) : (
@@ -1720,7 +1726,7 @@ export default function MandateApp() {
                           战略时间线（War Plan Timeline）
                         </h3>
                         <p className="mt-1 text-sm leading-6 text-zinc-200/70">
-                          为每个交易日设定风险指令。像军师一样先定计划，再上战场。
+                          為每個交易日設定風險指令。像軍師一樣先定計畫，再上戰場。
                         </p>
                       </div>
                       <div className="shrink-0 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-semibold text-zinc-200/80">
@@ -1731,13 +1737,13 @@ export default function MandateApp() {
                     <div className="mt-4 rounded-2xl border border-white/10 bg-black/10 p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-xs font-semibold text-zinc-200/70">
-                          当前核心投资哲学：{" "}
+                          目前核心投資哲學：{" "}
                             <span className="text-white">
                               {corePhilosophy ? philosophyToLabel(corePhilosophy) : "-"}
                             </span>
                         </p>
                         <p className="text-xs text-zinc-200/50">
-                          需完成全部 Day 才可锁定计划
+                          需完成全部天數才可鎖定計畫
                         </p>
                       </div>
 
@@ -1757,10 +1763,10 @@ export default function MandateApp() {
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
                                   <p className="text-sm font-semibold text-white">
-                                    Day {idx + 1}
+                                    第 {idx + 1} 天
                                   </p>
                                   <p className="mt-0.5 text-xs text-zinc-200/60">
-                                    选择当日风险指令
+                                    選擇當日風險指令
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -1776,7 +1782,7 @@ export default function MandateApp() {
                                         : "border-white/10 bg-black/20 text-zinc-200/70"
                                     }`}
                                   >
-                                    {mandate ? "已设定" : "未设定"}
+                                    {mandate ? "已設定" : "未設定"}
                                   </span>
                                 </div>
                               </div>
@@ -1834,12 +1840,12 @@ export default function MandateApp() {
                               : "cursor-not-allowed bg-white/10 text-white/50"
                           }`}
                         >
-                          锁定计划
+                          鎖定計畫
                         </button>
                         <p className="text-xs leading-5 text-zinc-200/55">
                           {allDaysPlanned
-                            ? "计划已完整，可锁定。"
-                            : "请为每一天选择一条风险指令。"}
+                            ? "計畫已完整，可鎖定。"
+                            : "請為每一天選擇一條風險指令。"}
                         </p>
                       </div>
                     </div>
@@ -1857,11 +1863,11 @@ export default function MandateApp() {
                         />
                         <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-zinc-950 p-6 shadow-2xl shadow-black/40 sm:p-7">
                           <p className="text-sm font-semibold text-white">
-                            确认锁定计划？
+                            確認鎖定計畫？
                           </p>
                           <p className="mt-2 text-sm leading-6 text-zinc-200/70">
-                            一旦锁定，你的每日风险指令将不可更改。之后若要修改，只能使用昂贵的
-                            “干预”。
+                            一旦鎖定，你的每日風險指令將不可更改。之後若要修改，只能使用昂貴的
+                            「干預」。
                           </p>
                           <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
                             <p className="text-xs font-semibold text-zinc-200/80">
@@ -1869,7 +1875,7 @@ export default function MandateApp() {
                               <span className="text-white">
                                 {warPlanDraft.length}
                               </span>
-                              {" · "}专注力（Focus）：{" "}
+                              {" · "}專注力（Focus）：{" "}
                               <span className="text-white">100</span>
                             </p>
                           </div>
@@ -1927,7 +1933,7 @@ export default function MandateApp() {
                               }}
                               className="inline-flex w-full items-center justify-center rounded-full bg-emerald-300 px-5 py-3 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:w-auto"
                             >
-                              确认锁定
+                              確認鎖定
                             </button>
                           </div>
                         </div>
@@ -1938,15 +1944,19 @@ export default function MandateApp() {
 
                 <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-zinc-200/50">
-                    Mode:{" "}
+                    模式：{" "}
                     <span className="font-semibold text-white">
-                      {gameConfig?.mode}
+                      {gameConfig?.mode === "sprint"
+                        ? "5日衝刺"
+                        : gameConfig?.mode === "standard"
+                          ? "10日馬拉松"
+                          : "-"}
                     </span>
-                    {" · "}Days:{" "}
+                    {" · "}天數：{" "}
                     <span className="font-semibold text-white">
                       {gameConfig?.days}
                     </span>
-                    {" · "}Focus:{" "}
+                    {" · "}專注力：{" "}
                     <span className="font-semibold text-white">100</span>
                   </p>
                   <button
@@ -1962,7 +1972,7 @@ export default function MandateApp() {
                     }}
                     className="inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-transparent px-5 py-3 text-sm font-semibold text-white/90 transition-colors hover:border-white/25 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/25 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:w-auto"
                   >
-                    返回模式选择
+                    返回模式選擇
                   </button>
                 </div>
 
@@ -2025,7 +2035,7 @@ export default function MandateApp() {
                           <Activity className="h-7 w-7 text-rose-200" aria-hidden="true" />
                         </motion.div>
                         <p className="text-sm font-semibold text-white">
-                          Market is Live
+                          市場開盤
                         </p>
                       </div>
                     </motion.div>
@@ -2051,7 +2061,7 @@ export default function MandateApp() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-white">
-                        投资直播间
+                        投資直播間
                       </p>
                       <motion.div
                         className="h-2.5 w-2.5 rounded-full bg-rose-500"
@@ -2066,7 +2076,7 @@ export default function MandateApp() {
                         }}
                       />
                       <span className="text-xs font-semibold text-rose-200/90">
-                        LIVE
+                        直播
                       </span>
                       {corePhilosophy ? (
                         <span className="ml-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-200/80">
@@ -2084,11 +2094,11 @@ export default function MandateApp() {
                       ) : null}
                     </div>
                     <p className="mt-1 text-sm leading-6 text-zinc-200/70">
-                      观察你的计划如何在市场中展开。
+                      觀察你的計畫如何在市場中展開。
                     </p>
                   </div>
                   <div className="shrink-0 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-semibold text-zinc-200/80">
-                    Day {Math.min(currentDayIndex + 1, lockedWarPlan?.length ?? 0)}/
+                    第 {Math.min(currentDayIndex + 1, lockedWarPlan?.length ?? 0)} 天/
                     {lockedWarPlan?.length ?? 0}
                   </div>
                 </div>
@@ -2103,26 +2113,26 @@ export default function MandateApp() {
                     ) : (
                       <Minus className="h-4 w-4 text-zinc-200/70" aria-hidden="true" />
                     )}
-                    Market DNA:{" "}
+                    市場基因：{" "}
                     <span className="text-white">
                       {marketCondition === "bull"
-                        ? "Bull"
+                        ? "牛市"
                         : marketCondition === "bear"
-                          ? "Bear"
+                          ? "熊市"
                           : marketCondition === "volatile"
-                            ? "Volatile"
-                            : "Neutral"}
+                            ? "劇烈震盪"
+                            : "中性"}
                     </span>
                   </span>
                   <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1">
                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-300/30 bg-amber-300/15 text-[11px] font-extrabold text-amber-200">
                       !
                     </span>
-                    Critical Days:{" "}
+                    關鍵日：{" "}
                     <span className="text-white">
                       {criticalDays.length === 0
                         ? "-"
-                        : criticalDays.map((d) => `Day ${d + 1}`).join(", ")}
+                        : criticalDays.map((d) => `第 ${d + 1} 天`).join("、")}
                     </span>
                   </span>
                 </div>
@@ -2130,7 +2140,7 @@ export default function MandateApp() {
                 <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-semibold text-zinc-200/70">
-                      Focus
+                      專注力
                     </p>
                     <p className="font-mono text-xs font-semibold text-white">
                       {focus}
@@ -2150,22 +2160,22 @@ export default function MandateApp() {
 
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                   <p className="text-xs font-semibold text-zinc-200/70">
-                    状态：{" "}
+                    狀態：{" "}
                     <span className="font-semibold text-white">
                       {dayPhase === "marketOpen"
-                        ? "Market Open（5秒窗口）"
+                        ? "開盤倒數（5秒視窗）"
                         : dayPhase === "news"
-                          ? "Morning News（4秒）"
+                          ? "晨間快訊（4秒）"
                         : dayPhase === "pause"
-                          ? "结算暂停（2秒）"
+                          ? "結算暫停（2秒）"
                           : dayPhase === "intervening"
-                            ? "干预中（已暂停）"
-                            : "准备开盘"}
+                            ? "干預中（已暫停）"
+                            : "準備開盤"}
                     </span>
                   </p>
                   <p className="text-xs text-zinc-200/55">
-                    干预记录：{interventions.length} ·{" "}
-                    {isDisciplinedEligible ? "仍具备" : "已失去"} 顶级「纪律严明」资格
+                    干預記錄：{interventions.length} ·{" "}
+                    {isDisciplinedEligible ? "仍具備" : "已失去"} 頂級「紀律嚴明」資格
                   </p>
                 </div>
 
@@ -2173,7 +2183,7 @@ export default function MandateApp() {
 
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <p className="text-xs font-semibold text-zinc-200/70">
-                    Portfolio Chart
+                    資產曲線圖
                   </p>
                   <div className="relative mt-3 h-56 w-full" ref={chartWrapperRef}>
                     <motion.div
@@ -2222,7 +2232,7 @@ export default function MandateApp() {
                           tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
                           axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
                           tickLine={{ stroke: "rgba(255,255,255,0.12)" }}
-                          tickFormatter={(d) => (d === 0 ? "Start" : `Day ${d}`)}
+                          tickFormatter={(d) => (d === 0 ? "起點" : `第${d}天`)}
                         />
                         <YAxis
                           tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
@@ -2246,11 +2256,11 @@ export default function MandateApp() {
                                 ? formatCurrency(value)
                                 : String(value);
                             const nameLabel =
-                              name === "portfolio" ? "Portfolio" : "S&P 500";
+                              name === "portfolio" ? "資產" : "標普500";
                             return [valueLabel, nameLabel];
                           }}
                           labelFormatter={(label) =>
-                            label === 0 ? "Start" : `Day ${label}`
+                            label === 0 ? "起點" : `第${label}天`
                           }
                         />
                         <Line
@@ -2281,11 +2291,11 @@ export default function MandateApp() {
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-200/60">
                     <span className="inline-flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-300/80" />
-                      Portfolio
+                      資產
                     </span>
                     <span className="inline-flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-sky-300/80" />
-                      S&amp;P 500
+                      標普500
                     </span>
                   </div>
                 </div>
@@ -2294,7 +2304,7 @@ export default function MandateApp() {
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                       <p className="text-[11px] font-semibold text-zinc-200/60">
-                        Portfolio
+                        資產
                       </p>
                       <p className="mt-1 text-sm font-semibold text-white">
                         {formatCurrency(animatedPortfolioValue)}
@@ -2302,7 +2312,7 @@ export default function MandateApp() {
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                       <p className="text-[11px] font-semibold text-zinc-200/60">
-                        Day
+                        天數
                       </p>
                       <p className="mt-1 text-sm font-semibold text-white">
                         {Math.min(currentDayIndex + 1, lockedWarPlan?.length ?? 0)}/
@@ -2311,7 +2321,7 @@ export default function MandateApp() {
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                       <p className="text-[11px] font-semibold text-zinc-200/60">
-                        Focus
+                        專注力
                       </p>
                       <p className="mt-1 text-sm font-semibold text-white">
                         {focus}
@@ -2344,7 +2354,7 @@ export default function MandateApp() {
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-wide text-sky-100/70">
-                        Morning News
+                        晨間快訊
                       </p>
                       <p className="mt-1 text-sm font-semibold text-white">
                         {(eventsData[currentDayIndex] ?? eventsData[0])?.headline ?? "-"}
@@ -2377,10 +2387,10 @@ export default function MandateApp() {
                       <CirclePause className="h-6 w-6" aria-hidden="true" />
                       <span className="text-sm font-semibold">
                         {corePhilosophy === "value"
-                          ? "稳健化重组"
+                          ? "穩健化重組"
                           : corePhilosophy === "growth"
-                            ? "激进交易"
-                            : "精准择时"}
+                            ? "激進交易"
+                            : "精準擇時"}
                       </span>
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-black/15 bg-black/10 px-2 py-1 text-xs font-semibold text-zinc-950">
                         <span className="font-mono">
@@ -2401,7 +2411,7 @@ export default function MandateApp() {
 
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <p className="text-xs font-semibold text-zinc-200/70">
-                    Transaction / Day Log
+                    交易 / 每日紀錄
                   </p>
 
                   <div className="mt-3 overflow-x-auto">
@@ -2409,19 +2419,19 @@ export default function MandateApp() {
                       <thead>
                         <tr className="text-zinc-200/60">
                           <th className="border-b border-white/10 px-3 py-2 font-semibold">
-                            Day
+                            天
                           </th>
                           <th className="border-b border-white/10 px-3 py-2 font-semibold">
-                            Your Mandate
+                            你的風險指令
                           </th>
                           <th className="border-b border-white/10 px-3 py-2 font-semibold">
-                            Market Result
+                            市場結果
                           </th>
                           <th className="border-b border-white/10 px-3 py-2 font-semibold">
-                            Daily P/L
+                            當日盈虧
                           </th>
                           <th className="border-b border-white/10 px-3 py-2 font-semibold">
-                            End-of-Day Value
+                            收盤資產
                           </th>
                         </tr>
                       </thead>
@@ -2432,22 +2442,22 @@ export default function MandateApp() {
                               colSpan={5}
                               className="px-3 py-4 text-zinc-200/55"
                             >
-                              市场将在每个交易日自动开盘并结算（无需手动推进）。
+                              市場將在每個交易日自動開盤並結算（無需手動推進）。
                             </td>
                           </tr>
                         ) : (
                           liveLog.map((row) => (
                             <tr key={row.day} className="text-zinc-50/90">
                               <td className="border-b border-white/10 px-3 py-2">
-                                Day {row.day}
+                                第 {row.day} 天
                               </td>
                               <td className="border-b border-white/10 px-3 py-2">
                                 <div className="flex flex-col gap-0.5">
                                   <span>{row.mandateLabel}</span>
                                   {row.intervention ? (
                                     <span className="text-[11px] font-semibold text-amber-200/90">
-                                      行政干预：{row.intervention.originalMandateLabel} →{" "}
-                                      {row.intervention.newMandateLabel}（费{" "}
+                                      行政干預：{row.intervention.originalMandateLabel} →{" "}
+                                      {row.intervention.newMandateLabel}（費{" "}
                                       {formatCurrency(row.intervention.feeCost)}）
                                     </span>
                                   ) : null}
@@ -2492,14 +2502,14 @@ export default function MandateApp() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-white">
-                            行政干预（Administrative Intervention）
+                            行政干預
                           </p>
                           <p className="mt-1 text-sm leading-6 text-zinc-200/70">
-                            本操作将消耗 {INTERVENTION_COST} 点专注力，并对你造成三项惩罚。
+                            本操作將消耗 {INTERVENTION_COST} 點專注力，並對你造成三項懲罰。
                           </p>
                         </div>
                         <span className="shrink-0 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-semibold text-zinc-200/80">
-                          <span className="font-mono">FOCUS</span>
+                          <span className="font-mono">專注力</span>
                           <span className="text-white">{focus}</span>
                         </span>
                       </div>
@@ -2507,26 +2517,26 @@ export default function MandateApp() {
                       <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-black/20 p-4">
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                           <p className="text-xs font-semibold text-white">
-                            即时财务成本
+                            即時財務成本
                           </p>
                           <p className="mt-1 text-sm leading-6 text-zinc-200/70">
-                            立即从你的总资产中扣除 1% 的‘紧急清算费’。
+                            立即從你的總資產中扣除 1% 的「緊急清算費」。
                           </p>
                         </div>
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                           <p className="text-xs font-semibold text-white">
-                            声誉成本
+                            聲譽成本
                           </p>
                           <p className="mt-1 text-sm leading-6 text-zinc-200/70">
-                            你将失去获得顶级‘纪律严明’类投资者原型的资格。
+                            你將失去獲得頂級「紀律嚴明」類投資者原型的資格。
                           </p>
                         </div>
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                           <p className="text-xs font-semibold text-white">
-                            时间成本
+                            時間成本
                           </p>
                           <p className="mt-1 text-sm leading-6 text-zinc-200/70">
-                            使用后将激活一个24小时（即1个交易日）的‘冷却期’，在此期间无法再次干预。
+                            使用後將啟動 24 小時（即 1 個交易日）的「冷卻期」，在此期間無法再次干預。
                           </p>
                         </div>
                       </div>
@@ -2534,22 +2544,22 @@ export default function MandateApp() {
                       <div className="mt-5">
                         <p className="text-sm font-semibold text-white">
                           {(() => {
-                            if (!corePhilosophy) return "执行干预";
-                            if (corePhilosophy === "value") return "稳健化重组";
-                            if (corePhilosophy === "growth") return "激进交易";
-                            return "精准择时";
+                            if (!corePhilosophy) return "執行干預";
+                            if (corePhilosophy === "value") return "穩健化重組";
+                            if (corePhilosophy === "growth") return "激進交易";
+                            return "精準擇時";
                           })()}
                         </p>
                         <p className="mt-1 text-sm text-zinc-200/70">
-                          Day {currentDayIndex + 1} · 当前指令：{" "}
+                          第 {currentDayIndex + 1} 天 · 目前指令：{" "}
                           <span className="font-semibold text-white">
                             {(() => {
                               const m = lockedWarPlan?.[currentDayIndex] ?? null;
                               if (m === null) return "-";
-                              return mandateToLabel(m as RiskMandate);
+                              return mandateToDisplayLabel(m as RiskMandate);
                             })()}
                           </span>
-                          {" · "}新闻影响将被你的哲学规则重新定价。
+                          {" · "}新聞影響將被你的哲學規則重新定價。
                         </p>
 
                         <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -2559,10 +2569,10 @@ export default function MandateApp() {
                               {(() => {
                                 if (!corePhilosophy) return "";
                                 if (corePhilosophy === "value")
-                                  return "将今日波动压缩 50%（收益与亏损都会被削弱）。";
+                                  return "將今日波動壓縮 50%（收益與虧損都會被削弱）。";
                                 if (corePhilosophy === "growth")
-                                  return "将今日波动放大 50%（收益更大，回撤也更深）。";
-                                return "根据当日方向获得择时奖金（亏损日更强的减伤）。";
+                                  return "將今日波動放大 50%（收益更大，回撤也更深）。";
+                                return "根據當日方向獲得擇時獎金（虧損日更強的減傷）。";
                               })()}
                             </p>
                           </div>
@@ -2680,7 +2690,7 @@ export default function MandateApp() {
                               : "cursor-not-allowed bg-white/10 text-white/50"
                           }`}
                         >
-                          确认并执行
+                          確認並執行
                         </button>
                       </div>
                     </div>
@@ -2694,10 +2704,10 @@ export default function MandateApp() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-white">
-                      免費線下投資講座電子入場券
+                      恭喜你完成《決戰投報率》
                     </p>
                     <p className="mt-1 text-sm leading-6 text-zinc-200/70">
-                      恭喜你完成《決戰投報率》！這張入場券是你「參與即獲得」的獎勵。
+                      在登記講座頁面按"Add a voucher" 貼上兌換碼，獲取免費門票
                     </p>
                   </div>
                   <span className="shrink-0 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-100">
@@ -2708,13 +2718,13 @@ export default function MandateApp() {
                 <div className="mt-5 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4">
                   <p className="text-xs font-semibold text-amber-100/80">VOUCHER</p>
                   <p className="mt-2 font-mono text-2xl font-semibold tracking-wider text-white">
-                    2CastleFreeTix2026
+                    2C_FreeTix26
                   </p>
                   <button
                     type="button"
                     onClick={async () => {
                       try {
-                        await navigator.clipboard.writeText("2CastleFreeTix2026");
+                        await navigator.clipboard.writeText("2C_FreeTix26");
                         setRewardCopied(true);
                         window.setTimeout(() => setRewardCopied(false), 1500);
                       } catch {
@@ -2848,18 +2858,18 @@ export default function MandateApp() {
                                 return diff > acc.diff ? { day: it.day, diff } : acc;
                               }, { day: interventions[0]?.day ?? 1, diff: -Infinity as number });
                               if (!Number.isFinite(bestDelta.diff) || bestDelta.diff <= 0) {
-                                return `你的干预更偏向“止损/止盈”而非提升回报。`;
+                                return `你的干預更偏向「止損/止盈」而非提升回報。`;
                               }
-                              return `你的哲学干预在 Day ${bestDelta.day} 为你锁定了约 ${formatCurrency(bestDelta.diff)} 的超额收益。`;
+                              return `你的哲學干預在第 ${bestDelta.day} 天為你鎖定了約 ${formatCurrency(bestDelta.diff)} 的超額收益。`;
                             })();
 
                             if (corePhilosophy === "growth") {
-                              return `作为一个 ${label}，你在「${bestEv?.headline ?? "利好日"}」中获得了更大的放大收益，但也会在「${worstEv?.headline ?? "利空日"}」时承受更深回撤。${interventionLine}`;
+                              return `作為一個 ${label}，你在「${bestEv?.headline ?? "利好日"}」中獲得了更大的放大收益，但也會在「${worstEv?.headline ?? "利空日"}」時承受更深回撤。${interventionLine}`;
                             }
                             if (corePhilosophy === "value") {
-                              return `作为一个 ${label}，你更受益于经济/产业的确定性：在「${bestEv?.headline ?? "利好日"}」中回报更稳健；而在「${worstEv?.headline ?? "利空日"}」时，重组可以显著压缩波动。${interventionLine}`;
+                              return `作為一個 ${label}，你更受益於經濟/產業的確定性：在「${bestEv?.headline ?? "利好日"}」中回報更穩健；而在「${worstEv?.headline ?? "利空日"}」時，重組可以顯著壓縮波動。${interventionLine}`;
                             }
-                            return `作为一个 ${label}，你对新闻冲击保持中性，但“精准择时”的奖金能在关键方向放大优势或减轻回撤。你的最佳环境出现在「${bestEv?.headline ?? "利好日"}」，而最艰难的一天是「${worstEv?.headline ?? "利空日"}」。${interventionLine}`;
+                            return `作為一個 ${label}，你對新聞衝擊保持中性，但「精準擇時」的獎金能在關鍵方向放大優勢或減輕回撤。你的最佳環境出現在「${bestEv?.headline ?? "利好日"}」，而最艱難的一天是「${worstEv?.headline ?? "利空日"}」。${interventionLine}`;
                           })()}
                         </p>
                       </div>
@@ -2870,13 +2880,13 @@ export default function MandateApp() {
                 {/* Performance Evaluation */}
                 <details className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <summary className="cursor-pointer select-none text-xs font-semibold text-zinc-200/70">
-                    Performance Snapshot（點擊展開/收合）
+                    績效快照（點擊展開/收合）
                   </summary>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                       <p className="text-xs font-semibold text-zinc-200/70">
-                        Final Portfolio Value
+                        最終資產
                       </p>
                       <p className="mt-1 text-2xl font-semibold tracking-tight text-white">
                         {formatCurrency(portfolioValue)}
@@ -2884,7 +2894,7 @@ export default function MandateApp() {
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                       <p className="text-xs font-semibold text-zinc-200/70">
-                        Total P/L
+                        總計盈虧
                       </p>
                       <p
                         className={`mt-1 text-2xl font-semibold tracking-tight ${
@@ -2918,7 +2928,7 @@ export default function MandateApp() {
                           tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
                           axisLine={{ stroke: "rgba(255,255,255,0.12)" }}
                           tickLine={{ stroke: "rgba(255,255,255,0.12)" }}
-                          tickFormatter={(d) => (d === 0 ? "Start" : `Day ${d}`)}
+                          tickFormatter={(d) => (d === 0 ? "起點" : `第${d}天`)}
                         />
                         <YAxis
                           tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
@@ -2942,11 +2952,11 @@ export default function MandateApp() {
                                 ? formatCurrency(value)
                                 : String(value);
                             const nameLabel =
-                              name === "portfolio" ? "Portfolio" : "S&P 500";
+                              name === "portfolio" ? "資產" : "標普500";
                             return [valueLabel, nameLabel];
                           }}
                           labelFormatter={(label) =>
-                            label === 0 ? "Start" : `Day ${label}`
+                            label === 0 ? "起點" : `第${label}天`
                           }
                         />
                         <Line
@@ -2977,11 +2987,11 @@ export default function MandateApp() {
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-200/60">
                     <span className="inline-flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-300/80" />
-                      Portfolio
+                      資產
                     </span>
                     <span className="inline-flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-sky-300/80" />
-                      S&amp;P 500
+                      標普500
                     </span>
                   </div>
                 </details>
@@ -2996,12 +3006,12 @@ export default function MandateApp() {
                 {/* Attribution Analysis */}
                 <details className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <summary className="cursor-pointer select-none text-xs font-semibold text-zinc-200/70">
-                    Deep Dive（分析與歸因）
+                    深度解析（分析與歸因）
                   </summary>
 
                   <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
                     <p className="text-sm font-semibold text-white">
-                      Your Plan vs. Market Reality
+                      你的計畫 vs. 市場現實
                     </p>
                     <p className="mt-2 text-sm leading-6 text-zinc-200/70">
                       {(() => {
@@ -3026,23 +3036,23 @@ export default function MandateApp() {
                         const vol = Math.max(...impacts) - Math.min(...impacts);
                         const volTag =
                           vol >= 0.05
-                            ? "高波动"
+                            ? "高波動"
                             : vol >= 0.03
-                              ? "中等波动"
-                              : "相对平稳";
-                        return `你的「${label}」哲学在本轮呈现${volTag}特征：Day ${bestIdx + 1} 录得${bestPct}% 的强势表现，而 Day ${worstIdx + 1} 出现${worstPct}% 的回撤。你的时间线计划决定了你在这些关键波动日的暴露程度。`;
+                              ? "中度波動"
+                              : "相對平穩";
+                        return `你的「${label}」哲學在本輪呈現${volTag}特徵：第 ${bestIdx + 1} 天錄得 ${bestPct}% 的強勢表現，而第 ${worstIdx + 1} 天出現 ${worstPct}% 的回撤。你的時間線計畫決定了你在這些關鍵波動日的暴露程度。`;
                       })()}
                     </p>
                   </div>
 
                   <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
                     <p className="text-sm font-semibold text-white">
-                      摇摆不定的代价：你的干预历史
+                      搖擺不定的代價：你的干預歷史
                     </p>
 
                     {interventions.length === 0 ? (
                       <p className="mt-2 text-sm leading-6 text-emerald-200/90">
-                        恭喜！你展现了非凡的纪律性，坚持了你的原始计划。你已获得‘纪律严明的规划者’资格。
+                        恭喜！你展現了非凡的紀律性，堅持了你的原始計畫。你已獲得「紀律嚴明的規劃者」資格。
                       </p>
                     ) : (
                       <div className="mt-3 space-y-3">
@@ -3071,34 +3081,34 @@ export default function MandateApp() {
                               className="rounded-2xl border border-white/10 bg-white/5 p-4"
                             >
                               <p className="text-sm font-semibold text-white">
-                                干预 #Day {it.day}
+                                干預 #第 {it.day} 天
                               </p>
                               <div className="mt-2 grid gap-2 text-sm leading-6 text-zinc-200/70">
                                 <p>
                                   <span className="font-semibold text-zinc-200/85">
-                                    触发点：
+                                    觸發點：
                                   </span>{" "}
-                                  在第 {it.day} 天，面对「{condition}」的市场情况，你选择干预。
+                                  在第 {it.day} 天，面對「{condition}」的市場情況，你選擇干預。
                                 </p>
                                 <p>
                                   <span className="font-semibold text-zinc-200/85">
-                                    你的行动：
+                                    你的行動：
                                   </span>{" "}
-                                  你将指令从{" "}
+                                  你將指令從{" "}
                                   <span className="font-semibold text-white">
-                                    {mandateToLabel(it.originalPlan)}
+                                    {mandateToDisplayLabel(it.originalPlan)}
                                   </span>{" "}
-                                  更改为{" "}
+                                  更改為{" "}
                                   <span className="font-semibold text-white">
-                                    {mandateToLabel(it.newPlan)}
+                                    {mandateToDisplayLabel(it.newPlan)}
                                   </span>
                                   。
                                 </p>
                                 <p>
                                   <span className="font-semibold text-zinc-200/85">
-                                    即时成本：
+                                    即時成本：
                                   </span>{" "}
-                                  本次干预的直接财务成本为{" "}
+                                  本次干預的直接財務成本為{" "}
                                   <span className="font-semibold text-white">
                                     {formatCurrency(it.feeCost)}
                                   </span>
@@ -3106,17 +3116,17 @@ export default function MandateApp() {
                                 </p>
                                 <p>
                                   <span className="font-semibold text-zinc-200/85">
-                                    结果分析：
+                                    結果分析：
                                   </span>{" "}
-                                  如果没有干预，你当天的资产会是{" "}
+                                  如果沒有干預，你當天的資產會是{" "}
                                   <span className="font-semibold text-white">
                                     {formatCurrency(it.valueWithoutIntervention)}
                                   </span>
-                                  。干预后，你的资产变为{" "}
+                                  。干預後，你的資產變為{" "}
                                   <span className="font-semibold text-white">
                                     {formatCurrency(it.valueWithIntervention)}
                                   </span>
-                                  。这次干预最终让你{" "}
+                                  。這次干預最終讓你{" "}
                                   <span
                                     className={`font-semibold ${
                                       diff >= 0 ? "text-emerald-200" : "text-rose-200"
@@ -3139,7 +3149,7 @@ export default function MandateApp() {
                 {/* Final Prototype */}
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <p className="text-xs font-semibold text-zinc-200/70">
-                    Final Investor Prototype
+                    最終投資者原型
                   </p>
                   {(() => {
                     const proto = computePrototypeLabel();
@@ -3169,7 +3179,7 @@ export default function MandateApp() {
                               {proto.title}
                             </p>
                             <p className="mt-1 text-xs font-semibold text-zinc-200/70">
-                              干预次数: {interventionCount}
+                              干預次數：{interventionCount}
                             </p>
                           </div>
                         </div>
@@ -3211,7 +3221,7 @@ export default function MandateApp() {
                 {/* Replay System */}
                 <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                   <p className="text-xs font-semibold text-zinc-200/70">
-                    Replay
+                    再玩一次
                   </p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <button
@@ -3220,7 +3230,7 @@ export default function MandateApp() {
                       className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                     >
                       <RotateCcw className="h-5 w-5" aria-hidden="true" />
-                      再玩一次（相同设置）
+                      再玩一次（相同設定）
                     </button>
                     <button
                       type="button"
@@ -3228,7 +3238,7 @@ export default function MandateApp() {
                       className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-transparent px-5 py-3 text-sm font-semibold text-white/90 transition-colors hover:border-white/25 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/25 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                     >
                       <Home className="h-5 w-5" aria-hidden="true" />
-                      返回主菜单（选择新策略）
+                      返回主選單（選擇新策略）
                     </button>
                   </div>
                 </div>
