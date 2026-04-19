@@ -76,6 +76,12 @@ export default function RootLayout({
               >
                 活動
               </Link>
+              <Link
+                href="/investment-challenge"
+                className="rounded-md px-2.5 py-1.5 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 sm:px-3 sm:py-2"
+              >
+                城堡攻防戰
+              </Link>
             </nav>
           </div>
         </header>
@@ -107,7 +113,7 @@ export default function RootLayout({
                 《我兩樣都要》活動
               </Link>
               <Link
-                href="/game"
+                href="/investment-challenge"
                 className="text-foreground/70 transition-colors hover:text-foreground active:text-foreground/90"
               >
                 城堡攻防戰

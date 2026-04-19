@@ -3,7 +3,6 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 
 const LUMA_REGISTRATION_URL = "https://luma.com/vbjuzo79";
-const GAME_PAGE_URL = "/game";
 
 /** Google Maps embed (no API key): search query for the venue area */
 const VENUE_MAP_EMBED_SRC =
@@ -19,10 +18,6 @@ const focusRing =
 /** Primary CTA — solid foreground (brand) */
 const ctaPrimary =
   `inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-foreground px-4 py-3 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 sm:min-h-12 sm:px-6 sm:py-3.5 ${focusRing}`;
-
-/** Secondary CTA — outline */
-const ctaSecondary =
-  `inline-flex min-h-11 w-full items-center justify-center rounded-full border border-foreground/25 bg-background px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:border-foreground/40 hover:bg-foreground/5 sm:min-h-12 sm:px-6 sm:py-3.5 ${focusRing}`;
 
 function Card({
   children,
@@ -87,18 +82,15 @@ export default function EventPage() {
                 </li>
               </ul>
 
-              <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-stretch sm:gap-3 sm:pt-2 lg:pt-3">
+              <div className="pt-1 sm:pt-2 lg:pt-3">
                 <a
                   href={LUMA_REGISTRATION_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={ctaPrimary}
+                  className={`${ctaPrimary} sm:max-w-md`}
                 >
-                  立即留位 (HKD 300)
+                  立即免費鎖定名額
                   <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
-                </a>
-                <a href={GAME_PAGE_URL} className={ctaSecondary}>
-                  挑戰遊戲，贏取免費門票
                 </a>
               </div>
             </div>
@@ -313,7 +305,7 @@ export default function EventPage() {
                     費用
                   </dt>
                   <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-foreground sm:text-sm">
-                    HKD 300
+                    免費 (限定名額20人)
                   </dd>
                 </div>
               </div>
@@ -338,20 +330,17 @@ export default function EventPage() {
         {/* Section 5: Final CTA — full-width stack on mobile */}
         <section className="py-6 sm:py-10 lg:py-12" aria-labelledby="event-cta-heading">
           <h2 id="event-cta-heading" className="sr-only">
-            報名與免費挑戰
+            報名
           </h2>
-          <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 sm:flex-row sm:items-stretch sm:justify-center sm:gap-4">
+          <div className="mx-auto flex w-full max-w-2xl justify-center">
             <a
               href={LUMA_REGISTRATION_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className={`${ctaPrimary} sm:max-w-none sm:flex-1`}
+              className={`${ctaPrimary} w-full sm:max-w-md`}
             >
-              立即留位 (HKD 300)
+              立即免費鎖定名額
               <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
-            </a>
-            <a href={GAME_PAGE_URL} className={`${ctaSecondary} sm:max-w-none sm:flex-1`}>
-              挑戰遊戲，贏取免費門票
             </a>
           </div>
         </section>
@@ -360,18 +349,15 @@ export default function EventPage() {
       {/* Mobile: sticky dual CTA */}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 lg:hidden">
         <div className="pointer-events-auto border-t border-foreground/10 bg-background/95 px-3 py-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-6px_24px_rgba(0,0,0,0.07)] backdrop-blur-md dark:shadow-[0_-6px_24px_rgba(0,0,0,0.35)]">
-          <div className="mx-auto flex max-w-6xl flex-col gap-4">
+          <div className="mx-auto flex max-w-6xl flex-col">
             <a
               href={LUMA_REGISTRATION_URL}
               target="_blank"
               rel="noopener noreferrer"
               className={`${ctaPrimary} min-h-11`}
             >
-              立即留位 (HKD 300)
+              立即免費鎖定名額
               <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
-            </a>
-            <a href={GAME_PAGE_URL} className={`${ctaSecondary} min-h-11 text-[13px]`}>
-              挑戰遊戲，贏取免費門票
             </a>
           </div>
         </div>

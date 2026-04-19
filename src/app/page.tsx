@@ -3,6 +3,8 @@ import Link from "next/link";
 
 import { getAllPosts } from "@/lib/blog";
 
+const LUMA_REGISTRATION_URL = "https://luma.com/vbjuzo79";
+
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
 
@@ -58,73 +60,24 @@ export default async function Home() {
         <div className="relative mx-auto flex w-full max-w-5xl flex-col px-3 py-7 sm:px-6 sm:py-16 md:py-20">
           <div className="max-w-3xl space-y-3 sm:space-y-5">
             <h1 className="text-balance text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-              【城堡攻防戰】現已開打！
+              《我兩樣都要》線下戰略會議
             </h1>
             <p className="text-pretty text-[13px] leading-snug text-zinc-300 sm:text-base sm:leading-relaxed md:text-lg">
-              一百萬資金，證明你的投資眼光。獲取4月27日《我兩樣都要》活動門票！
+              事業升級 x 財富增值：一場專為實戰者而設的戰略會議。立即免費報名！
             </p>
 
             <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:gap-3 sm:pt-2">
-              <Link href="/game" className={ctaPrimaryOnDark}>
-                立即挑戰，贏取免費門票！
+              <Link
+                href={LUMA_REGISTRATION_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={ctaPrimaryOnDark}
+              >
+                立即免費報名
               </Link>
-              <Link href="/#game-to-ticket-flow" className={ctaGhostOnDark}>
+              <Link href="/#event-highlights" className={ctaGhostOnDark}>
                 查看星級嘉賓及活動流程
               </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Flow: game → ticket */}
-      <section
-        id="game-to-ticket-flow"
-        className="border-t border-white/10 bg-zinc-950 py-6 sm:py-12 md:py-14"
-        aria-labelledby="flow-heading"
-      >
-        <div className="mx-auto max-w-5xl px-3 sm:px-6">
-          <h2
-            id="flow-heading"
-            className="text-base font-semibold tracking-tight text-white sm:text-lg"
-          >
-            從遊戲到門票
-          </h2>
-          <p className="mt-1 text-[13px] leading-snug text-zinc-400 sm:mt-1.5 sm:text-sm sm:text-zinc-300">
-            三步換領《我兩樣都要》活動門票。
-          </p>
-          <div className="mt-4 grid auto-rows-fr gap-3 sm:mt-6 md:grid-cols-3 md:gap-4">
-            <div className="flex h-full flex-col rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:rounded-2xl sm:p-5">
-              <span className="text-xl sm:text-2xl" aria-hidden="true">
-                🎮
-              </span>
-              <h3 className="mt-2 text-sm font-semibold text-white sm:mt-2.5 sm:text-base">
-                挑戰遊戲
-              </h3>
-              <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
-                用5分鐘完成《城堡攻防戰》投資挑戰。
-              </p>
-            </div>
-            <div className="flex h-full flex-col rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:rounded-2xl sm:p-5">
-              <span className="text-xl sm:text-2xl" aria-hidden="true">
-                📊
-              </span>
-              <h3 className="mt-2 text-sm font-semibold text-white sm:mt-2.5 sm:text-base">
-                獲得分析
-              </h3>
-              <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
-                即時了解你的投資者類型和決策風格。
-              </p>
-            </div>
-            <div className="flex h-full flex-col rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:rounded-2xl sm:p-5">
-              <span className="text-xl sm:text-2xl" aria-hidden="true">
-                🎟️
-              </span>
-              <h3 className="mt-2 text-sm font-semibold text-white sm:mt-2.5 sm:text-base">
-                換領門票
-              </h3>
-              <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
-                憑遊戲結果，免費/優惠換領《我兩樣都要》線下活動門票。
-              </p>
             </div>
           </div>
         </div>
@@ -223,6 +176,34 @@ export default async function Home() {
                 </p>
               </div>
             </article>
+          </div>
+        </div>
+      </section>
+
+      {/* Game — Castle Siege */}
+      <section
+        className="border-t border-white/10 bg-zinc-900/40 py-5 sm:py-8"
+        aria-labelledby="home-game-heading"
+      >
+        <div className="mx-auto max-w-5xl px-3 sm:px-6">
+          <div className="flex flex-col gap-3 rounded-xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-zinc-900/80 to-zinc-950 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:rounded-2xl sm:p-5 md:p-6">
+            <div className="min-w-0">
+              <h2
+                id="home-game-heading"
+                className="text-base font-bold tracking-tight text-white sm:text-lg md:text-xl"
+              >
+                想測試你的投資直覺嗎？
+              </h2>
+              <p className="mt-1 text-[13px] font-medium leading-snug text-zinc-200 sm:text-sm sm:leading-snug">
+                體驗我們的《城堡攻防戰》模擬挑戰。完成挑戰，了解你的投資風格，並解鎖與創辦人一對一的優先諮詢名額。
+              </p>
+            </div>
+            <Link
+              href="/investment-challenge"
+              className={`${ctaPrimaryOnDark} shrink-0 shadow-md shadow-black/20 sm:min-w-[10.5rem]`}
+            >
+              開始挑戰
+            </Link>
           </div>
         </div>
       </section>

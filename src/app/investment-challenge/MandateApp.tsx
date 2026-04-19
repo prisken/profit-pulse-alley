@@ -561,7 +561,7 @@ export default function MandateApp() {
   const [hoveredMode, setHoveredMode] = useState<GameMode | null>(null);
   const [selectedMode, setSelectedMode] = useState<GameMode | null>(null);
 
-  const title = useMemo(() => "《決戰投報率》", []);
+  const title = useMemo(() => "《城堡攻防戰》", []);
 
   function isTouchDevice() {
     if (typeof window === "undefined") return false;
@@ -1409,7 +1409,7 @@ export default function MandateApp() {
                 {title}
               </h1>
               <p className="mt-1 text-sm leading-6 text-zinc-200/75">
-                證明你的實力，贏下你的入場券。
+                測試你的投資直覺，解鎖獨家獎勵！
               </p>
             </div>
           </div>
@@ -1418,7 +1418,7 @@ export default function MandateApp() {
             <div className="mt-6">
               <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
                 <p className="text-pretty text-base font-semibold leading-7 text-white">
-                  歡迎來到《決戰投報率》！
+                  歡迎來到《城堡攻防戰》！
                 </p>
                 <p className="mt-2 text-pretty text-sm leading-7 text-zinc-200/75">
                   一場證明你投資直覺的挑戰，執掌百萬資金，應對瞬息萬變的市場
@@ -1429,7 +1429,10 @@ export default function MandateApp() {
                     完成挑戰，即可獲得...
                   </p>
                   <p className="mt-2 text-pretty text-sm leading-7 text-amber-50/85">
-                    一張 <span className="font-semibold text-white">免費的線下投資講座電子入場券</span>！
+                    <span className="font-semibold text-white">
+                      與創辦人15分鐘優先一對一諮詢名額
+                    </span>
+                    ！
                   </p>
                 </div>
 
@@ -2801,10 +2804,10 @@ export default function MandateApp() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-white">
-                      恭喜你完成《決戰投報率》
+                      恭喜你完成《城堡攻防戰》
                     </p>
                     <p className="mt-1 text-sm leading-6 text-zinc-200/70">
-                      在登記講座頁面按"Add a voucher" 貼上兌換碼，獲取免費門票
+                      請將下方參考編號提供予主辦方，以安排與創辦人15分鐘優先一對一諮詢。
                     </p>
                   </div>
                   <span className="shrink-0 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-100">
@@ -2813,7 +2816,7 @@ export default function MandateApp() {
                 </div>
 
                 <div className="mt-5 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4">
-                  <p className="text-xs font-semibold text-amber-100/80">VOUCHER</p>
+                  <p className="text-xs font-semibold text-amber-100/80">參考編號</p>
                   <p className="mt-2 font-mono text-2xl font-semibold tracking-wider text-white">
                     2C_FreeTix26
                   </p>
@@ -2830,7 +2833,7 @@ export default function MandateApp() {
                     }}
                     className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-amber-300 px-6 py-3.5 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                   >
-                    {rewardCopied ? "已複製" : "複製兌換碼"}
+                    {rewardCopied ? "已複製" : "複製參考編號"}
                   </button>
                   <a
                     href="https://luma.com/vbjuzo79"
@@ -2838,7 +2841,7 @@ export default function MandateApp() {
                     rel="noopener noreferrer"
                     className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-transparent px-6 py-3.5 text-sm font-semibold text-white/90 shadow-sm transition-colors hover:border-white/25 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/35 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                   >
-                    前往領取入場券
+                    前往聯絡／登記頁面
                   </a>
                 </div>
 
@@ -3290,9 +3293,9 @@ export default function MandateApp() {
                     感謝你完成挑戰！這是你的專屬獎勵！
                   </p>
                   <p className="mt-2 text-sm leading-6 text-amber-50/85">
-                    你的投資之旅值得讚賞。作為謝禮，我們將贈送你一張{" "}
+                    你的投資之旅值得讚賞。作為謝禮，我們將為你預留
                     <span className="font-semibold text-white">
-                      免費線下投資講座的電子入場券
+                      與創辦人15分鐘優先一對一諮詢名額
                     </span>
                     。
                   </p>
@@ -3301,7 +3304,7 @@ export default function MandateApp() {
                     onClick={() => setCurrentScreen("voucher")}
                     className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-amber-300 px-6 py-3.5 text-sm font-semibold text-zinc-950 shadow-sm transition-colors hover:bg-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                   >
-                    按此領取您的入場券
+                    按此查看獎勵領取方式
                   </button>
                 </div>
 
