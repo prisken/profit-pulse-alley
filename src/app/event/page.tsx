@@ -149,7 +149,7 @@ export default function EventPage() {
               </div>
               <div className="min-w-0">
                 <h3 className="text-[15px] font-semibold text-foreground sm:text-base lg:text-lg">
-                  重量級嘉賓: Vicky (齊柏林熱狗聯合創辦人)
+                  重量級嘉賓: Vicky Wong (齊柏林熱狗聯合創辦人)
                 </h3>
                 <p className="mt-1.5 text-[13px] leading-snug text-foreground/80 sm:mt-2 sm:text-sm sm:leading-relaxed">
                   想知道一個本土品牌如何擴張成連鎖王國？Vicky
