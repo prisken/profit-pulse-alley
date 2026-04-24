@@ -139,7 +139,7 @@ export default async function Home() {
               </div>
               <div className="min-w-0">
                 <h3 className="text-sm font-semibold text-white sm:text-base md:text-lg">
-                  重量級嘉賓: Vicky Wong (齊柏林熱狗聯合創辦人)
+                  重量級嘉賓: Vicky Huang (齊柏林熱狗聯合創辦人)
                 </h3>
                 <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
                   本土餐飲王國「齊柏林熱狗」聯合創辦人，將首次公開分享創業歷程，及背後「發展資金」的寶貴實戰經驗。
