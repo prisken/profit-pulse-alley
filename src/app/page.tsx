@@ -98,7 +98,7 @@ export default async function Home() {
                 《我兩樣都要》線下戰略會議
               </h2>
               <p className="mt-1 text-[13px] font-medium leading-snug text-zinc-200 sm:text-sm sm:leading-snug">
-                星級嘉賓 Marcy Chan、一對一策略諮詢、專業形象照與高質社交場地。
+                重磅嘉賓：齊柏林熱狗創辦人 Vicky & 暢銷作家 Marcy Chan 親臨分享！一對一策略諮詢、專業形象照與高質社交場地。
               </p>
             </div>
             <Link
@@ -127,7 +127,29 @@ export default async function Home() {
           <div className="mt-4 grid auto-rows-fr gap-4 md:mt-7 md:grid-cols-2 md:gap-5 lg:gap-6">
             <article className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:gap-4 sm:rounded-2xl sm:p-5">
               <div className="flex flex-row items-start justify-center gap-3 sm:justify-start sm:gap-4">
-                <div className="relative aspect-[3/4] w-[calc(50%-0.375rem)] max-w-[160px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30 sm:max-w-[180px] sm:rounded-xl">
+                <div className="relative aspect-[3/4] w-full max-w-[160px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30 sm:max-w-[180px] sm:rounded-xl">
+                  <Image
+                    src="/vicky-headshot.png"
+                    alt="Vicky"
+                    fill
+                    className="object-cover object-center"
+                    sizes="(max-width: 768px) 40vw, 180px"
+                  />
+                </div>
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-white sm:text-base md:text-lg">
+                  重量級嘉賓: Vicky (齊柏林熱狗聯合創辦人)
+                </h3>
+                <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
+                  本土餐飲王國「齊柏林熱狗」聯合創辦人，將首次公開分享創業歷程，及背後「發展資金」的寶貴實戰經驗。
+                </p>
+              </div>
+            </article>
+
+            <article className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:gap-4 sm:rounded-2xl sm:p-5">
+              <div className="flex flex-row items-start justify-center gap-3 sm:justify-start sm:gap-4">
+                <div className="relative aspect-[3/4] w-full max-w-[160px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30 sm:max-w-[180px] sm:rounded-xl">
                   <Image
                     src="/marcy-chan-headshot.png"
                     alt="Marcy Chan"
@@ -136,27 +158,18 @@ export default async function Home() {
                     sizes="(max-width: 768px) 40vw, 180px"
                   />
                 </div>
-                <div className="relative aspect-[3/4] w-[calc(50%-0.375rem)] max-w-[128px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30 shadow-lg shadow-black/40 sm:max-w-[140px] sm:rounded-xl">
-                  <Image
-                    src="/marcy-book-yilun-jishi.png"
-                    alt="《以「輪」擊石》書籍封面"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 32vw, 140px"
-                  />
-                </div>
               </div>
               <div className="min-w-0">
                 <h3 className="text-sm font-semibold text-white sm:text-base md:text-lg">
                   星級嘉賓: Marcy Chan
                 </h3>
                 <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
-                  暢銷投資書《以「輪」擊石》作者，將親臨現場，獨家拆解「新世代被動收入」的實戰心法。
+                  暢銷投資書《以「輪」擊石》作者，將親臨現場，獨家拆解「新世代被動收入」的實戰心法，助你建立第二收入。
                 </p>
               </div>
             </article>
 
-            <article className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-start sm:gap-4 sm:rounded-2xl sm:p-5">
+            <article className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-start sm:gap-4 sm:rounded-2xl sm:p-5 md:col-span-2">
               <div className="relative mx-auto aspect-[4/3] w-full max-w-[220px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30 sm:mx-0 sm:aspect-[3/4] sm:max-w-[140px] sm:rounded-xl">
                 <Image
                   src="/event/professional-headshot-bts.png"

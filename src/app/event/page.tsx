@@ -69,7 +69,7 @@ export default function EventPage() {
                     ✅
                   </span>
                   <span>
-                    星級嘉賓： 投資作家 Marcy Chan 親自分享新世代的被動收入心法。
+                    星級嘉賓： 齊柏林熱狗創辦人 Vicky & 投資作家 Marcy Chan 親自分享
                   </span>
                 </li>
                 <li className="flex gap-2.5 sm:gap-3">
@@ -134,10 +134,34 @@ export default function EventPage() {
             你將獲得什麼？
           </h2>
           <div className="mt-4 grid auto-rows-fr gap-4 sm:mt-7 sm:grid-cols-2 sm:gap-5 lg:mt-8 lg:gap-6">
-            {/* A: Guest speaker */}
+            {/* A1: Guest speaker — Vicky */}
             <Card className="flex h-full min-h-0 flex-col gap-3 sm:gap-4">
-              <div className="flex flex-row items-start justify-center gap-3 sm:justify-start sm:gap-4">
-                <div className="relative aspect-[3/4] w-[calc(50%-0.375rem)] max-w-[140px] shrink-0 overflow-hidden rounded-lg border border-foreground/10 bg-foreground/[0.03] sm:max-w-[150px] sm:rounded-xl">
+              <div className="flex flex-row items-start justify-center sm:justify-start">
+                <div className="relative aspect-[3/4] w-full max-w-[140px] shrink-0 overflow-hidden rounded-lg border border-foreground/10 bg-foreground/[0.03] sm:max-w-[150px] sm:rounded-xl">
+                  <Image
+                    src="/vicky-headshot.png"
+                    alt="Vicky"
+                    fill
+                    className="object-cover object-center"
+                    sizes="(max-width: 640px) 42vw, 150px"
+                  />
+                </div>
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-[15px] font-semibold text-foreground sm:text-base lg:text-lg">
+                  重量級嘉賓: Vicky (齊柏林熱狗聯合創辦人)
+                </h3>
+                <p className="mt-1.5 text-[13px] leading-snug text-foreground/80 sm:mt-2 sm:text-sm sm:leading-relaxed">
+                  想知道一個本土品牌如何擴張成連鎖王國？Vicky
+                  將首次公開分享「齊柏林熱狗」的創業融資心法與擴張策略，全是書本上學不到的實戰智慧。
+                </p>
+              </div>
+            </Card>
+
+            {/* A2: Guest speaker — Marcy */}
+            <Card className="flex h-full min-h-0 flex-col gap-3 sm:gap-4">
+              <div className="flex flex-row items-start justify-center sm:justify-start">
+                <div className="relative aspect-[3/4] w-full max-w-[140px] shrink-0 overflow-hidden rounded-lg border border-foreground/10 bg-foreground/[0.03] sm:max-w-[150px] sm:rounded-xl">
                   <Image
                     src="/marcy-chan-headshot.png"
                     alt="Marcy Chan"
@@ -146,22 +170,13 @@ export default function EventPage() {
                     sizes="(max-width: 640px) 42vw, 150px"
                   />
                 </div>
-                <div className="relative aspect-[3/4] w-[calc(50%-0.375rem)] max-w-[112px] shrink-0 overflow-hidden rounded-lg border border-foreground/10 bg-foreground/[0.03] shadow-sm sm:max-w-[120px] sm:rounded-xl">
-                  <Image
-                    src="/marcy-book-yilun-jishi.png"
-                    alt="《以「輪」擊石》書籍封面"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 35vw, 120px"
-                  />
-                </div>
               </div>
               <div className="min-w-0">
                 <h3 className="text-[15px] font-semibold text-foreground sm:text-base lg:text-lg">
                   星級嘉賓: Marcy Chan
                 </h3>
                 <p className="mt-1.5 text-[13px] leading-snug text-foreground/80 sm:mt-2 sm:text-sm sm:leading-relaxed">
-                  暢銷投資書《以「輪」擊石》作者，將親臨現場，獨家拆解「新世代被動收入」的實戰心法。
+                  暢銷投資書《以「輪」擊石》作者，將親臨現場，為你獨家拆解經過驗證的「新世代被動收入」實戰心法，教你如何在主業之外，建立屬於你的第二座收入堡壘。
                 </p>
               </div>
             </Card>
@@ -182,8 +197,7 @@ export default function EventPage() {
                   一對一策略諮詢
                 </h3>
                 <p className="mt-1.5 text-[13px] leading-snug text-foreground/80 sm:mt-2 sm:text-sm sm:leading-relaxed">
-                  你將有機會與 Profit Pulse Ally
-                  創辦人進行一對一對話，直擊你的事業或投資痛點。
+                  於社交環節中，你將有機會與創辦人及團隊成員交流，探討你的事業或投資方向。想獲得更深度的15分鐘優先一對一諮詢？立即挑戰《城堡攻防戰》！
                 </p>
               </div>
             </Card>
@@ -207,6 +221,57 @@ export default function EventPage() {
                   由專業攝影師操刀，即場獲取你的 Business Headshot
                   (價值$600)，即時提升專業形象。
                 </p>
+              </div>
+            </Card>
+
+            {/* Agenda */}
+            <Card className="flex h-full min-h-0 flex-col gap-3 sm:gap-4">
+              <div className="min-w-0">
+                <h3 className="text-[15px] font-semibold text-foreground sm:text-base lg:text-lg">
+                  活動流程 (Agenda)
+                </h3>
+                <dl className="mt-2 space-y-2 text-[13px] leading-snug text-foreground/80 sm:text-sm sm:leading-relaxed">
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 font-semibold text-foreground/90">
+                      19:15 - 20:00
+                    </dt>
+                    <dd>專業形象照拍攝 & 交流環節 (Professional Headshot & Networking)</dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 font-semibold text-foreground/90">
+                      20:00 - 20:45
+                    </dt>
+                    <dd className="min-w-0">
+                      雙嘉賓主題演講 (Keynote Speeches)
+                      <ul className="mt-1 list-disc space-y-1 pl-4">
+                        <li>
+                          <span className="font-semibold text-foreground/90">
+                            Vicky Wong (齊柏林熱狗創辦人):
+                          </span>{" "}
+                          《創業融資心法》
+                        </li>
+                        <li>
+                          <span className="font-semibold text-foreground/90">
+                            Marcy Chan (暢銷作家):
+                          </span>{" "}
+                          《新世代的被動收入策略》
+                        </li>
+                      </ul>
+                    </dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 font-semibold text-foreground/90">
+                      20:45 - 21:15
+                    </dt>
+                    <dd>爐邊對談 & Q&A (Fireside Chat & Q&A)</dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 font-semibold text-foreground/90">
+                      21:15 onwards
+                    </dt>
+                    <dd>深度交流 (Deep Networking)</dd>
+                  </div>
+                </dl>
               </div>
             </Card>
 
