@@ -22,11 +22,10 @@ const content = {
     footer: "© 2026 ProfitPulseAlly. All Rights Reserved.",
   },
   zh: {
-    title: "鞏固你的未來",
-    subtitle: "一場關於「商業防禦與投資」的爐邊對話。",
-    hook_line1: "被日常工作困住了嗎？",
-    hook_line2:
-      "你上一次停下腳步，不再是「為」業務工作，而是「規劃」你的業務，是在什麼時候？",
+    title: "守業・增值・創未來",
+    subtitle: "一場關於「商業防禦與投資」的圍爐對話。",
+    hook_line1: "被日常工作困住？",
+    hook_line2: "你上一次停下腳步，「規劃」你的業務，是在什麼時候？",
     invitation:
       "我們正籌劃一場與 Vicky Huang (Zeppelin Hot Dog 聯合創辦人) 和 Marcy Chan (暢銷投資書作家) 的獨家爐邊對話。在確定最終細節之前，我們希望確保這次活動是為您量身訂造。您的反饋至關重要。",
     survey_title: "預先登記你的席位",
