@@ -62,7 +62,7 @@ export default async function Home() {
           alt=""
           fill
           priority
-          className="pointer-events-none hidden object-cover object-center md:block"
+          className="pointer-events-none hidden object-contain object-center md:block"
           sizes="100vw"
         />
         <div
@@ -130,14 +130,14 @@ export default async function Home() {
             </article>
 
             <article className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] sm:flex-row">
-              <div className="relative flex aspect-[4/5] w-full shrink-0 items-center justify-center bg-white p-8 sm:aspect-auto sm:w-44 md:w-48">
-                <div className="relative h-24 w-24 sm:h-28 sm:w-28">
+              <div className="relative flex min-h-[200px] w-full shrink-0 items-center justify-center bg-white p-6 sm:aspect-auto sm:min-h-0 sm:w-44 sm:p-6 md:w-48">
+                <div className="relative h-40 w-40 sm:h-28 sm:w-28">
                   <Image
                     src="/logo.png"
                     alt="ProfitPulseAlly"
                     fill
                     className="object-contain"
-                    sizes="(max-width: 768px) 112px, 128px"
+                    sizes="(max-width: 640px) 160px, 128px"
                   />
                 </div>
               </div>
