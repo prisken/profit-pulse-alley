@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { TrendingUp, Users } from "lucide-react";
 
 import { getAllPosts } from "@/lib/blog";
 
@@ -44,23 +45,29 @@ export default async function Home() {
       </section>
 
       {/* Hero */}
-      <section className="relative min-h-[min(48vh,340px)] overflow-hidden sm:min-h-[min(70vh,520px)]">
+      <section
+        className="relative min-h-[min(52vh,380px)] overflow-hidden sm:min-h-[min(72vh,560px)]"
+        aria-label="Fortify Your Future hero"
+      >
         <Image
           src="/images/fortify-hero-chess-king.png"
-          alt="Fortify Your Future — chess king spotlight"
+          alt=""
           fill
           priority
-          className="pointer-events-none object-cover object-right"
+          className="pointer-events-none object-cover object-[72%_center] sm:object-[78%_center]"
           sizes="100vw"
         />
-        <div className="absolute inset-0 bg-black/45" aria-hidden="true" />
+        <div
+          className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent sm:from-black/75 sm:via-black/40"
+          aria-hidden="true"
+        />
 
-        <div className="relative mx-auto flex w-full max-w-5xl flex-col px-3 py-7 sm:px-6 sm:py-16 md:py-20">
+        <div className="relative mx-auto flex min-h-[min(52vh,380px)] w-full max-w-5xl flex-col justify-center px-3 py-10 sm:min-h-[min(72vh,560px)] sm:px-6 sm:py-16 md:py-20">
           <div className="max-w-3xl space-y-3 sm:space-y-5">
-            <h1 className="text-balance text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+            <h1 className="text-balance text-2xl font-semibold tracking-tight text-white drop-shadow-sm sm:text-4xl md:text-5xl">
               Fortify Your Future / 守業增值創未來
             </h1>
-            <p className="text-pretty text-[13px] leading-snug text-zinc-300 sm:text-base sm:leading-relaxed md:text-lg">
+            <p className="text-pretty text-[13px] leading-snug text-zinc-100 drop-shadow-sm sm:text-base sm:leading-relaxed md:text-lg">
               A Fireside Chat with WeWork for Hong Kong&apos;s Ambitious Founders.
               Learn the playbook for growth, succession, and legacy.
             </p>
@@ -69,10 +76,75 @@ export default async function Home() {
               <Link href="#" className={ctaPrimaryOnDark}>
                 Registration Opens Soon / 即將開放報名
               </Link>
-              <Link href="/#event-highlights" className={ctaGhostOnDark}>
-                查看星級嘉賓及活動流程
+              <Link href="/#meet-the-speakers" className={ctaGhostOnDark}>
+                Meet the Speakers / 認識嘉賓
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Meet the Speakers */}
+      <section
+        id="meet-the-speakers"
+        className="border-t border-white/10 bg-zinc-950 py-8 sm:py-12 md:py-14"
+        aria-labelledby="speakers-heading"
+      >
+        <div className="mx-auto max-w-5xl px-3 sm:px-6">
+          <h2
+            id="speakers-heading"
+            className="text-center text-base font-semibold tracking-tight text-white sm:text-lg md:text-xl"
+          >
+            Meet the Speakers / 本次活動嘉賓
+          </h2>
+          <div className="mt-6 grid gap-5 sm:mt-8 md:grid-cols-2 md:gap-6">
+            <article className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] sm:flex-row">
+              <div className="relative aspect-[4/5] w-full shrink-0 sm:aspect-auto sm:w-44 md:w-48">
+                <Image
+                  src="/vicky-headshot.png"
+                  alt="Vicky Huang"
+                  fill
+                  className="object-cover object-center"
+                  sizes="(max-width: 768px) 100vw, 192px"
+                />
+              </div>
+              <div className="flex flex-1 flex-col justify-center p-4 sm:p-5">
+                <h3 className="text-lg font-semibold text-white">Vicky Huang</h3>
+                <p className="mt-0.5 text-sm font-medium text-amber-400/90">
+                  Co-founder, Zeppelin Hot Dog
+                </p>
+                <p className="mt-3 text-[13px] leading-relaxed text-zinc-300 sm:text-sm">
+                  Vicky will share her invaluable, first-hand experience in securing
+                  growth funding and scaling a beloved Hong Kong brand from the ground
+                  up.
+                </p>
+              </div>
+            </article>
+
+            <article className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] sm:flex-row">
+              <div className="relative flex aspect-[4/5] w-full shrink-0 items-center justify-center bg-white p-8 sm:aspect-auto sm:w-44 md:w-48">
+                <div className="relative h-24 w-24 sm:h-28 sm:w-28">
+                  <Image
+                    src="/logo.png"
+                    alt="ProfitPulseAlly"
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 768px) 112px, 128px"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-1 flex-col justify-center p-4 sm:p-5">
+                <h3 className="text-lg font-semibold text-white">Prisken &amp; Kevin</h3>
+                <p className="mt-0.5 text-sm font-medium text-amber-400/90">
+                  Founders, ProfitPulseAlly
+                </p>
+                <p className="mt-3 text-[13px] leading-relaxed text-zinc-300 sm:text-sm">
+                  As experts in business valuation and succession planning, Prisken
+                  and Kevin will deconstruct the essential strategies for building a
+                  lasting legacy beyond yourself.
+                </p>
+              </div>
+            </article>
           </div>
         </div>
       </section>
@@ -92,8 +164,8 @@ export default async function Home() {
                 Fortify Your Future / 守業增值創未來
               </h2>
               <p className="mt-1 text-[13px] font-medium leading-snug text-zinc-200 sm:text-sm sm:leading-snug">
-                A Fireside Chat with WeWork — Vicky Huang, ProfitPulseAlly founders,
-                and Hong Kong&apos;s ambitious founder community.
+                A Fireside Chat with WeWork — register your interest and help shape
+                this exclusive founder event.
               </p>
             </div>
             <Link
@@ -106,10 +178,10 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Event highlights */}
+      {/* Why You Should Attend */}
       <section
         id="event-highlights"
-        className="border-t border-white/10 bg-zinc-950 py-6 sm:py-12 md:py-14"
+        className="border-t border-white/10 bg-zinc-950 py-8 sm:py-12 md:py-14"
         aria-labelledby="highlights-heading"
       >
         <div className="mx-auto max-w-5xl px-3 sm:px-6">
@@ -117,107 +189,130 @@ export default async function Home() {
             id="highlights-heading"
             className="text-center text-base font-semibold tracking-tight text-white sm:text-lg md:text-xl"
           >
-            活動亮點
+            Why You Should Attend / 活動亮點
           </h2>
-          <div className="mt-4 grid auto-rows-fr gap-4 md:mt-7 md:grid-cols-2 md:gap-5 lg:gap-6">
-            <article className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:gap-4 sm:rounded-2xl sm:p-5">
-              <div className="flex flex-row items-start justify-center gap-3 sm:justify-start sm:gap-4">
-                <div className="relative aspect-[3/4] w-full max-w-[160px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30 sm:max-w-[180px] sm:rounded-xl">
+          <div className="mt-6 grid gap-4 sm:mt-8 md:grid-cols-3 md:gap-5">
+            <article className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-zinc-200/20 bg-white p-2.5 shadow-sm">
+                <div className="relative h-full w-full">
                   <Image
-                    src="/vicky-headshot.png"
-                    alt="Vicky"
+                    src="/images/wework-logo.png"
+                    alt="WeWork logo"
                     fill
-                    className="object-cover object-center"
-                    sizes="(max-width: 768px) 40vw, 180px"
+                    className="object-contain"
+                    sizes="64px"
                   />
                 </div>
               </div>
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-white sm:text-base md:text-lg">
-                  重量級嘉賓: Vicky Huang (齊柏林熱狗聯合創辦人)
-                </h3>
-                <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
-                  Vicky Huang, co-founder of the local restaurant kingdom
-                  &quot;Zeppelin Hot Dog,&quot; will share her invaluable,
-                  first-hand experience in securing growth funding and scaling a
-                  beloved Hong Kong brand.
-                </p>
-              </div>
+              <h3 className="mt-4 text-sm font-semibold text-white sm:text-base">
+                Exclusive WeWork Partnership
+              </h3>
+              <p className="mt-2 flex-1 text-[13px] leading-relaxed text-zinc-300 sm:text-sm">
+                An event co-hosted with WeWork, bringing actionable insights directly
+                to the founder and business community in a premium setting.
+              </p>
             </article>
 
-            <article className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:gap-4 sm:rounded-2xl sm:p-5">
-              <div className="flex flex-row items-start justify-center gap-3 sm:justify-start sm:gap-4">
-                <div className="relative aspect-[3/4] w-full max-w-[160px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30 sm:max-w-[180px] sm:rounded-xl">
-                  <Image
-                    src="/logo.png"
-                    alt="ProfitPulseAlly"
-                    fill
-                    className="object-contain p-4"
-                    sizes="(max-width: 768px) 40vw, 180px"
-                  />
-                </div>
+            <article className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400">
+                <TrendingUp className="h-7 w-7" aria-hidden="true" />
               </div>
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-white sm:text-base md:text-lg">
-                  Expert Insights from ProfitPulseAlly
-                </h3>
-                <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
-                  ProfitPulseAlly&apos;s founders, Prisken and Kevin, will
-                  deconstruct the essential strategies for business succession,
-                  valuation, and building a lasting legacy beyond yourself.
-                </p>
-              </div>
+              <h3 className="mt-4 text-sm font-semibold text-white sm:text-base">
+                Growth &amp; Legacy Playbook
+              </h3>
+              <p className="mt-2 flex-1 text-[13px] leading-relaxed text-zinc-300 sm:text-sm">
+                Move beyond theory. Gain practical steps for valuation, succession
+                planning, and securing development capital for your business.
+              </p>
             </article>
 
-            <article className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-start sm:gap-4 sm:rounded-2xl sm:p-5 md:col-span-2">
-              <div className="relative mx-auto aspect-square w-full max-w-[160px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white sm:mx-0 sm:max-w-[140px] sm:rounded-xl">
-                <Image
-                  src="/images/wework-logo.png"
-                  alt="WeWork logo"
-                  fill
-                  className="object-contain p-4"
-                  sizes="(max-width: 768px) 85vw, 140px"
-                />
+            <article className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400">
+                <Users className="h-7 w-7" aria-hidden="true" />
               </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold text-white sm:text-base md:text-lg">
-                  Exclusive Partnership with WeWork
-                </h3>
-                <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
-                  An exclusive event co-hosted with WeWork to bring actionable
-                  insights directly to the founder and business community.
-                </p>
-              </div>
+              <h3 className="mt-4 text-sm font-semibold text-white sm:text-base">
+                Connect with Founders
+              </h3>
+              <p className="mt-2 flex-1 text-[13px] leading-relaxed text-zinc-300 sm:text-sm">
+                Join a curated group of ambitious founders, entrepreneurs, and
+                industry leaders in a professional and engaging environment.
+              </p>
             </article>
           </div>
         </div>
       </section>
 
-      {/* Game — Castle Siege */}
+      {/* Our Network of Experts */}
       <section
-        className="border-t border-white/10 bg-zinc-900/40 py-5 sm:py-8"
-        aria-labelledby="home-game-heading"
+        className="border-t border-white/10 bg-zinc-900/30 py-8 sm:py-10 md:py-12"
+        aria-labelledby="network-heading"
       >
-        <div className="mx-auto max-w-5xl px-3 sm:px-6">
-          <div className="flex flex-col gap-3 rounded-xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-zinc-900/80 to-zinc-950 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:rounded-2xl sm:p-5 md:p-6">
-            <div className="min-w-0">
-              <h2
-                id="home-game-heading"
-                className="text-base font-bold tracking-tight text-white sm:text-lg md:text-xl"
-              >
-                想測試你的投資直覺嗎？
-              </h2>
-              <p className="mt-1 text-[13px] font-medium leading-snug text-zinc-200 sm:text-sm sm:leading-snug">
-                體驗我們的《城堡攻防戰》模擬挑戰。完成挑戰，了解你的投資風格，並解鎖與創辦人一對一的優先諮詢名額。
+        <div className="mx-auto max-w-5xl px-3 text-center sm:px-6">
+          <h2
+            id="network-heading"
+            className="text-base font-semibold tracking-tight text-white sm:text-lg md:text-xl"
+          >
+            Our Network of Experts / 曾合作嘉賓
+          </h2>
+          <p className="mx-auto mt-2 max-w-2xl text-[13px] leading-relaxed text-zinc-400 sm:text-sm">
+            We collaborate with industry leaders and best-selling authors to bring you
+            unparalleled insights.
+          </p>
+
+          <div className="mt-8 flex flex-wrap items-stretch justify-center gap-6 sm:gap-10 md:mt-10">
+            <div className="flex min-w-[140px] max-w-[200px] flex-1 flex-col items-center rounded-xl border border-white/5 bg-zinc-950/50 px-4 py-5 sm:min-w-[160px]">
+              <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-white/15 ring-2 ring-amber-500/20">
+                <Image
+                  src="/marcy-chan-headshot.png"
+                  alt="Marcy Chan"
+                  fill
+                  className="object-cover object-top"
+                  sizes="64px"
+                />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-white">Marcy Chan</p>
+              <p className="mt-1 text-[11px] leading-snug text-zinc-400 sm:text-xs">
+                Bestselling Author,《以「輪」擊石》
               </p>
             </div>
-            <Link
-              href="/investment-challenge"
-              className={`${ctaPrimaryOnDark} shrink-0 shadow-md shadow-black/20 sm:min-w-[10.5rem]`}
-            >
-              開始挑戰
-            </Link>
+
+            <div className="flex min-w-[140px] max-w-[200px] flex-1 flex-col items-center rounded-xl border border-white/5 bg-zinc-950/50 px-4 py-5 sm:min-w-[160px]">
+              <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-white/15 ring-2 ring-amber-500/20">
+                <Image
+                  src="/vicky-headshot.png"
+                  alt="Vicky Huang"
+                  fill
+                  className="object-cover object-center"
+                  sizes="64px"
+                />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-white">Vicky Huang</p>
+              <p className="mt-1 text-[11px] leading-snug text-zinc-400 sm:text-xs">
+                Co-founder, Zeppelin Hot Dog
+              </p>
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* Testimonials — placeholder */}
+      <section
+        className="border-t border-white/10 bg-zinc-950 py-8 sm:py-12"
+        aria-labelledby="testimonials-heading"
+      >
+        <div className="mx-auto max-w-3xl px-3 text-center sm:px-6">
+          <h2
+            id="testimonials-heading"
+            className="text-base font-semibold tracking-tight text-white sm:text-lg md:text-xl"
+          >
+            What Our Clients Say
+          </h2>
+          <blockquote className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-5 py-8 sm:px-8 sm:py-10">
+            <p className="text-[13px] italic leading-relaxed text-zinc-500 sm:text-sm">
+              Client testimonial coming soon — share how ProfitPulseAlly helped you
+              plan for growth, succession, or legacy.
+            </p>
+          </blockquote>
         </div>
       </section>
 
@@ -313,6 +408,34 @@ export default async function Home() {
               {blogLang === "zh-hk"
                 ? "瀏覽中文文章列表"
                 : "Browse English articles"}
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Castle Siege — de-prioritized */}
+      <section
+        className="border-t border-white/10 bg-zinc-900/40 py-5 sm:py-8"
+        aria-labelledby="home-game-heading"
+      >
+        <div className="mx-auto max-w-5xl px-3 sm:px-6">
+          <div className="flex flex-col gap-3 rounded-xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-zinc-900/80 to-zinc-950 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:rounded-2xl sm:p-5 md:p-6">
+            <div className="min-w-0">
+              <h2
+                id="home-game-heading"
+                className="text-base font-bold tracking-tight text-white sm:text-lg md:text-xl"
+              >
+                想測試你的投資直覺嗎？
+              </h2>
+              <p className="mt-1 text-[13px] font-medium leading-snug text-zinc-200 sm:text-sm sm:leading-snug">
+                體驗我們的《城堡攻防戰》模擬挑戰。完成挑戰，了解你的投資風格，並解鎖與創辦人一對一的優先諮詢名額。
+              </p>
+            </div>
+            <Link
+              href="/investment-challenge"
+              className={`${ctaGhostOnDark} shrink-0 sm:min-w-[10.5rem]`}
+            >
+              開始挑戰
             </Link>
           </div>
         </div>
