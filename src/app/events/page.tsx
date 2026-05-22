@@ -53,8 +53,9 @@ export default function EventsHubPage() {
               Fortify Your Future / 守業增值創未來
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-foreground/80 sm:text-base">
-              A Fireside Chat with WeWork for Hong Kong&apos;s Ambitious
-              Founders. Learn the playbook for growth, succession, and legacy.
+              Featuring Zeppelin Hot Dog co-founder Vicky Huang and bestselling
+              author Marcy Chan. Learn the playbook for growth, wealth, and
+              legacy.
             </p>
             <Link
               href="/events/fortify-your-future"
@@ -83,8 +84,7 @@ export default function EventsHubPage() {
               href="/events/wo-leung-yiu-dou-yiu"
               className="font-medium text-foreground underline-offset-4 transition-colors hover:text-foreground/80 hover:underline"
             >
-              <strong>《我兩樣都要》線下戰略會議</strong> — Featuring Vicky Huang
-              &amp; Marcy Chan
+              <strong>《我兩樣都要》線下戰略會議</strong>
             </Link>
           </li>
         </ul>

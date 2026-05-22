@@ -76,16 +76,19 @@ export default async function Home() {
               Fortify Your Future / 守業增值創未來
             </h1>
             <p className="text-pretty text-[13px] leading-snug text-zinc-100 drop-shadow-sm sm:text-base sm:leading-relaxed md:text-lg">
-              A Fireside Chat with WeWork for Hong Kong&apos;s Ambitious Founders.
-              Learn the playbook for growth, succession, and legacy.
+              A strategic fireside chat for ambitious founders, featuring Zeppelin
+              Hot Dog&apos;s co-founder Vicky Huang and bestselling author Marcy Chan.
             </p>
 
-            <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:gap-3 sm:pt-2">
-              <Link href="/events/fortify-your-future" className={ctaPrimaryOnDark}>
-                Registration Opens Soon / 即將開放報名
+            <div className="flex flex-col gap-3 pt-1 sm:pt-2">
+              <Link href="/fortify-survey" className={ctaPrimaryOnDark}>
+                Register Your Interest Now
               </Link>
-              <Link href="/#meet-the-speakers" className={ctaGhostOnDark}>
-                Meet the Speakers / 認識嘉賓
+              <Link
+                href="/events/fortify-your-future"
+                className={`${ctaGhostOnDark} sm:w-auto`}
+              >
+                View Event Details
               </Link>
             </div>
           </div>
@@ -130,26 +133,24 @@ export default async function Home() {
             </article>
 
             <article className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] sm:flex-row">
-              <div className="relative flex min-h-[200px] w-full shrink-0 items-center justify-center bg-white p-6 sm:aspect-auto sm:min-h-0 sm:w-44 sm:p-6 md:w-48">
-                <div className="relative h-40 w-40 sm:h-28 sm:w-28">
-                  <Image
-                    src="/logo.png"
-                    alt="ProfitPulseAlly"
-                    fill
-                    className="object-contain"
-                    sizes="(max-width: 640px) 160px, 128px"
-                  />
-                </div>
+              <div className="relative aspect-[4/5] w-full shrink-0 sm:aspect-auto sm:w-44 md:w-48">
+                <Image
+                  src="/marcy-chan-headshot.png"
+                  alt="Marcy Chan"
+                  fill
+                  className="object-cover object-top"
+                  sizes="(max-width: 768px) 100vw, 192px"
+                />
               </div>
               <div className="flex flex-1 flex-col justify-center p-4 sm:p-5">
-                <h3 className="text-lg font-semibold text-white">Prisken &amp; Kevin</h3>
+                <h3 className="text-lg font-semibold text-white">Marcy Chan</h3>
                 <p className="mt-0.5 text-sm font-medium text-amber-400/90">
-                  Founders, ProfitPulseAlly
+                  Bestselling Author,《以「輪」擊石》
                 </p>
                 <p className="mt-3 text-[13px] leading-relaxed text-zinc-300 sm:text-sm">
-                  As experts in business valuation and succession planning, Prisken
-                  and Kevin will deconstruct the essential strategies for building a
-                  lasting legacy beyond yourself.
+                  Marcy will deconstruct practical strategies for building
+                  new-generation passive income streams, helping you establish a
+                  second income.
                 </p>
               </div>
             </article>
@@ -157,31 +158,37 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Event promo — conversion */}
+      {/* Event promo — Fortify Your Future */}
       <section
         className="border-t border-white/10 bg-zinc-900/40 py-5 sm:py-8"
         aria-labelledby="home-event-promo-heading"
       >
         <div className="mx-auto max-w-5xl px-3 sm:px-6">
-          <div className="flex flex-col gap-3 rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-zinc-900/80 to-zinc-950 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:rounded-2xl sm:p-5 md:p-6">
-            <div className="min-w-0">
-              <h2
-                id="home-event-promo-heading"
-                className="text-base font-bold tracking-tight text-white sm:text-lg md:text-xl"
-              >
-                Fortify Your Future / 守業增值創未來
-              </h2>
-              <p className="mt-1 text-[13px] font-medium leading-snug text-zinc-200 sm:text-sm sm:leading-snug">
-                A Fireside Chat with WeWork — register your interest and help shape
-                this exclusive founder event.
-              </p>
-            </div>
-            <Link
-              href="/events/fortify-your-future"
-              className={`${ctaPrimaryOnDark} shrink-0 shadow-md shadow-black/20 sm:min-w-[10.5rem]`}
+          <div className="rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-zinc-900/80 to-zinc-950 p-5 shadow-sm sm:rounded-2xl sm:p-6 md:p-8">
+            <h2
+              id="home-event-promo-heading"
+              className="text-lg font-bold tracking-tight text-white sm:text-xl md:text-2xl"
             >
-              View Event Details
-            </Link>
+              Fortify Your Future / 守業增值創未來
+            </h2>
+            <p className="mt-2 max-w-3xl text-[13px] font-medium leading-relaxed text-zinc-200 sm:text-sm sm:leading-relaxed md:text-base">
+              A strategic fireside chat for ambitious founders, featuring Zeppelin
+              Hot Dog&apos;s co-founder Vicky Huang and bestselling author Marcy Chan.
+            </p>
+            <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <Link
+                href="/fortify-survey"
+                className={`${ctaPrimaryOnDark} shadow-md shadow-black/20 sm:min-w-[14rem]`}
+              >
+                Register Your Interest Now
+              </Link>
+              <Link
+                href="/events/fortify-your-future"
+                className="text-sm font-medium text-amber-400/90 underline-offset-4 transition-colors hover:text-amber-300 hover:underline"
+              >
+                View Event Details →
+              </Link>
+            </div>
           </div>
         </div>
       </section>

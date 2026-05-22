@@ -4,23 +4,23 @@ export const fortifyYourFutureEvent: EventDetailData = {
   pageTitle: "Fortify Your Future | Profit Pulse Ally",
   title: "Fortify Your Future / 守業增值創未來",
   subtitle:
-    "A Fireside Chat with WeWork for Hong Kong's Ambitious Founders.",
+    "A Fireside Chat on Business Defense & Investment for Hong Kong's Ambitious Founders.",
   highlights: [
     {
-      label: "Exclusive Partnership:",
-      text: "An event co-hosted with WeWork.",
+      label: "Free Professional Headshot:",
+      text: "Get a free business headshot from a professional photographer.",
     },
     {
-      label: "Expert Speakers:",
-      text: "Featuring Zeppelin Hot Dog co-founder and business succession experts.",
+      label: "Star Speakers:",
+      text: "Featuring Vicky Huang (Zeppelin Hot Dog Co-founder) & Marcy Chan (Bestselling Author).",
     },
     {
       label: "High-Value Networking:",
       text: "Connect with a curated group of ambitious founders.",
     },
   ],
-  registrationLink: "#",
-  registrationText: "Registration Opens Soon / 即將開放報名",
+  registrationLink: "/fortify-survey",
+  registrationText: "Register Your Interest Now / 立即登記",
   speakersSectionTitle: "Meet the Speakers / 本次活動嘉賓",
   speakers: [
     {
@@ -29,9 +29,9 @@ export const fortifyYourFutureEvent: EventDetailData = {
       bio: "How does a local brand scale into a kingdom? Vicky will share the invaluable, first-hand experience of Zeppelin Hot Dog's growth, covering her strategies for securing funding and navigating expansion.",
     },
     {
-      name: "Prisken & Kevin",
-      title: "Founders, ProfitPulseAlly",
-      bio: "What is your business really worth, and what is your exit plan? As experts in business valuation and succession planning, Prisken and Kevin will deconstruct the essential strategies for building a lasting legacy beyond yourself.",
+      name: "Marcy Chan",
+      title: "Bestselling Author,《以「輪」擊石》",
+      bio: 'Author of the bestselling investment book "以「輪」擊石", Marcy will be on-site to exclusively deconstruct the practical mindset for building new-generation passive income streams, helping you establish a second income.',
     },
   ],
   agenda: [
@@ -47,10 +47,10 @@ export const fortifyYourFutureEvent: EventDetailData = {
     { time: "21:00 onwards:", description: "Deep Networking & Closing" },
   ],
   venueDescription:
-    "The event will be held at a premium WeWork location, providing a professional and inspiring environment for networking and learning.",
-  eventDateTime: "[Please Insert New Date & Time]",
-  eventLocation: "[Please Insert WeWork Address]",
-  eventCost: "Free (Registration via WeWork)",
+    "The event will be held at a high-quality, convenient location in the city center, providing an inspiring environment for networking and learning.",
+  eventDateTime: "To Be Confirmed",
+  eventLocation: "To Be Confirmed",
+  eventCost: "Free",
   heroImage: {
     mobileSrc: "/images/fortify-event-poster.png",
     desktopSrc: "/images/fortify-event-poster.png",
