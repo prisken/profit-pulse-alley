@@ -3,8 +3,6 @@ import Link from "next/link";
 
 import { getAllPosts } from "@/lib/blog";
 
-const LUMA_REGISTRATION_URL = "https://luma.com/vbjuzo79";
-
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
 
@@ -48,8 +46,8 @@ export default async function Home() {
       {/* Hero */}
       <section className="relative min-h-[min(48vh,340px)] overflow-hidden sm:min-h-[min(70vh,520px)]">
         <Image
-          src="/hero.png"
-          alt=""
+          src="/images/fortify-hero-chess-king.png"
+          alt="Fortify Your Future — chess king spotlight"
           fill
           priority
           className="pointer-events-none object-cover object-right"
@@ -60,20 +58,16 @@ export default async function Home() {
         <div className="relative mx-auto flex w-full max-w-5xl flex-col px-3 py-7 sm:px-6 sm:py-16 md:py-20">
           <div className="max-w-3xl space-y-3 sm:space-y-5">
             <h1 className="text-balance text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-              《我兩樣都要》線下戰略會議
+              Fortify Your Future / 守業增值創未來
             </h1>
             <p className="text-pretty text-[13px] leading-snug text-zinc-300 sm:text-base sm:leading-relaxed md:text-lg">
-              事業升級 x 財富增值：一場專為實戰者而設的戰略會議。立即免費報名！
+              A Fireside Chat with WeWork for Hong Kong&apos;s Ambitious Founders.
+              Learn the playbook for growth, succession, and legacy.
             </p>
 
             <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:gap-3 sm:pt-2">
-              <Link
-                href={LUMA_REGISTRATION_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={ctaPrimaryOnDark}
-              >
-                立即免費報名
+              <Link href="#" className={ctaPrimaryOnDark}>
+                Registration Opens Soon / 即將開放報名
               </Link>
               <Link href="/#event-highlights" className={ctaGhostOnDark}>
                 查看星級嘉賓及活動流程
@@ -95,17 +89,18 @@ export default async function Home() {
                 id="home-event-promo-heading"
                 className="text-base font-bold tracking-tight text-white sm:text-lg md:text-xl"
               >
-                《我兩樣都要》線下戰略會議
+                Fortify Your Future / 守業增值創未來
               </h2>
               <p className="mt-1 text-[13px] font-medium leading-snug text-zinc-200 sm:text-sm sm:leading-snug">
-                重磅嘉賓：齊柏林熱狗創辦人 Vicky & 暢銷作家 Marcy Chan 親臨分享！一對一策略諮詢、專業形象照與高質社交場地。
+                A Fireside Chat with WeWork — Vicky Huang, ProfitPulseAlly founders,
+                and Hong Kong&apos;s ambitious founder community.
               </p>
             </div>
             <Link
-              href="/event"
+              href="/fortify-survey"
               className={`${ctaPrimaryOnDark} shrink-0 shadow-md shadow-black/20 sm:min-w-[10.5rem]`}
             >
-              了解活動及報名
+              Register Your Interest
             </Link>
           </div>
         </div>
@@ -142,7 +137,10 @@ export default async function Home() {
                   重量級嘉賓: Vicky Huang (齊柏林熱狗聯合創辦人)
                 </h3>
                 <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
-                  本土餐飲王國「齊柏林熱狗」聯合創辦人，將首次公開分享創業歷程，及背後「發展資金」的寶貴實戰經驗。
+                  Vicky Huang, co-founder of the local restaurant kingdom
+                  &quot;Zeppelin Hot Dog,&quot; will share her invaluable,
+                  first-hand experience in securing growth funding and scaling a
+                  beloved Hong Kong brand.
                 </p>
               </div>
             </article>
@@ -151,41 +149,43 @@ export default async function Home() {
               <div className="flex flex-row items-start justify-center gap-3 sm:justify-start sm:gap-4">
                 <div className="relative aspect-[3/4] w-full max-w-[160px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30 sm:max-w-[180px] sm:rounded-xl">
                   <Image
-                    src="/marcy-chan-headshot.png"
-                    alt="Marcy Chan"
+                    src="/logo.png"
+                    alt="ProfitPulseAlly"
                     fill
-                    className="object-cover object-top"
+                    className="object-contain p-4"
                     sizes="(max-width: 768px) 40vw, 180px"
                   />
                 </div>
               </div>
               <div className="min-w-0">
                 <h3 className="text-sm font-semibold text-white sm:text-base md:text-lg">
-                  星級嘉賓: Marcy Chan
+                  Expert Insights from ProfitPulseAlly
                 </h3>
                 <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
-                  暢銷投資書《以「輪」擊石》作者，將親臨現場，獨家拆解「新世代被動收入」的實戰心法，助你建立第二收入。
+                  ProfitPulseAlly&apos;s founders, Prisken and Kevin, will
+                  deconstruct the essential strategies for business succession,
+                  valuation, and building a lasting legacy beyond yourself.
                 </p>
               </div>
             </article>
 
             <article className="flex h-full min-h-0 flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-start sm:gap-4 sm:rounded-2xl sm:p-5 md:col-span-2">
-              <div className="relative mx-auto aspect-[4/3] w-full max-w-[220px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/30 sm:mx-0 sm:aspect-[3/4] sm:max-w-[140px] sm:rounded-xl">
+              <div className="relative mx-auto aspect-square w-full max-w-[160px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white sm:mx-0 sm:max-w-[140px] sm:rounded-xl">
                 <Image
-                  src="/event/professional-headshot-bts.png"
-                  alt="專業商業形象照拍攝現場"
+                  src="/images/wework-logo.png"
+                  alt="WeWork logo"
                   fill
-                  className="object-cover"
+                  className="object-contain p-4"
                   sizes="(max-width: 768px) 85vw, 140px"
                 />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="text-sm font-semibold text-white sm:text-base md:text-lg">
-                  免費專業形象照
+                  Exclusive Partnership with WeWork
                 </h3>
                 <p className="mt-1 text-[13px] leading-snug text-zinc-300 sm:mt-1.5 sm:text-sm sm:leading-relaxed">
-                  由專業攝影師操刀，即場獲取你的 Business Headshot
-                  (價值$600)，即時提升專業形象。
+                  An exclusive event co-hosted with WeWork to bring actionable
+                  insights directly to the founder and business community.
                 </p>
               </div>
             </article>
