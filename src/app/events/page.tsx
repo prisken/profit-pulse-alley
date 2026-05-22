@@ -38,12 +38,12 @@ export default function EventsHubPage() {
           Upcoming Events
         </h2>
         <article className="mt-5 overflow-hidden rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-background to-background shadow-sm sm:mt-6">
-          <div className="relative aspect-[16/10] w-full bg-foreground/5 sm:aspect-[2/1]">
+          <div className="relative aspect-[16/9] w-full bg-white">
             <Image
-              src="/images/fortify-your-future-poster.png"
-              alt="Fortify Your Future event poster"
+              src="/images/fortify-event-poster.png"
+              alt="Fortify Your Future / 守業增值創未來 — event poster"
               fill
-              className="object-cover object-center"
+              className="object-contain object-center"
               sizes="(max-width: 768px) 100vw, 1024px"
               priority
             />

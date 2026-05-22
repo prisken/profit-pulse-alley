@@ -122,24 +122,22 @@ export default function EventDetailTemplate({
 
           {heroImage ? (
             <div className="order-1 min-w-0 lg:order-2">
-              <div className="overflow-hidden rounded-xl border border-foreground/10 bg-zinc-950 shadow-sm sm:rounded-2xl">
-                <div className="relative aspect-[16/10] w-full md:hidden">
+              <div className="overflow-hidden rounded-xl border border-foreground/10 bg-white shadow-sm sm:rounded-2xl">
+                <div className="relative aspect-[16/9] w-full">
                   <Image
                     src={heroImage.mobileSrc}
                     alt={heroImage.alt}
                     fill
                     priority
-                    className="object-cover object-center"
+                    className="object-contain object-center md:hidden"
                     sizes="(max-width: 767px) 100vw, 1px"
                   />
-                </div>
-                <div className="relative hidden aspect-[16/10] w-full md:block lg:aspect-[2/1]">
                   <Image
                     src={heroImage.desktopSrc}
                     alt={heroImage.alt}
                     fill
                     priority
-                    className="object-contain object-center"
+                    className="hidden object-contain object-center md:block"
                     sizes="(min-width: 768px) 45vw, 1px"
                   />
                 </div>

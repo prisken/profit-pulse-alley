@@ -52,8 +52,8 @@ export const fortifyYourFutureEvent: EventDetailData = {
   eventLocation: "[Please Insert WeWork Address]",
   eventCost: "Free (Registration via WeWork)",
   heroImage: {
-    mobileSrc: "/images/fortify-hero-1600.png",
-    desktopSrc: "/images/fortify-hero-1920.png",
-    alt: "Fortify Your Future — chess king spotlight",
+    mobileSrc: "/images/fortify-event-poster.png",
+    desktopSrc: "/images/fortify-event-poster.png",
+    alt: "Fortify Your Future / 守業增值創未來 — event poster",
   },
 };
