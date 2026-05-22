@@ -44,26 +44,28 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Hero */}
+      {/* Hero — full king visible, sized between contain (small) and cover (large) */}
       <section
-        className="relative min-h-[min(52vh,380px)] overflow-hidden sm:min-h-[min(72vh,560px)]"
+        className="relative flex min-h-[290px] max-h-[340px] items-center overflow-hidden bg-zinc-950 sm:min-h-[320px] sm:max-h-[380px] lg:max-h-[400px]"
         aria-label="Fortify Your Future hero"
       >
-        <Image
-          src="/images/fortify-hero-chess-king.png"
-          alt=""
-          fill
-          priority
-          className="pointer-events-none object-cover object-[72%_center] sm:object-[78%_center]"
-          sizes="100vw"
-        />
+        <div className="absolute inset-y-0 right-0 w-full sm:w-[66%] md:w-[58%] lg:w-[54%]">
+          <Image
+            src="/images/fortify-hero-chess-king.png"
+            alt=""
+            fill
+            priority
+            className="pointer-events-none origin-right object-contain object-right scale-[1.05] sm:scale-[1.07]"
+            sizes="(max-width: 640px) 100vw, 58vw"
+          />
+        </div>
         <div
-          className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent sm:from-black/75 sm:via-black/40"
+          className="absolute inset-0 bg-gradient-to-r from-zinc-950 from-[36%] via-zinc-950/80 via-[54%] to-transparent sm:from-[40%] sm:via-[58%]"
           aria-hidden="true"
         />
 
-        <div className="relative mx-auto flex min-h-[min(52vh,380px)] w-full max-w-5xl flex-col justify-center px-3 py-10 sm:min-h-[min(72vh,560px)] sm:px-6 sm:py-16 md:py-20">
-          <div className="max-w-3xl space-y-3 sm:space-y-5">
+        <div className="relative z-10 mx-auto w-full max-w-5xl px-3 py-8 sm:px-6 sm:py-10 md:py-12">
+          <div className="max-w-xl space-y-3 sm:max-w-2xl sm:space-y-5 lg:max-w-3xl">
             <h1 className="text-balance text-2xl font-semibold tracking-tight text-white drop-shadow-sm sm:text-4xl md:text-5xl">
               Fortify Your Future / 守業增值創未來
             </h1>
