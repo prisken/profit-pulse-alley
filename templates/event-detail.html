@@ -1,0 +1,54 @@
+<!-- Reference template — live pages use src/components/events/EventDetailTemplate.tsx -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{event_title}} | Profit Pulse Ally</title>
+    <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+    <header><!-- Site navigation --></header>
+
+    <main>
+        {{past_event_banner}}
+
+        <section class="event-hero">
+            <h1>{{event_title}}</h1>
+            <p>{{event_subtitle}}</p>
+            <ul>{{event_highlights_list}}</ul>
+            <a href="{{registration_link}}" class="cta-button">{{registration_text}}</a>
+        </section>
+
+        <section class="event-speakers">
+            <h2>{{speakers_section_title}}</h2>
+            <div class="speaker-profiles">{{speaker_profiles}}</div>
+        </section>
+
+        <section class="event-agenda">
+            <h2>Agenda / 活動流程</h2>
+            <ul>{{agenda_items}}</ul>
+        </section>
+
+        <section class="event-details">
+            <div class="venue-info">
+                <h3>Event Venue / 活動場地</h3>
+                <p>{{venue_description}}</p>
+            </div>
+            <div class="details-box">
+                <h4>活動資料</h4>
+                <p><strong>Date & Time:</strong> {{event_date_time}}</p>
+                <p><strong>Location:</strong> {{event_location}}</p>
+                <p><strong>Cost:</strong> {{event_cost}}</p>
+            </div>
+            <div class="map-placeholder">{{map_html}}</div>
+        </section>
+
+        <section class="final-cta">
+            <a href="{{registration_link}}" class="cta-button">{{registration_text}}</a>
+        </section>
+    </main>
+
+    <footer><!-- Site footer --></footer>
+</body>
+</html>

@@ -203,7 +203,7 @@ export default function ConceptPage() {
             準備好踏出第一步了嗎？
           </h2>
           <div className="mt-5 flex flex-col gap-4 sm:mt-6 sm:flex-row sm:justify-center sm:gap-4">
-            <Link href="/event" className={ctaPrimary}>
+            <Link href="/events" className={ctaPrimary}>
               參加我們的線下戰略會議
             </Link>
             <Link href="/blog" className={ctaSecondary}>

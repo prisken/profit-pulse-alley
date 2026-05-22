@@ -81,7 +81,7 @@ export default async function Home() {
             </p>
 
             <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:gap-3 sm:pt-2">
-              <Link href="#" className={ctaPrimaryOnDark}>
+              <Link href="/events/fortify-your-future" className={ctaPrimaryOnDark}>
                 Registration Opens Soon / 即將開放報名
               </Link>
               <Link href="/#meet-the-speakers" className={ctaGhostOnDark}>
@@ -177,10 +177,10 @@ export default async function Home() {
               </p>
             </div>
             <Link
-              href="/fortify-survey"
+              href="/events/fortify-your-future"
               className={`${ctaPrimaryOnDark} shrink-0 shadow-md shadow-black/20 sm:min-w-[10.5rem]`}
             >
-              Register Your Interest
+              View Event Details
             </Link>
           </div>
         </div>

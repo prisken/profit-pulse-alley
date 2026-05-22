@@ -62,7 +62,7 @@ export default function LayoutShell({
               Blog
             </Link>
             <Link
-              href="/event"
+              href="/events"
               className="rounded-md px-2.5 py-1.5 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 sm:px-3 sm:py-2"
             >
               活動
@@ -98,10 +98,10 @@ export default function LayoutShell({
               The Concept
             </Link>
             <Link
-              href="/event"
+              href="/events"
               className="text-foreground/70 transition-colors hover:text-foreground active:text-foreground/90"
             >
-              《我兩樣都要》活動
+              活動
             </Link>
             <Link
               href="/investment-challenge"
