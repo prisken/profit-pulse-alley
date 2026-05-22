@@ -44,23 +44,29 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Hero — full king visible, sized between contain (small) and cover (large) */}
+      {/* Hero — mobile (1600 crop) + desktop (1920 crop), 16:9 banner */}
       <section
         className="relative flex min-h-[290px] max-h-[340px] items-center overflow-hidden bg-zinc-950 sm:min-h-[320px] sm:max-h-[380px] lg:max-h-[400px]"
         aria-label="Fortify Your Future hero"
       >
-        <div className="absolute inset-y-0 right-0 w-full sm:w-[66%] md:w-[58%] lg:w-[54%]">
-          <Image
-            src="/images/fortify-hero-chess-king.png"
-            alt=""
-            fill
-            priority
-            className="pointer-events-none origin-right object-contain object-right scale-[1.05] sm:scale-[1.07]"
-            sizes="(max-width: 640px) 100vw, 58vw"
-          />
-        </div>
+        <Image
+          src="/images/fortify-hero-1600.png"
+          alt=""
+          fill
+          priority
+          className="pointer-events-none object-cover object-center md:hidden"
+          sizes="100vw"
+        />
+        <Image
+          src="/images/fortify-hero-1920.png"
+          alt=""
+          fill
+          priority
+          className="pointer-events-none hidden object-cover object-center md:block"
+          sizes="100vw"
+        />
         <div
-          className="absolute inset-0 bg-gradient-to-r from-zinc-950 from-[36%] via-zinc-950/80 via-[54%] to-transparent sm:from-[40%] sm:via-[58%]"
+          className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 from-[28%] via-zinc-950/65 via-[48%] to-transparent md:from-[32%] md:via-[52%]"
           aria-hidden="true"
         />
 
