@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const FULL_PAGE_ROUTES = ["/fortify-survey"];
+const FULL_PAGE_ROUTES = ["/fortify-survey", "/admin"];
 
 export default function LayoutShell({
   children,

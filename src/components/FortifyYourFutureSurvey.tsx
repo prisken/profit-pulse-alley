@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Gift } from "lucide-react";
 
-const GOOGLE_FORM_EMBED_HTML = `<iframe src="https://docs.google.com/forms/d/e/1FAIpQLSccdr1mmGQghuBYcQ6gy9QYqCCOZG_zw_RuyStHgeOiWGv7ug/viewform?embedded=true" width="640" height="1455" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>`;
+const GOOGLE_FORM_EMBED_HTML = `<iframe src="https://docs.google.com/forms/d/e/1FAIpQLSccdr1mmGQghuBYcQ6gy9QYqCCOZG_zw_RuyStHgeOiWGv7ug/viewform?embedded=true" width="640" height="1789" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>`;
 
 const content = {
   en: {
@@ -13,9 +13,17 @@ const content = {
     hook_line2:
       "When was the last time you stopped working *in* your business to work *on* it?",
     invitation:
-      "We are planning an exclusive fireside chat with Vicky Huang (Co-founder of Zeppelin Hot Dog) and Marcy Chan (Bestselling Investment Author). Before we finalize the details, we want to ensure this event is tailored to you. Your feedback is crucial.",
-    survey_title: "Register Your Interest",
-    survey_subtitle: "Share your preferences below — it only takes a few minutes.",
+      "Join us for an exclusive fireside chat designed to shift your mindset from operator to owner. We have now confirmed the event details. Secure your spot below.",
+    event_details_heading: "Event Details",
+    event_date_label: "Date:",
+    event_date: "June 26th (Friday)",
+    event_time_label: "Time:",
+    event_time: "7:00 PM - 9:00 PM",
+    event_venue_label: "Venue:",
+    event_venue: "WeWork YF Life Tower",
+    registration_title: "Register Now",
+    registration_subtitle:
+      "Fill out the form below to confirm your attendance. Seats are limited.",
     bonus_heading: "Bonus",
     bonus_text:
       "All attendees will receive a free professional headshot at the event. Plus, there might be hot dogs!",
@@ -27,9 +35,16 @@ const content = {
     hook_line1: "被日常工作困住？",
     hook_line2: "你上一次停下腳步，「規劃」你的業務，是在什麼時候？",
     invitation:
-      "我們正籌劃一場與 Vicky Huang (Zeppelin Hot Dog 聯合創辦人) 和 Marcy Chan (暢銷投資書作家) 的獨家爐邊對話。在確定最終細節之前，我們希望確保這次活動是為您量身訂造。您的反饋至關重要。",
-    survey_title: "預先登記你的席位",
-    survey_subtitle: "請在下方分享您的偏好，只需幾分鐘時間。",
+      "我們誠邀您參與這場專屬的爐邊對話，旨在將您的思維從「營運者」轉變為「擁有者」。活動詳情現已確定，請在下方預留您的席位。",
+    event_details_heading: "活動詳情",
+    event_date_label: "日期：",
+    event_date: "6月26日 (星期五)",
+    event_time_label: "時間：",
+    event_time: "晚上 7:00 - 9:00",
+    event_venue_label: "地點：",
+    event_venue: "WeWork YF Life Tower",
+    registration_title: "立即報名",
+    registration_subtitle: "請填寫以下表格以確認出席。座位有限，請盡早報名。",
     bonus_heading: "額外禮遇",
     bonus_text: "所有出席者均可在活動中獲贈一張專業個人頭像照。另外，現場可能會有熱狗！",
     footer: "© 2026 ProfitPulseAlly. 版權所有。",
@@ -111,22 +126,50 @@ export default function FortifyYourFutureSurvey() {
         </section>
 
         <section
+          className="mt-8 w-full sm:mt-10"
+          aria-labelledby="event-details-heading"
+        >
+          <div className="rounded-xl border border-amber-400/20 bg-gray-900/60 px-5 py-5 text-left sm:px-7 sm:py-6">
+            <h2
+              id="event-details-heading"
+              className="text-center font-serif text-lg font-semibold text-amber-400 sm:text-xl"
+            >
+              {t.event_details_heading}
+            </h2>
+            <dl className="mx-auto mt-4 max-w-md space-y-2.5 text-sm text-gray-200 sm:text-base">
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-semibold text-white">{t.event_date_label}</dt>
+                <dd>{t.event_date}</dd>
+              </div>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-semibold text-white">{t.event_time_label}</dt>
+                <dd>{t.event_time}</dd>
+              </div>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-semibold text-white">{t.event_venue_label}</dt>
+                <dd>{t.event_venue}</dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+
+        <section
           className="mt-10 w-full sm:mt-12"
-          aria-labelledby="survey-heading"
+          aria-labelledby="registration-heading"
         >
           <div className="rounded-2xl border border-amber-400/25 bg-gray-900/80 px-4 py-8 shadow-[0_0_40px_rgba(251,191,36,0.06)] sm:px-8 sm:py-10">
             <h2
-              id="survey-heading"
+              id="registration-heading"
               className="text-center font-serif text-2xl font-semibold text-amber-400 sm:text-3xl"
             >
-              {t.survey_title}
+              {t.registration_title}
             </h2>
             <p className="mx-auto mt-2 max-w-md text-center text-sm text-gray-400">
-              {t.survey_subtitle}
+              {t.registration_subtitle}
             </p>
 
             <div
-              className="mx-auto mt-8 w-full max-w-[640px] overflow-hidden rounded-lg border border-gray-700/80 bg-gray-800/50 [&_iframe]:block [&_iframe]:h-[1455px] [&_iframe]:w-full [&_iframe]:max-w-full [&_iframe]:border-0"
+              className="mx-auto mt-8 w-full max-w-[640px] overflow-hidden rounded-lg border border-gray-700/80 bg-gray-800/50 [&_iframe]:block [&_iframe]:h-[1789px] [&_iframe]:w-full [&_iframe]:max-w-full [&_iframe]:border-0"
               dangerouslySetInnerHTML={{ __html: GOOGLE_FORM_EMBED_HTML }}
             />
           </div>
