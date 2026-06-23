@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Trophy } from "lucide-react";
 
-export type LeaderboardEntry = {
-  id: string;
-  rank: number;
-  playerName: string;
-  score: number;
-};
+import type {
+  MarketPulseLeaderboardEntry,
+  MarketPulseLeaderboardView,
+} from "@/lib/market-pulse/types";
+
+export type LeaderboardEntry = MarketPulseLeaderboardEntry;
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -18,12 +18,29 @@ function formatScore(score: number): string {
   return new Intl.NumberFormat("en-HK").format(score);
 }
 
+function formatCycleLabel(cycleId: string): string {
+  const [start, end] = cycleId.split("_");
+  if (!start || !end) {
+    return cycleId;
+  }
+  return `${start} – ${end}`;
+}
+
 export default function GameHub({
-  leaderboard,
-}: Readonly<{ leaderboard: LeaderboardEntry[] }>) {
+  leaderboardView,
+}: Readonly<{ leaderboardView: MarketPulseLeaderboardView }>) {
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isLoading = status === "loading";
+  const { entries: leaderboard, mode, cycleId, usedAllTimeFallback } =
+    leaderboardView;
+
+  const leaderboardSubtitle =
+    mode === "current-cycle" && cycleId
+      ? `Top 10 scores this cycle (${formatCycleLabel(cycleId)})`
+      : usedAllTimeFallback
+        ? "All-time top 10 — no scores posted for the current cycle yet"
+        : "All-time top 10 scores";
 
   return (
     <main className="mx-auto w-full max-w-2xl px-3 py-8 sm:px-6 sm:py-12">
@@ -32,10 +49,18 @@ export default function GameHub({
           <Trophy className="h-7 w-7" aria-hidden="true" />
         </div>
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-          Game Hub
+          Market Pulse Hub
         </h1>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-foreground/70">
           Compete in Market Pulse and climb the leaderboard.
+        </p>
+        <p className="mt-3">
+          <Link
+            href="/market-pulse/rules"
+            className={`text-sm font-medium text-foreground/70 underline-offset-4 hover:text-foreground hover:underline ${focusRing}`}
+          >
+            Read the rules
+          </Link>
         </p>
       </header>
 
@@ -47,14 +72,20 @@ export default function GameHub({
           id="leaderboard-heading"
           className="text-lg font-semibold text-foreground sm:text-xl"
         >
-          Leaderboard
+          Market Pulse Leaderboard
         </h2>
-        <p className="mt-1 text-sm text-foreground/60">Top 10 scores</p>
+        <p className="mt-1 text-sm text-foreground/60">{leaderboardSubtitle}</p>
+
+        {usedAllTimeFallback ? (
+          <p className="mt-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+            No scores for the current cycle yet. Showing all-time leaders below.
+          </p>
+        ) : null}
 
         {leaderboard.length === 0 ? (
           <div className="mt-5 rounded-xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-5 py-10 text-center">
             <p className="text-sm font-medium text-foreground/80">
-              No scores yet
+              {mode === "current-cycle" ? "No scores this cycle yet" : "No scores yet"}
             </p>
             <p className="mt-1 text-sm text-foreground/55">
               Be the first to post a score on the board.
@@ -93,15 +124,15 @@ export default function GameHub({
 
       <section className="mt-8 sm:mt-10" aria-labelledby="play-game-heading">
         <h2 id="play-game-heading" className="sr-only">
-          Play game
+          Play Market Pulse
         </h2>
         <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] px-5 py-6 text-center sm:px-8 sm:py-8">
           {isAuthenticated ? (
             <Link
-              href="/market-pulse"
+              href="/market-pulse/play"
               className={`inline-flex min-h-11 items-center justify-center rounded-full bg-foreground px-8 py-3 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 ${focusRing}`}
             >
-              Play Game
+              Play Market Pulse
             </Link>
           ) : (
             <button
@@ -109,14 +140,14 @@ export default function GameHub({
               disabled
               className="inline-flex min-h-11 cursor-not-allowed items-center justify-center rounded-full bg-foreground/40 px-8 py-3 text-sm font-semibold text-background/80"
             >
-              {isLoading ? "Checking session…" : "Play Game"}
+              {isLoading ? "Checking session…" : "Play Market Pulse"}
             </button>
           )}
 
           {!isAuthenticated && !isLoading ? (
             <p className="mt-3 text-sm text-foreground/65">
               <Link
-                href="/login?callbackUrl=/game"
+                href="/login?callbackUrl=/market-pulse/play"
                 className="font-medium text-foreground underline-offset-4 hover:underline"
               >
                 Sign in
