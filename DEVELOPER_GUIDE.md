@@ -12,8 +12,8 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Database** | Vercel Postgres + Prisma 6 |
 | **Auth** | Auth.js v5 (`next-auth@beta`) + Prisma Adapter |
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
-| **Latest commit** | `897cf49` — content pages, profile redesign (23 Jun 2026) |
-| **Production status** | Deployed; Google OAuth, Prisma Postgres, footer legal/info pages live |
+| **Latest commit** | `078a72f` — Market Pulse rebrand + careers page (23 Jun 2026) |
+| **Production status** | Deployed; Google OAuth, Prisma Postgres, full footer pages live |
 
 ---
 
@@ -37,16 +37,16 @@ The public site is organized around **Market Pulse** — a recurring 10-day inve
 | **Login** | `/login` | Public | Tabs: Sign In (email/password) + Create Account; Google + magic link below |
 | **OAuth onboarding** | `/auth/onboarding` | Logged-in | Collects `contactNumber` for Google users missing it |
 | **Member profile** | `/profile` | Members only | Profile Details card + **Market Pulse History** table; sign out |
-| **Game Hub** | `/game` | Public leaderboard; play requires login | Top 10 scores + **Play Game** → VC challenge |
-| **Market Pulse game** | `/market-pulse` | Via Game Hub when logged in | Saves score on game over |
-| **Admin dashboard** | `/admin` | `ADMIN` only | Members table + VC Game Settings |
+| **Game Hub** | `/game` | Public leaderboard; play requires login | Top 10 scores + **Play Game** → `/market-pulse` |
+| **Market Pulse game** | `/market-pulse` | Via Game Hub when logged in | `MarketPulseGame.tsx`; saves score on game over |
+| **Admin dashboard** | `/admin` | `ADMIN` only | Members table + game theme/event settings (KV) |
 | Game settings API | `/api/game-settings` | GET public; **POST ADMIN only** | KV-backed theme/event |
 | **Contact** | `/contact` | Public | Placeholder — `contact@profitpulseally.com` |
 | **FAQ** | `/faq` | Public | Placeholder — under construction |
 | **Terms of Service** | `/terms` | Public | Placeholder — under construction |
 | **Privacy Policy** | `/privacy` | Public | Placeholder — under construction |
 | **Investment Disclaimer** | `/investment-disclaimer` | Public | Placeholder legal copy + attorney review warning |
-| Careers | `/careers` | — | **Not implemented** — footer link only |
+| **Careers** | `/careers` | Public | Placeholder — `careers@profitpulseally.com` |
 
 ### Confirmed Fortify event details
 
@@ -81,12 +81,13 @@ Google OAuth redirect URIs (must match exactly):
 |-------|--------|
 | **Lint** | `npm run lint` — pass (warnings in legacy `MandateApp.tsx` + TanStack admin table) |
 | **Build** | `npm run build` — runs `prisma db push && next build` on Vercel |
-| **Production deploy** | Vercel `profit-pulse-alley` — **Ready** (commit `897cf49`) |
+| **Production deploy** | Vercel `profit-pulse-alley` — **Ready** (commit `078a72f`) |
 | **Google OAuth** | Account picker → callback → onboarding or homepage |
 | **Database** | Tables synced via `prisma db push` during Vercel build |
 | **Homepage** (`/`) | 200 — Market Pulse sections |
 | **Login** (`/login`) | 200 — Sign In / Create Account + Google |
-| **Content pages** | `/contact`, `/faq`, `/terms`, `/privacy`, `/investment-disclaimer` → 200 |
+| **Content pages** | `/contact`, `/faq`, `/terms`, `/privacy`, `/investment-disclaimer`, `/careers` → 200 |
+| **Market Pulse** | `/market-pulse` live; `/investment-challenge` → 301 redirect |
 | **Onboarding** (`/auth/onboarding`) | 307 → `/login` when guest |
 | **Auth guards** | `/profile` (guest) → login; `/admin` (guest) → `/` |
 | **API** | `GET /api/game-settings` → 200; `POST` (guest) → 403 |
@@ -98,7 +99,7 @@ Google OAuth redirect URIs (must match exactly):
 - [x] **Postgres** — `POSTGRES_URL` from **Storage → Prisma Postgres** (`prisma-postgres-celeste-dog`)
 - [x] **Auth.js** — `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
 - [ ] **Email sign-in** (optional) — `EMAIL_SERVER`, `EMAIL_FROM`
-- [x] **KV** (VC game) — `KV_REST_API_URL`, `KV_REST_API_TOKEN`
+- [x] **KV** (game settings) — `KV_REST_API_URL`, `KV_REST_API_TOKEN`
 - [x] **Schema sync** — automatic via `prisma db push` in `npm run build`
 - [ ] **First admin** — `UPDATE "User" SET role = 'ADMIN' WHERE email = '...'`
 
@@ -135,7 +136,7 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 - **Membership** — Auth.js sign-in (Google + email), profile, role-based admin
 - **Philosophy & trust** — PPA investment philosophy blockquote; expert headshots; sample testimonials data exists but is **not** on current homepage
 - **Marketing** — dark-themed homepage sections, concept page, blog (linked from nav/footer only)
-- **Admin** — member list + VC game theme/event settings (KV)
+- **Admin** — member list + Market Pulse game theme/event settings (KV)
 - **Lead migration** — one-off CSV import script for legacy Google Form responses
 
 ---
@@ -152,7 +153,7 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 ┌───────────────────────────┐   ┌─────────────────────────────────┐
 │   Next.js App Router       │   │   External services              │
 │   Server + Client comps    │   │   • Google OAuth / SMTP          │
-│   API routes               │   │   • Google Sheets (VC game)      │
+│   API routes               │   │   • Google Sheets (Market Pulse game) │
 │   Auth.js v5 (JWT)         │   │   • Google Forms (/fortify-survey)│
 │   Edge middleware          │   └─────────────────────────────────┘
 └───────────────┬───────────┘
@@ -173,7 +174,7 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 | Pattern | Where used |
 |---------|------------|
 | **Server Components** | Homepage, blog, events, profile, admin, game page, content pages (`ContentPageLayout`) |
-| **Client Components** | `MarketPulseHero`, `ChallengeCountdown`, Login, Game Hub, VC game, `LayoutShell`, `SiteFooter`, Fortify registration |
+| **Client Components** | `MarketPulseHero`, `ChallengeCountdown`, Login, Game Hub, `MarketPulseGame`, `LayoutShell`, `SiteFooter`, Fortify registration |
 | **SSG** | Blog posts (`generateStaticParams`) |
 | **Dynamic (ƒ)** | `/admin`, `/profile`, `/api/auth/[...nextauth]` |
 
@@ -202,10 +203,12 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 │   │   ├── game/page.tsx       ← Game Hub
 │   │   ├── login/page.tsx
 │   │   ├── profile/page.tsx    ← Profile Details + Market Pulse History
+│   │   ├── market-pulse/page.tsx   ← Market Pulse game route
 │   │   ├── contact/page.tsx
 │   │   ├── faq/page.tsx
 │   │   ├── terms/page.tsx
 │   │   ├── privacy/page.tsx
+│   │   ├── careers/page.tsx
 │   │   ├── investment-disclaimer/page.tsx
 │   │   ├── fortify-survey/
 │   │   └── …
@@ -279,8 +282,8 @@ npm run dev
 | `PRISMA_DATABASE_URL` | Auto-injected | Prisma Postgres integration (`prisma+postgres://` format) |
 | `EMAIL_SERVER` | For email login | Nodemailer provider (e.g. `smtp://user:pass@host:587`) |
 | `EMAIL_FROM` | For email login | Magic-link sender address |
-| `KV_REST_API_URL` | VC game settings | `@vercel/kv` |
-| `KV_REST_API_TOKEN` | VC game settings | `@vercel/kv` |
+| `KV_REST_API_URL` | Game settings (Market Pulse) | `@vercel/kv` |
+| `KV_REST_API_TOKEN` | Game settings (Market Pulse) | `@vercel/kv` |
 
 `.env.local` is gitignored. **Never commit secrets.**
 
@@ -295,13 +298,16 @@ Nodemailer is **omitted from Auth.js providers** when `EMAIL_SERVER` / `EMAIL_FR
 
 There are **no committed migration files** (`prisma/migrations/`). Schema is synced via:
 
-- **Vercel build:** `prisma db push` runs automatically before `next build`
+- **Vercel build:** `prisma db push` runs automatically before `next build` (see [§13](#13-deployment) to switch to `migrate deploy`)
 - **Local dev:** `npm run db:push` or `npm run db:migrate` after schema changes
 
+**First migration (when ready):**
+
 ```bash
-npm run db:push    # prototyping / match production approach
-npm run db:migrate # when you start committing migration files
+npx prisma migrate dev --name init
 ```
+
+Then change `package.json` build to `prisma migrate deploy && next build` and baseline production if tables already exist from `db push`.
 
 ### Models
 
@@ -355,7 +361,7 @@ Vercel Edge middleware has a **1 MB bundle limit**. Importing `@/auth` in middle
 | `/login` | Public | Tabbed Sign In / Create Account; Google + magic link below; full-page |
 | `/auth/onboarding` | Logged-in | Contact number form; redirects if already set or if guest |
 | `/profile` | Logged-in | Profile Details + Market Pulse History cards; sign out |
-| `/admin` | `role === ADMIN` | Members + VC game settings; others → `/` |
+| `/admin` | `role === ADMIN` | Members + game settings; others → `/` |
 
 **Full-page routes (no header/footer):** `/fortify-survey`, `/login`, `/admin`, `/auth/onboarding`
 
@@ -388,8 +394,9 @@ if (session.user.role !== "ADMIN") redirect("/");
 | `/terms` | `src/app/terms/page.tsx` | Terms placeholder |
 | `/privacy` | `src/app/privacy/page.tsx` | Privacy placeholder |
 | `/investment-disclaimer` | `src/app/investment-disclaimer/page.tsx` | Investment disclaimer (placeholder legal text) |
+| `/careers` | `src/app/careers/page.tsx` | Careers placeholder |
 | `/game` | `src/app/game/page.tsx` | Game Hub — public leaderboard |
-| `/admin` | `src/app/admin/page.tsx` | ADMIN dashboard — members + VC game settings |
+| `/admin` | `src/app/admin/page.tsx` | ADMIN dashboard — members + game settings |
 | `/fortify-survey` | `src/app/fortify-survey/page.tsx` | Fortify registration (QR URL) |
 | `/market-pulse` | `src/app/market-pulse/page.tsx` | Market Pulse game |
 | `/concept`, `/blog/*`, `/events/*` | … | Content & events |
@@ -398,9 +405,9 @@ if (session.user.role !== "ADMIN") redirect("/");
 
 ### Redirects
 
-| Source | Destination |
-|--------|-------------|
-| `/event` | `/events` |
+| Source | Destination | Notes |
+|--------|-------------|-------|
+| `/event` | `/events` | 301 permanent |
 | `/investment-challenge` | `/market-pulse` | 301 permanent (`next.config.ts`) |
 
 ---
@@ -424,7 +431,7 @@ Four columns (stack on mobile, 4-col on `lg`):
 | Column | Links / content |
 |--------|------------------|
 | **PPA** | Game, Events, Our Philosophy, Blog |
-| **Community** | Contact Us → `/contact`, FAQs → `/faq`, Careers → `/careers` *(404 — not built)* |
+| **Community** | Contact Us → `/contact`, FAQs → `/faq`, Careers → `/careers` |
 | **Legal** | Terms → `/terms`, Privacy → `/privacy`, **Investment Disclaimer** → `/investment-disclaimer` |
 | **Stay Connected** | Email + Subscribe (client-only UI); LinkedIn, Twitter, Instagram — **inline SVGs** (not lucide brand icons) |
 
@@ -482,7 +489,7 @@ Server component using `auth()` + Prisma:
 Server-side `ADMIN` role check (non-admins → `/`). Two panels:
 
 1. **Members** — `AdminMembersTable.tsx` (TanStack React Table): sortable user list (email, name, role, created).
-2. **VC Game Settings** — `AdminGameSettings.tsx`: loads/saves theme + event via GET/POST `/api/game-settings` (POST requires admin session cookie).
+2. **Game Settings** — `AdminGameSettings.tsx`: loads/saves theme + event via GET/POST `/api/game-settings` (POST requires admin session cookie).
 
 Replaced legacy password gate (`NEXT_PUBLIC_ADMIN_PASSWORD`) and old Game Master-only UI.
 
@@ -502,7 +509,7 @@ Shared layout at `src/components/layout/ContentPageLayout.tsx` for simple info/l
 - Full-screen dark background (`bg-zinc-950`), centered card (`max-w-4xl`, `bg-zinc-900`)
 - Title as `h1`; body wrapped in `prose prose-invert`
 
-**Current routes:** `/contact`, `/faq`, `/terms`, `/privacy`, `/investment-disclaimer` — all placeholder copy except contact email. Investment disclaimer includes an amber **attorney review** warning box.
+**Current routes:** `/contact`, `/faq`, `/terms`, `/privacy`, `/careers`, `/investment-disclaimer` — placeholder copy except contact and careers emails. Investment disclaimer includes an amber **attorney review** warning box.
 
 **To add a new page:**
 
@@ -534,7 +541,7 @@ Standard Auth.js v5 endpoints (sign-in, sign-out, callbacks, session).
 
 | Method | Auth | Behavior |
 |--------|------|----------|
-| GET | Public | Returns KV `{ theme, event }` or defaults (VC game reads this at runtime) |
+| GET | Public | Returns KV `{ theme, event }` or defaults (`MarketPulseGame` reads this at runtime) |
 | POST | `ADMIN` only | Validates body via `parseGameSettings`, saves to KV; 403 if not admin |
 
 Admin UI: `AdminGameSettings.tsx` on `/admin`.
@@ -651,14 +658,13 @@ Use `ContentPageLayout` — see [§10.9](#109-content-pages-contentpagelayout). 
 
 ## 16. Known inconsistencies
 
-1. **Careers page** — `/careers` footer link still returns 404.
-2. **Placeholder legal copy** — `/terms`, `/privacy`, `/investment-disclaimer`, and `/faq` need real content from legal/comms before public launch. Investment disclaimer includes an explicit placeholder warning.
-3. **Newsletter** — `SiteFooter` subscribe is UI-only; no backend or mailing list integration.
-4. **Social URLs** — LinkedIn/Twitter in footer use placeholder company URLs; Instagram uses the live profile link.
-5. **Past events data** — Two of three homepage past-event cards use placeholder archive paths under `/events/archive/…`.
-6. **Agenda times** — Event detail agenda slots vs registration page headline times may differ slightly.
-7. **Branding** — Game Hub nav label is **Market Pulse** (links to `/game`); playable challenge at `/market-pulse`. Footer still says **Game** → `/game`.
-8. **No migration files** — Production relies on `prisma db push` in build; consider adding `prisma/migrations/` for repeatable schema changes.
+1. **Placeholder legal copy** — `/terms`, `/privacy`, `/investment-disclaimer`, and `/faq` need real content from legal/comms before public launch. Investment disclaimer includes an explicit placeholder warning.
+2. **Newsletter** — `SiteFooter` subscribe is UI-only; no backend or mailing list integration.
+3. **Social URLs** — LinkedIn/Twitter in footer use placeholder company URLs; Instagram uses the live profile link.
+4. **Past events data** — Two of three homepage past-event cards use placeholder archive paths under `/events/archive/…`.
+5. **Agenda times** — Event detail agenda slots vs registration page headline times may differ slightly.
+6. **Branding** — Header nav says **Market Pulse** → `/game` (Game Hub); playable challenge at `/market-pulse`. Footer PPA column still says **Game** → `/game`.
+7. **No migration files** — Production relies on `prisma db push` in build; migrate to `prisma migrate deploy` when ready (see [§6](#6-database--prisma)).
 
 ---
 
@@ -670,7 +676,7 @@ Use `ContentPageLayout` — see [§10.9](#109-content-pages-contentpagelayout). 
 | Auth actions | `src/lib/auth-actions.ts` |
 | Login / onboarding | `LoginPage.tsx`, `OnboardingPage.tsx`, `/auth/onboarding` |
 | Content layout | `src/components/layout/ContentPageLayout.tsx` |
-| Legal / info pages | `src/app/contact/`, `faq/`, `terms/`, `privacy/`, `investment-disclaimer/` |
+| Legal / info pages | `src/app/contact/`, `faq/`, `terms/`, `privacy/`, `careers/`, `investment-disclaimer/` |
 | Profile | `src/app/profile/page.tsx` |
 | Admin | `src/app/admin/page.tsx`, `AdminMembersTable.tsx`, `AdminGameSettings.tsx` |
 | Game Hub | `src/app/game/page.tsx`, `src/components/game/GameHub.tsx` |
@@ -697,4 +703,4 @@ Use `ContentPageLayout` — see [§10.9](#109-content-pages-contentpagelayout). 
 
 ---
 
-*Last updated: 23 Jun 2026 — commit `897cf49`: ContentPageLayout, footer info/legal pages, profile Market Pulse History; production auth + Postgres operational*
+*Last updated: 23 Jun 2026 — commit `078a72f`: Market Pulse route/component rebrand, `/careers` page, all footer links live; production auth + Postgres operational*
