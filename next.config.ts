@@ -9,8 +9,13 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
-        source: "/investment-challenge",
+        source: "/game",
         destination: "/market-pulse",
+        permanent: true,
+      },
+      {
+        source: "/investment-challenge",
+        destination: "/market-pulse/play",
         permanent: true,
       },
     ];

@@ -60,7 +60,7 @@ export default function LayoutShell({
               aria-label="Main"
               className="flex min-w-0 flex-wrap items-center gap-0.5 text-[13px] font-medium sm:gap-1 sm:text-sm"
             >
-              <Link href="/game" className={navLinkClass}>
+              <Link href="/market-pulse" className={navLinkClass}>
                 Market Pulse
               </Link>
               <Link href="/events" className={navLinkClass}>

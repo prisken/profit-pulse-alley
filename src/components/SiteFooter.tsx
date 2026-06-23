@@ -69,7 +69,7 @@ function InstagramIcon() {
 }
 
 const PPA_LINKS = [
-  { label: "Game", href: "/game" },
+  { label: "Market Pulse", href: "/market-pulse" },
   { label: "Events", href: "/events" },
   { label: "Our Philosophy", href: "/concept" },
   { label: "Blog", href: "/blog" },
