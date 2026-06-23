@@ -1,6 +1,7 @@
 import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
 
+import { auth } from "@/auth";
 import {
   DEFAULT_GAME_SETTINGS,
   GAME_SETTINGS_KEY,
@@ -20,6 +21,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const session = await auth();
+
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const body: unknown = await request.json();
     const settings = parseGameSettings(body);

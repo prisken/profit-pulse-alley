@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import LayoutShell from "@/components/LayoutShell";
+import AuthSessionProvider from "@/components/providers/AuthSessionProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +31,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-dvh flex flex-col bg-background text-foreground">
-        <LayoutShell>{children}</LayoutShell>
+        <AuthSessionProvider>
+          <LayoutShell>{children}</LayoutShell>
+        </AuthSessionProvider>
       </body>
     </html>
   );

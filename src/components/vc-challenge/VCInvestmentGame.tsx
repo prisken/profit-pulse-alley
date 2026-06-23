@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -12,6 +13,7 @@ import {
   DEFAULT_GAME_SETTINGS,
   type GameSettings,
 } from "@/lib/game-settings";
+import { saveGameScore } from "@/lib/game-actions";
 
 const STARTUP_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9mkTwOKXPq79Zs2BEQHUBZaYH_vO381H7aK1VVNp0MXUmcTo0syJRSoDkBwHMo8N5oVcnBYV8MlqI/pub?gid=0&single=true&output=csv";
@@ -162,6 +164,7 @@ export default function VCInvestmentGame() {
   );
   const [initError, setInitError] = useState<string | null>(null);
   const [pendingDealIndex, setPendingDealIndex] = useState<number | null>(null);
+  const scoreSavedRef = useRef(false);
 
   const appendLog = useCallback((message: string) => {
     setLog((prev) => [`[${new Date().toLocaleTimeString()}] ${message}`, ...prev].slice(0, 50));
@@ -187,6 +190,7 @@ export default function VCInvestmentGame() {
   const initializeGame = useCallback(async () => {
     setGameState("loading");
     setInitError(null);
+    scoreSavedRef.current = false;
     setCash(INITIAL_CASH);
     setPortfolio([]);
     setCurrentYear(2026);
@@ -301,28 +305,71 @@ export default function VCInvestmentGame() {
     [appendLog, currentYear, newsEvents, unicornDayActive],
   );
 
+  const handleGameOver = useCallback(
+    (
+      finalCash: number,
+      finalPortfolio: PortfolioCompany[],
+      logMessage: string,
+    ) => {
+      setGameState("gameOver");
+      appendLog(logMessage);
+
+      if (scoreSavedRef.current) {
+        return;
+      }
+      scoreSavedRef.current = true;
+
+      const finalPortfolioValue = finalPortfolio.reduce(
+        (sum, company) => sum + holdingValue(company),
+        0,
+      );
+      const finalScore = Math.round(finalCash + finalPortfolioValue);
+
+      void saveGameScore(finalScore).then((result) => {
+        if (result.saved) {
+          appendLog(
+            `Score saved to your profile (${formatMoney(finalScore)}).`,
+          );
+        }
+      });
+    },
+    [appendLog],
+  );
+
   const checkGameOver = useCallback(
-    (nextCash: number, nextDealIndex: number) => {
+    (
+      nextCash: number,
+      nextDealIndex: number,
+      nextPortfolio: PortfolioCompany[],
+    ) => {
       if (nextCash < 0) {
-        setGameState("gameOver");
-        appendLog("Game over — cash balance fell below zero.");
+        handleGameOver(
+          nextCash,
+          nextPortfolio,
+          "Game over — cash balance fell below zero.",
+        );
         return true;
       }
       if (nextDealIndex >= shuffledDeals.length) {
-        setGameState("gameOver");
-        appendLog("Game over — all deals reviewed.");
+        handleGameOver(
+          nextCash,
+          nextPortfolio,
+          "Game over — all deals reviewed.",
+        );
         return true;
       }
       return false;
     },
-    [appendLog, shuffledDeals.length],
+    [handleGameOver, shuffledDeals.length],
   );
 
   const advanceAfterDecision = useCallback(
     (nextCash: number, nextPortfolio: PortfolioCompany[]) => {
       const nextIndex = currentDealIndex + 1;
 
-      if (checkGameOver(nextCash, nextIndex)) {
+      if (checkGameOver(nextCash, nextIndex, nextPortfolio)) {
+        setCash(nextCash);
+        setPortfolio(nextPortfolio);
         return;
       }
 

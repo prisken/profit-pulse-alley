@@ -20,7 +20,7 @@ export const fortifyYourFutureEvent: EventDetailData = {
     },
   ],
   registrationLink: "/fortify-survey",
-  registrationText: "Register Your Interest Now / 立即登記",
+  registrationText: "Register Now / 立即報名",
   speakersSectionTitle: "Meet the Speakers / 本次活動嘉賓",
   speakers: [
     {
@@ -47,9 +47,9 @@ export const fortifyYourFutureEvent: EventDetailData = {
     { time: "21:00 onwards:", description: "Deep Networking & Closing" },
   ],
   venueDescription:
-    "The event will be held at a high-quality, convenient location in the city center, providing an inspiring environment for networking and learning.",
-  eventDateTime: "To Be Confirmed",
-  eventLocation: "To Be Confirmed",
+    "Join us at WeWork YF Life Tower — a premium city-center venue with an inspiring environment for networking and learning.",
+  eventDateTime: "June 26th (Friday), 7:00 PM – 9:00 PM",
+  eventLocation: "WeWork YF Life Tower",
   eventCost: "Free",
   heroImage: {
     mobileSrc: "/images/fortify-event-poster.png",

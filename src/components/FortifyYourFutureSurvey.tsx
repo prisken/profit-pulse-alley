@@ -1,3 +1,8 @@
+// --- CRITICAL --- //
+// DO NOT MODIFY THIS COMPONENT OR THE /fortify-survey ROUTE.
+// This is a live lead capture funnel linked from physical QR codes.
+// ---------------- //
+
 "use client";
 
 import React, { useState } from "react";

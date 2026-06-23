@@ -9,40 +9,114 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **App directory** | `--tailwindcss/` (Next.js project root) |
 | **Framework** | Next.js 16 (App Router) + React 19 + TypeScript |
 | **Styling** | Tailwind CSS v4 |
-| **Hosting** | Vercel (typical deployment target) |
+| **Database** | Vercel Postgres + Prisma 6 |
+| **Auth** | Auth.js v5 (`next-auth@beta`) + Prisma Adapter |
+| **Hosting** | Vercel (auto-deploy from `main`) |
+| **Local status** | Lint + build **pass** (23 Jun 2026); ready for deploy on `main` |
+
+---
+
+## Current site status (May 2026)
+
+### Site strategy (current)
+
+The public site is organized around **Market Pulse** — a recurring 10-day investment challenge with leaderboard prizes — plus **fireside events**, **membership**, and **expert-led philosophy** (PPA Take). The homepage is visual-first (dark zinc theme); blog preview and legacy promo sections were removed from `/`.
+
+### Feature matrix
+
+| Feature | Route | Auth | Status |
+|---------|-------|------|--------|
+| **Homepage** | `/` | Public | **Market Pulse** hero + countdown; Play Learn Win; Live Events Hub; philosophy; final CTA → `/login` |
+| Brand concept | `/concept` | Public | “Our Philosophy” in nav |
+| Blog (EN + zh-HK) | `/blog`, `/blog/{lang}/[slug]` | Public | 3 paired articles (not on homepage) |
+| Events hub | `/events` | Public | Live |
+| Fortify event detail | `/events/fortify-your-future` | Public | Synced with `/fortify-survey`; homepage **Register for Free** |
+| Past event archive | `/events/wo-leung-yiu-dou-yiu` | Public | Registration closed; in homepage past-events grid |
+| **Fortify registration** | `/fortify-survey` | Public | **QR-coded URL — do not change** |
+| **Login** | `/login` | Public | Tabs: Sign In (email/password) + Create Account; Google + magic link below |
+| **OAuth onboarding** | `/auth/onboarding` | Logged-in | Collects `contactNumber` for Google users missing it |
+| **Member profile** | `/profile` | Members only | Name, email, scores, sign out |
+| **Game Hub** | `/game` | Public leaderboard; play requires login | Top 10 scores + **Play Game** → VC challenge |
+| VC Investment Challenge | `/investment-challenge` | Via Game Hub when logged in | Saves score on game over |
+| **Admin dashboard** | `/admin` | `ADMIN` only | Members table + VC Game Settings |
+| Game settings API | `/api/game-settings` | GET public; **POST ADMIN only** | KV-backed theme/event |
+| Footer placeholder pages | `/contact`, `/faq`, `/careers`, `/terms`, `/privacy`, `/investment-disclaimer` | — | **Routes not implemented** — footer links only |
+
+### Confirmed Fortify event details
+
+Authoritative on **`/fortify-survey`** (QR codes) and mirrored on **`/events/fortify-your-future`**:
+
+| Field | English | 中文 |
+|-------|---------|------|
+| Date | June 26th (Friday) | 6月26日 (星期五) |
+| Time | 7:00 PM – 9:00 PM | 晚上 7:00 – 9:00 |
+| Venue | WeWork YF Life Tower | WeWork YF Life Tower |
+| Registration CTA | Register Now / 立即報名 → `/fortify-survey` | 同上 |
+
+### Verification (local) — last run 23 Jun 2026
+
+| Check | Result |
+|-------|--------|
+| **Lint** | `npm run lint` — **pass** (0 errors; 8 warnings in legacy `MandateApp.tsx` + TanStack admin table) |
+| **Build** | `npm run build` — **pass** (TypeScript + static generation) |
+| **Homepage** (`/`) | 200 — Market Pulse, Play Now, Live Events Hub, footer |
+| **Login** (`/login`) | 200 — tabbed Sign In / Create Account (client-rendered) |
+| **Onboarding** (`/auth/onboarding`) | 307 → `/login?callbackUrl=/auth/onboarding` when guest |
+| **Nav routes** | `/game`, `/events`, `/concept`, `/blog` → 200 |
+| **Auth guards** | `/profile` (guest) → 307 `/login?callbackUrl=/profile`; `/admin` (guest) → 307 `/` |
+| **API** | `GET /api/game-settings` → 200; `POST` (guest) → 403 |
+| **Import script** | `npm run import-leads` — requires `scripts/leads.csv` + Postgres env |
+
+**Deploy prerequisites:** Run `npx prisma migrate deploy` on Vercel after push (adds `contactNumber` + `password` to `User`). Set Postgres + Auth env vars before membership features work in production.
+
+**Auth notes:** Sessions use **JWT** strategy (required for Credentials/password login). Prisma adapter still persists users/accounts. Nodemailer registers only when `EMAIL_SERVER` + `EMAIL_FROM` are set.
+
+**Postgres note:** Without `POSTGRES_PRISMA_URL`, leaderboard/profile/admin degrade gracefully; connect Postgres for full features.
+
+### Vercel infrastructure checklist
+
+- [ ] **Postgres** — `POSTGRES_PRISMA_URL`, `POSTGRES_URL_NON_POOLING`
+- [ ] **Auth.js** — `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
+- [ ] **Email sign-in** (optional) — `EMAIL_SERVER`, `EMAIL_FROM`
+- [ ] **KV** (VC game) — `KV_REST_API_URL`, `KV_REST_API_TOKEN`
+- [ ] Run `npx prisma migrate deploy` after connecting Postgres (includes `contactNumber`, `password` on `User`)
+- [ ] Promote first admin: `UPDATE "User" SET role = 'ADMIN' WHERE email = '...'`
 
 ---
 
 ## Table of contents
 
+0. [Current site status](#current-site-status-may-2026)
 1. [What this site does](#1-what-this-site-does)
 2. [Architecture overview](#2-architecture-overview)
 3. [Repository structure](#3-repository-structure)
 4. [Local development](#4-local-development)
 5. [Environment variables](#5-environment-variables)
-6. [Routing & pages](#6-routing--pages)
-7. [Layout & navigation](#7-layout--navigation)
-8. [Feature areas](#8-feature-areas)
-9. [Backend & API](#9-backend--api)
-10. [Data & external services](#10-data--external-services)
-11. [Static assets](#11-static-assets)
-12. [Deployment](#12-deployment)
-13. [How to extend the site](#13-how-to-extend-the-site)
-14. [Legacy & unused code](#14-legacy--unused-code)
-15. [Known inconsistencies](#15-known-inconsistencies)
+6. [Database & Prisma](#6-database--prisma)
+7. [Authentication & membership](#7-authentication--membership)
+8. [Routing & pages](#8-routing--pages)
+9. [Layout & navigation](#9-layout--navigation)
+10. [Feature areas](#10-feature-areas)
+11. [Backend & API](#11-backend--api)
+12. [Scripts & tooling](#12-scripts--tooling)
+13. [Deployment](#13-deployment)
+14. [How to extend the site](#14-how-to-extend-the-site)
+15. [Legacy & unused code](#15-legacy--unused-code)
+16. [Known inconsistencies](#16-known-inconsistencies)
 
 ---
 
 ## 1. What this site does
 
-Profit Pulse Ally is a bilingual (English / Traditional Chinese) community site for new-generation investors and founders. It combines:
+Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning community for new-generation investors and founders. The current product narrative centers on **Market Pulse**:
 
-- **Marketing & content** — homepage, brand concept page, blog
-- **Events** — upcoming *Fortify Your Future* event hub, detail pages, and a past-event archive
-- **Lead capture** — bilingual survey landing page with embedded Google Form
-- **Interactive games** — VC Investment Challenge (live) and Castle Siege / MandateApp (legacy, not routed)
-
-There is **no traditional user authentication** for visitors. The only “auth” is a lightweight client-side password gate on `/admin` for game configuration.
+- **Market Pulse game** — 10-day cycle countdown on homepage; Game Hub leaderboard; VC Investment Challenge; scores saved to Postgres
+- **Events** — Fortify Your Future hub/detail; past-event showcase on homepage; `/fortify-survey` registration (fixed QR URL)
+- **Membership** — Auth.js sign-in (Google + email), profile, role-based admin
+- **Philosophy & trust** — PPA investment philosophy blockquote; expert headshots; sample testimonials data exists but is **not** on current homepage
+- **Marketing** — dark-themed homepage sections, concept page, blog (linked from nav/footer only)
+- **Admin** — member list + VC game theme/event settings (KV)
+- **Lead migration** — one-off CSV import script for legacy Google Form responses
 
 ---
 
@@ -51,37 +125,36 @@ There is **no traditional user authentication** for visitors. The only “auth�
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Browser (client)                         │
-│  React components ("use client") + Next.js Server Components     │
+│  React + next-auth/react (SessionProvider, useSession)           │
 └───────────────┬─────────────────────────────┬───────────────────┘
                 │                             │
                 ▼                             ▼
 ┌───────────────────────────┐   ┌─────────────────────────────────┐
-│   Next.js App Router       │   │   External data sources          │
-│   (SSR / SSG at build)     │   │   • Google Sheets (CSV export)   │
-│                            │   │   • Google Forms (iframe embed)  │
-│   pages in src/app/        │   │   • picsum.photos (blog fallback)│
-│   API routes in src/app/api│   └─────────────────────────────────┘
-└───────────────┬───────────┘
+│   Next.js App Router       │   │   External services              │
+│   Server + Client comps    │   │   • Google OAuth / SMTP          │
+│   API routes               │   │   • Google Sheets (VC game)      │
+│   auth() server sessions   │   │   • Google Forms (/fortify-survey)│
+└───────────────┬───────────┘   └─────────────────────────────────┘
                 │
-                ▼
-┌───────────────────────────┐
-│   Vercel KV / Upstash      │
-│   Redis (game-settings)    │
-└───────────────────────────┘
+        ┌───────┴───────┐
+        ▼               ▼
+┌──────────────┐ ┌──────────────┐
+│ Vercel       │ │ Vercel KV    │
+│ Postgres     │ │ (game-settings)│
+│ User,        │ └──────────────┘
+│ GameScore,   │
+│ Auth tables  │
+└──────────────┘
 ```
 
 ### Rendering model
 
 | Pattern | Where used |
 |---------|------------|
-| **Server Components** (default) | Homepage, blog listing/posts, events pages, concept page |
-| **Client Components** (`"use client"`) | LayoutShell, BlogHub, Fortify survey, VC game, admin panel |
-| **Static generation** | Blog posts via `generateStaticParams` |
-| **API Routes** | `GET/POST /api/game-settings` |
-
-### Path alias
-
-TypeScript resolves `@/*` → `src/*` (see `tsconfig.json`).
+| **Server Components** | Homepage sections (events data), blog, events, profile, admin, game page |
+| **Client Components** | `MarketPulseHero`, `ChallengeCountdown`, Login, Game Hub, VC game, `LayoutShell`, `SiteFooter`, Fortify registration |
+| **SSG** | Blog posts (`generateStaticParams`) |
+| **Dynamic (ƒ)** | `/admin`, `/profile`, `/api/auth/[...nextauth]` |
 
 ---
 
@@ -89,25 +162,57 @@ TypeScript resolves `@/*` → `src/*` (see `tsconfig.json`).
 
 ```
 --tailwindcss/
-├── DEVELOPER_GUIDE.md          ← this file
-├── .env.example                ← env var template (note: .gitignore uses .env*)
-├── next.config.ts              ← redirects, image remote patterns
-├── package.json
-├── posts/                      ← blog markdown (not in src/)
-│   ├── en/*.md
-│   └── zh-hk/*.md
-├── public/                     ← static files served at /
-│   ├── logo.png
-│   ├── images/                 ← Fortify hero & event posters
-│   ├── event/                  ← past event imagery
-│   ├── blog/                   ← post cover images
-│   └── …headshots, hero assets
+├── DEVELOPER_GUIDE.md
+├── prisma/
+│   └── schema.prisma           ← User, GameScore, Auth.js models
+├── scripts/
+│   ├── import-leads.ts         ← CSV → User migration
+│   └── leads.csv               ← place Google Form export here (gitignore recommended)
+├── posts/                      ← blog markdown
+├── public/
 ├── src/
-│   ├── app/                    ← Next.js App Router (routes + API)
-│   ├── components/             ← shared & feature UI
-│   └── lib/                    ← server utilities, types, KV helpers
-└── templates/
-    └── event-detail.html       ← reference HTML (not used at runtime)
+│   ├── auth.ts                 ← Auth.js config (handlers, auth, signIn, signOut)
+│   ├── app/
+│   │   ├── admin/page.tsx      ← ADMIN dashboard (members + game settings)
+│   │   ├── api/auth/[...nextauth]/route.ts
+│   │   ├── api/game-settings/  ← GET public; POST ADMIN-only
+│   │   ├── game/page.tsx       ← Game Hub
+│   │   ├── login/page.tsx
+│   │   ├── profile/page.tsx
+│   │   ├── fortify-survey/
+│   │   └── …
+│   ├── components/
+│   │   ├── SiteFooter.tsx          ← four-column footer + newsletter (client)
+│   │   ├── LayoutShell.tsx         ← header nav + footer wrapper
+│   │   ├── home/                   ← current homepage sections
+│   │   │   ├── MarketPulseHero.tsx
+│   │   │   ├── ChallengeCountdown.tsx
+│   │   │   ├── PlayLearnWinSection.tsx
+│   │   │   ├── LiveEventsHubSection.tsx
+│   │   │   ├── PhilosophySection.tsx
+│   │   │   └── FinalCtaSection.tsx
+│   │   ├── admin/AdminMembersTable.tsx
+│   │   ├── admin/AdminGameSettings.tsx
+│   │   ├── auth/LoginPage.tsx
+│   │   ├── game/GameHub.tsx
+│   │   ├── providers/AuthSessionProvider.tsx
+│   │   ├── vc-challenge/VCInvestmentGame.tsx
+│   │   └── FortifyYourFutureSurvey.tsx  ← ⚠ DO NOT MODIFY (QR funnel)
+│   ├── lib/
+│   │   ├── prisma.ts
+│   │   ├── auth-actions.ts
+│   │   ├── game-actions.ts
+│   │   ├── game-challenge-cycle.ts  ← Market Pulse 10-day countdown math
+│   │   ├── blog.ts
+│   │   ├── game-settings.ts
+│   │   ├── events/
+│   │   │   ├── fortify-your-future.ts
+│   │   │   └── home-events-hub.ts   ← past-event showcase placeholders
+│   │   └── home/
+│   │       ├── proof-of-concept.ts  ← philosophy + experts
+│   │       └── testimonials.ts      ← sample quotes (unused on homepage)
+│   └── types/next-auth.d.ts    ← Session.user.id + role augmentation
+└── templates/event-detail.html
 ```
 
 ---
@@ -116,458 +221,328 @@ TypeScript resolves `@/*` → `src/*` (see `tsconfig.json`).
 
 ```bash
 cd --tailwindcss
-npm install
+npm install          # runs prisma generate via postinstall
+cp .env.example .env.local   # fill in Postgres, Auth, optional KV/SMTP
+npx prisma migrate dev       # first-time DB setup
 npm run dev
 ```
 
 | Command | Purpose |
 |---------|---------|
-| `npm run dev` | Dev server (default http://localhost:3000, Turbopack) |
-| `npm run build` | Production build |
-| `npm run start` | Serve production build |
+| `npm run dev` | Dev server (http://localhost:3000) |
+| `npm run build` | Production build + typecheck |
 | `npm run lint` | ESLint |
-
-Copy `.env.example` to `.env.local` and fill in values for KV and admin password when testing game settings persistence.
+| `npm run db:migrate` | Prisma migrate dev |
+| `npm run db:push` | Push schema without migration |
+| `npm run import-leads` | Import `scripts/leads.csv` → User table |
 
 ---
 
 ## 5. Environment variables
 
-| Variable | Required | Used by | Description |
-|----------|----------|---------|-------------|
-| `KV_REST_API_URL` | Production (game settings) | `@vercel/kv`, `/api/game-settings` | Upstash/Vercel Redis REST URL |
-| `KV_REST_API_TOKEN` | Production (game settings) | Same | Redis REST token (read/write) |
-| `NEXT_PUBLIC_ADMIN_PASSWORD` | Recommended in prod | `/admin` | Client-side admin gate. If unset, admin is open (dev convenience). |
+| Variable | Required | Used by |
+|----------|----------|---------|
+| `POSTGRES_PRISMA_URL` | Yes (membership, game hub, admin) | Prisma (pooled) |
+| `POSTGRES_URL_NON_POOLING` | Yes (migrations) | Prisma `directUrl` |
+| `AUTH_SECRET` | Yes (production) | Auth.js (`openssl rand -base64 32`) |
+| `AUTH_GOOGLE_ID` | For Google login | Auth.js Google provider |
+| `AUTH_GOOGLE_SECRET` | For Google login | Auth.js Google provider |
+| `EMAIL_SERVER` | For email login | Nodemailer provider (e.g. `smtp://user:pass@host:587`) |
+| `EMAIL_FROM` | For email login | Magic-link sender address |
+| `KV_REST_API_URL` | VC game settings | `@vercel/kv` |
+| `KV_REST_API_TOKEN` | VC game settings | `@vercel/kv` |
 
-`.env.local` is gitignored. **Never commit secrets.** Rotate tokens if exposed.
+`.env.local` is gitignored. **Never commit secrets.**
 
-Optional / unused by current live code:
-
-- `KV_URL`, `REDIS_URL` — direct Redis URLs; the app uses REST via `@vercel/kv`
-- `src/lib/kv.ts` — alternate KV wrapper with `getKv()` / `isKvConfigured()` (used by older `game-master` scaffold, not the live admin API)
+Nodemailer is **omitted from Auth.js providers** when `EMAIL_SERVER` / `EMAIL_FROM` are unset — allows local build without SMTP.
 
 ---
 
-## 6. Routing & pages
+## 6. Database & Prisma
 
-### Public routes
+**Schema:** `prisma/schema.prisma`  
+**Client:** `src/lib/prisma.ts` (singleton)
 
-| Route | File | Type | Description |
-|-------|------|------|-------------|
-| `/` | `src/app/page.tsx` | Server | Homepage — Fortify hero, speakers, event promo, blog teaser, Castle Siege CTA |
-| `/concept` | `src/app/concept/page.tsx` | Server | “零成本人生” brand concept page |
-| `/blog` | `src/app/blog/page.tsx` | Server | Blog hub with language tabs |
-| `/blog/en` | `src/app/blog/en/page.tsx` | Server | English post index |
-| `/blog/zh-hk` | `src/app/blog/zh-hk/page.tsx` | Server | Chinese (HK) post index |
-| `/blog/en/[slug]` | `src/app/blog/en/[slug]/page.tsx` | SSG | English article |
-| `/blog/zh-hk/[slug]` | `src/app/blog/zh-hk/[slug]/page.tsx` | SSG | Chinese article |
-| `/blog/[slug]` | `src/app/blog/[slug]/page.tsx` | Redirect | → `/blog/zh-hk/[slug]` |
-| `/events` | `src/app/events/page.tsx` | Server | Events hub (upcoming + past) |
-| `/events/fortify-your-future` | `src/app/events/fortify-your-future/page.tsx` | Server | Fortify event detail |
-| `/events/wo-leung-yiu-dou-yiu` | `src/app/events/wo-leung-yiu-dou-yiu/page.tsx` | Server | Past event archive |
-| `/fortify-survey` | `src/app/fortify-survey/page.tsx` | Client | Bilingual interest survey + Google Form |
-| `/investment-challenge` | `src/app/investment-challenge/page.tsx` | Client | VC Investment Challenge game |
-| `/admin` | `src/app/admin/page.tsx` | Client | Game Master admin (theme/event) |
+**Migrations:** Run locally after schema changes:
+
+```bash
+npx prisma migrate dev --name add-password-auth   # adds contactNumber + password
+npx prisma migrate deploy                        # production (Vercel)
+```
+
+Or `npm run db:push` for prototyping only.
+
+### Models
+
+| Model | Purpose |
+|-------|---------|
+| `User` | Members — `email`, `name`, `image`, `contactNumber?`, `password?` (bcrypt hash), `role` (`USER` \| `ADMIN`) |
+| `GameScore` | Scores linked to `User` — `score`, timestamps |
+| `Account`, `Session`, `VerificationToken` | Auth.js Prisma Adapter |
+
+### First admin user
+
+After signing up via `/login`, promote in SQL or Prisma Studio:
+
+```sql
+UPDATE "User" SET role = 'ADMIN' WHERE email = 'you@example.com';
+```
+
+---
+
+## 7. Authentication & membership
+
+**Config:** `src/auth.ts`  
+**Actions:** `src/lib/auth-actions.ts` — `signUpWithPassword`, `updateContactNumber`, `signOutAction`  
+**Route:** `src/app/api/auth/[...nextauth]/route.ts`  
+**Session:** **JWT** strategy (supports Credentials + OAuth); `jwt` + `session` callbacks add `id` and `role`
+
+### Providers
+
+| Provider | Purpose |
+|----------|---------|
+| **Google OAuth** | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` |
+| **Credentials** | Email + password (`bcrypt.compare` against `User.password`) |
+| **Nodemailer** | Magic link when `EMAIL_SERVER` + `EMAIL_FROM` set |
+
+### Sign-up & onboarding
+
+- **Create Account** tab on `/login` → `signUpWithPassword()` hashes password with bcrypt, stores `contactNumber`
+- **OAuth onboarding:** `signIn` callback redirects Google (and other OAuth) users without `contactNumber` → `/auth/onboarding`
+- **Onboarding form** → `updateContactNumber()` updates the logged-in user
+
+### Pages
+
+| Route | Protection | Behavior |
+|-------|------------|----------|
+| `/login` | Public | Tabbed Sign In / Create Account; Google + magic link below; full-page |
+| `/auth/onboarding` | Logged-in | Contact number form; redirects if already set or if guest |
+| `/profile` | Logged-in | Name, email, role, game scores; sign out |
+| `/admin` | `role === ADMIN` | Members + VC game settings; others → `/` |
+
+**Full-page routes (no header/footer):** `/fortify-survey`, `/login`, `/admin`, `/auth/onboarding`
+
+### Client session
+
+`AuthSessionProvider` wraps the app in `layout.tsx` for `useSession()` (Game Hub Play button).
+
+### Server-side checks
+
+```typescript
+import { auth } from "@/auth";
+
+const session = await auth();
+if (!session?.user?.id) redirect("/login?callbackUrl=/profile");
+if (session.user.role !== "ADMIN") redirect("/");
+```
+
+---
+
+## 8. Routing & pages
+
+| Route | File | Description |
+|-------|------|-------------|
+| `/` | `src/app/page.tsx` | **Market Pulse** homepage — 5 sections (see §10.1) |
+| `/login` | `src/app/login/page.tsx` | Tabbed login + registration |
+| `/auth/onboarding` | `src/app/auth/onboarding/page.tsx` | OAuth contact-number onboarding |
+| `/profile` | `src/app/profile/page.tsx` | Member profile + scores |
+| `/game` | `src/app/game/page.tsx` | Game Hub — public leaderboard |
+| `/admin` | `src/app/admin/page.tsx` | ADMIN dashboard — members + VC game settings |
+| `/fortify-survey` | `src/app/fortify-survey/page.tsx` | Fortify registration (QR URL) |
+| `/investment-challenge` | `src/app/investment-challenge/page.tsx` | VC game |
+| `/concept`, `/blog/*`, `/events/*` | … | Content & events |
+| `/api/auth/[...nextauth]` | Auth.js handlers | |
+| `/api/game-settings` | KV game config | |
 
 ### Redirects
 
-| Source | Destination | Config |
-|--------|-------------|--------|
-| `/event` | `/events` | `next.config.ts` + `src/app/event/page.tsx` |
-| `/game` | `/investment-challenge` | `src/app/game/page.tsx` |
-
-### Full-page routes (no site header/footer)
-
-Configured in `LayoutShell.tsx`:
-
-- `/fortify-survey`
-- `/admin`
-
-All other routes get the global header (logo, nav) and footer (links, social).
+| Source | Destination |
+|--------|-------------|
+| `/event` | `/events` |
+| `/game` | *(no longer redirects)* — Game Hub lives at `/game` |
 
 ---
 
-## 7. Layout & navigation
+## 9. Layout & navigation
 
-### Root layout — `src/app/layout.tsx`
+**Root layout:** Geist fonts → `AuthSessionProvider` → `LayoutShell` → children
 
-- Loads **Geist** fonts
-- Sets site-wide `metadata` (title, description, `metadataBase`)
-- Wraps all pages in `<LayoutShell>`
+### Header (`LayoutShell.tsx` — `useSession()`)
 
-### Layout shell — `src/components/LayoutShell.tsx`
+| Position | Items |
+|----------|--------|
+| **Left** | Logo → `/`; nav: **Game** (`/game`), **Events** (`/events`), **Our Philosophy** (`/concept`), **Blog** (`/blog`) |
+| **Right (loading or guest)** | **Login** (text link) + **Sign Up** (solid pill) → both `/login` |
+| **Right (logged in)** | **My Profile** → `/profile`; **Sign Out** button (`signOut({ callbackUrl: "/" })`) |
 
-Client component that reads `usePathname()`:
+### Footer (`SiteFooter.tsx`)
 
-- **Full-page mode** — renders children only (no chrome)
-- **Standard mode** — sticky header + footer
+Four columns (stack on mobile, 4-col on `lg`):
 
-**Header nav links:**
+| Column | Links / content |
+|--------|------------------|
+| **PPA** | Game, Events, Our Philosophy, Blog |
+| **Community** | Contact Us, FAQs, Careers → placeholder routes |
+| **Legal** | Terms, Privacy, **Investment Disclaimer** (emphasized) → placeholder routes |
+| **Stay Connected** | Email + Subscribe (client-only UI); LinkedIn, Twitter, Instagram — **inline SVGs** (not lucide brand icons) |
 
-| Label | Path |
-|-------|------|
-| Home | `/` |
-| The Concept | `/concept` |
-| Blog | `/blog` |
-| 活動 | `/events` |
-| 城堡攻防戰 | `/investment-challenge` |
+Bottom bar: logo left; `© 2026 Profit Pulse Ally. All Rights Reserved.` right.
 
-**Footer social:** Instagram, Facebook, Threads (hardcoded URLs).
-
----
-
-## 8. Feature areas
-
-### 8.1 Homepage (`src/app/page.tsx`)
-
-Server component. Sections include:
-
-1. Value proposition (Chinese tagline)
-2. **Hero** — responsive images `fortify-hero-1600.png` (mobile) / `fortify-hero-1920.png` (desktop)
-3. **Meet the Speakers** — Vicky Huang, Marcy Chan
-4. **Event promo** — links to `/fortify-survey` and `/events/fortify-your-future`
-5. **Why You Should Attend** — highlight cards (note: may still reference WeWork — see [Known inconsistencies](#15-known-inconsistencies))
-6. **Our Network of Experts**
-7. **Testimonial** placeholder
-8. **Blog** — latest 3 posts (prefers `zh-hk` if posts exist)
-9. **Castle Siege** promo → `/investment-challenge`
-
-Blog data loaded via `getAllPosts()` from `src/lib/blog.ts`.
+**Full-page routes (no header/footer):** `/fortify-survey`, `/login`, `/admin`, `/auth/onboarding`
 
 ---
 
-### 8.2 The Concept (`/concept`)
+## 10. Feature areas
 
-Static marketing page explaining the “零成本人生” philosophy. Uses Lucide icons, pillar cards, achievement grid, CTAs to blog and investment challenge.
+### 10.1 Homepage (`src/app/page.tsx`)
+
+Dark zinc layout (`bg-zinc-950`). Composes five sections — **no blog preview** on homepage.
+
+| # | Component | Purpose | Primary CTAs |
+|---|-----------|---------|--------------|
+| 1 | `MarketPulseHero` | **Market Pulse** title, Ocean Park prize copy, live 10-day countdown (`game-challenge-cycle.ts`) | **Play Now** → `/game` |
+| 2 | `PlayLearnWinSection` | **Play. Learn. Win.** — Daily Challenge, Expert Fireside Chats, Win Real Prizes | — |
+| 3 | `LiveEventsHubSection` | Upcoming Fortify fireside (headshot + **Register for Free**); **What You've Missed** past-event cards (`home-events-hub.ts`) | → `/events/fortify-your-future` |
+| 4 | `PhilosophySection` | PPA philosophy blockquote; **The Minds Behind the Market Pulse** expert headshots (`proof-of-concept.ts`) | — |
+| 5 | `FinalCtaSection` | **Ready to Test Your Instincts?** | **Become a Member** → `/login` |
+
+**Market Pulse cycle:** 10-day windows from epoch `2026-01-01 00:00 HKT`; countdown ticks client-side via `ChallengeCountdown.tsx`.
+
+### 10.2 Fortify registration (`/fortify-survey`)
+
+**Do not modify** `FortifyYourFutureSurvey.tsx` or the route without explicit approval — live QR codes point here. See [Confirmed Fortify event details](#confirmed-fortify-event-details) above. Google Form embed height ~1789px.
+
+**Event detail mirror:** `src/lib/events/fortify-your-future.ts` — keep in sync when event copy changes.
+
+### 10.3 Game Hub (`/game`)
+
+- **Server:** fetches top 10 `GameScore` with user names
+- **Client:** `GameHub.tsx` — leaderboard + **Play Game**
+- Play enabled only when `useSession()` is authenticated; else disabled + link to `/login?callbackUrl=/game`
+
+### 10.4 VC Investment Challenge
+
+Google Sheets CSV for game data; `/api/game-settings` for theme/event. **Entry:** Game Hub **Play Game** → `/investment-challenge` (requires login).
+
+**Score persistence:** On game over, `VCInvestmentGame.tsx` calls `saveGameScore()` from `src/lib/game-actions.ts`, which writes total net worth to `GameScore` for the logged-in user.
+
+### 10.5 Admin (`/admin`)
+
+Server-side `ADMIN` role check (non-admins → `/`). Two panels:
+
+1. **Members** — `AdminMembersTable.tsx` (TanStack React Table): sortable user list (email, name, role, created).
+2. **VC Game Settings** — `AdminGameSettings.tsx`: loads/saves theme + event via GET/POST `/api/game-settings` (POST requires admin session cookie).
+
+Replaced legacy password gate (`NEXT_PUBLIC_ADMIN_PASSWORD`) and old Game Master-only UI.
+
+### 10.6 Blog, events, concept
+
+Blog and concept are reachable via header/footer nav; events detail pages unchanged. Explore `src/app/blog`, `src/app/events`, `src/app/concept`.
+
+### 10.7 Site footer
+
+Documented in §9. Newsletter subscribe shows a client-side confirmation only — wire to an API or email provider when ready.
 
 ---
 
-### 8.3 Blog system
+## 11. Backend & API
 
-**Content location:** `posts/en/` and `posts/zh-hk/` as Markdown files.
+### Auth.js — `/api/auth/[...nextauth]`
 
-**Frontmatter fields:**
+Standard Auth.js v5 endpoints (sign-in, sign-out, callbacks, session).
 
-```yaml
+### Game settings — `/api/game-settings`
+
+| Method | Auth | Behavior |
+|--------|------|----------|
+| GET | Public | Returns KV `{ theme, event }` or defaults (VC game reads this at runtime) |
+| POST | `ADMIN` only | Validates body via `parseGameSettings`, saves to KV; 403 if not admin |
+
+Admin UI: `AdminGameSettings.tsx` on `/admin`.
+
 ---
-title: Article title
-date: 2026-03-30
-cover: /blog/01.png   # optional; falls back to picsum.photos
----
+
+## 12. Scripts & tooling
+
+### `scripts/import-leads.ts`
+
+Migrates Google Form CSV exports into `User` rows.
+
+```bash
+# 1. Export form responses → scripts/leads.csv
+# 2. Ensure POSTGRES_* in .env.local
+npm run import-leads
 ```
 
-**Processing pipeline** (`src/lib/blog.ts`):
-
-1. `gray-matter` parses frontmatter + body
-2. `remark` + `remark-html` converts Markdown → HTML
-3. Posts sorted by `date` descending
-4. Excerpt auto-generated from first ~160 chars
-
-**UI** (`src/components/BlogHub.tsx`):
-
-- Client-side language toggle (`zh-hk` | `en`)
-- Article cards with cover image, excerpt, date
-- Links to `/blog/{lang}/{slug}`
-
-**Current posts (paired EN/zh-hk):**
-
-- `zero-cost-life-philosophy`
-- `money-mindset-spender-to-investor`
-- `passive-income-first-step-5-ideas`
+- Skips existing emails
+- Auto-detects email/name columns from Google Forms headers
+- Logs per-row actions + summary
 
 ---
 
-### 8.4 Events system
+## 13. Deployment
 
-#### Events hub (`/events`)
-
-Hardcoded upcoming card for **Fortify Your Future** with poster image and link to detail page. Past events list links to archive pages.
-
-#### Event detail template
-
-**Component:** `src/components/events/EventDetailTemplate.tsx`
-
-Reusable layout driven by `EventDetailData` (`src/lib/events/types.ts`):
-
-- Hero (title, subtitle, highlights, CTA, optional poster image)
-- Speakers grid
-- Agenda
-- Venue + date/location/cost sidebar
-- Optional `mapHtml`, `pastEventBanner`
-- Registration CTA (internal `Link` or external `<a>`)
-
-#### Fortify Your Future (`/events/fortify-your-future`)
-
-**Data file:** `src/lib/events/fortify-your-future.ts`
-
-- Speakers: Vicky Huang, Marcy Chan
-- Registration → `/fortify-survey`
-- Date/location: “To Be Confirmed”
-- Hero: `/images/fortify-event-poster.png`
-
-To update copy, edit the data file — no template changes needed unless layout changes.
-
-#### Past event archive (`/events/wo-leung-yiu-dou-yiu`)
-
-**Component:** `src/components/events/WoLeungYiuDouYiuArchive.tsx`
-
-Custom one-off page (not using `EventDetailTemplate`):
-
-- Red “past event” banner
-- Registration disabled
-- Full historical content, venue map iframe, sticky mobile CTA
+1. Push local changes to `main` → Vercel auto-deploy
+2. Connect **Postgres** + **Redis/KV** in Vercel Storage
+3. Set all [environment variables](#5-environment-variables)
+4. `npx prisma migrate deploy` (or add to build step)
+5. Promote an `ADMIN` user in production DB
+6. Verify `/login`, `/game`, `/admin`, and `POST /api/game-settings` on production
 
 ---
 
-### 8.5 Fortify survey landing (`/fortify-survey`)
+## 14. How to extend the site
 
-**Component:** `src/components/FortifyYourFutureSurvey.tsx`
-
-- Standalone dark theme (no site header)
-- EN / 中文 toggle via local `content` object
-- Google Form embedded via `dangerouslySetInnerHTML` (iframe HTML string)
-- Form URL: Google Forms `viewform?embedded=true`
-
-**Layout:** `src/app/fortify-survey/layout.tsx` passes children through (metadata only).
-
-To change form: update `GOOGLE_FORM_EMBED_HTML` constant.
-
----
-
-### 8.6 VC Investment Challenge (`/investment-challenge`)
-
-**Component:** `src/components/vc-challenge/VCInvestmentGame.tsx`
-
-Client-side game simulating a VC fund manager.
-
-#### Data sources
-
-| Source | URL / endpoint | Content |
-|--------|----------------|---------|
-| Game settings | `GET /api/game-settings` | Weekly theme + market event |
-| Startups | Google Sheets CSV (gid=0) | Deal pipeline |
-| News events | Google Sheets CSV (gid=1253735167) | Year-end multipliers |
-
-#### Game settings (from admin)
-
-| Field | Options | Effect |
-|-------|---------|--------|
-| `theme` | Wildcard, AI Frenzy, Green Tech, FinTech | Filters startup deals by `theme_week` column |
-| `event` | None, Market Crash, Unicorn Day | Market Crash: −30% valuations; Unicorn Day: doubles news multiplier impact |
-
-#### Core mechanics
-
-| Rule | Value |
-|------|-------|
-| Starting cash | HKD $100,000,000 |
-| Valuation formula | `(team_rating + hype_rating + idea_rating) × $2M` |
-| Investment ask | 10% of valuation |
-| Year-end trigger | Every 3 deals reviewed |
-| Year-end event | Random news row; applies `multiplier` to matching portfolio companies |
-| Game over | Cash < 0, or all deals exhausted |
-
-#### UI layout
-
-Dark two-column: deal card + portfolio sidebar, activity log, modals for year-end summary and game over.
-
-#### CSV parsing note
-
-`parseCsv()` handles both tab- and comma-delimited rows (Google Sheets export quirk).
-
----
-
-### 8.7 Admin panel (`/admin`)
-
-**File:** `src/app/admin/page.tsx`
-
-- Password gate via `NEXT_PUBLIC_ADMIN_PASSWORD` (compared client-side)
-- Loads settings from `GET /api/game-settings`
-- Saves via `POST /api/game-settings` with `{ theme, event }`
-- Dropdowns populated from `WEEKLY_THEMES` and `MARKET_EVENTS` in `src/lib/game-settings.ts`
-
-**Security note:** This is a **client-side gate only**. The POST endpoint has no server-side auth. For production, restrict `/admin` via Vercel deployment protection or add API authentication.
-
----
-
-### 8.8 Castle Siege / MandateApp (legacy)
-
-**Files:**
-
-- `src/app/investment-challenge/MandateApp.tsx` (~3300 lines)
-- `src/app/investment-challenge/gameLogic.ts`
-
-A separate, more complex investment simulation (philosophy selection, risk mandates, 5/10-day modes, Recharts, Framer Motion). **Not mounted on any route** — `/investment-challenge` renders `VCInvestmentGame` instead.
-
-Nav label “城堡攻防戰” still points to the VC game route.
-
----
-
-## 9. Backend & API
-
-### `GET /api/game-settings`
-
-**File:** `src/app/api/game-settings/route.ts`
-
-Returns stored settings from KV key `game-settings`, or defaults:
-
-```json
-{ "theme": "Wildcard", "event": "None" }
-```
-
-On KV error, returns defaults (does not 500).
-
-### `POST /api/game-settings`
-
-Body: `{ "theme": "<WeeklyTheme>", "event": "<MarketEvent>" }`
-
-- Validates via `parseGameSettings()` in `src/lib/game-settings.ts`
-- Persists to KV
-- Returns saved settings or 400/500
-
-### Types — `src/lib/game-settings.ts`
+### Add a member-only page
 
 ```typescript
-type GameSettings = { theme: WeeklyTheme; event: MarketEvent };
+const session = await auth();
+if (!session?.user?.id) redirect("/login?callbackUrl=/your-path");
 ```
 
-Constants: `GAME_SETTINGS_KEY`, `DEFAULT_GAME_SETTINGS`, validation helpers.
+### Save a game score
+
+Implemented in `src/lib/game-actions.ts` — `saveGameScore(score)` server action. Requires logged-in session; rounds score, writes to `GameScore`, returns `{ saved: boolean }`. Called from `VCInvestmentGame.tsx` on game over.
+
+### Update Fortify registration
+
+Edit only with approval — update `FortifyYourFutureSurvey.tsx` `content` + form embed; **never change `/fortify-survey` URL**.
+
+### Update homepage copy or events showcase
+
+- **Market Pulse hero:** `MarketPulseHero.tsx`
+- **Past events grid:** `PAST_EVENTS_SHOWCASE` in `src/lib/events/home-events-hub.ts`
+- **Upcoming event data:** `fortifyYourFutureEvent` in `src/lib/events/fortify-your-future.ts` (wired in `page.tsx`)
+- **Philosophy / experts:** `src/lib/home/proof-of-concept.ts`
+
+### Import legacy leads
+
+`npm run import-leads` with `scripts/leads.csv`.
 
 ---
 
-## 10. Data & external services
+## 15. Legacy & unused code
 
-| Service | Purpose | Integration |
-|---------|---------|-------------|
-| **Vercel KV / Upstash Redis** | Persist game theme/event | `@vercel/kv` in API route |
-| **Google Sheets** | VC game startup & news data | Public CSV export URLs, fetched client-side |
-| **Google Forms** | Fortify interest registration | iframe embed on survey page |
-| **picsum.photos** | Blog cover fallback | Allowed in `next.config.ts` `images.remotePatterns` |
-| **Google Maps** | Past event venue map | iframe embed in archive page |
-
-### Google Sheets columns (expected)
-
-**Startups (gid=0):**
-
-- `company_name`, `one_liner_pitch`, `team_rating`, `hype_rating`, `idea_rating`, `theme_week`
-
-**News (gid=1253735167):**
-
-- `event_name`, `event_description`, `theme_target`, `multiplier`
+| Item | Status |
+|------|--------|
+| `MandateApp.tsx` + `gameLogic.ts` | Castle Siege — not routed |
+| `src/lib/game-master/*` | Unused KV scaffold |
+| `HomeHero.tsx`, `HomeEventsHub.tsx`, `HomeProofOfConcept.tsx`, `HomeTestimonials.tsx` | Superseded homepage components — **not imported** by `page.tsx` |
+| `NEXT_PUBLIC_ADMIN_PASSWORD` | Removed — admin uses DB role |
+| Old inline footer in `LayoutShell` | Replaced by `SiteFooter.tsx` |
+| `/images/fortify-hero-*.png`, `/hero.png` | No longer used on homepage |
 
 ---
 
-## 11. Static assets
+## 16. Known inconsistencies
 
-All files in `public/` are served from the site root.
-
-| Path | Usage |
-|------|-------|
-| `/logo.png` | Header branding |
-| `/images/fortify-hero-*.png` | Homepage hero |
-| `/images/fortify-event-poster.png` | Event hub + detail |
-| `/images/wework-logo.png` | Homepage highlight (may be outdated) |
-| `/vicky-headshot.png`, `/marcy-chan-headshot.png` | Speaker photos |
-| `/event/*` | Past event visuals |
-| `/blog/*.png` | Blog cover images |
-| `/hero-loop.mp4`, `/hero.png` | Legacy hero assets |
-
-Add new images to `public/` and reference as `/path/from/public`.
-
----
-
-## 12. Deployment
-
-Typical flow: push to `main` → Vercel auto-deploy.
-
-### Vercel checklist
-
-1. Connect GitHub repo
-2. Set root directory to `--tailwindcss` if monorepo-style, or deploy from that folder
-3. Add **Redis/KV** storage in Vercel project → auto-injects `KV_REST_API_*`
-4. Set `NEXT_PUBLIC_ADMIN_PASSWORD` in Environment Variables
-5. Redeploy after env changes
-
-### `next.config.ts`
-
-- Permanent redirect `/event` → `/events`
-- Remote images allowed for `picsum.photos`
-
-### Metadata base URL
-
-`layout.tsx` sets `metadataBase` to `https://profit-pulse-alley.vercel.app`. Update if canonical domain differs from Vercel preview URL.
-
----
-
-## 13. How to extend the site
-
-### Add a blog post
-
-1. Create matching files: `posts/en/my-slug.md` and `posts/zh-hk/my-slug.md`
-2. Add frontmatter (`title`, `date`, optional `cover`)
-3. Write Markdown body
-4. Rebuild/redeploy — `generateStaticParams` picks up new slugs
-
-### Add a new event
-
-**Option A — reuse template (recommended):**
-
-1. Create `src/lib/events/my-event.ts` exporting `EventDetailData`
-2. Add `src/app/events/my-event/page.tsx`:
-
-   ```tsx
-   import EventDetailTemplate from "@/components/events/EventDetailTemplate";
-   import { myEvent } from "@/lib/events/my-event";
-
-   export default function Page() {
-     return <EventDetailTemplate {...myEvent} />;
-   }
-   ```
-
-3. Link from `src/app/events/page.tsx` hub
-
-**Option B — custom page** (like past event archive) for unique layouts.
-
-### Change VC game content
-
-Edit the Google Sheet — no code deploy needed unless column names change.
-
-### Change game theme/event for all players
-
-Use `/admin` or `POST /api/game-settings` directly.
-
-### Add a full-page route (no header/footer)
-
-Add path to `FULL_PAGE_ROUTES` in `LayoutShell.tsx`.
-
-### Add an API route
-
-Create `src/app/api/<name>/route.ts` exporting `GET`, `POST`, etc.
-
----
-
-## 14. Legacy & unused code
-
-| Item | Location | Status |
-|------|----------|--------|
-| `MandateApp.tsx` | `src/app/investment-challenge/` | Not routed; full Castle Siege game |
-| `gameLogic.ts` | Same folder | Used only by MandateApp |
-| `src/lib/game-master/*` | `types.ts`, `settings.ts` | Older KV schema (`game-master:settings`); **not wired to admin API** |
-| `src/lib/kv.ts` | `getKv()` wrapper | Used by game-master scaffold only |
-| `templates/event-detail.html` | `templates/` | Design reference, not rendered |
-| `fortify-hero-chess-king.png` | `public/images/` | Superseded by cropped hero images |
-
----
-
-## 15. Known inconsistencies
-
-Items a new developer should be aware of:
-
-1. **Homepage WeWork card** — `src/app/page.tsx` still shows “Exclusive WeWork Partnership” while Fortify event pages were updated to remove WeWork.
-2. **Two KV schemas** — Live admin uses `game-settings` key; `game-master:settings` scaffold is unused.
-3. **Admin security** — Password is client-side only; API POST is unauthenticated.
-4. **Nav label vs game** — “城堡攻防戰” links to VC Challenge, not MandateApp/Castle Siege.
-5. **`.env.example`** — May be gitignored by `.env*` pattern in `.gitignore`; copy manually if missing locally.
-6. **Fortify event TBC** — Date and venue are placeholders until confirmed.
+1. **Footer placeholder routes** — `/contact`, `/faq`, `/careers`, `/terms`, `/privacy`, `/investment-disclaimer`, and some past-event archive URLs return 404 until pages are built.
+2. **Newsletter** — `SiteFooter` subscribe is UI-only; no backend or mailing list integration.
+3. **Social URLs** — LinkedIn/Twitter in footer use placeholder company URLs; Instagram uses the live profile link.
+4. **Past events data** — Two of three homepage past-event cards use placeholder archive paths under `/events/archive/…`.
+5. **Production Postgres** — Run `npx prisma migrate deploy` on Vercel after deploy (`contactNumber`, `password` columns).
+6. **Agenda times** — Event detail agenda slots vs registration page headline times may differ slightly.
+7. **Branding** — Public copy says **Market Pulse**; VC game route remains `/investment-challenge`; Game Hub nav label is **Game**.
 
 ---
 
@@ -575,29 +550,33 @@ Items a new developer should be aware of:
 
 | Concern | File(s) |
 |---------|---------|
-| Homepage | `src/app/page.tsx` |
-| Global layout / nav | `src/components/LayoutShell.tsx`, `src/app/layout.tsx` |
-| Blog engine | `src/lib/blog.ts`, `posts/` |
-| Events data | `src/lib/events/fortify-your-future.ts` |
-| Event UI template | `src/components/events/EventDetailTemplate.tsx` |
-| Survey page | `src/components/FortifyYourFutureSurvey.tsx` |
+| Auth config | `src/auth.ts`, `src/types/next-auth.d.ts` |
+| Auth actions | `src/lib/auth-actions.ts` |
+| Login / onboarding | `LoginPage.tsx`, `OnboardingPage.tsx`, `/auth/onboarding` |
+| Profile | `src/app/profile/page.tsx` |
+| Admin | `src/app/admin/page.tsx`, `AdminMembersTable.tsx`, `AdminGameSettings.tsx` |
+| Game Hub | `src/app/game/page.tsx`, `src/components/game/GameHub.tsx` |
+| Game scores | `src/lib/game-actions.ts`, `VCInvestmentGame.tsx` |
+| Game settings API | `src/app/api/game-settings/route.ts`, `src/lib/game-settings.ts` |
+| Fortify (QR) | `src/components/FortifyYourFutureSurvey.tsx`, `src/lib/events/fortify-your-future.ts` |
+| Nav / layout | `LayoutShell.tsx`, `SiteFooter.tsx` |
+| Homepage | `src/app/page.tsx`, `src/components/home/*` |
+| Market Pulse countdown | `src/lib/game-challenge-cycle.ts`, `ChallengeCountdown.tsx` |
+| Homepage events data | `src/lib/events/home-events-hub.ts` |
+| Philosophy / experts | `src/lib/home/proof-of-concept.ts` |
+| Prisma | `prisma/schema.prisma`, `src/lib/prisma.ts` |
+| Import leads | `scripts/import-leads.ts` |
 | VC game | `src/components/vc-challenge/VCInvestmentGame.tsx` |
-| Game API | `src/app/api/game-settings/route.ts` |
-| Game types | `src/lib/game-settings.ts` |
-| Admin UI | `src/app/admin/page.tsx` |
-| Redirects | `next.config.ts` |
 
 ---
 
 ## Support & handoff notes
 
-- **Primary language:** Mixed EN + Traditional Chinese (zh-Hant) depending on page
-- **No database** — blog is filesystem Markdown; game content is Google Sheets; settings are Redis
-- **No test suite** in repo currently
-- **Linting:** `npm run lint` (ESLint + eslint-config-next)
-
-For questions about business content (speakers, event dates, form URLs), coordinate with the site owner before changing production copy.
+- **Languages:** Mixed EN + Traditional Chinese (zh-Hant)
+- **Data stores:** Postgres (users/scores/auth), KV (game settings), Markdown (blog), Google Sheets (game content)
+- **Testing:** `npm run lint` + `npm run build`; smoke-test key routes with `node`/`fetch` against `npm run dev` (see [Verification](#verification-local--last-run-23-jun-2026)); no automated test suite
+- **Lint warnings:** Legacy `MandateApp.tsx` unused vars; TanStack Table React Compiler notice in admin table
 
 ---
 
-*Last updated: June 2026*
+*Last updated: 23 Jun 2026 — Market Pulse homepage, membership (password + OAuth onboarding), JWT auth, SiteFooter; lint/build verified; pushed to `main`*
