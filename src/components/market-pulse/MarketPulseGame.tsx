@@ -147,7 +147,7 @@ function effectiveNewsMultiplier(
   return 1 + (multiplier - 1) * 2;
 }
 
-export default function VCInvestmentGame() {
+export default function MarketPulseGame() {
   const [gameSettings, setGameSettings] = useState<GameSettings>(
     DEFAULT_GAME_SETTINGS,
   );
@@ -445,7 +445,7 @@ export default function VCInvestmentGame() {
       <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-8">
         <header className="mb-6 border-b border-zinc-800 pb-4">
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            VC Investment Challenge
+            Market Pulse
           </h1>
           <p className="mt-1 text-sm text-zinc-400">
             Weekly theme:{" "}

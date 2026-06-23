@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 export const metadata = {
   title: "Game Hub | Profit Pulse Ally",
   description:
-    "View the VC Investment Challenge leaderboard and play to climb the ranks.",
+    "View the Market Pulse leaderboard and play to climb the ranks.",
 };
 
 export default async function GamePage() {

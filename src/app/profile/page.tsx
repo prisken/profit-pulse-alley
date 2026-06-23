@@ -132,7 +132,7 @@ export default async function ProfilePage() {
           Market Pulse History
         </h2>
         <p className="mt-1 text-sm text-foreground/65">
-          Scores from your VC Investment Challenge runs.
+          Scores from your Market Pulse challenge runs.
         </p>
 
         {gameScores.length === 0 ? (

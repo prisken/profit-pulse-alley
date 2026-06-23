@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         destination: "/events",
         permanent: true,
       },
+      {
+        source: "/investment-challenge",
+        destination: "/market-pulse",
+        permanent: true,
+      },
     ];
   },
   images: {

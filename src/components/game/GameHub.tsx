@@ -35,7 +35,7 @@ export default function GameHub({
           Game Hub
         </h1>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-foreground/70">
-          Compete in the VC Investment Challenge and climb the leaderboard.
+          Compete in Market Pulse and climb the leaderboard.
         </p>
       </header>
 
@@ -98,7 +98,7 @@ export default function GameHub({
         <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] px-5 py-6 text-center sm:px-8 sm:py-8">
           {isAuthenticated ? (
             <Link
-              href="/investment-challenge"
+              href="/market-pulse"
               className={`inline-flex min-h-11 items-center justify-center rounded-full bg-foreground px-8 py-3 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 ${focusRing}`}
             >
               Play Game
