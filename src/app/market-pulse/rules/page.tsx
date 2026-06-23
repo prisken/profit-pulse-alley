@@ -1,6 +1,9 @@
 import Link from "next/link";
 
 import ContentPageLayout from "@/components/layout/ContentPageLayout";
+import LegalDraftNotice from "@/components/legal/LegalDraftNotice";
+import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
+import { MARKET_PULSE_INLINE_DISCLAIMER } from "@/lib/market-pulse/legal-copy";
 import { CHALLENGE_CYCLE_DAYS } from "@/lib/market-pulse/challenge-cycle";
 
 export const metadata = {
@@ -12,6 +15,8 @@ export const metadata = {
 export default function MarketPulseRulesPage() {
   return (
     <ContentPageLayout title="Market Pulse Rules">
+      <LegalDraftNotice />
+
       <p className="lead text-zinc-300">
         Market Pulse is Profit Pulse Ally&apos;s recurring investment challenge.
         Play a simulated startup portfolio game, post your best score, and see
@@ -87,12 +92,12 @@ export default function MarketPulseRulesPage() {
       </p>
 
       <h2>Educational disclaimer</h2>
+      <p>{MARKET_PULSE_INLINE_DISCLAIMER}</p>
       <p>
-        Market Pulse is for learning and entertainment. It does{" "}
-        <strong>not</strong> constitute financial, investment, tax, or legal
-        advice. Simulated outcomes do not predict real-world results. See our{" "}
-        <Link href="/investment-disclaimer">Investment Disclaimer</Link> for
-        more information.
+        Simulated outcomes do not predict real-world results. See our{" "}
+        <Link href="/investment-disclaimer">Investment Disclaimer</Link> and{" "}
+        <Link href="/contest-rules">Contest Rules</Link> for eligibility, prizes,
+        and fair play.
       </p>
 
       <h2>Account requirement</h2>
@@ -103,7 +108,9 @@ export default function MarketPulseRulesPage() {
         shows your saved runs.
       </p>
 
-      <p className="not-prose mt-10 text-sm text-zinc-500">
+      <MarketPulseInlineDisclaimer className="not-prose mt-10" showLinks />
+
+      <p className="not-prose mt-6 text-sm text-zinc-500">
         Questions? Visit the{" "}
         <Link href="/faq" className="text-zinc-300 underline-offset-4 hover:underline">
           FAQ

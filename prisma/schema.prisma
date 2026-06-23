@@ -17,6 +17,48 @@ enum Role {
   ADMIN
 }
 
+enum MarketPulseCycleStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  REVEALED
+  ARCHIVED
+}
+
+enum MarketPulseCardStatus {
+  DRAFT
+  READY
+  PUBLISHED
+  CLOSED
+  REVEALED
+}
+
+enum MarketPulseSignal {
+  BULLISH
+  CAUTIOUS
+}
+
+enum MarketPulseLeaderboardType {
+  CURRENT_CYCLE
+  MONTHLY
+  ALL_TIME
+}
+
+enum MarketPulsePrizeStatus {
+  PENDING_REVIEW
+  VERIFIED
+  CONTACTED
+  CLAIMED
+  DISQUALIFIED
+  EXPIRED
+}
+
+enum MarketPulseGameRuntimeStatus {
+  OPEN
+  CLOSED
+  MAINTENANCE
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -27,9 +69,13 @@ model User {
   password      String?
   role          Role      @default(USER)
 
-  accounts   Account[]
-  sessions   Session[]
-  gameScores GameScore[]
+  accounts               Account[]
+  sessions               Session[]
+  gameScores             GameScore[]
+  marketPulseDecisions   MarketPulseDecision[]
+  marketPulseScoreEvents MarketPulseScoreEvent[]
+  marketPulsePrizeClaims MarketPulsePrizeClaim[]
+  marketPulseAuditLogs   MarketPulseAuditLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -51,6 +97,165 @@ model GameScore {
   @@index([userId])
   @@index([score(sort: Desc)])
   @@index([cycleId])
+}
+
+// --- Market Pulse game (Prisma-backed) ---
+
+model MarketPulseCycle {
+  id         String                 @id @default(cuid())
+  name       String
+  startsAt   DateTime
+  endsAt     DateTime
+  revealAt   DateTime
+  status     MarketPulseCycleStatus @default(DRAFT)
+  prizeLabel String?
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+
+  cards              MarketPulseCard[]
+  decisions          MarketPulseDecision[]
+  scoreEvents        MarketPulseScoreEvent[]
+  prizeClaims        MarketPulsePrizeClaim[]
+  activeGameSettings MarketPulseGameSetting[]
+
+  @@index([status])
+  @@index([startsAt])
+  @@index([endsAt])
+}
+
+model MarketPulseCard {
+  id                String                @id @default(cuid())
+  cycleId           String
+  dayIndex          Int
+  companyName       String
+  companyNameZh     String?
+  ticker            String
+  exchange          String?
+  logoUrl           String?
+  priceLabel        String?
+  priceDirection    String?
+  headline          String
+  sourceName        String?
+  sourceUrl         String?
+  sourceDate        DateTime?
+  summary           String?
+  ppaSignal         MarketPulseSignal?
+  ppaInsight        String?
+  ppaSignalLockedAt DateTime?
+  status            MarketPulseCardStatus @default(DRAFT)
+  publishedAt       DateTime?
+  revealAt          DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  cycle       MarketPulseCycle        @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  decisions   MarketPulseDecision[]
+  scoreEvents MarketPulseScoreEvent[]
+
+  @@unique([cycleId, dayIndex])
+  @@index([cycleId])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([revealAt])
+}
+
+model MarketPulseDecision {
+  id            String            @id @default(cuid())
+  userId        String
+  cardId        String
+  cycleId       String
+  decision      MarketPulseSignal
+  decidedAt     DateTime          @default(now())
+  ipHash        String?
+  userAgentHash String?
+  createdAt     DateTime          @default(now())
+
+  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card  MarketPulseCard  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  cycle MarketPulseCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId])
+  @@index([userId])
+  @@index([cardId])
+  @@index([cycleId])
+  @@index([decidedAt])
+}
+
+model MarketPulseScoreEvent {
+  id                  String   @id @default(cuid())
+  userId              String
+  cycleId             String
+  cardId              String?
+  participationPoints Int      @default(0)
+  matchBonus          Int      @default(0)
+  streakBonus         Int      @default(0)
+  totalPoints         Int
+  reason              String
+  createdAt           DateTime @default(now())
+
+  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycle MarketPulseCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  card  MarketPulseCard? @relation(fields: [cardId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([cycleId])
+  @@index([cardId])
+  @@index([createdAt])
+}
+
+model MarketPulsePrizeClaim {
+  id              String                     @id @default(cuid())
+  userId          String
+  cycleId         String?
+  leaderboardType MarketPulseLeaderboardType
+  rank            Int
+  prizeName       String
+  status          MarketPulsePrizeStatus     @default(PENDING_REVIEW)
+  verifiedAt      DateTime?
+  claimedAt       DateTime?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  user  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycle MarketPulseCycle? @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([cycleId])
+  @@index([leaderboardType])
+  @@index([status])
+}
+
+model MarketPulseAuditLog {
+  id          String   @id @default(cuid())
+  adminUserId String?
+  entityType  String
+  entityId    String
+  action      String
+  fieldName   String?
+  oldValue    String?
+  newValue    String?
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  adminUser User? @relation(fields: [adminUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType])
+  @@index([entityId])
+  @@index([adminUserId])
+  @@index([createdAt])
+}
+
+model MarketPulseGameSetting {
+  id                     String                       @id @default(cuid())
+  runtimeStatus          MarketPulseGameRuntimeStatus @default(OPEN)
+  defaultLeaderboardMode MarketPulseLeaderboardType   @default(CURRENT_CYCLE)
+  activeCycleId          String?
+  createdAt              DateTime                     @default(now())
+  updatedAt              DateTime                     @updatedAt
+
+  activeCycle MarketPulseCycle? @relation(fields: [activeCycleId], references: [id], onDelete: SetNull)
+
+  @@index([activeCycleId])
 }
 
 // --- Auth.js Prisma Adapter models ---

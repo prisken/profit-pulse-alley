@@ -6,6 +6,10 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 
 import SiteFooter from "@/components/SiteFooter";
+import {
+  MARKET_PULSE_ANALYTICS_EVENTS,
+  trackMarketPulseEvent,
+} from "@/lib/market-pulse/analytics";
 
 const FULL_PAGE_ROUTES = ["/fortify-survey", "/admin", "/login", "/auth/onboarding"];
 
@@ -28,6 +32,8 @@ export default function LayoutShell({
   const fullPage = FULL_PAGE_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
+  const isMarketPulseRoute =
+    pathname === "/market-pulse" || pathname.startsWith("/market-pulse/");
 
   if (fullPage) {
     return <div className="flex-1">{children}</div>;
@@ -63,7 +69,18 @@ export default function LayoutShell({
               <Link href="/market-pulse" className={navLinkClass}>
                 Market Pulse
               </Link>
-              <Link href="/events" className={navLinkClass}>
+              <Link
+                href="/events"
+                className={navLinkClass}
+                onClick={() => {
+                  if (isMarketPulseRoute) {
+                    trackMarketPulseEvent(
+                      MARKET_PULSE_ANALYTICS_EVENTS.webinar_cta_clicked,
+                      { cta: "nav_events", surface: "nav" },
+                    );
+                  }
+                }}
+              >
                 Events
               </Link>
               <Link href="/concept" className={navLinkClass}>
@@ -93,7 +110,18 @@ export default function LayoutShell({
               </>
             ) : (
               <>
-                <Link href="/profile" className={navLinkClass}>
+                <Link
+                  href="/profile"
+                  className={navLinkClass}
+                  onClick={() => {
+                    if (isMarketPulseRoute) {
+                      trackMarketPulseEvent(
+                        MARKET_PULSE_ANALYTICS_EVENTS.profile_cta_clicked,
+                        { cta: "nav_profile", surface: "nav" },
+                      );
+                    }
+                  }}
+                >
                   My Profile
                 </Link>
                 <button

@@ -1,27 +1,14 @@
-import GameHub from "@/components/game/GameHub";
-import { getGameHubLeaderboardView } from "@/lib/market-pulse/queries";
-import type { MarketPulseLeaderboardView } from "@/lib/market-pulse/types";
+import MarketPulseHubPage from "@/components/market-pulse/MarketPulseHubPage";
+import { getMarketPulseHubPageData } from "@/lib/market-pulse/hub-data";
 
 export const metadata = {
-  title: "Market Pulse Hub | Profit Pulse Ally",
+  title: "Market Pulse | Profit Pulse Ally",
   description:
-    "View the Market Pulse leaderboard and play to climb the ranks.",
+    "Read the signal. Make your call. Compare your market instinct with PPA Insight.",
 };
 
-const EMPTY_LEADERBOARD_VIEW: MarketPulseLeaderboardView = {
-  entries: [],
-  mode: "current-cycle",
-  usedAllTimeFallback: false,
-};
+export default async function MarketPulsePage() {
+  const data = await getMarketPulseHubPageData();
 
-export default async function MarketPulseHubPage() {
-  let leaderboardView = EMPTY_LEADERBOARD_VIEW;
-
-  try {
-    leaderboardView = await getGameHubLeaderboardView(10);
-  } catch (error) {
-    console.error("[market-pulse] Failed to load leaderboard:", error);
-  }
-
-  return <GameHub leaderboardView={leaderboardView} />;
+  return <MarketPulseHubPage data={data} />;
 }

@@ -18,6 +18,7 @@ import {
   parseMarketPulseSettings,
   resolveMarketPulseSettings,
 } from "@/lib/market-pulse/settings";
+import type { MarketPulseSettings } from "@/lib/market-pulse/types";
 
 describe("resolveMarketPulseSettings", () => {
   it("returns defaults when input is missing", () => {
@@ -66,8 +67,8 @@ describe("resolveMarketPulseSettings", () => {
       resolveMarketPulseSettings({
         theme: "Wildcard",
         event: "None",
-        status: "active",
-        leaderboardMode: "cycle",
+        status: "active" as unknown as MarketPulseSettings["status"],
+        leaderboardMode: "cycle" as unknown as MarketPulseSettings["leaderboardMode"],
       }),
     ).toMatchObject({
       status: "open",

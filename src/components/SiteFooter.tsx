@@ -89,6 +89,7 @@ const LEGAL_LINKS = [
     href: "/investment-disclaimer",
     emphasized: true,
   },
+  { label: "Contest Rules", href: "/contest-rules" },
 ] as const;
 
 const SOCIAL_LINKS = [

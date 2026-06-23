@@ -12,8 +12,8 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Database** | Vercel Postgres + Prisma 6 |
 | **Auth** | Auth.js v5 (`next-auth@beta`) + Prisma Adapter |
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
-| **Latest commit** | `876e3c3` — Market Pulse foundation refactor (tests, routes, domain lib) |
-| **Production status** | Deployed; Google OAuth, Prisma Postgres, full footer pages live |
+| **Latest commit** | See `git log -1` on `main` — Market Pulse swipe challenge (Prisma-backed) |
+| **Production status** | Deploy from `main`; Google OAuth, Prisma Postgres, Market Pulse live routes |
 
 ---
 
@@ -21,33 +21,37 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 
 ### Site strategy (current)
 
-The public site is organized around **Market Pulse** — a recurring 10-day investment challenge with leaderboard prizes — plus **fireside events**, **membership**, and **expert-led philosophy** (PPA Take). The homepage is visual-first (dark zinc theme); blog preview and legacy promo sections were removed from `/`.
+The public site centers on **Market Pulse** — a recurring multi-day investment challenge where members swipe **Bullish** or **Cautious** on daily market signal cards, earn participation points, and compete on leaderboards until **PPA Insight** is revealed at cycle end. Supporting pillars: **fireside events**, **membership**, and **expert-led philosophy** (PPA Take). Homepage remains visual-first (dark zinc); blog is nav/footer only.
 
 ### Feature matrix
 
 | Feature | Route | Auth | Status |
 |---------|-------|------|--------|
-| **Homepage** | `/` | Public | **Market Pulse** hero + countdown; Play Learn Win; Live Events Hub; philosophy; final CTA → `/login` |
+| **Homepage** | `/` | Public | Market Pulse hero + countdown; Play Learn Win; Live Events Hub; philosophy; CTA → `/login` |
 | Brand concept | `/concept` | Public | “Our Philosophy” in nav |
-| Blog (EN + zh-HK) | `/blog`, `/blog/{lang}/[slug]` | Public | 3 paired articles (not on homepage) |
+| Blog (EN + zh-HK) | `/blog`, `/blog/{lang}/[slug]` | Public | 3 paired articles |
 | Events hub | `/events` | Public | Live |
-| Fortify event detail | `/events/fortify-your-future` | Public | Synced with `/fortify-survey`; homepage **Register for Free** |
-| Past event archive | `/events/wo-leung-yiu-dou-yiu` | Public | Registration closed; in homepage past-events grid |
+| Fortify event detail | `/events/fortify-your-future` | Public | Synced with `/fortify-survey` |
+| Past event archive | `/events/wo-leung-yiu-dou-yiu` | Public | Registration closed |
 | **Fortify registration** | `/fortify-survey` | Public | **QR-coded URL — do not change** |
-| **Login** | `/login` | Public | Tabs: Sign In (email/password) + Create Account; Google + magic link below |
-| **OAuth onboarding** | `/auth/onboarding` | Logged-in | Collects `contactNumber` for Google users missing it |
-| **Member profile** | `/profile` | Members only | Profile Details card + **Market Pulse History** table; sign out |
-| **Market Pulse Hub** | `/market-pulse` | Public leaderboard; play requires login | Current-cycle top 10 (fallback all-time); **Play Market Pulse** → `/market-pulse/play` |
-| **Market Pulse game** | `/market-pulse/play` | Via Hub when logged in | `MarketPulseGame.tsx`; saves score + `cycleId` on game over |
-| **Market Pulse rules** | `/market-pulse/rules` | Public | Challenge rules, scoring overview, fair play |
-| **Admin dashboard** | `/admin` | `ADMIN` only | Members table + Market Pulse settings (KV) |
-| Game settings API | `/api/game-settings` | GET public; **POST ADMIN only** | KV-backed theme/event/status (URL unchanged for compat) |
-| **Contact** | `/contact` | Public | Placeholder — `contact@profitpulseally.com` |
-| **FAQ** | `/faq` | Public | Placeholder — under construction |
-| **Terms of Service** | `/terms` | Public | Placeholder — under construction |
-| **Privacy Policy** | `/privacy` | Public | Placeholder — under construction |
-| **Investment Disclaimer** | `/investment-disclaimer` | Public | Placeholder legal copy + attorney review warning |
-| **Careers** | `/careers` | Public | Placeholder — `careers@profitpulseally.com` |
+| **Login** | `/login` | Public | Sign In + Create Account; Google + magic link |
+| **OAuth onboarding** | `/auth/onboarding` | Logged-in | Collects `contactNumber` for Google users |
+| **Member profile** | `/profile` | Members only | Profile + Market Pulse history |
+| **Market Pulse Hub** | `/market-pulse` | Public | Cycle progress, prize banner, top-5 leaderboard, Play CTA |
+| **Market Pulse play** | `/market-pulse/play` | Login to submit | Daily swipe card (`MarketPulseSwipeCard`); locked state after submit |
+| **Market Pulse leaderboard** | `/market-pulse/leaderboard` | Public | Current cycle / Monthly / All-time tabs |
+| **PPA Insight reveal** | `/market-pulse/reveal` | Login for personal results | Gated until `revealAt`; no early PPA leak |
+| **Market Pulse rules** | `/market-pulse/rules` | Public | Challenge rules + scoring |
+| **Contest rules** | `/contest-rules` | Public | Prize eligibility + legal |
+| **Admin dashboard** | `/admin` | `ADMIN` only | Members table + KV theme settings |
+| **Market Pulse admin** | `/admin/market-pulse` | `ADMIN` only | Cycles, cards, publish, lock PPA, reveal, score calc, prizes |
+| Game settings API | `/api/game-settings` | GET public; POST ADMIN | KV theme/event (legacy compat) |
+| Market Pulse APIs | `/api/market-pulse/*` | Mixed | `today`, `decision`, `leaderboard`, `reveal` |
+| **Contact** | `/contact` | Public | `contact@profitpulseally.com` |
+| **FAQ** | `/faq` | Public | Placeholder |
+| **Terms / Privacy** | `/terms`, `/privacy` | Public | Updated legal copy (review with counsel) |
+| **Investment Disclaimer** | `/investment-disclaimer` | Public | Legal copy + attorney review notice |
+| **Careers** | `/careers` | Public | `careers@profitpulseally.com` |
 
 ### Confirmed Fortify event details
 
@@ -80,21 +84,19 @@ Google OAuth redirect URIs (must match exactly):
 
 | Check | Result |
 |-------|--------|
-| **Lint** | `npm run lint` — pass (warnings in legacy `src/legacy/castle-siege/` + TanStack admin table) |
-| **Build** | `npm run build` — pass locally (`prisma db push && next build`) |
-| **Tests** | `npm test` — 16 Vitest tests (challenge-cycle + settings) |
-| **Production deploy** | Vercel `profit-pulse-alley` — verify after merge to `main` |
-| **Google OAuth** | Account picker → callback → onboarding or homepage |
-| **Database** | Tables synced via `prisma db push` during Vercel build |
-| **Homepage** (`/`) | 200 — Market Pulse sections |
-| **Login** (`/login`) | 200 — Sign In / Create Account + Google |
-| **Content pages** | `/contact`, `/faq`, `/terms`, `/privacy`, `/investment-disclaimer`, `/careers` → 200 |
-| **Market Pulse** | `/market-pulse` hub; `/market-pulse/play` game; `/market-pulse/rules`; `/game` → 301 `/market-pulse`; `/investment-challenge` → 301 `/market-pulse/play` |
-| **Onboarding** (`/auth/onboarding`) | 307 → `/login` when guest |
-| **Auth guards** | `/profile` (guest) → login; `/admin` (guest) → `/` |
-| **API** | `GET /api/game-settings` → 200; `POST` (guest) → 403 |
+| **Lint** | `npm run lint` — pass (0 errors; warnings in legacy castle-siege + TanStack admin) |
+| **Typecheck** | `npm run typecheck` — pass (`tsc --noEmit`) |
+| **Build** | `npm run build` — pass (`prisma db push && next build`) |
+| **Prisma** | `npx prisma validate` — pass |
+| **Tests** | `npm test` — **57** Vitest tests (10 files: server, scoring, reveal gating, swipe, analytics, validation, settings, challenge-cycle, seed) |
+| **Production deploy** | Vercel `profit-pulse-alley` — auto-deploy from `main` |
+| **Routes (local smoke)** | `/market-pulse`, `/play`, `/leaderboard`, `/reveal`, `/rules`, `/contest-rules` → 200 |
+| **Auth guards** | `/profile` (guest) → login; `/admin`, `/admin/market-pulse` (guest) → `/` |
+| **API** | `GET /api/game-settings` → 200; `GET /api/market-pulse/leaderboard` → 200 (empty if DB unavailable); `GET /api/market-pulse/today` → 401 when guest |
 
-**Auth notes:** Sessions use **JWT** strategy (required for Credentials login). Prisma adapter persists OAuth users/accounts. Onboarding redirect runs in **middleware** (`src/middleware.ts`) using a lightweight edge-safe config (`src/auth.config.ts`) — not in the OAuth `signIn` callback.
+**Deploy checklist:** `docs/market-pulse-deploy-checklist.md` — env, backup, admin workflow, QA, rollback.
+
+**Auth notes:** Sessions use **JWT** strategy. Prisma adapter persists OAuth users. Onboarding redirect in **middleware** (`src/middleware.ts`) via edge-safe `src/auth.config.ts`.
 
 ### Vercel checklist (production)
 
@@ -133,13 +135,13 @@ Google OAuth redirect URIs (must match exactly):
 
 Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning community for new-generation investors and founders. The current product narrative centers on **Market Pulse**:
 
-- **Market Pulse** — 10-day challenge cycles; hub leaderboard (current cycle, all-time fallback); playable game at `/market-pulse/play`; scores saved with `cycleId` + `gameVersion`
-- **Events** — Fortify Your Future hub/detail; past-event showcase on homepage; `/fortify-survey` registration (fixed QR URL)
+- **Market Pulse** — Prisma-backed daily swipe challenge: cycles, cards, decisions, score events, leaderboards, reveal gating; admin CMS at `/admin/market-pulse`
+- **Events** — Fortify Your Future hub/detail; `/fortify-survey` registration (fixed QR URL)
 - **Membership** — Auth.js sign-in (Google + email), profile, role-based admin
-- **Philosophy & trust** — PPA investment philosophy blockquote; expert headshots; sample testimonials data exists but is **not** on current homepage
-- **Marketing** — dark-themed homepage sections, concept page, blog (linked from nav/footer only)
-- **Admin** — member list + Market Pulse settings (theme, event, status, leaderboard mode) in KV
-- **Lead migration** — one-off CSV import script for legacy Google Form responses
+- **Philosophy & trust** — PPA investment philosophy; expert headshots on homepage
+- **Marketing** — dark-themed homepage, concept page, blog (nav/footer)
+- **Admin** — member list (`/admin`) + Market Pulse ops (`/admin/market-pulse`) + KV theme settings
+- **Lead migration** — `scripts/import-leads.ts` for legacy Google Form CSV
 
 ---
 
@@ -155,30 +157,32 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 ┌───────────────────────────┐   ┌─────────────────────────────────┐
 │   Next.js App Router       │   │   External services              │
 │   Server + Client comps    │   │   • Google OAuth / SMTP          │
-│   API routes               │   │   • Google Sheets (Market Pulse game) │
-│   Auth.js v5 (JWT)         │   │   • Google Forms (/fortify-survey)│
-│   Edge middleware          │   └─────────────────────────────────┘
-└───────────────┬───────────┘
+│   API routes (/api/market-pulse/*)   │   │   • Google Forms (/fortify-survey)│
+│   Auth.js v5 (JWT)                   │   └─────────────────────────────────┘
+│   Edge middleware                    │
+└───────────────┬───────────────────────┘
                 │
         ┌───────┴───────┐
         ▼               ▼
 ┌──────────────┐ ┌──────────────┐
 │ Prisma       │ │ Vercel KV    │
-│ Postgres     │ │ (game-settings)│
+│ Postgres     │ │ (theme/event)│
 │ User,        │ └──────────────┘
-│ GameScore,   │
+│ MarketPulse* │
 │ Auth tables  │
 └──────────────┘
 ```
+
+`MarketPulse*` = Cycle, Card, Decision, ScoreEvent, PrizeClaim, AuditLog, GameSetting.
 
 ### Rendering model
 
 | Pattern | Where used |
 |---------|------------|
-| **Server Components** | Homepage, blog, events, profile, admin, Market Pulse hub, content pages (`ContentPageLayout`) |
-| **Client Components** | `MarketPulseHero`, `ChallengeCountdown`, Login, `GameHub`, `MarketPulseGame`, `LayoutShell`, `SiteFooter`, Fortify registration |
+| **Server Components** | Homepage, blog, events, profile, admin, Market Pulse pages (`hub-data`, `play-data`, etc.) |
+| **Client Components** | `MarketPulseHubPage`, `MarketPulseSwipeCard`, `LoginPage`, `LayoutShell`, Fortify survey |
 | **SSG** | Blog posts (`generateStaticParams`) |
-| **Dynamic (ƒ)** | `/admin`, `/profile`, `/market-pulse`, `/api/auth/[...nextauth]` |
+| **Dynamic (ƒ)** | `/profile`, `/market-pulse/play`, `/market-pulse/reveal`, `/admin`, `/admin/market-pulse`, APIs |
 
 ---
 
@@ -187,79 +191,38 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 ```
 --tailwindcss/
 ├── DEVELOPER_GUIDE.md
+├── docs/market-pulse-deploy-checklist.md
 ├── vitest.config.ts
 ├── prisma/
-│   └── schema.prisma           ← User, GameScore (+ cycleId), Auth.js models
+│   ├── schema.prisma           ← User, MarketPulse*, Auth.js models
+│   ├── seed.ts                 ← Dev-only Market Pulse demo seed
+│   └── seed-market-pulse-data.ts
 ├── scripts/
-│   ├── import-leads.ts         ← CSV → User migration
-│   └── leads.csv               ← place Google Form export here (gitignore recommended)
-├── posts/                      ← blog markdown
-├── public/
+│   └── import-leads.ts
 ├── src/
-│   ├── auth.ts                 ← Full Auth.js config (providers, adapter, callbacks)
-│   ├── auth.config.ts          ← Edge-safe config for middleware (no Prisma/bcrypt)
-│   ├── middleware.ts           ← OAuth onboarding redirect (needsOnboarding)
 │   ├── app/
-│   │   ├── admin/page.tsx      ← ADMIN dashboard (members + game settings)
-│   │   ├── api/auth/[...nextauth]/route.ts
-│   │   ├── api/game-settings/  ← GET public; POST ADMIN-only (KV)
-│   │   ├── login/page.tsx
-│   │   ├── profile/page.tsx    ← Profile Details + Market Pulse History
+│   │   ├── admin/
+│   │   │   ├── page.tsx        ← Members + KV settings
+│   │   │   └── market-pulse/   ← Cycle/card CMS, reveal, prizes
+│   │   ├── api/market-pulse/   ← today, decision, leaderboard, reveal
 │   │   ├── market-pulse/
-│   │   │   ├── page.tsx        ← Market Pulse Hub (leaderboard)
-│   │   │   ├── play/page.tsx   ← Playable Market Pulse game
-│   │   │   └── rules/page.tsx  ← Rules page
-│   │   ├── contact/page.tsx
-│   │   ├── faq/page.tsx
-│   │   ├── terms/page.tsx
-│   │   ├── privacy/page.tsx
-│   │   ├── careers/page.tsx
-│   │   ├── investment-disclaimer/page.tsx
-│   │   ├── fortify-survey/
-│   │   └── …
+│   │   │   ├── page.tsx        ← Hub
+│   │   │   ├── play/           ← Daily swipe challenge
+│   │   │   ├── leaderboard/
+│   │   │   ├── reveal/
+│   │   │   └── rules/
+│   │   └── contest-rules/
 │   ├── components/
-│   │   ├── layout/ContentPageLayout.tsx
-│   │   ├── SiteFooter.tsx
-│   │   ├── LayoutShell.tsx
-│   │   ├── home/                   ← current homepage sections
-│   │   │   ├── MarketPulseHero.tsx
-│   │   │   ├── ChallengeCountdown.tsx
-│   │   │   ├── PlayLearnWinSection.tsx
-│   │   │   ├── LiveEventsHubSection.tsx
-│   │   │   ├── PhilosophySection.tsx
-│   │   │   └── FinalCtaSection.tsx
-│   │   ├── admin/AdminMembersTable.tsx
-│   │   ├── admin/AdminGameSettings.tsx
-│   │   ├── auth/LoginPage.tsx
-│   │   ├── game/GameHub.tsx        ← Hub UI (used by /market-pulse)
-│   │   ├── providers/AuthSessionProvider.tsx
-│   │   ├── market-pulse/MarketPulseGame.tsx
-│   │   └── FortifyYourFutureSurvey.tsx  ← ⚠ DO NOT MODIFY (QR funnel)
-│   ├── legacy/
-│   │   └── castle-siege/           ← Castle Siege (unreferenced)
-│   │       ├── MandateApp.tsx
-│   │       └── gameLogic.ts
-│   ├── lib/
-│   │   ├── prisma.ts
-│   │   ├── auth-actions.ts
-│   │   ├── market-pulse/           ← Market Pulse domain
-│   │   │   ├── actions.ts          ← saveMarketPulseScore server action
-│   │   │   ├── challenge-cycle.ts  ← 10-day cycle math + stable cycleId
-│   │   │   ├── challenge-cycle.test.ts
-│   │   │   ├── queries.ts          ← Leaderboard + profile history
-│   │   │   ├── score-limits.ts     ← MIN/MAX score validation
-│   │   │   ├── settings.ts         ← KV settings + parser
-│   │   │   ├── settings.test.ts
-│   │   │   └── types.ts
-│   │   ├── blog.ts
-│   │   ├── events/
-│   │   │   ├── fortify-your-future.ts
-│   │   │   └── home-events-hub.ts
-│   │   └── home/
-│   │       ├── proof-of-concept.ts
-│   │       └── testimonials.ts
-│   └── types/next-auth.d.ts
-└── templates/event-detail.html
+│   │   ├── market-pulse/       ← Hub, SwipeCard, PlayExperience, Leaderboard, Reveal
+│   │   └── admin/              ← MarketPulseAdminDashboard, forms, prize review
+│   └── lib/market-pulse/
+│       ├── server.ts           ← Core Prisma queries + decision submit + scoring
+│       ├── reveal-access.ts    ← PPA gating (no early leak)
+│       ├── admin-actions.ts    ← Admin server actions
+│       ├── hub-data.ts, play-data.ts, leaderboard-data.ts, reveal-data.ts
+│       ├── analytics.ts        ← trackMarketPulseEvent
+│       └── *.test.ts           ← 57 unit tests
+└── …
 ```
 
 ---
@@ -279,10 +242,48 @@ npm run dev
 | `npm run dev` | Dev server (http://localhost:3000) |
 | `npm run build` | **`prisma db push && next build`** (Vercel uses this) |
 | `npm run lint` | ESLint |
-| `npm test` | Vitest unit tests (`vitest run`) |
+| `npm run typecheck` | TypeScript (`tsc --noEmit`) |
+| `npm test` | Vitest unit tests (`vitest run`) — 57 tests |
 | `npm run db:migrate` | Prisma migrate dev (when using migration files) |
 | `npm run db:push` | Push schema without migration files |
+| `npm run db:seed` | Seed **demo Market Pulse** data (dev only — see [§4.1](#41-market-pulse-demo-seed)) |
 | `npm run import-leads` | Import `scripts/leads.csv` → User table |
+
+### 4.1 Market Pulse demo seed
+
+Safe, idempotent local seed for the Prisma-backed Market Pulse game. It creates:
+
+- One `MarketPulseGameSetting` (only if none exists; otherwise links `activeCycleId` when empty)
+- One **OPEN** demo cycle: `[DEMO] Market Pulse Local Seed`
+- **10 published cards** with locked PPA signals, sample headlines (TSMC, NVIDIA, HSBC, …), and dates relative to **now**
+
+**Safety**
+
+- Blocked when `NODE_ENV=production` or `VERCEL_ENV=production`
+- Override only with explicit `MARKET_PULSE_SEED=1` (not recommended on production databases)
+- **Idempotent:** if the demo cycle name already exists, the script exits without changing data
+- Does **not** delete or truncate existing rows
+
+**Run**
+
+```bash
+# Ensure schema is applied first
+npm run db:push
+
+# Seed demo Market Pulse content (development)
+npm run db:seed
+
+# Or via Prisma CLI (same entrypoint)
+npx prisma db seed
+```
+
+Optional explicit flag (staging / intentional runs):
+
+```bash
+MARKET_PULSE_SEED=1 npm run db:seed
+```
+
+Files: `prisma/seed.ts` (runner + guards), `prisma/seed-market-pulse-data.ts` (demo card copy).
 
 ---
 
@@ -329,8 +330,15 @@ Then change `package.json` build to `prisma migrate deploy && next build` and ba
 
 | Model | Purpose |
 |-------|---------|
-| `User` | Members — `email`, `name`, `image`, `contactNumber?`, `password?` (bcrypt hash), `role` (`USER` \| `ADMIN`) |
-| `GameScore` | Market Pulse scores — `score`, optional `cycleId`, optional `gameVersion`, timestamps |
+| `User` | Members — `email`, `name`, `image`, `contactNumber?`, `password?`, `role` (`USER` \| `ADMIN`) |
+| `MarketPulseCycle` | Challenge window — `startsAt`, `endsAt`, `revealAt`, `status`, `prizeLabel` |
+| `MarketPulseCard` | Daily signal card — headline, ticker, `ppaSignal` (admin-only until reveal), `status` |
+| `MarketPulseDecision` | User's Bullish/Cautious call per card (`@@unique([userId, cardId])`) |
+| `MarketPulseScoreEvent` | Participation + match + streak points (computed on reveal) |
+| `MarketPulsePrizeClaim` | Prize fulfillment workflow |
+| `MarketPulseAuditLog` | Admin action audit trail |
+| `MarketPulseGameSetting` | Runtime singleton — `activeCycleId`, `runtimeStatus`, leaderboard mode |
+| `GameScore` | **Legacy** arcade game scores (superseded by swipe challenge) |
 | `Account`, `Session`, `VerificationToken` | Auth.js Prisma Adapter |
 
 ### First admin user
@@ -412,14 +420,22 @@ if (session.user.role !== "ADMIN") redirect("/");
 | `/investment-disclaimer` | `src/app/investment-disclaimer/page.tsx` | Investment disclaimer (placeholder legal text) |
 | `/careers` | `src/app/careers/page.tsx` | Careers placeholder |
 | `/game` | — | **301** → `/market-pulse` (`next.config.ts`) |
-| `/market-pulse` | `src/app/market-pulse/page.tsx` | Market Pulse Hub — public leaderboard |
-| `/market-pulse/play` | `src/app/market-pulse/play/page.tsx` | Playable Market Pulse game |
-| `/market-pulse/rules` | `src/app/market-pulse/rules/page.tsx` | Rules and fair-play overview |
-| `/admin` | `src/app/admin/page.tsx` | ADMIN dashboard — members + game settings |
+| `/market-pulse` | `src/app/market-pulse/page.tsx` | Hub — cycle progress, prizes, top-5 leaderboard |
+| `/market-pulse/play` | `src/app/market-pulse/play/page.tsx` | Daily swipe card (Bullish / Cautious) |
+| `/market-pulse/leaderboard` | `src/app/market-pulse/leaderboard/page.tsx` | Full leaderboard (current / monthly / all-time) |
+| `/market-pulse/reveal` | `src/app/market-pulse/reveal/page.tsx` | PPA Insight results (gated until reveal) |
+| `/market-pulse/rules` | `src/app/market-pulse/rules/page.tsx` | Challenge rules |
+| `/contest-rules` | `src/app/contest-rules/page.tsx` | Contest / prize legal |
+| `/admin` | `src/app/admin/page.tsx` | Members + KV settings |
+| `/admin/market-pulse` | `src/app/admin/market-pulse/page.tsx` | Cycle/card CMS, reveal, scoring, prizes |
 | `/fortify-survey` | `src/app/fortify-survey/page.tsx` | Fortify registration (QR URL) |
 | `/concept`, `/blog/*`, `/events/*` | … | Content & events |
 | `/api/auth/[...nextauth]` | Auth.js handlers | |
-| `/api/game-settings` | KV Market Pulse config | URL unchanged; uses `src/lib/market-pulse/settings.ts` |
+| `/api/game-settings` | KV theme/event config | Legacy compat |
+| `/api/market-pulse/today` | Today's card (auth) | PPA stripped pre-reveal |
+| `/api/market-pulse/decision` | Submit decision (auth) | POST only |
+| `/api/market-pulse/leaderboard` | Leaderboard JSON | Public GET |
+| `/api/market-pulse/reveal` | User reveal payload (auth) | Gated |
 
 ### Redirects
 
@@ -484,47 +500,57 @@ Dark zinc layout (`bg-zinc-950`). Composes five sections — **no blog preview**
 
 ### 10.3 Market Pulse Hub (`/market-pulse`)
 
-- **Server:** `page.tsx` calls `getGameHubLeaderboardView()` — current-cycle top 10; falls back to all-time with a notice if the cycle board is empty
-- **Client:** `GameHub.tsx` — leaderboard, link to **Rules** (`/market-pulse/rules`), **Play Market Pulse** → `/market-pulse/play`
-- Play enabled only when `useSession()` is authenticated; else disabled + link to `/login?callbackUrl=/market-pulse/play`
+- **Server:** `getMarketPulseHubPageData()` — active cycle, day progress, prize label, top-5 leaderboard
+- **Client:** `MarketPulseHubPage.tsx` — hero, `CycleProgress`, `PrizeBanner`, `RevealCountdown`, Play CTA
+- Falls back to synthetic cycle data if Prisma is unavailable (dev without `POSTGRES_URL`)
 
-### 10.4 Market Pulse game (`/market-pulse/play`)
+### 10.4 Market Pulse play (`/market-pulse/play`)
 
-Google Sheets CSV for game data; `/api/game-settings` for theme/event. **Entry:** Hub **Play Market Pulse** → `/market-pulse/play` (requires login).
+- **Server:** `getMarketPulsePlayPageData()` — today's published card, locked decision, sidebar leaderboard
+- **Client:** `MarketPulsePlayExperience` + `MarketPulseSwipeCard` — drag/tap Bullish or Cautious
+- **Submit:** `submitMarketPulseDecisionAction` → `MarketPulseDecision` row + participation score event
+- **States:** `no_active_cycle`, `no_card_today`, `sign_in_required`, `playable`, `locked`
+- PPA signal/insight **never** exposed before reveal (`reveal-access.ts`, `stripPpaFromCardPayload`)
 
-**Score persistence:** On game over, `MarketPulseGame.tsx` calls `saveMarketPulseScore()` from `src/lib/market-pulse/actions.ts`, which validates the score, attaches the current `cycleId` from `getCurrentMarketPulseCycle()`, and writes to `GameScore` with `gameVersion`.
+### 10.5 Leaderboard & reveal
 
-**Legacy redirects:** `/game` → `/market-pulse`; `/investment-challenge` → `/market-pulse/play` (301 in `next.config.ts`).
+- **`/market-pulse/leaderboard`** — `MarketPulseLeaderboard.tsx`; tabs: current cycle, monthly, all-time
+- **`/market-pulse/reveal`** — personal results + PPA Insight after `revealAt`; pending countdown otherwise
+- Scoring: participation (+10), match bonus, streak bonus — computed in `calculateAndPersistCycleScores` on admin reveal
 
-### 10.5 Market Pulse rules (`/market-pulse/rules`)
+### 10.6 Market Pulse rules & contest
 
-Static rules page — challenge overview, scoring summary, fair-play notes. Linked from `GameHub.tsx`.
+- **`/market-pulse/rules`** — challenge overview, scoring, fair play (`legal-copy.ts`)
+- **`/contest-rules`** — prize eligibility and contest terms
 
-### 10.6 Member profile (`/profile`)
+### 10.7 Member profile (`/profile`)
 
-Server component using `auth()` + Prisma:
+Server component: Profile Details + Market Pulse history (`getUserMarketPulseHistory`).
 
-1. **Profile Details** — name, email, role, avatar, Sign Out (`signOutAction`)
-2. **Market Pulse History** — `getUserMarketPulseHistory()` (score, date, optional cycle label); empty state links to `/market-pulse`
+### 10.8 Admin
 
-### 10.7 Admin (`/admin`)
+**`/admin`** — members table + KV theme settings (`AdminGameSettings`).
 
-Server-side `ADMIN` role check (non-admins → `/`). Two panels:
+**`/admin/market-pulse`** — full ops dashboard (`MarketPulseAdminDashboard`):
 
-1. **Members** — `AdminMembersTable.tsx` (TanStack React Table): sortable user list (email, name, role, created).
-2. **Game Settings** — `AdminGameSettings.tsx`: theme, event, status (`open` \| `closed` \| `maintenance`), leaderboard mode (`current-cycle` \| `all-time`), optional prize label; loads/saves via GET/POST `/api/game-settings` (POST requires admin session cookie). **Note:** `status` and `leaderboardMode` are persisted but not yet wired to gate play or hub display at runtime.
+1. Set active cycle + runtime status (open / closed / maintenance)
+2. Create/edit cycles and daily cards
+3. Lock PPA signal on a card
+4. Publish card for play
+5. Reveal cycle + calculate scores
+6. Prize claim review
 
-Replaced legacy password gate (`NEXT_PUBLIC_ADMIN_PASSWORD`) and old Game Master-only UI.
+Requires `role = ADMIN`. See `docs/market-pulse-deploy-checklist.md` §4.
 
-### 10.8 Blog, events, concept
+### 10.9 Blog, events, concept
 
 Blog and concept are reachable via header/footer nav; events detail pages unchanged. Explore `src/app/blog`, `src/app/events`, `src/app/concept`.
 
-### 10.9 Site footer
+### 10.10 Site footer
 
 Documented in §9. Newsletter subscribe shows a client-side confirmation only — wire to an API or email provider when ready.
 
-### 10.10 Content pages (`ContentPageLayout`)
+### 10.11 Content pages (`ContentPageLayout`)
 
 Shared layout at `src/components/layout/ContentPageLayout.tsx` for simple info/legal pages:
 
@@ -564,10 +590,20 @@ Standard Auth.js v5 endpoints (sign-in, sign-out, callbacks, session).
 
 | Method | Auth | Behavior |
 |--------|------|----------|
-| GET | Public | Returns KV settings (`theme`, `event`, `status`, `leaderboardMode`, optional `prizeLabel`, `updatedAt`) or defaults (`MarketPulseGame` reads this at runtime) |
-| POST | `ADMIN` only | Validates body via `parseMarketPulseSettings`, saves to KV key `game-settings`; 403 if not admin |
+| GET | Public | Returns KV settings (`theme`, `event`, …) or defaults — legacy homepage theming |
 
 Admin UI: `AdminGameSettings.tsx` on `/admin`.
+
+### Market Pulse — `/api/market-pulse/*`
+
+| Route | Method | Auth | Behavior |
+|-------|--------|------|----------|
+| `/api/market-pulse/today` | GET | User | Today's card + decision state; **PPA stripped** pre-reveal |
+| `/api/market-pulse/decision` | POST | User | Submit Bullish/Cautious for today's card |
+| `/api/market-pulse/leaderboard` | GET | Public | `?mode=current-cycle\|monthly\|all-time`; empty array if DB unavailable |
+| `/api/market-pulse/reveal` | GET | User | Personal reveal payload; 404 until cycle revealed |
+
+Handlers: `src/lib/market-pulse/player-handlers.ts`. Core logic: `src/lib/market-pulse/server.ts`.
 
 ---
 
@@ -576,7 +612,8 @@ Admin UI: `AdminGameSettings.tsx` on `/admin`.
 ### Unit tests (Vitest)
 
 ```bash
-npm test          # vitest run — challenge-cycle + settings
+npm test          # vitest run — 57 tests across market-pulse domain
+npm run typecheck # tsc --noEmit
 ```
 
 Config: `vitest.config.ts`. Tests live beside domain code under `src/lib/market-pulse/*.test.ts`.
@@ -649,13 +686,17 @@ const session = await auth();
 if (!session?.user?.id) redirect("/login?callbackUrl=/your-path");
 ```
 
-### Save a Market Pulse score
+### Submit a Market Pulse decision
 
-Implemented in `src/lib/market-pulse/actions.ts` — `saveMarketPulseScore(score)` server action. Requires logged-in session; validates finite integer score against `score-limits.ts`; writes `GameScore` with `cycleId` and `gameVersion`; returns `{ saved: true }` or `{ saved: false, error: string }`. Called from `MarketPulseGame.tsx` on game over.
+`submitMarketPulseDecisionAction` in `player-actions.ts` → `submitMarketPulseDecision` in `server.ts`. One decision per user per card; participation points on submit; match/streak on reveal.
 
-**Leaderboard queries:** `src/lib/market-pulse/queries.ts` — `getCurrentMarketPulseLeaderboard`, `getAllTimeMarketPulseLeaderboard`, `getUserMarketPulseHistory`, `getGameHubLeaderboardView`.
+**Leaderboard:** `getMarketPulseLeaderboard` in `server.ts`; page loaders in `hub-data.ts`, `leaderboard-data.ts`.
 
-**Challenge cycles:** `src/lib/market-pulse/challenge-cycle.ts` — HKT-based 10-day windows; stable `cycleId` format e.g. `2026-01-01_2026-01-10`.
+**Reveal gating:** `reveal-access.ts` — `getMarketPulseCardPublicPayload` strips `ppaSignal` / `ppaInsight` until `revealAt`.
+
+**Admin ops:** `admin-actions.ts` — create cycle/card, lock PPA, publish, reveal + `calculateAndPersistCycleScores`.
+
+**Local demo data:** `npm run db:seed` (dev only).
 
 ### Update Fortify registration
 
@@ -670,7 +711,7 @@ Edit only with approval — update `FortifyYourFutureSurvey.tsx` `content` + for
 
 ### Add a content or legal page
 
-Use `ContentPageLayout` — see [§10.10](#1010-content-pages-contentpagelayout). Add `src/app/your-route/page.tsx` and link from `SiteFooter.tsx`.
+Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout). Add `src/app/your-route/page.tsx` and link from `SiteFooter.tsx`.
 
 ### Import legacy leads
 
@@ -685,7 +726,9 @@ Use `ContentPageLayout` — see [§10.10](#1010-content-pages-contentpagelayout)
 | `src/legacy/castle-siege/MandateApp.tsx` + `gameLogic.ts` | Castle Siege — isolated, not imported or routed |
 | `src/lib/game-master/*` | Unused KV scaffold |
 | `src/lib/game-actions.ts`, `game-settings.ts`, `game-challenge-cycle.ts` | **Removed** — replaced by `src/lib/market-pulse/*` |
-| `src/app/game/page.tsx` | **Removed** — `/game` redirects to `/market-pulse` |
+| `src/components/game/GameHub.tsx` | **Legacy** — superseded by `MarketPulseHubPage` |
+| `src/components/market-pulse/MarketPulseGame.tsx` | **Legacy** arcade game — not used by `/play` |
+| `src/lib/market-pulse/actions.ts` (`saveMarketPulseScore`) | **Legacy** `GameScore` writer |
 | `HomeHero.tsx`, `HomeEventsHub.tsx`, `HomeProofOfConcept.tsx`, `HomeTestimonials.tsx` | Superseded homepage components — **not imported** by `page.tsx` |
 | `NEXT_PUBLIC_ADMIN_PASSWORD` | Removed — admin uses DB role |
 | Old inline footer in `LayoutShell` | Replaced by `SiteFooter.tsx` |
@@ -695,14 +738,13 @@ Use `ContentPageLayout` — see [§10.10](#1010-content-pages-contentpagelayout)
 
 ## 16. Known inconsistencies
 
-1. **Placeholder legal copy** — `/terms`, `/privacy`, `/investment-disclaimer`, and `/faq` need real content from legal/comms before public launch. Investment disclaimer includes an explicit placeholder warning.
-2. **Newsletter** — `SiteFooter` subscribe is UI-only; no backend or mailing list integration.
-3. **Social URLs** — LinkedIn/Twitter in footer use placeholder company URLs; Instagram uses the live profile link.
-4. **Past events data** — Two of three homepage past-event cards use placeholder archive paths under `/events/archive/…`.
-5. **Agenda times** — Event detail agenda slots vs registration page headline times may differ slightly.
-6. **Admin settings not fully wired** — `status` and `leaderboardMode` save to KV but do not yet block play or switch hub leaderboard mode at runtime.
-7. **Admin UI label** — Settings panel heading may still say “VC Game Settings” while product branding is Market Pulse.
-8. **No migration files** — Production relies on `prisma db push` in build; migrate to `prisma migrate deploy` when ready (see [§6](#6-database--prisma)).
+1. **FAQ placeholder** — `/faq` still needs full content from comms.
+2. **Newsletter** — `SiteFooter` subscribe is UI-only.
+3. **Social URLs** — LinkedIn/Twitter placeholders; Instagram live.
+4. **Past events data** — Some homepage archive paths are placeholders.
+5. **KV vs Prisma settings** — KV theme/event on `/admin` is legacy; runtime game state is Prisma `MarketPulseGameSetting`.
+6. **No migration files** — Production uses `prisma db push` in build; adopt `migrate deploy` when ready.
+7. **Legacy GameScore** — Profile may still show old arcade scores alongside new swipe challenge history.
 
 ---
 
@@ -716,12 +758,13 @@ Use `ContentPageLayout` — see [§10.10](#1010-content-pages-contentpagelayout)
 | Content layout | `src/components/layout/ContentPageLayout.tsx` |
 | Legal / info pages | `src/app/contact/`, `faq/`, `terms/`, `privacy/`, `careers/`, `investment-disclaimer/` |
 | Profile | `src/app/profile/page.tsx` |
-| Admin | `src/app/admin/page.tsx`, `AdminMembersTable.tsx`, `AdminGameSettings.tsx` |
-| Market Pulse Hub | `src/app/market-pulse/page.tsx`, `src/components/game/GameHub.tsx` |
-| Market Pulse play | `src/app/market-pulse/play/page.tsx`, `src/components/market-pulse/MarketPulseGame.tsx` |
-| Market Pulse rules | `src/app/market-pulse/rules/page.tsx` |
-| Market Pulse domain | `src/lib/market-pulse/` (`actions`, `challenge-cycle`, `queries`, `settings`, `score-limits`, `types`) |
-| Game settings API | `src/app/api/game-settings/route.ts`, `src/lib/market-pulse/settings.ts` |
+| Admin | `src/app/admin/page.tsx`, `src/app/admin/market-pulse/page.tsx`, `MarketPulseAdminDashboard.tsx` |
+| Market Pulse Hub | `src/app/market-pulse/page.tsx`, `MarketPulseHubPage.tsx`, `hub-data.ts` |
+| Market Pulse play | `src/app/market-pulse/play/page.tsx`, `MarketPulsePlayExperience.tsx`, `MarketPulseSwipeCard.tsx` |
+| Leaderboard / reveal | `leaderboard/page.tsx`, `reveal/page.tsx`, `leaderboard-data.ts`, `reveal-data.ts` |
+| Market Pulse domain | `src/lib/market-pulse/server.ts`, `reveal-access.ts`, `admin-actions.ts`, `analytics.ts` |
+| Market Pulse APIs | `src/app/api/market-pulse/*`, `player-handlers.ts` |
+| Deploy checklist | `docs/market-pulse-deploy-checklist.md` |
 | Fortify (QR) | `src/components/FortifyYourFutureSurvey.tsx`, `src/lib/events/fortify-your-future.ts` |
 | Nav / layout | `LayoutShell.tsx`, `SiteFooter.tsx` |
 | Homepage | `src/app/page.tsx`, `src/components/home/*` |
@@ -738,10 +781,10 @@ Use `ContentPageLayout` — see [§10.10](#1010-content-pages-contentpagelayout)
 ## Support & handoff notes
 
 - **Languages:** Mixed EN + Traditional Chinese (zh-Hant)
-- **Data stores:** Postgres (users/scores/auth), KV (game settings), Markdown (blog), Google Sheets (game content)
-- **Testing:** `npm run lint`, `npm test`, `npm run build` (requires `POSTGRES_URL` locally); smoke-test routes against `npm run dev`
+- **Data stores:** Postgres (users, Market Pulse, auth), KV (legacy theme), Markdown (blog)
+- **Testing:** `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`; smoke-test routes on `npm run dev`
 - **Lint warnings:** Legacy `src/legacy/castle-siege/` unused vars; TanStack Table React Compiler notice in admin table
 
 ---
 
-*Last updated: 23 Jun 2026 — commit `876e3c3`: Market Pulse foundation refactor (domain lib, cycle-aware leaderboard, `/market-pulse` hub + `/play` + `/rules`, Vitest, legacy isolation)*
+*Last updated: 23 Jun 2026 — Market Pulse swipe challenge (Prisma cycles/cards/decisions, leaderboard, reveal gating, admin CMS, 57 Vitest tests). See `docs/market-pulse-deploy-checklist.md` before production deploy.*

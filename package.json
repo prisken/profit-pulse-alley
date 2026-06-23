@@ -7,11 +7,14 @@
     "build": "prisma db push && next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
+    "db:seed": "NODE_ENV=development tsx prisma/seed.ts",
+    "db:seed:market-pulse": "NODE_ENV=development tsx prisma/seed.ts",
     "import-leads": "tsx scripts/import-leads.ts"
   },
   "dependencies": {
@@ -31,7 +34,8 @@
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
     "remark": "^15.0.1",
-    "remark-html": "^16.0.1"
+    "remark-html": "^16.0.1",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -48,5 +52,8 @@
     "tsx": "^4.22.4",
     "typescript": "^5",
     "vitest": "^4.1.9"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

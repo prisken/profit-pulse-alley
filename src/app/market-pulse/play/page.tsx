@@ -1,11 +1,14 @@
-import MarketPulseGame from "@/components/market-pulse/MarketPulseGame";
+import MarketPulsePlayExperience from "@/components/market-pulse/MarketPulsePlayExperience";
+import { getMarketPulsePlayPageData } from "@/lib/market-pulse/play-data";
 
 export const metadata = {
   title: "Play Market Pulse | Profit Pulse Ally",
   description:
-    "Play Market Pulse — evaluate startups, build your portfolio, and survive market events.",
+    "Read today's market signal, make your Bullish or Cautious call, and compare your instinct with PPA Insight.",
 };
 
-export default function MarketPulsePlayPage() {
-  return <MarketPulseGame />;
+export default async function MarketPulsePlayPage() {
+  const data = await getMarketPulsePlayPageData();
+
+  return <MarketPulsePlayExperience data={data} />;
 }

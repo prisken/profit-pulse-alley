@@ -1,4 +1,8 @@
+import Link from "next/link";
+
 import ContentPageLayout from "@/components/layout/ContentPageLayout";
+import LegalDraftNotice from "@/components/legal/LegalDraftNotice";
+import { MARKET_PULSE_INLINE_DISCLAIMER } from "@/lib/market-pulse/legal-copy";
 
 export const metadata = {
   title: "Investment Disclaimer | Profit Pulse Ally",
@@ -9,12 +13,7 @@ export const metadata = {
 export default function InvestmentDisclaimerPage() {
   return (
     <ContentPageLayout title="Investment Disclaimer">
-      <div className="not-prose mb-8 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-4 sm:px-5">
-        <p className="text-sm font-semibold leading-relaxed text-amber-200">
-          This is placeholder legal text. It must be reviewed and replaced by a
-          qualified legal professional before the site is used by the public.
-        </p>
-      </div>
+      <LegalDraftNotice />
 
       <h3>No Financial Advice</h3>
       <p>
@@ -49,6 +48,18 @@ export default function InvestmentDisclaimerPage() {
         making any investment decisions. Under no circumstance shall we have any
         liability to you for any loss or damage of any kind incurred as a result
         of the use of the site or reliance on any information provided.
+      </p>
+
+      <h3>Market Pulse</h3>
+      <p>{MARKET_PULSE_INLINE_DISCLAIMER}</p>
+      <p>
+        News-style cards, PPA signals, insights, leaderboards, and simulated
+        outcomes in Market Pulse are for education and entertainment only. They
+        may be delayed, simplified, or fictionalised for the game and must not be
+        relied upon for real trading or portfolio decisions. Contest prizes do
+        not imply endorsement of any issuer or security. See{" "}
+        <Link href="/contest-rules">Contest Rules</Link> and{" "}
+        <Link href="/market-pulse/rules">Market Pulse Rules</Link>.
       </p>
     </ContentPageLayout>
   );

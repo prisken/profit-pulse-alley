@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import AdminGameSettings from "@/components/admin/AdminGameSettings";
@@ -68,6 +69,14 @@ export default async function AdminPage() {
         <p className="mt-2 text-sm text-foreground/65">
           Signed in as {session.user.email} · {members.length} member
           {members.length === 1 ? "" : "s"}
+        </p>
+        <p className="mt-3 text-sm">
+          <Link
+            href="/admin/market-pulse"
+            className="font-medium text-foreground/80 underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Market Pulse admin →
+          </Link>
         </p>
       </header>
 

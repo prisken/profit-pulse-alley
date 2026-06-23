@@ -98,3 +98,77 @@ export type ChallengeCountdown = {
   seconds: number;
   totalMs: number;
 };
+
+/** Sanitized card fields safe for swipe UI — never includes PPA signal or insight. */
+export type MarketPulseSwipeCardData = {
+  id: string;
+  companyName: string;
+  companyNameZh?: string | null;
+  ticker: string;
+  exchange?: string | null;
+  logoUrl?: string | null;
+  priceLabel?: string | null;
+  priceDirection?: string | null;
+  headline: string;
+  sourceName?: string | null;
+  sourceDate?: string | Date | null;
+  summary?: string | null;
+};
+
+export type MarketPulseSwipeSubmitResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+/** Client-safe reveal card row (only populated when cycle is revealed). */
+export type MarketPulseRevealCardRow = {
+  cardId: string;
+  dayIndex: number;
+  companyName: string;
+  headline: string;
+  userDecision: string;
+  ppaSignal: string;
+  ppaInsight: string | null;
+  isMatch: boolean;
+  participationPoints: number;
+  matchBonus: number;
+  streakBonus: number;
+  totalPoints: number;
+};
+
+export type MarketPulseRevealPageData = {
+  status: "pending" | "revealed";
+  isAuthenticated: boolean;
+  pendingCycle: {
+    name: string;
+    revealAtIso: string;
+  } | null;
+  results: {
+    cycleId: string;
+    cycleName: string;
+    totalPoints: number;
+    rank: number | null;
+    matchesCount: number;
+    totalPlayed: number;
+    bestStreak: number;
+    totals: {
+      participationPoints: number;
+      matchBonus: number;
+      streakBonus: number;
+      totalPoints: number;
+    };
+    cards: MarketPulseRevealCardRow[];
+  } | null;
+};
+
+/** Public leaderboard row — safe for client components (no email). */
+export type MarketPulseLeaderboardEntryRow = {
+  rank: number;
+  userId: string;
+  playerName: string;
+  image: string | null;
+  score: number;
+  participationPoints: number;
+  bonusPoints: number;
+  isRevealed: boolean;
+  cardsPlayed?: number;
+};
