@@ -75,7 +75,7 @@ Authoritative on **`/fortify-survey`** (QR codes) and mirrored on **`/events/for
 
 ### Vercel infrastructure checklist
 
-- [ ] **Postgres** — `POSTGRES_PRISMA_URL`, `POSTGRES_URL_NON_POOLING`
+- [ ] **Postgres** — `DATABASE_URL` (from Vercel **Storage → Prisma Postgres**, linked to `profit-pulse-alley`)
 - [ ] **Auth.js** — `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
 - [ ] **Email sign-in** (optional) — `EMAIL_SERVER`, `EMAIL_FROM`
 - [ ] **KV** (VC game) — `KV_REST_API_URL`, `KV_REST_API_TOKEN`
@@ -242,8 +242,9 @@ npm run dev
 
 | Variable | Required | Used by |
 |----------|----------|---------|
-| `POSTGRES_PRISMA_URL` | Yes (membership, game hub, admin) | Prisma (pooled) |
-| `POSTGRES_URL_NON_POOLING` | Yes (migrations) | Prisma `directUrl` |
+| `DATABASE_URL` | Yes (membership, game hub, admin, Google login) | Prisma — auto-injected by Vercel Prisma Postgres |
+| `PRISMA_DATABASE_URL` | Optional | Prisma Postgres integration (may mirror `DATABASE_URL`) |
+| `POSTGRES_URL` | Optional | Legacy/alternate Postgres connection string |
 | `AUTH_SECRET` | Yes (production) | Auth.js (`openssl rand -base64 32`) |
 | `AUTH_GOOGLE_ID` | For Google login | Auth.js Google provider |
 | `AUTH_GOOGLE_SECRET` | For Google login | Auth.js Google provider |
@@ -308,7 +309,7 @@ UPDATE "User" SET role = 'ADMIN' WHERE email = 'you@example.com';
 ### Sign-up & onboarding
 
 - **Create Account** tab on `/login` → `signUpWithPassword()` hashes password with bcrypt, stores `contactNumber`
-- **OAuth onboarding:** `signIn` callback redirects Google (and other OAuth) users without `contactNumber` → `/auth/onboarding`
+- **OAuth onboarding:** middleware redirects logged-in users without `contactNumber` → `/auth/onboarding` (after Google OAuth completes)
 - **Onboarding form** → `updateContactNumber()` updates the logged-in user
 
 ### Pages
@@ -483,11 +484,32 @@ npm run import-leads
 ## 13. Deployment
 
 1. Push local changes to `main` → Vercel auto-deploy
-2. Connect **Postgres** + **Redis/KV** in Vercel Storage
+2. Connect **Prisma Postgres** in Vercel → project **profit-pulse-alley** → **Storage** → link `prisma-postgres-celeste-dog` (env vars must have **non-empty** `DATABASE_URL`)
 3. Set all [environment variables](#5-environment-variables)
-4. `npx prisma migrate deploy` (or add to build step)
-5. Promote an `ADMIN` user in production DB
-6. Verify `/login`, `/game`, `/admin`, and `POST /api/game-settings` on production
+4. Create tables in production:
+
+```bash
+cd --tailwindcss
+npx vercel link --project profit-pulse-alley
+npx vercel env pull .env.production.local --environment=production
+set -a && source .env.production.local && set +a
+npx prisma db push
+```
+
+5. Redeploy after env changes
+6. Promote an `ADMIN` user in production DB
+7. Verify `/login`, Google OAuth, `/game`, `/admin` on production
+
+### Google login shows “Server error / Configuration”
+
+This usually means **Postgres is not connected** or **`DATABASE_URL` is empty**. Google OAuth starts (account picker works) but the callback fails when Auth.js tries to save the user via the Prisma adapter.
+
+**Fix:** Vercel → **profit-pulse-alley** → **Storage** → connect **Prisma Postgres** → confirm `DATABASE_URL` is populated → redeploy → run `npx prisma db push` (above).
+
+Google Cloud Console redirect URIs must include:
+
+- `https://profitpulseally.com/api/auth/callback/google`
+- `https://profit-pulse-alley.vercel.app/api/auth/callback/google`
 
 ---
 

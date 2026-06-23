@@ -7,11 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  // Pooled connection (serverless / Vercel runtime)
-  url       = env("POSTGRES_PRISMA_URL")
-  // Direct connection (migrations, introspection)
-  directUrl = env("POSTGRES_URL_NON_POOLING")
+  provider = "postgresql"
+  // Injected by Vercel Prisma Postgres / Neon integration
+  url      = env("DATABASE_URL")
 }
 
 enum Role {

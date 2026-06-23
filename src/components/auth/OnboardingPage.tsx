@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Suspense, useState, type FormEvent } from "react";
 
 import { updateContactNumber } from "@/lib/auth-actions";
@@ -16,6 +17,7 @@ const primaryButtonClass = `w-full rounded-full bg-amber-500 px-4 py-3 text-sm f
 
 function OnboardingForm({ userName }: Readonly<{ userName: string | null }>) {
   const router = useRouter();
+  const { update } = useSession();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
 
@@ -36,6 +38,7 @@ function OnboardingForm({ userName }: Readonly<{ userName: string | null }>) {
         return;
       }
 
+      await update();
       router.push(callbackUrl);
       router.refresh();
     } catch {

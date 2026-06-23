@@ -73,38 +73,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   providers,
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.type === "oauth" && account.provider) {
-        const email = user.email?.trim().toLowerCase();
-        if (!email) {
-          return true;
-        }
-
-        const dbUser = await prisma.user.findUnique({
-          where: { email },
-          select: { contactNumber: true },
-        });
-
-        if (!dbUser?.contactNumber?.trim()) {
-          return "/auth/onboarding";
-        }
-      }
-
-      return true;
-    },
-    jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user?.id) {
         token.id = user.id;
+
+        if ("role" in user && user.role) {
+          token.role = user.role;
+        }
+
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { contactNumber: true },
+          });
+          token.needsOnboarding = !dbUser?.contactNumber?.trim();
+        } catch (error) {
+          console.error("[auth] jwt contact lookup failed:", error);
+          token.needsOnboarding = false;
+        }
       }
-      if (user && "role" in user && user.role) {
-        token.role = user.role;
+
+      if (trigger === "update") {
+        token.needsOnboarding = false;
       }
+
       return token;
     },
     session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as Role;
+        session.user.needsOnboarding = Boolean(token.needsOnboarding);
       }
       return session;
     },
