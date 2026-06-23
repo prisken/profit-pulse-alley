@@ -11,12 +11,13 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Styling** | Tailwind CSS v4 |
 | **Database** | Vercel Postgres + Prisma 6 |
 | **Auth** | Auth.js v5 (`next-auth@beta`) + Prisma Adapter |
-| **Hosting** | Vercel (auto-deploy from `main`) |
-| **Local status** | Lint + build **pass** (23 Jun 2026); ready for deploy on `main` |
+| **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
+| **Latest commit** | `4220117` — auth + Postgres fixes (23 Jun 2026) |
+| **Production status** | Deployed; Google OAuth + Prisma Postgres connected |
 
 ---
 
-## Current site status (May 2026)
+## Current site status (Jun 2026)
 
 ### Site strategy (current)
 
@@ -53,40 +54,53 @@ Authoritative on **`/fortify-survey`** (QR codes) and mirrored on **`/events/for
 | Venue | WeWork YF Life Tower | WeWork YF Life Tower |
 | Registration CTA | Register Now / 立即報名 → `/fortify-survey` | 同上 |
 
-### Verification (local) — last run 23 Jun 2026
+### Production infrastructure (Jun 2026)
+
+| Service | Vercel resource | Env vars | Status |
+|---------|-----------------|----------|--------|
+| **Prisma Postgres** | `prisma-postgres-celeste-dog` | `POSTGRES_URL` (required), `DATABASE_URL`, `PRISMA_DATABASE_URL` (optional) | Connected |
+| **Auth.js** | — | `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Set |
+| **Upstash KV** | `upstash-kv-carmine-zebra` | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Connected |
+| **Google OAuth** | Google Cloud Console | Redirect URIs below | Configured |
+
+Google OAuth redirect URIs (must match exactly):
+
+- `https://profitpulseally.com/api/auth/callback/google`
+- `https://profit-pulse-alley.vercel.app/api/auth/callback/google`
+
+**Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
+
+### Verification — last run 23 Jun 2026
 
 | Check | Result |
 |-------|--------|
-| **Lint** | `npm run lint` — **pass** (0 errors; 8 warnings in legacy `MandateApp.tsx` + TanStack admin table) |
-| **Build** | `npm run build` — **pass** (TypeScript + static generation) |
-| **Homepage** (`/`) | 200 — Market Pulse, Play Now, Live Events Hub, footer |
-| **Login** (`/login`) | 200 — tabbed Sign In / Create Account (client-rendered) |
-| **Onboarding** (`/auth/onboarding`) | 307 → `/login?callbackUrl=/auth/onboarding` when guest |
-| **Nav routes** | `/game`, `/events`, `/concept`, `/blog` → 200 |
-| **Auth guards** | `/profile` (guest) → 307 `/login?callbackUrl=/profile`; `/admin` (guest) → 307 `/` |
+| **Lint** | `npm run lint` — pass (warnings in legacy `MandateApp.tsx` + TanStack admin table) |
+| **Build** | `npm run build` — runs `prisma db push && next build` on Vercel |
+| **Production deploy** | Vercel `profit-pulse-alley` — **Ready** (commit `4220117`) |
+| **Google OAuth** | Account picker → callback → onboarding or homepage |
+| **Database** | Tables synced via `prisma db push` during Vercel build |
+| **Homepage** (`/`) | 200 — Market Pulse sections |
+| **Login** (`/login`) | 200 — Sign In / Create Account + Google |
+| **Onboarding** (`/auth/onboarding`) | 307 → `/login` when guest |
+| **Auth guards** | `/profile` (guest) → login; `/admin` (guest) → `/` |
 | **API** | `GET /api/game-settings` → 200; `POST` (guest) → 403 |
-| **Import script** | `npm run import-leads` — requires `scripts/leads.csv` + Postgres env |
 
-**Deploy prerequisites:** Run `npx prisma migrate deploy` on Vercel after push (adds `contactNumber` + `password` to `User`). Set Postgres + Auth env vars before membership features work in production.
+**Auth notes:** Sessions use **JWT** strategy (required for Credentials login). Prisma adapter persists OAuth users/accounts. Onboarding redirect runs in **middleware** (`src/middleware.ts`) using a lightweight edge-safe config (`src/auth.config.ts`) — not in the OAuth `signIn` callback.
 
-**Auth notes:** Sessions use **JWT** strategy (required for Credentials/password login). Prisma adapter still persists users/accounts. Nodemailer registers only when `EMAIL_SERVER` + `EMAIL_FROM` are set.
+### Vercel checklist (production)
 
-**Postgres note:** Without `POSTGRES_PRISMA_URL`, leaderboard/profile/admin degrade gracefully; connect Postgres for full features.
-
-### Vercel infrastructure checklist
-
-- [ ] **Postgres** — `POSTGRES_URL` (from Vercel **Storage → Prisma Postgres**, linked to `profit-pulse-alley`)
-- [ ] **Auth.js** — `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
+- [x] **Postgres** — `POSTGRES_URL` from **Storage → Prisma Postgres** (`prisma-postgres-celeste-dog`)
+- [x] **Auth.js** — `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
 - [ ] **Email sign-in** (optional) — `EMAIL_SERVER`, `EMAIL_FROM`
-- [ ] **KV** (VC game) — `KV_REST_API_URL`, `KV_REST_API_TOKEN`
-- [ ] Run `npx prisma migrate deploy` after connecting Postgres (includes `contactNumber`, `password` on `User`)
-- [ ] Promote first admin: `UPDATE "User" SET role = 'ADMIN' WHERE email = '...'`
+- [x] **KV** (VC game) — `KV_REST_API_URL`, `KV_REST_API_TOKEN`
+- [x] **Schema sync** — automatic via `prisma db push` in `npm run build`
+- [ ] **First admin** — `UPDATE "User" SET role = 'ADMIN' WHERE email = '...'`
 
 ---
 
 ## Table of contents
 
-0. [Current site status](#current-site-status-may-2026)
+0. [Current site status](#current-site-status-jun-2026)
 1. [What this site does](#1-what-this-site-does)
 2. [Architecture overview](#2-architecture-overview)
 3. [Repository structure](#3-repository-structure)
@@ -133,13 +147,14 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 │   Next.js App Router       │   │   External services              │
 │   Server + Client comps    │   │   • Google OAuth / SMTP          │
 │   API routes               │   │   • Google Sheets (VC game)      │
-│   auth() server sessions   │   │   • Google Forms (/fortify-survey)│
-└───────────────┬───────────┘   └─────────────────────────────────┘
+│   Auth.js v5 (JWT)         │   │   • Google Forms (/fortify-survey)│
+│   Edge middleware          │   └─────────────────────────────────┘
+└───────────────┬───────────┘
                 │
         ┌───────┴───────┐
         ▼               ▼
 ┌──────────────┐ ┌──────────────┐
-│ Vercel       │ │ Vercel KV    │
+│ Prisma       │ │ Vercel KV    │
 │ Postgres     │ │ (game-settings)│
 │ User,        │ └──────────────┘
 │ GameScore,   │
@@ -171,7 +186,9 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 ├── posts/                      ← blog markdown
 ├── public/
 ├── src/
-│   ├── auth.ts                 ← Auth.js config (handlers, auth, signIn, signOut)
+│   ├── auth.ts                 ← Full Auth.js config (providers, adapter, callbacks)
+│   ├── auth.config.ts          ← Edge-safe config for middleware (no Prisma/bcrypt)
+│   ├── middleware.ts           ← OAuth onboarding redirect (needsOnboarding)
 │   ├── app/
 │   │   ├── admin/page.tsx      ← ADMIN dashboard (members + game settings)
 │   │   ├── api/auth/[...nextauth]/route.ts
@@ -211,7 +228,7 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 │   │   └── home/
 │   │       ├── proof-of-concept.ts  ← philosophy + experts
 │   │       └── testimonials.ts      ← sample quotes (unused on homepage)
-│   └── types/next-auth.d.ts    ← Session.user.id + role augmentation
+│   └── types/next-auth.d.ts    ← Session.user id, role, needsOnboarding
 └── templates/event-detail.html
 ```
 
@@ -222,18 +239,18 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 ```bash
 cd --tailwindcss
 npm install          # runs prisma generate via postinstall
-cp .env.example .env.local   # fill in Postgres, Auth, optional KV/SMTP
-npx prisma migrate dev       # first-time DB setup
+cp .env.example .env.local   # fill in POSTGRES_URL, Auth, optional KV/SMTP
+npm run db:push              # first-time local DB setup (or db:migrate)
 npm run dev
 ```
 
 | Command | Purpose |
 |---------|---------|
 | `npm run dev` | Dev server (http://localhost:3000) |
-| `npm run build` | Production build + typecheck |
+| `npm run build` | **`prisma db push && next build`** (Vercel uses this) |
 | `npm run lint` | ESLint |
-| `npm run db:migrate` | Prisma migrate dev |
-| `npm run db:push` | Push schema without migration |
+| `npm run db:migrate` | Prisma migrate dev (when using migration files) |
+| `npm run db:push` | Push schema without migration files |
 | `npm run import-leads` | Import `scripts/leads.csv` → User table |
 
 ---
@@ -242,12 +259,12 @@ npm run dev
 
 | Variable | Required | Used by |
 |----------|----------|---------|
-| `POSTGRES_URL` | Yes (membership, game hub, admin, Google login) | Prisma — direct Postgres from Vercel Prisma Postgres |
-| `DATABASE_URL` | Optional | May mirror `POSTGRES_URL` depending on integration |
-| `PRISMA_DATABASE_URL` | Optional | Prisma Postgres integration (often `prisma+postgres://`) |
-| `AUTH_SECRET` | Yes (production) | Auth.js (`openssl rand -base64 32`) |
+| `POSTGRES_URL` | **Yes** | Prisma — direct `postgres://` URL from Vercel Prisma Postgres |
+| `AUTH_SECRET` | **Yes** (production) | Auth.js (`openssl rand -base64 32`) |
 | `AUTH_GOOGLE_ID` | For Google login | Auth.js Google provider |
 | `AUTH_GOOGLE_SECRET` | For Google login | Auth.js Google provider |
+| `DATABASE_URL` | Auto-injected | Vercel Prisma Postgres (do not use as Prisma `url` — wrong protocol) |
+| `PRISMA_DATABASE_URL` | Auto-injected | Prisma Postgres integration (`prisma+postgres://` format) |
 | `EMAIL_SERVER` | For email login | Nodemailer provider (e.g. `smtp://user:pass@host:587`) |
 | `EMAIL_FROM` | For email login | Magic-link sender address |
 | `KV_REST_API_URL` | VC game settings | `@vercel/kv` |
@@ -261,17 +278,18 @@ Nodemailer is **omitted from Auth.js providers** when `EMAIL_SERVER` / `EMAIL_FR
 
 ## 6. Database & Prisma
 
-**Schema:** `prisma/schema.prisma`  
+**Schema:** `prisma/schema.prisma` — uses `env("POSTGRES_URL")`  
 **Client:** `src/lib/prisma.ts` (singleton)
 
-**Migrations:** Run locally after schema changes:
+There are **no committed migration files** (`prisma/migrations/`). Schema is synced via:
+
+- **Vercel build:** `prisma db push` runs automatically before `next build`
+- **Local dev:** `npm run db:push` or `npm run db:migrate` after schema changes
 
 ```bash
-npx prisma migrate dev --name add-password-auth   # adds contactNumber + password
-npx prisma migrate deploy                        # production (Vercel)
+npm run db:push    # prototyping / match production approach
+npm run db:migrate # when you start committing migration files
 ```
-
-Or `npm run db:push` for prototyping only.
 
 ### Models
 
@@ -293,10 +311,15 @@ UPDATE "User" SET role = 'ADMIN' WHERE email = 'you@example.com';
 
 ## 7. Authentication & membership
 
-**Config:** `src/auth.ts`  
+**Config:** `src/auth.ts` (full) + `src/auth.config.ts` (edge-safe, for middleware)  
+**Middleware:** `src/middleware.ts` — redirects users with `needsOnboarding` → `/auth/onboarding`  
 **Actions:** `src/lib/auth-actions.ts` — `signUpWithPassword`, `updateContactNumber`, `signOutAction`  
 **Route:** `src/app/api/auth/[...nextauth]/route.ts`  
-**Session:** **JWT** strategy (supports Credentials + OAuth); `jwt` + `session` callbacks add `id` and `role`
+**Session:** **JWT** strategy; `jwt` callback sets `id`, `role`, `needsOnboarding`; `session` callback exposes them to the client
+
+### Why two auth config files?
+
+Vercel Edge middleware has a **1 MB bundle limit**. Importing `@/auth` in middleware pulled in Prisma, bcrypt, and all providers (~1.08 MB). `auth.config.ts` holds only session/JWT passthrough callbacks; middleware imports that instead.
 
 ### Providers
 
@@ -309,8 +332,9 @@ UPDATE "User" SET role = 'ADMIN' WHERE email = 'you@example.com';
 ### Sign-up & onboarding
 
 - **Create Account** tab on `/login` → `signUpWithPassword()` hashes password with bcrypt, stores `contactNumber`
-- **OAuth onboarding:** middleware redirects logged-in users without `contactNumber` → `/auth/onboarding` (after Google OAuth completes)
-- **Onboarding form** → `updateContactNumber()` updates the logged-in user
+- **Google OAuth:** account saved via Prisma adapter on callback; JWT gets `needsOnboarding` if no `contactNumber`
+- **Middleware:** after login, users with `needsOnboarding` are redirected to `/auth/onboarding`
+- **Onboarding form** → `updateContactNumber()` + `session.update()` clears the flag
 
 ### Pages
 
@@ -471,7 +495,7 @@ Migrates Google Form CSV exports into `User` rows.
 
 ```bash
 # 1. Export form responses → scripts/leads.csv
-# 2. Ensure POSTGRES_* in .env.local
+# 2. Ensure POSTGRES_URL in .env.local
 npm run import-leads
 ```
 
@@ -483,33 +507,44 @@ npm run import-leads
 
 ## 13. Deployment
 
-1. Push local changes to `main` → Vercel auto-deploy
-2. Connect **Prisma Postgres** in Vercel → project **profit-pulse-alley** → **Storage** → link `prisma-postgres-celeste-dog` (env vars must have **non-empty** `DATABASE_URL`)
-3. Set all [environment variables](#5-environment-variables)
-4. Create tables in production:
+**Flow:** push to `main` → Vercel auto-deploys **profit-pulse-alley** → build runs `prisma db push && next build`.
+
+### First-time / infra setup
+
+1. Vercel project **profit-pulse-alley** linked to https://github.com/prisken/profit-pulse-alley
+2. **Storage → Prisma Postgres** (`prisma-postgres-celeste-dog`) connected — confirm `POSTGRES_URL` is non-empty
+3. Auth env vars: `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
+4. Google Cloud redirect URIs (see [Production infrastructure](#production-infrastructure-jun-2026))
+5. Push to `main` — tables are created automatically during build
+6. Promote first admin in production DB
+
+### Manual schema sync (optional)
+
+If you need to push schema outside a deploy, copy `POSTGRES_URL` from Vercel Settings into local `.env.local` (sensitive vars are not included in `vercel env pull`):
 
 ```bash
 cd --tailwindcss
-npx vercel link --project profit-pulse-alley
-npx vercel env pull .env.production.local --environment=production
-set -a && source .env.production.local && set +a
-npx prisma db push
+# POSTGRES_URL=postgres://... in .env.local
+npm run db:push
 ```
 
-5. Redeploy after env changes
-6. Promote an `ADMIN` user in production DB
-7. Verify `/login`, Google OAuth, `/game`, `/admin` on production
+### Troubleshooting
 
-### Google login shows “Server error / Configuration”
+**Google login — “Server error / Configuration”**
 
-This usually means **Postgres is not connected** or **`DATABASE_URL` is empty**. Google OAuth starts (account picker works) but the callback fails when Auth.js tries to save the user via the Prisma adapter.
+Usually means Postgres is missing or empty. Google OAuth reaches the account picker but fails on callback when Auth.js cannot write to the database.
 
-**Fix:** Vercel → **profit-pulse-alley** → **Storage** → connect **Prisma Postgres** → confirm `DATABASE_URL` is populated → redeploy → run `npx prisma db push` (above).
+1. Confirm `POSTGRES_URL` is set and non-empty in Vercel → Settings → Environment Variables
+2. Do **not** use empty placeholder env vars — remove them and reconnect Storage if needed
+3. Redeploy; check build logs for `The database is already in sync` or `prisma db push` errors
 
-Google Cloud Console redirect URIs must include:
+**Build fails — “URL must start with postgresql://”**
 
-- `https://profitpulseally.com/api/auth/callback/google`
-- `https://profit-pulse-alley.vercel.app/api/auth/callback/google`
+Prisma schema expects `POSTGRES_URL` (direct postgres URL). `DATABASE_URL` from the Prisma Postgres integration may use a different protocol — keep both vars but ensure Prisma points at `POSTGRES_URL`.
+
+**Deploy fails — Edge middleware over 1 MB**
+
+Middleware must import `@/auth.config`, not `@/auth`. See [Why two auth config files?](#why-two-auth-config-files)
 
 ---
 
@@ -562,9 +597,9 @@ Edit only with approval — update `FortifyYourFutureSurvey.tsx` `content` + for
 2. **Newsletter** — `SiteFooter` subscribe is UI-only; no backend or mailing list integration.
 3. **Social URLs** — LinkedIn/Twitter in footer use placeholder company URLs; Instagram uses the live profile link.
 4. **Past events data** — Two of three homepage past-event cards use placeholder archive paths under `/events/archive/…`.
-5. **Production Postgres** — Run `npx prisma migrate deploy` on Vercel after deploy (`contactNumber`, `password` columns).
-6. **Agenda times** — Event detail agenda slots vs registration page headline times may differ slightly.
-7. **Branding** — Public copy says **Market Pulse**; VC game route remains `/investment-challenge`; Game Hub nav label is **Game**.
+5. **Agenda times** — Event detail agenda slots vs registration page headline times may differ slightly.
+6. **Branding** — Public copy says **Market Pulse**; VC game route remains `/investment-challenge`; Game Hub nav label is **Game**.
+7. **No migration files** — Production relies on `prisma db push` in build; consider adding `prisma/migrations/` for repeatable schema changes.
 
 ---
 
@@ -572,7 +607,7 @@ Edit only with approval — update `FortifyYourFutureSurvey.tsx` `content` + for
 
 | Concern | File(s) |
 |---------|---------|
-| Auth config | `src/auth.ts`, `src/types/next-auth.d.ts` |
+| Auth config | `src/auth.ts`, `src/auth.config.ts`, `src/middleware.ts`, `src/types/next-auth.d.ts` |
 | Auth actions | `src/lib/auth-actions.ts` |
 | Login / onboarding | `LoginPage.tsx`, `OnboardingPage.tsx`, `/auth/onboarding` |
 | Profile | `src/app/profile/page.tsx` |
@@ -596,9 +631,9 @@ Edit only with approval — update `FortifyYourFutureSurvey.tsx` `content` + for
 
 - **Languages:** Mixed EN + Traditional Chinese (zh-Hant)
 - **Data stores:** Postgres (users/scores/auth), KV (game settings), Markdown (blog), Google Sheets (game content)
-- **Testing:** `npm run lint` + `npm run build`; smoke-test key routes with `node`/`fetch` against `npm run dev` (see [Verification](#verification-local--last-run-23-jun-2026)); no automated test suite
+- **Testing:** `npm run lint` + `npm run build` (requires `POSTGRES_URL` locally); smoke-test routes against `npm run dev`
 - **Lint warnings:** Legacy `MandateApp.tsx` unused vars; TanStack Table React Compiler notice in admin table
 
 ---
 
-*Last updated: 23 Jun 2026 — Market Pulse homepage, membership (password + OAuth onboarding), JWT auth, SiteFooter; lint/build verified; pushed to `main`*
+*Last updated: 23 Jun 2026 — production deployed (`4220117`); Google OAuth + Prisma Postgres connected; auth split for Edge middleware; `prisma db push` in build*

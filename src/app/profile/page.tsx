@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
@@ -7,24 +8,29 @@ import { prisma } from "@/lib/prisma";
 
 export const metadata = {
   title: "Member Profile | Profit Pulse Ally",
-  description: "View your membership profile and game scores.",
+  description: "View your membership profile and Market Pulse game history.",
 };
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
+const cardClass =
+  "rounded-xl border border-foreground/10 bg-background p-5 shadow-sm sm:p-6";
 
 function formatScore(score: number): string {
   return new Intl.NumberFormat("en-HK").format(score);
 }
 
 function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("en-HK", {
+  return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
-    month: "short",
+    month: "long",
     day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
   }).format(date);
+}
+
+function formatRole(role: string): string {
+  return role.charAt(0) + role.slice(1).toLowerCase();
 }
 
 export default async function ProfilePage() {
@@ -35,18 +41,33 @@ export default async function ProfilePage() {
   }
 
   const { user } = session;
-
-  const gameScores = await prisma.gameScore.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
-
   const displayName = user.name?.trim() || "Member";
 
+  let gameScores: Array<{ id: string; score: number; createdAt: Date }> = [];
+
+  try {
+    gameScores = await prisma.gameScore.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, score: true, createdAt: true },
+    });
+  } catch (error) {
+    console.error("[profile] Failed to load game scores:", error);
+  }
+
   return (
-    <main className="mx-auto w-full max-w-2xl px-3 py-8 sm:px-6 sm:py-12">
-      <header className="border-b border-foreground/10 pb-6 sm:pb-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <main className="mx-auto w-full max-w-2xl space-y-6 px-3 py-8 sm:px-6 sm:py-12">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          My Profile
+        </h1>
+        <p className="mt-1 text-sm text-foreground/65">
+          Your membership details and Market Pulse challenge history.
+        </p>
+      </header>
+
+      <section aria-labelledby="profile-details-heading" className={cardClass}>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-4">
             {user.image ? (
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-foreground/10">
@@ -63,76 +84,103 @@ export default async function ProfilePage() {
                 {displayName.charAt(0).toUpperCase()}
               </div>
             )}
+
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                {displayName}
-              </h1>
-              <p className="mt-1 text-sm text-foreground/70">{user.email}</p>
-              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-foreground/45">
-                Role: {user.role}
-              </p>
+              <h2
+                id="profile-details-heading"
+                className="text-lg font-semibold text-foreground"
+              >
+                Profile Details
+              </h2>
+              <dl className="mt-3 space-y-2.5 text-sm">
+                <div>
+                  <dt className="font-medium text-foreground/50">Name</dt>
+                  <dd className="mt-0.5 text-foreground">{displayName}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground/50">Email</dt>
+                  <dd className="mt-0.5 break-all text-foreground">
+                    {user.email}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground/50">Role</dt>
+                  <dd className="mt-0.5 text-foreground">
+                    {formatRole(user.role)}
+                  </dd>
+                </div>
+              </dl>
             </div>
           </div>
 
           <form action={signOutAction} className="shrink-0">
             <button
               type="submit"
-              className={`inline-flex min-h-10 items-center justify-center rounded-full border border-foreground/20 bg-background px-5 py-2 text-sm font-semibold text-foreground transition-colors hover:border-foreground/35 hover:bg-foreground/5 ${focusRing}`}
+              className={`inline-flex min-h-10 w-full items-center justify-center rounded-full border border-foreground/20 bg-background px-5 py-2 text-sm font-semibold text-foreground transition-colors hover:border-foreground/35 hover:bg-foreground/5 sm:w-auto ${focusRing}`}
             >
               Sign Out
             </button>
           </form>
         </div>
-      </header>
+      </section>
 
-      <section
-        className="mt-8 sm:mt-10"
-        aria-labelledby="game-scores-heading"
-      >
+      <section aria-labelledby="game-history-heading" className={cardClass}>
         <h2
-          id="game-scores-heading"
-          className="text-lg font-semibold text-foreground sm:text-xl"
+          id="game-history-heading"
+          className="text-lg font-semibold text-foreground"
         >
-          Your Game Scores
+          Market Pulse History
         </h2>
         <p className="mt-1 text-sm text-foreground/65">
-          Scores saved from the VC Investment Challenge and other games.
+          Scores from your VC Investment Challenge runs.
         </p>
 
         {gameScores.length === 0 ? (
           <div className="mt-5 rounded-xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-5 py-10 text-center">
-            <p className="text-sm font-medium text-foreground/80">
-              No scores yet
+            <p className="text-sm text-foreground/75">
+              You haven&apos;t played a challenge yet. Head to the Game Hub to
+              test your skills!
             </p>
-            <p className="mt-1 text-sm text-foreground/55">
-              Play the{" "}
-              <a
-                href="/investment-challenge"
-                className="font-medium text-foreground underline-offset-4 hover:underline"
-              >
-                VC Investment Challenge
-              </a>{" "}
-              to record your first score.
-            </p>
+            <Link
+              href="/game"
+              className={`mt-4 inline-flex min-h-10 items-center justify-center rounded-full bg-amber-500 px-5 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-amber-400 ${focusRing}`}
+            >
+              Go to Game Hub
+            </Link>
           </div>
         ) : (
-          <ul className="mt-5 divide-y divide-foreground/10 overflow-hidden rounded-xl border border-foreground/10 bg-background shadow-sm">
-            {gameScores.map((entry) => (
-              <li
-                key={entry.id}
-                className="flex items-center justify-between gap-4 px-4 py-4 sm:px-5"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground/55">
-                    {formatDate(entry.createdAt)}
-                  </p>
-                </div>
-                <p className="shrink-0 text-lg font-semibold tabular-nums text-foreground">
-                  {formatScore(entry.score)}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-5 overflow-hidden rounded-xl border border-foreground/10">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-foreground/10 bg-foreground/[0.03]">
+                  <th
+                    scope="col"
+                    className="px-4 py-3 font-semibold text-foreground/70 sm:px-5"
+                  >
+                    Score
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 font-semibold text-foreground/70 sm:px-5"
+                  >
+                    Played on
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-foreground/10">
+                {gameScores.map((entry) => (
+                  <tr key={entry.id}>
+                    <td className="px-4 py-3.5 font-semibold tabular-nums text-foreground sm:px-5">
+                      {formatScore(entry.score)}
+                    </td>
+                    <td className="px-4 py-3.5 text-foreground/70 sm:px-5">
+                      {formatDate(entry.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </main>
