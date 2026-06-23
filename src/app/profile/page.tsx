@@ -4,7 +4,11 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { signOutAction } from "@/lib/auth-actions";
-import { prisma } from "@/lib/prisma";
+import {
+  formatMarketPulseHistoryCycleLabel,
+  getUserMarketPulseHistory,
+} from "@/lib/market-pulse/queries";
+import type { MarketPulseHistoryEntry } from "@/lib/market-pulse/types";
 
 export const metadata = {
   title: "Member Profile | Profit Pulse Ally",
@@ -43,14 +47,10 @@ export default async function ProfilePage() {
   const { user } = session;
   const displayName = user.name?.trim() || "Member";
 
-  let gameScores: Array<{ id: string; score: number; createdAt: Date }> = [];
+  let gameScores: MarketPulseHistoryEntry[] = [];
 
   try {
-    gameScores = await prisma.gameScore.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      select: { id: true, score: true, createdAt: true },
-    });
+    gameScores = await getUserMarketPulseHistory(user.id);
   } catch (error) {
     console.error("[profile] Failed to load game scores:", error);
   }
@@ -138,14 +138,14 @@ export default async function ProfilePage() {
         {gameScores.length === 0 ? (
           <div className="mt-5 rounded-xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-5 py-10 text-center">
             <p className="text-sm text-foreground/75">
-              You haven&apos;t played a challenge yet. Head to the Game Hub to
-              test your skills!
+              You haven&apos;t played a challenge yet. Head to Market Pulse Hub
+              to test your skills!
             </p>
             <Link
-              href="/game"
+              href="/market-pulse"
               className={`mt-4 inline-flex min-h-10 items-center justify-center rounded-full bg-amber-500 px-5 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-amber-400 ${focusRing}`}
             >
-              Go to Game Hub
+              Go to Market Pulse Hub
             </Link>
           </div>
         ) : (
@@ -174,7 +174,12 @@ export default async function ProfilePage() {
                       {formatScore(entry.score)}
                     </td>
                     <td className="px-4 py-3.5 text-foreground/70 sm:px-5">
-                      {formatDate(entry.createdAt)}
+                      <div>{formatDate(entry.createdAt)}</div>
+                      {entry.cycleId ? (
+                        <div className="mt-0.5 text-xs text-foreground/45">
+                          Cycle {formatMarketPulseHistoryCycleLabel(entry.cycleId)}
+                        </div>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

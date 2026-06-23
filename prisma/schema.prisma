@@ -36,16 +36,21 @@ model User {
 }
 
 model GameScore {
-  id     String @id @default(cuid())
-  score  Int
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  score       Int
+  userId      String
+  /// Market Pulse challenge window key, e.g. `2026-01-01_2026-01-10` (HKT).
+  cycleId     String?
+  /// Client/rules version at time of save (e.g. `1`).
+  gameVersion String?
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([score(sort: Desc)])
+  @@index([cycleId])
 }
 
 // --- Auth.js Prisma Adapter models ---
