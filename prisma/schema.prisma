@@ -8,8 +8,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // Injected by Vercel Prisma Postgres / Neon integration
-  url      = env("DATABASE_URL")
+  // Direct Postgres URL from Vercel Prisma Postgres integration
+  url      = env("POSTGRES_URL")
 }
 
 enum Role {

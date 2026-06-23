@@ -75,7 +75,7 @@ Authoritative on **`/fortify-survey`** (QR codes) and mirrored on **`/events/for
 
 ### Vercel infrastructure checklist
 
-- [ ] **Postgres** — `DATABASE_URL` (from Vercel **Storage → Prisma Postgres**, linked to `profit-pulse-alley`)
+- [ ] **Postgres** — `POSTGRES_URL` (from Vercel **Storage → Prisma Postgres**, linked to `profit-pulse-alley`)
 - [ ] **Auth.js** — `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
 - [ ] **Email sign-in** (optional) — `EMAIL_SERVER`, `EMAIL_FROM`
 - [ ] **KV** (VC game) — `KV_REST_API_URL`, `KV_REST_API_TOKEN`
@@ -242,9 +242,9 @@ npm run dev
 
 | Variable | Required | Used by |
 |----------|----------|---------|
-| `DATABASE_URL` | Yes (membership, game hub, admin, Google login) | Prisma — auto-injected by Vercel Prisma Postgres |
-| `PRISMA_DATABASE_URL` | Optional | Prisma Postgres integration (may mirror `DATABASE_URL`) |
-| `POSTGRES_URL` | Optional | Legacy/alternate Postgres connection string |
+| `POSTGRES_URL` | Yes (membership, game hub, admin, Google login) | Prisma — direct Postgres from Vercel Prisma Postgres |
+| `DATABASE_URL` | Optional | May mirror `POSTGRES_URL` depending on integration |
+| `PRISMA_DATABASE_URL` | Optional | Prisma Postgres integration (often `prisma+postgres://`) |
 | `AUTH_SECRET` | Yes (production) | Auth.js (`openssl rand -base64 32`) |
 | `AUTH_GOOGLE_ID` | For Google login | Auth.js Google provider |
 | `AUTH_GOOGLE_SECRET` | For Google login | Auth.js Google provider |
