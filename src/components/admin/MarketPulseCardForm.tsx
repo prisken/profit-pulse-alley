@@ -185,7 +185,9 @@ export default function MarketPulseCardForm({
               Schedule
             </h3>
             <label className="block">
-              <FieldLabel error={fieldErrors.dayIndex}>Day index</FieldLabel>
+              <FieldLabel error={fieldErrors.dayIndex}>
+                Day number (1 = first day of cycle)
+              </FieldLabel>
               <input
                 type="number"
                 min={1}

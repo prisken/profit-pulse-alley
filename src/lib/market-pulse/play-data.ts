@@ -5,8 +5,13 @@ import type { MarketPulseCycleStatus } from "@prisma/client";
 import { auth } from "@/auth";
 import type { MarketPulseDecision } from "@/lib/market-pulse/constants";
 import {
+  describeCyclePlayabilityIssue,
+  getCyclePlayabilityIssue,
+} from "@/lib/market-pulse/cycle-playability";
+import {
   getActiveMarketPulseCycle,
   getMarketPulseLeaderboard,
+  getMarketPulseSettings,
   getTodayMarketPulseCardForUser,
   getTodayMarketPulseCardSnapshot,
   isMarketPulseCycleRevealed,
@@ -20,6 +25,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export type MarketPulsePlayPageStatus =
   | "no_active_cycle"
+  | "cycle_unavailable"
   | "no_card_today"
   | "sign_in_required"
   | "locked"
@@ -28,6 +34,7 @@ export type MarketPulsePlayPageStatus =
 export type MarketPulsePlayPageData = {
   status: MarketPulsePlayPageStatus;
   isAuthenticated: boolean;
+  unavailableReason?: string | null;
   challengeName: string;
   dayCurrent: number;
   dayTotal: number;
@@ -142,9 +149,24 @@ export async function getMarketPulsePlayPageData(): Promise<MarketPulsePlayPageD
   }
 
   if (!activeCycle) {
+    let unavailableReason: string | null = null;
+    try {
+      const settings = await getMarketPulseSettings();
+      const pinned = settings.activeCycle;
+      if (pinned) {
+        const issue = getCyclePlayabilityIssue(pinned, now);
+        if (issue) {
+          unavailableReason = describeCyclePlayabilityIssue(issue);
+        }
+      }
+    } catch {
+      // ignore — fall through to generic empty state
+    }
+
     return {
-      status: "no_active_cycle",
+      status: unavailableReason ? "cycle_unavailable" : "no_active_cycle",
       isAuthenticated,
+      unavailableReason,
       challengeName: "Market Pulse",
       dayCurrent: 0,
       dayTotal: 0,

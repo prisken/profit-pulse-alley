@@ -96,7 +96,17 @@ export type CreateMarketPulseCardInput = Omit<
   ppaSignal: MarketPulseSignal | null;
 };
 
-function cardPayloadFromInput(input: CreateMarketPulseCardInput) {
+function cardPayloadFromInput(
+  input: CreateMarketPulseCardInput,
+  options?: { existingPublishedAt?: Date | null },
+) {
+  const parsedPublishedAt = parseCardDate(input.publishedAt);
+  const publishedAt =
+    parsedPublishedAt ??
+    (input.status === "PUBLISHED"
+      ? options?.existingPublishedAt ?? new Date()
+      : null);
+
   return {
     cycleId: input.cycleId,
     dayIndex: input.dayIndex,
@@ -115,7 +125,7 @@ function cardPayloadFromInput(input: CreateMarketPulseCardInput) {
     ppaSignal: input.ppaSignal,
     ppaInsight: trimOrNull(input.ppaInsight),
     status: input.status,
-    publishedAt: parseCardDate(input.publishedAt),
+    publishedAt,
     revealAt: parseCardDate(input.revealAt),
   };
 }
@@ -689,27 +699,30 @@ export async function updateMarketPulseCardAction(
 
   await prisma.marketPulseCard.update({
     where: { id: input.cardId },
-    data: cardPayloadFromInput({
-      cycleId: input.cycleId,
-      dayIndex: input.dayIndex,
-      companyName: input.companyName,
-      companyNameZh: input.companyNameZh,
-      ticker: input.ticker,
-      exchange: input.exchange,
-      logoUrl: input.logoUrl,
-      priceLabel: input.priceLabel,
-      priceDirection: input.priceDirection,
-      headline: input.headline,
-      sourceName: input.sourceName,
-      sourceUrl: input.sourceUrl,
-      sourceDate: input.sourceDate,
-      summary: input.summary,
-      ppaSignal: nextSignal,
-      ppaInsight: input.ppaInsight,
-      status: input.status,
-      publishedAt: input.publishedAt,
-      revealAt: input.revealAt,
-    }),
+    data: cardPayloadFromInput(
+      {
+        cycleId: input.cycleId,
+        dayIndex: input.dayIndex,
+        companyName: input.companyName,
+        companyNameZh: input.companyNameZh,
+        ticker: input.ticker,
+        exchange: input.exchange,
+        logoUrl: input.logoUrl,
+        priceLabel: input.priceLabel,
+        priceDirection: input.priceDirection,
+        headline: input.headline,
+        sourceName: input.sourceName,
+        sourceUrl: input.sourceUrl,
+        sourceDate: input.sourceDate,
+        summary: input.summary,
+        ppaSignal: nextSignal,
+        ppaInsight: input.ppaInsight,
+        status: input.status,
+        publishedAt: input.publishedAt,
+        revealAt: input.revealAt,
+      },
+      { existingPublishedAt: card.publishedAt },
+    ),
   });
 
   revalidateAdmin();

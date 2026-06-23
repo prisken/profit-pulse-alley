@@ -18,6 +18,8 @@ import {
   buildScoreEventsForUser,
   type ScoreCalculationDecision,
 } from "@/lib/market-pulse/score-calculation";
+import { findPlayableCardForToday } from "@/lib/market-pulse/playable-card";
+import { isCyclePlayable } from "@/lib/market-pulse/cycle-playability";
 import {
   getMarketPulseCardPublicPayload,
   isMarketPulseCardRevealed,
@@ -163,15 +165,11 @@ function effectiveCardRevealAt(
   return card.revealAt ?? cycle.revealAt;
 }
 
-function isCyclePlayable(
+function isCyclePlayableForServer(
   cycle: Pick<MarketPulseCycle, "status" | "startsAt" | "revealAt">,
   at: Date = currentTime(),
 ): boolean {
-  return (
-    cycle.status === "OPEN" &&
-    cycle.startsAt <= at &&
-    cycle.revealAt >= at
-  );
+  return isCyclePlayable(cycle, at);
 }
 
 function getDayIndexForCycle(
@@ -233,7 +231,7 @@ export async function getActiveMarketPulseCycle(): Promise<CycleWithCards | null
       include: cycleWithCardsInclude,
     });
 
-    if (pinned && isCyclePlayable(pinned, now)) {
+    if (pinned && isCyclePlayableForServer(pinned, now)) {
       return pinned;
     }
   }
@@ -247,46 +245,6 @@ export async function getActiveMarketPulseCycle(): Promise<CycleWithCards | null
     orderBy: { startsAt: "desc" },
     include: cycleWithCardsInclude,
   });
-}
-
-function findPlayableCardForToday(
-  cycle: CycleWithCards,
-  now: Date,
-): MarketPulseCard | null {
-  const publishedCards = cycle.cards.filter(
-    (card) =>
-      card.status === "PUBLISHED" &&
-      card.publishedAt != null &&
-      card.publishedAt <= now,
-  );
-
-  if (publishedCards.length === 0) {
-    return null;
-  }
-
-  const todayIndex = getDayIndexForCycle(cycle.startsAt, now);
-  const byDay = publishedCards.find((card) => card.dayIndex === todayIndex);
-  if (byDay) {
-    return byDay;
-  }
-
-  return publishedCards.reduce<MarketPulseCard | null>((latest, card) => {
-    if (!latest) {
-      return card;
-    }
-    if (card.dayIndex > latest.dayIndex) {
-      return card;
-    }
-    if (
-      card.dayIndex === latest.dayIndex &&
-      card.publishedAt &&
-      latest.publishedAt &&
-      card.publishedAt > latest.publishedAt
-    ) {
-      return card;
-    }
-    return latest;
-  }, null);
 }
 
 /** Today's published card and cycle without user-specific decision data. */

@@ -154,6 +154,8 @@ export default function MarketPulseAdminDashboard({
     });
   }
 
+  const activeCyclePlayable = activeCycle?.isPlayableNow ?? false;
+
   return (
     <div className="space-y-10">
       {(message || error) && (
@@ -168,6 +170,19 @@ export default function MarketPulseAdminDashboard({
           {error ?? message}
         </div>
       )}
+
+      {activeCycle?.isActive && !activeCyclePlayable && activeCycle.playabilityIssue ? (
+        <div
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100"
+          role="alert"
+        >
+          <p className="font-semibold">Active cycle is not visible to players</p>
+          <p className="mt-1 text-amber-900/90 dark:text-amber-100/90">
+            {activeCycle.playabilityIssue} Update dates under Edit cycle, or create a
+            new cycle and set it active.
+          </p>
+        </div>
+      ) : null}
 
       <section aria-labelledby="overview-heading">
         <h2 id="overview-heading" className="text-lg font-semibold text-foreground">
@@ -445,7 +460,17 @@ function CyclePanel({
                 Active
               </span>
             ) : null}
+            {cycle.isActive && !cycle.isPlayableNow ? (
+              <span className="rounded bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-900 dark:text-amber-200">
+                Not playable
+              </span>
+            ) : null}
           </div>
+          {!cycle.isPlayableNow && cycle.playabilityIssue ? (
+            <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">
+              {cycle.playabilityIssue}
+            </p>
+          ) : null}
           <p className="mt-1 text-xs text-foreground/55">
             {cycle.cardCount} cards · {cycle.decisionCount} decisions · {cycle.usersPlayed} players ·{" "}
             {cycle.missingSignalCount} missing signal · {cycle.unlockedCount} unlocked

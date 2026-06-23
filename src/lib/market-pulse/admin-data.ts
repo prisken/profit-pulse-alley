@@ -8,6 +8,10 @@ import type {
 } from "@prisma/client";
 
 import { requireAdminSession } from "@/lib/market-pulse/admin-auth";
+import {
+  describeCyclePlayabilityIssue,
+  getCyclePlayabilityIssue,
+} from "@/lib/market-pulse/cycle-playability";
 import { getMarketPulseSettings } from "@/lib/market-pulse/server";
 import { prisma } from "@/lib/prisma";
 
@@ -45,6 +49,8 @@ export type MarketPulseAdminCycleRow = {
   revealAt: string;
   prizeLabel: string | null;
   isActive: boolean;
+  isPlayableNow: boolean;
+  playabilityIssue: string | null;
   cardCount: number;
   decisionCount: number;
   usersPlayed: number;
@@ -93,10 +99,13 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
     },
   });
 
+  const now = new Date();
+
   const cycleRows: MarketPulseAdminCycleRow[] = cycles.map((cycle) => {
     const usersPlayed = new Set(cycle.decisions.map((d) => d.userId)).size;
     const missingSignalCount = cycle.cards.filter((c) => !c.ppaSignal).length;
     const unlockedCount = cycle.cards.filter((c) => !c.ppaSignalLockedAt).length;
+    const playabilityIssue = getCyclePlayabilityIssue(cycle, now);
 
     return {
       id: cycle.id,
@@ -107,6 +116,10 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
       revealAt: cycle.revealAt.toISOString(),
       prizeLabel: cycle.prizeLabel,
       isActive: cycle.id === activeCycleId,
+      isPlayableNow: playabilityIssue === null,
+      playabilityIssue: playabilityIssue
+        ? describeCyclePlayabilityIssue(playabilityIssue)
+        : null,
       cardCount: cycle._count.cards,
       decisionCount: cycle._count.decisions,
       usersPlayed,

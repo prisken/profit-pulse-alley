@@ -240,11 +240,18 @@ export default function MarketPulsePlayExperience({
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-8">
           <div className="min-w-0 overflow-x-hidden pb-2">
-            {data.status === "no_active_cycle" ? (
+            {data.status === "no_active_cycle" || data.status === "cycle_unavailable" ? (
               <EmptyState
                 icon={CalendarClock}
-                title="No active Market Pulse challenge is open right now."
-                description="Check back soon or visit the hub for the next challenge window."
+                title={
+                  data.status === "cycle_unavailable"
+                    ? "This Market Pulse challenge is not open right now."
+                    : "No active Market Pulse challenge is open right now."
+                }
+                description={
+                  data.unavailableReason ??
+                  "Check back soon or visit the hub for the next challenge window."
+                }
               />
             ) : null}
 
@@ -252,7 +259,7 @@ export default function MarketPulsePlayExperience({
               <EmptyState
                 icon={Sparkles}
                 title="Today’s Market Pulse card is coming soon."
-                description="The team is preparing today’s signal. Check back a little later."
+                description="An admin must publish today’s card: Lock PPA → Publish, with Published at set to now or earlier. The cycle must be OPEN, active, and within its start/reveal dates."
               />
             ) : null}
 
