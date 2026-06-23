@@ -7,6 +7,7 @@ import Google from "next-auth/providers/google";
 import Nodemailer from "next-auth/providers/nodemailer";
 import bcrypt from "bcrypt";
 
+import authConfig from "@/auth.config";
 import { prisma } from "@/lib/prisma";
 
 const providers: NextAuthConfig["providers"] = [
@@ -65,14 +66,11 @@ if (process.env.EMAIL_SERVER && process.env.EMAIL_FROM) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
-  trustHost: true,
-  session: { strategy: "jwt" },
-  pages: {
-    signIn: "/login",
-  },
   providers,
   callbacks: {
+    ...authConfig.callbacks,
     async jwt({ token, user, trigger }) {
       if (user?.id) {
         token.id = user.id;
