@@ -3,24 +3,69 @@
 import { useCallback, useEffect, useState } from "react";
 
 import {
-  DEFAULT_GAME_SETTINGS,
+  DEFAULT_MARKET_PULSE_SETTINGS,
   MARKET_EVENTS,
+  MARKET_PULSE_LEADERBOARD_MODE_OPTIONS,
+  MARKET_PULSE_STATUS_OPTIONS,
   WEEKLY_THEMES,
-  type GameSettings,
-  type MarketEvent,
-  type WeeklyTheme,
-} from "@/lib/game-settings";
+} from "@/lib/market-pulse/settings";
+import type {
+  MarketEvent,
+  MarketPulseSettings,
+  MarketPulseSettingsLeaderboardMode,
+  MarketPulseSettingsStatus,
+  WeeklyTheme,
+} from "@/lib/market-pulse/types";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
+function formatStatusLabel(status: MarketPulseSettingsStatus): string {
+  switch (status) {
+    case "open":
+      return "Open";
+    case "closed":
+      return "Closed";
+    case "maintenance":
+      return "Maintenance";
+  }
+}
+
+function formatLeaderboardModeLabel(
+  mode: MarketPulseSettingsLeaderboardMode,
+): string {
+  return mode === "current-cycle" ? "Current cycle" : "All-time";
+}
+
 export default function AdminGameSettings() {
-  const [theme, setTheme] = useState<WeeklyTheme>(DEFAULT_GAME_SETTINGS.theme);
-  const [event, setEvent] = useState<MarketEvent>(DEFAULT_GAME_SETTINGS.event);
+  const [theme, setTheme] = useState<WeeklyTheme>(
+    DEFAULT_MARKET_PULSE_SETTINGS.theme as WeeklyTheme,
+  );
+  const [event, setEvent] = useState<MarketEvent>(
+    DEFAULT_MARKET_PULSE_SETTINGS.event as MarketEvent,
+  );
+  const [status, setStatus] = useState<MarketPulseSettingsStatus>(
+    DEFAULT_MARKET_PULSE_SETTINGS.status,
+  );
+  const [leaderboardMode, setLeaderboardMode] =
+    useState<MarketPulseSettingsLeaderboardMode>(
+      DEFAULT_MARKET_PULSE_SETTINGS.leaderboardMode,
+    );
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  const applySettings = useCallback((data: MarketPulseSettings) => {
+    setTheme(
+      (data.theme as WeeklyTheme) ?? DEFAULT_MARKET_PULSE_SETTINGS.theme,
+    );
+    setEvent((data.event as MarketEvent) ?? DEFAULT_MARKET_PULSE_SETTINGS.event);
+    setStatus(data.status ?? DEFAULT_MARKET_PULSE_SETTINGS.status);
+    setLeaderboardMode(
+      data.leaderboardMode ?? DEFAULT_MARKET_PULSE_SETTINGS.leaderboardMode,
+    );
+  }, []);
 
   const fetchSettings = useCallback(async () => {
     setIsLoading(true);
@@ -30,17 +75,15 @@ export default function AdminGameSettings() {
       if (!res.ok) {
         throw new Error("Failed to load settings");
       }
-      const data = (await res.json()) as GameSettings;
-      setTheme(data.theme ?? DEFAULT_GAME_SETTINGS.theme);
-      setEvent(data.event ?? DEFAULT_GAME_SETTINGS.event);
+      const data = (await res.json()) as MarketPulseSettings;
+      applySettings(data);
     } catch {
       setLoadError("Could not load game settings. Showing defaults.");
-      setTheme(DEFAULT_GAME_SETTINGS.theme);
-      setEvent(DEFAULT_GAME_SETTINGS.event);
+      applySettings(DEFAULT_MARKET_PULSE_SETTINGS);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [applySettings]);
 
   useEffect(() => {
     void fetchSettings();
@@ -53,14 +96,13 @@ export default function AdminGameSettings() {
       const res = await fetch("/api/game-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme, event }),
+        body: JSON.stringify({ theme, event, status, leaderboardMode }),
       });
       if (!res.ok) {
         throw new Error("Save failed");
       }
-      const data = (await res.json()) as GameSettings;
-      setTheme(data.theme);
-      setEvent(data.event);
+      const data = (await res.json()) as MarketPulseSettings;
+      applySettings(data);
       setSaveMessage("Settings saved.");
       await fetchSettings();
     } catch {
@@ -108,6 +150,22 @@ export default function AdminGameSettings() {
               {isLoading ? "…" : event}
             </dd>
           </div>
+          <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
+            <dt className="text-xs font-medium uppercase tracking-wide text-foreground/50">
+              Game status
+            </dt>
+            <dd className="mt-1 text-sm font-semibold text-foreground">
+              {isLoading ? "…" : formatStatusLabel(status)}
+            </dd>
+          </div>
+          <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
+            <dt className="text-xs font-medium uppercase tracking-wide text-foreground/50">
+              Leaderboard mode
+            </dt>
+            <dd className="mt-1 text-sm font-semibold text-foreground">
+              {isLoading ? "…" : formatLeaderboardModeLabel(leaderboardMode)}
+            </dd>
+          </div>
         </dl>
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -140,6 +198,46 @@ export default function AdminGameSettings() {
               {MARKET_EVENTS.map((option) => (
                 <option key={option} value={option}>
                   {option}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-foreground/80">Status</span>
+            <select
+              value={status}
+              onChange={(e) =>
+                setStatus(e.target.value as MarketPulseSettingsStatus)
+              }
+              disabled={isLoading || isSaving}
+              className={`mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-sm text-foreground outline-none disabled:opacity-60 ${focusRing}`}
+            >
+              {MARKET_PULSE_STATUS_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {formatStatusLabel(option)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-foreground/80">
+              Leaderboard mode
+            </span>
+            <select
+              value={leaderboardMode}
+              onChange={(e) =>
+                setLeaderboardMode(
+                  e.target.value as MarketPulseSettingsLeaderboardMode,
+                )
+              }
+              disabled={isLoading || isSaving}
+              className={`mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-sm text-foreground outline-none disabled:opacity-60 ${focusRing}`}
+            >
+              {MARKET_PULSE_LEADERBOARD_MODE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {formatLeaderboardModeLabel(option)}
                 </option>
               ))}
             </select>

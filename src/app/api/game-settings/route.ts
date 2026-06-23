@@ -1,23 +1,15 @@
-import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 import {
-  DEFAULT_GAME_SETTINGS,
-  GAME_SETTINGS_KEY,
-  parseGameSettings,
-  type GameSettings,
-} from "@/lib/game-settings";
+  getMarketPulseSettings,
+  parseMarketPulseSettings,
+  saveMarketPulseSettings,
+} from "@/lib/market-pulse/settings";
 
 export async function GET() {
-  try {
-    const stored = await kv.get<GameSettings>(GAME_SETTINGS_KEY);
-    const settings = stored ?? DEFAULT_GAME_SETTINGS;
-    return NextResponse.json(settings);
-  } catch (error) {
-    console.error("[game-settings] GET failed:", error);
-    return NextResponse.json(DEFAULT_GAME_SETTINGS);
-  }
+  const settings = await getMarketPulseSettings();
+  return NextResponse.json(settings);
 }
 
 export async function POST(request: Request) {
@@ -29,7 +21,7 @@ export async function POST(request: Request) {
 
   try {
     const body: unknown = await request.json();
-    const settings = parseGameSettings(body);
+    const settings = parseMarketPulseSettings(body);
 
     if (!settings) {
       return NextResponse.json(
@@ -38,8 +30,8 @@ export async function POST(request: Request) {
       );
     }
 
-    await kv.set(GAME_SETTINGS_KEY, settings);
-    return NextResponse.json(settings);
+    const saved = await saveMarketPulseSettings(settings);
+    return NextResponse.json(saved);
   } catch (error) {
     console.error("[game-settings] POST failed:", error);
     return NextResponse.json(

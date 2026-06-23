@@ -3,10 +3,8 @@
 import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 
-import {
-  getChallengeCountdown,
-  type ChallengeCountdown,
-} from "@/lib/game-challenge-cycle";
+import { getChallengeCountdown } from "@/lib/market-pulse/challenge-cycle";
+import type { ChallengeCountdown } from "@/lib/market-pulse/types";
 
 function padUnit(value: number): string {
   return String(value).padStart(2, "0");

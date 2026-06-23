@@ -9,11 +9,9 @@ import {
   type ReactNode,
 } from "react";
 
-import {
-  DEFAULT_GAME_SETTINGS,
-  type GameSettings,
-} from "@/lib/game-settings";
-import { saveGameScore } from "@/lib/game-actions";
+import { saveMarketPulseScore } from "@/lib/market-pulse/actions";
+import { DEFAULT_MARKET_PULSE_SETTINGS } from "@/lib/market-pulse/settings";
+import type { MarketPulseSettings } from "@/lib/market-pulse/types";
 
 const STARTUP_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vS9mkTwOKXPq79Zs2BEQHUBZaYH_vO381H7aK1VVNp0MXUmcTo0syJRSoDkBwHMo8N5oVcnBYV8MlqI/pub?gid=0&single=true&output=csv";
@@ -148,8 +146,8 @@ function effectiveNewsMultiplier(
 }
 
 export default function MarketPulseGame() {
-  const [gameSettings, setGameSettings] = useState<GameSettings>(
-    DEFAULT_GAME_SETTINGS,
+  const [gameSettings, setGameSettings] = useState<MarketPulseSettings>(
+    DEFAULT_MARKET_PULSE_SETTINGS,
   );
   const [cash, setCash] = useState(INITIAL_CASH);
   const [portfolio, setPortfolio] = useState<PortfolioCompany[]>([]);
@@ -210,7 +208,7 @@ export default function MarketPulseGame() {
         throw new Error("Failed to load game data");
       }
 
-      const settings = (await settingsRes.json()) as GameSettings;
+      const settings = (await settingsRes.json()) as MarketPulseSettings;
       const startupsCsv = await startupsRes.text();
       const newsCsv = await newsRes.text();
 
@@ -325,12 +323,15 @@ export default function MarketPulseGame() {
       );
       const finalScore = Math.round(finalCash + finalPortfolioValue);
 
-      void saveGameScore(finalScore).then((result) => {
+      void saveMarketPulseScore(finalScore).then((result) => {
         if (result.saved) {
           appendLog(
             `Score saved to your profile (${formatMoney(finalScore)}).`,
           );
+          return;
         }
+
+        appendLog(result.error);
       });
     },
     [appendLog],

@@ -4,10 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Calendar, Clock, Gamepad2, Mic2, Sparkles } from "lucide-react";
 
-import {
-  getChallengeCountdown,
-  type ChallengeCountdown,
-} from "@/lib/game-challenge-cycle";
+import { getChallengeCountdown } from "@/lib/market-pulse/challenge-cycle";
+import type { ChallengeCountdown } from "@/lib/market-pulse/types";
 
 export type UpcomingEventHero = {
   speakerName: string;
@@ -134,7 +132,7 @@ export default function HomeHero({ upcomingEvent }: HomeHeroProps) {
 
               <div className="pt-1">
                 <Link
-                  href="/game"
+                  href="/market-pulse"
                   className={`inline-flex w-full items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-bold text-zinc-950 shadow-lg shadow-emerald-900/30 transition-colors hover:bg-emerald-300 active:bg-emerald-500 sm:w-auto sm:px-8 sm:py-3.5 sm:text-base ${focusRing}`}
                 >
                   Play Now

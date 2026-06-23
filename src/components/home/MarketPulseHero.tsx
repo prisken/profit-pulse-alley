@@ -4,7 +4,7 @@ import Link from "next/link";
 import { TrendingUp } from "lucide-react";
 
 import ChallengeCountdown from "@/components/home/ChallengeCountdown";
-import { getChallengeCountdown } from "@/lib/game-challenge-cycle";
+import { getChallengeCountdown } from "@/lib/market-pulse/challenge-cycle";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
@@ -57,7 +57,7 @@ export default function MarketPulseHero() {
             <ChallengeCountdown initial={initialCountdown} large />
 
             <Link
-              href="/game"
+              href="/market-pulse"
               className={`inline-flex w-full min-h-12 items-center justify-center rounded-full bg-emerald-400 px-8 py-3.5 text-base font-bold text-zinc-950 shadow-lg shadow-emerald-900/40 transition-colors hover:bg-emerald-300 active:bg-emerald-500 sm:w-auto sm:min-w-[12rem] sm:text-lg ${focusRing}`}
             >
               Play Now
