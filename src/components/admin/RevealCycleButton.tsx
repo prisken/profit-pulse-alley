@@ -12,9 +12,9 @@ import {
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
-const buttonClass = `rounded-md border border-foreground/15 bg-foreground/5 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-50 ${focusRing}`;
+const buttonClass = `min-h-11 w-full rounded-md border border-foreground/15 bg-foreground/5 px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-50 sm:w-auto ${focusRing}`;
 
-const primaryButtonClass = `rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`;
+const cautionButtonClass = `min-h-11 w-full rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:text-amber-100 sm:w-auto ${focusRing}`;
 
 export function RevealCycleLinks() {
   return (
@@ -128,7 +128,7 @@ export default function RevealCycleButton({
     <div className="w-full sm:w-auto">
       <button
         type="button"
-        className={primaryButtonClass}
+        className={cautionButtonClass}
         disabled={busy}
         onClick={handleReveal}
       >

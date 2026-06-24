@@ -41,7 +41,7 @@ export default function DecisionLockedCard({
       initial={reduceMotion ? false : { opacity: 0, scale: 0.94, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={reduceMotion ? { duration: 0.15 } : springIn}
-      className={`relative flex min-h-[22rem] flex-col items-center justify-center overflow-hidden rounded-3xl border border-emerald-500/25 bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-zinc-950 px-6 py-10 text-center shadow-2xl shadow-emerald-950/20 ${className}`}
+      className={`relative flex flex-col items-center overflow-hidden rounded-3xl border border-emerald-500/25 bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-zinc-950 px-5 py-8 text-center shadow-2xl shadow-emerald-950/20 sm:px-6 sm:py-9 ${className}`}
     >
       {!reduceMotion ? (
         <motion.div
@@ -91,8 +91,10 @@ export default function DecisionLockedCard({
           <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
           Locked in
         </div>
-        <p className="mt-4 text-xl font-semibold text-white">Your decision is locked.</p>
-        <p className="mt-2 text-base text-zinc-300">
+        <p className="mt-3 text-lg font-semibold text-white sm:mt-4 sm:text-xl">
+          Your decision is locked.
+        </p>
+        <p className="mt-1.5 text-sm text-zinc-300 sm:text-base">
           You chose:{" "}
           <span className={`font-bold ${tone.textClass}`}>
             {SIGNAL_LABELS[decision]}
@@ -115,7 +117,7 @@ export default function DecisionLockedCard({
         initial={reduceMotion ? false : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={reduceMotion ? { duration: 0.15 } : { delay: 0.28, ...springIn }}
-        className="relative mt-8 flex w-full max-w-sm flex-col gap-3 sm:flex-row sm:justify-center"
+        className="relative mt-6 flex w-full max-w-sm flex-col gap-2.5 sm:mt-7 sm:flex-row sm:justify-center sm:gap-3"
       >
         <motion.div whileHover={reduceMotion ? undefined : { scale: 1.02 }} whileTap={reduceMotion ? undefined : { scale: 0.98 }} className="flex-1">
           <Link

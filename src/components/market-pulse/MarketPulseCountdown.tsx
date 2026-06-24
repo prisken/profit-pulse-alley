@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Clock, Sparkles } from "lucide-react";
 
 export type MarketPulseCountdownProps = {
@@ -11,6 +11,7 @@ export type MarketPulseCountdownProps = {
   label?: string;
   /** Include seconds column (default false). */
   showSeconds?: boolean;
+  variant?: "default" | "compact";
   className?: string;
 };
 
@@ -47,19 +48,40 @@ export function getCountdownParts(
 function CountdownUnit({
   label,
   value,
-}: Readonly<{ label: string; value: number }>) {
+  compact = false,
+}: Readonly<{ label: string; value: number; compact?: boolean }>) {
+  const reduceMotion = useReducedMotion() ?? false;
+  const Wrapper = reduceMotion ? "div" : motion.div;
+  const wrapperProps = reduceMotion ? {} : { layout: true as const };
+
   return (
-    <motion.div
-      layout
-      className="flex min-w-[4rem] flex-col items-center rounded-xl border border-white/10 bg-zinc-950/60 px-3 py-2.5 sm:min-w-[4.75rem] sm:py-3"
+    <Wrapper
+      {...wrapperProps}
+      className={
+        compact
+          ? "flex min-w-[2.75rem] flex-col items-center rounded-lg border border-white/10 bg-zinc-950/60 px-2 py-1.5"
+          : "flex min-w-[4rem] flex-col items-center rounded-xl border border-white/10 bg-zinc-950/60 px-3 py-2.5 sm:min-w-[4.75rem] sm:py-3"
+      }
     >
-      <span className="text-2xl font-bold tabular-nums tracking-tight text-white sm:text-3xl">
+      <span
+        className={
+          compact
+            ? "text-sm font-bold tabular-nums tracking-tight text-white"
+            : "text-2xl font-bold tabular-nums tracking-tight text-white sm:text-3xl"
+        }
+      >
         {padUnit(value)}
       </span>
-      <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-400 sm:text-[11px]">
+      <span
+        className={
+          compact
+            ? "mt-0.5 text-[9px] font-medium uppercase tracking-wider text-zinc-400"
+            : "mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-400 sm:text-[11px]"
+        }
+      >
         {label}
       </span>
-    </motion.div>
+    </Wrapper>
   );
 }
 
@@ -67,8 +89,10 @@ export default function MarketPulseCountdown({
   targetDate,
   label = "Reveal in",
   showSeconds = false,
+  variant = "default",
   className = "",
 }: MarketPulseCountdownProps) {
+  const isCompact = variant === "compact";
   const targetKey = useMemo(
     () => new Date(targetDate).toISOString(),
     [targetDate],
@@ -102,22 +126,25 @@ export default function MarketPulseCountdown({
     : `${parts.days} days, ${parts.hours} hours, and ${parts.minutes} minutes remaining`;
 
   return (
-    <div className={`space-y-3 ${className}`}>
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-300/90 sm:text-sm">
-        <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
+    <div className={`${isCompact ? "space-y-2" : "space-y-3"} ${className}`}>
+      <div
+        className={`flex items-center gap-2 font-medium uppercase tracking-[0.18em] text-emerald-300/90 ${
+          isCompact ? "text-[10px]" : "text-xs sm:text-sm"
+        }`}
+      >
+        <Clock className={`shrink-0 ${isCompact ? "h-3.5 w-3.5" : "h-4 w-4"}`} aria-hidden="true" />
         <span>{label}</span>
       </div>
       <div
-        className="flex flex-wrap gap-2 sm:gap-3"
+        className={`flex flex-wrap ${isCompact ? "gap-1.5" : "gap-2 sm:gap-3"}`}
         role="timer"
-        aria-live="polite"
         aria-label={ariaLabel}
       >
-        <CountdownUnit label="Days" value={parts.days} />
-        <CountdownUnit label="Hours" value={parts.hours} />
-        <CountdownUnit label="Mins" value={parts.minutes} />
+        <CountdownUnit label="Days" value={parts.days} compact={isCompact} />
+        <CountdownUnit label="Hours" value={parts.hours} compact={isCompact} />
+        <CountdownUnit label="Mins" value={parts.minutes} compact={isCompact} />
         {showSeconds ? (
-          <CountdownUnit label="Secs" value={parts.seconds} />
+          <CountdownUnit label="Secs" value={parts.seconds} compact={isCompact} />
         ) : null}
       </div>
     </div>

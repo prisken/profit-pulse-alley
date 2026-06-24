@@ -20,6 +20,8 @@ import type {
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
+const fieldClass = `mt-2 w-full min-h-11 rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-base text-foreground outline-none disabled:opacity-60 sm:text-sm ${focusRing}`;
+
 function formatStatusLabel(status: MarketPulseSettingsStatus): string {
   switch (status) {
     case "open":
@@ -132,8 +134,8 @@ export default function AdminGameSettings() {
         </p>
       ) : null}
 
-      <div className="mt-5 rounded-xl border border-foreground/10 bg-background p-5 shadow-sm sm:p-6">
-        <dl className="grid gap-4 sm:grid-cols-2">
+      <div className="mt-4 rounded-xl border border-foreground/10 bg-background p-4 shadow-sm sm:mt-5 sm:p-6">
+        <dl className="grid gap-3 sm:grid-cols-2 sm:gap-4">
           <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
             <dt className="text-xs font-medium uppercase tracking-wide text-foreground/50">
               Current theme
@@ -175,7 +177,7 @@ export default function AdminGameSettings() {
               value={theme}
               onChange={(e) => setTheme(e.target.value as WeeklyTheme)}
               disabled={isLoading || isSaving}
-              className={`mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-sm text-foreground outline-none disabled:opacity-60 ${focusRing}`}
+              className={fieldClass}
             >
               {WEEKLY_THEMES.map((option) => (
                 <option key={option} value={option}>
@@ -193,7 +195,7 @@ export default function AdminGameSettings() {
               value={event}
               onChange={(e) => setEvent(e.target.value as MarketEvent)}
               disabled={isLoading || isSaving}
-              className={`mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-sm text-foreground outline-none disabled:opacity-60 ${focusRing}`}
+              className={fieldClass}
             >
               {MARKET_EVENTS.map((option) => (
                 <option key={option} value={option}>
@@ -211,7 +213,7 @@ export default function AdminGameSettings() {
                 setStatus(e.target.value as MarketPulseSettingsStatus)
               }
               disabled={isLoading || isSaving}
-              className={`mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-sm text-foreground outline-none disabled:opacity-60 ${focusRing}`}
+              className={fieldClass}
             >
               {MARKET_PULSE_STATUS_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -233,7 +235,7 @@ export default function AdminGameSettings() {
                 )
               }
               disabled={isLoading || isSaving}
-              className={`mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-sm text-foreground outline-none disabled:opacity-60 ${focusRing}`}
+              className={fieldClass}
             >
               {MARKET_PULSE_LEADERBOARD_MODE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -248,7 +250,7 @@ export default function AdminGameSettings() {
           type="button"
           onClick={() => void handleSave()}
           disabled={isLoading || isSaving}
-          className={`mt-6 inline-flex min-h-10 items-center justify-center rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
+          className={`mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${focusRing}`}
         >
           {isSaving ? "Saving…" : "Save Settings"}
         </button>

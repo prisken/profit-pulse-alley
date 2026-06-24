@@ -26,7 +26,7 @@ export default async function MarketPulseAdminPage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-3 py-8 sm:px-6 sm:py-12">
+    <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-12">
       <header className="border-b border-foreground/10 pb-6">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/45">
           Admin
@@ -49,7 +49,7 @@ export default async function MarketPulseAdminPage({
         </div>
       </header>
 
-      <div className="mt-8">
+      <div className="mt-6 sm:mt-8">
         <MarketPulseAdminDashboard initialData={data} prizeReview={prizeReview} />
       </div>
     </main>

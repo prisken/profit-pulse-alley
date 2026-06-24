@@ -14,7 +14,7 @@ import {
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
-const fieldClass = `mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-sm text-foreground outline-none disabled:opacity-60 ${focusRing}`;
+const fieldClass = `mt-2 w-full min-h-11 rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-base text-foreground outline-none disabled:opacity-60 sm:text-sm ${focusRing}`;
 
 const fieldErrorClass = "border-red-500/50";
 
@@ -122,7 +122,7 @@ export default function MarketPulseCycleForm({
 
   return (
     <form
-      className="space-y-5 rounded-xl border border-foreground/10 bg-background p-5 shadow-sm sm:p-6"
+      className="space-y-5 rounded-xl border border-foreground/10 bg-background p-4 shadow-sm sm:p-6"
       onSubmit={(event) => void handleSubmit(event)}
       noValidate
     >

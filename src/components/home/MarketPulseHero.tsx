@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { TrendingUp } from "lucide-react";
+import { ArrowRight, TrendingUp } from "lucide-react";
 
 import ChallengeCountdown from "@/components/home/ChallengeCountdown";
 import { getChallengeCountdown } from "@/lib/market-pulse/challenge-cycle";
@@ -14,7 +14,7 @@ export default function MarketPulseHero() {
 
   return (
     <section
-      className="relative overflow-hidden bg-zinc-950 px-3 py-10 sm:px-6 sm:py-14 md:py-16 lg:py-20"
+      className="relative overflow-hidden bg-zinc-950 px-3 py-6 sm:px-6 sm:py-14 md:py-16 lg:py-20"
       aria-labelledby="market-pulse-heading"
     >
       <div
@@ -23,7 +23,7 @@ export default function MarketPulseHero() {
       />
 
       <div className="relative mx-auto w-full max-w-5xl">
-        <article className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/15 via-zinc-900/95 to-zinc-950 p-6 shadow-2xl shadow-black/40 sm:p-8 md:p-10 lg:p-12">
+        <article className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/15 via-zinc-900/95 to-zinc-950 p-4 shadow-2xl shadow-black/40 sm:rounded-3xl sm:p-8 md:p-10 lg:p-12">
           <div
             className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl"
             aria-hidden="true"
@@ -33,35 +33,49 @@ export default function MarketPulseHero() {
             aria-hidden="true"
           />
 
-          <div className="relative flex flex-col items-center gap-6 text-center sm:gap-8 md:items-start md:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200 sm:text-sm">
-              <TrendingUp className="h-4 w-4" aria-hidden="true" />
+          <div className="relative flex flex-col items-center gap-3 text-center sm:gap-6 md:items-start md:gap-8 md:text-left">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-200 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]">
+              <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
               Live now
             </div>
 
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-2 sm:space-y-4">
               <h1
                 id="market-pulse-heading"
-                className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl"
+                className="text-balance text-3xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl"
               >
                 Market Pulse
               </h1>
-              <p className="mx-auto max-w-xl text-pretty text-base leading-relaxed text-zinc-200 sm:text-lg md:mx-0 md:text-xl">
-                Test your instincts. Win weekly prizes like{" "}
-                <span className="font-semibold text-amber-200">
-                  Ocean Park tickets!
+              <p className="mx-auto max-w-xl text-pretty text-sm leading-snug text-zinc-200 sm:text-lg md:mx-0 md:text-xl md:leading-relaxed">
+                Read today&apos;s signal. Make your call. Climb the leaderboard.
+              </p>
+              <p className="mx-auto max-w-xl text-pretty text-xs text-amber-200/90 sm:text-sm md:mx-0 md:text-base">
+                <span className="sm:hidden">Weekly prizes — Ocean Park tickets &amp; more.</span>
+                <span className="hidden sm:inline">
+                  Test your instincts. Win weekly prizes like{" "}
+                  <span className="font-semibold text-amber-200">
+                    Ocean Park tickets!
+                  </span>
                 </span>
               </p>
             </div>
 
-            <ChallengeCountdown initial={initialCountdown} large />
-
             <Link
               href="/market-pulse"
-              className={`inline-flex w-full min-h-12 items-center justify-center rounded-full bg-emerald-400 px-8 py-3.5 text-base font-bold text-zinc-950 shadow-lg shadow-emerald-900/40 transition-colors hover:bg-emerald-300 active:bg-emerald-500 sm:w-auto sm:min-w-[12rem] sm:text-lg ${focusRing}`}
+              className={`inline-flex w-full min-h-12 items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 py-3 text-base font-bold text-zinc-950 shadow-lg shadow-emerald-900/40 transition-colors hover:bg-emerald-300 active:bg-emerald-500 sm:w-auto sm:min-w-[12rem] sm:px-8 sm:py-3.5 sm:text-lg ${focusRing}`}
             >
               Play Now
+              <ArrowRight className="h-5 w-5 sm:hidden" aria-hidden="true" />
             </Link>
+
+            <div className="w-full md:max-w-md">
+              <ChallengeCountdown initial={initialCountdown} className="md:hidden" />
+              <ChallengeCountdown
+                initial={initialCountdown}
+                large
+                className="hidden md:block"
+              />
+            </div>
           </div>
         </article>
       </div>

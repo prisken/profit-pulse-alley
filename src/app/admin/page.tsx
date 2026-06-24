@@ -58,7 +58,7 @@ export default async function AdminPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-3 py-8 sm:px-6 sm:py-12">
+    <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-12">
       <header className="border-b border-foreground/10 pb-6">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/45">
           Admin
@@ -80,7 +80,7 @@ export default async function AdminPage() {
         </p>
       </header>
 
-      <div className="mt-8 space-y-10">
+      <div className="mt-6 space-y-8 sm:mt-8 sm:space-y-10">
         <AdminGameSettings />
 
         <section aria-labelledby="members-table-heading">

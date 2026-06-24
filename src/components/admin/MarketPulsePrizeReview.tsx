@@ -23,9 +23,9 @@ const PRIZE_STATUSES: MarketPulsePrizeStatus[] = [
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
-const buttonClass = `rounded-md border border-foreground/15 bg-foreground/5 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-50 ${focusRing}`;
+const buttonClass = `min-h-11 w-full rounded-md border border-foreground/15 bg-foreground/5 px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-50 sm:w-auto ${focusRing}`;
 
-const primaryButtonClass = `rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50 ${focusRing}`;
+const primaryButtonClass = `min-h-11 w-full rounded-md bg-foreground px-3 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto ${focusRing}`;
 
 function formatDateTime(iso: string | null): string {
   if (!iso) {
@@ -93,13 +93,16 @@ export default function MarketPulsePrizeReview({ data }: Props) {
   }
 
   return (
-    <section aria-labelledby="prize-review-heading">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <section
+      aria-labelledby="prize-review-heading"
+      className="rounded-lg border border-foreground/10 p-4 sm:p-5"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div>
-          <h2 id="prize-review-heading" className="text-lg font-semibold text-foreground">
+          <h2 id="prize-review-heading" className="text-base font-semibold text-foreground sm:text-lg">
             Prize Review
           </h2>
-          <p className="mt-1 text-sm text-foreground/65">
+          <p className="mt-1 text-xs text-foreground/65 sm:text-sm">
             Review top-10 winners after a cycle is revealed. Admin only — includes email
             and anti-cheat signals.
           </p>
@@ -121,10 +124,10 @@ export default function MarketPulsePrizeReview({ data }: Props) {
       </div>
 
       {data.revealedCycles.length > 0 ? (
-        <label className="mt-4 block max-w-md">
+        <label className="mt-4 block w-full max-w-md">
           <span className="text-sm font-medium text-foreground/80">Revealed cycle</span>
           <select
-            className={`mt-2 w-full rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-sm text-foreground outline-none disabled:opacity-60 ${focusRing}`}
+            className={`mt-2 w-full min-h-11 rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-base text-foreground outline-none disabled:opacity-60 sm:text-sm ${focusRing}`}
             value={data.selectedCycleId ?? ""}
             onChange={(event) => handleCycleChange(event.target.value)}
             disabled={isPending}
@@ -164,93 +167,166 @@ export default function MarketPulsePrizeReview({ data }: Props) {
           No leaderboard entries for this cycle.
         </p>
       ) : (
-        <div className="mt-5 overflow-x-auto rounded-lg border border-foreground/10">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-foreground/10 bg-foreground/[0.02] text-xs uppercase tracking-wide text-foreground/50">
-              <tr>
-                <th className="px-3 py-2.5 font-medium">Rank</th>
-                <th className="px-3 py-2.5 font-medium">Player</th>
-                <th className="px-3 py-2.5 font-medium">Score</th>
-                <th className="px-3 py-2.5 font-medium">Prize</th>
-                <th className="px-3 py-2.5 font-medium">Review</th>
-                <th className="px-3 py-2.5 font-medium">Claim</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-foreground/10">
-              {data.candidates.map((row) => (
-                <tr key={row.userId} className="align-top">
-                  <td className="px-3 py-3 font-semibold tabular-nums text-foreground">
-                    #{row.rank}
-                  </td>
-                  <td className="px-3 py-3">
-                    <p className="font-medium text-foreground">{row.playerName}</p>
-                    <p className="mt-0.5 text-xs text-foreground/55">{row.email}</p>
-                    <p className="mt-2 text-xs text-foreground/50">
-                      Account: {formatDateTime(row.accountCreatedAt)}
-                    </p>
-                  </td>
-                  <td className="px-3 py-3 tabular-nums text-foreground">{row.score}</td>
-                  <td className="px-3 py-3 text-foreground/80">{row.prizeName}</td>
-                  <td className="px-3 py-3 text-xs text-foreground/65">
-                    <p>{row.decisionsCount} decisions</p>
-                    <p className="mt-1">First: {formatDateTime(row.firstPlayedAt)}</p>
-                    <p>Last: {formatDateTime(row.lastPlayedAt)}</p>
-                    <p className="mt-1">
-                      Shared IP hashes: {row.duplicateIpHashCount}
-                    </p>
-                  </td>
-                  <td className="px-3 py-3">
-                    {row.claimId ? (
-                      <div className="space-y-2">
-                        <span
-                          className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${statusTone(row.claimStatus)}`}
-                        >
-                          {row.claimStatus}
-                        </span>
-                        <select
-                          className={`block w-full min-w-[10rem] rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs text-foreground outline-none disabled:opacity-60 ${focusRing}`}
-                          value={row.claimStatus ?? "PENDING_REVIEW"}
-                          disabled={isPending}
-                          onChange={(event) =>
-                            runAction(() =>
-                              updateMarketPulsePrizeClaimStatusAction({
-                                claimId: row.claimId!,
-                                status: event.target.value as MarketPulsePrizeStatus,
-                              }),
-                            )
-                          }
-                        >
-                          {PRIZE_STATUSES.map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className={buttonClass}
-                        disabled={isPending || !data.selectedCycleId}
-                        onClick={() =>
+        <>
+          <ul className="mt-4 space-y-3 md:hidden">
+            {data.candidates.map((row) => (
+              <li
+                key={row.userId}
+                className="rounded-xl border border-foreground/10 bg-background p-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold tabular-nums text-foreground">#{row.rank}</p>
+                    <p className="mt-0.5 font-medium text-foreground">{row.playerName}</p>
+                    <p className="mt-0.5 break-all text-xs text-foreground/55">{row.email}</p>
+                  </div>
+                  <p className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+                    {row.score} pts
+                  </p>
+                </div>
+                <p className="mt-2 text-xs text-foreground/65">{row.prizeName}</p>
+                <p className="mt-2 text-[11px] text-foreground/50">
+                  {row.decisionsCount} decisions · Shared IP: {row.duplicateIpHashCount}
+                </p>
+                <div className="mt-3 border-t border-foreground/10 pt-3">
+                  {row.claimId ? (
+                    <div className="space-y-2">
+                      <span
+                        className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${statusTone(row.claimStatus)}`}
+                      >
+                        {row.claimStatus}
+                      </span>
+                      <select
+                        className={`block w-full min-h-11 rounded-md border border-foreground/15 bg-background px-2 py-2 text-sm text-foreground outline-none disabled:opacity-60 ${focusRing}`}
+                        value={row.claimStatus ?? "PENDING_REVIEW"}
+                        disabled={isPending}
+                        onChange={(event) =>
                           runAction(() =>
-                            createMarketPulsePrizeClaimAction({
-                              cycleId: data.selectedCycleId!,
-                              userId: row.userId,
-                              rank: row.rank,
+                            updateMarketPulsePrizeClaimStatusAction({
+                              claimId: row.claimId!,
+                              status: event.target.value as MarketPulsePrizeStatus,
                             }),
                           )
                         }
                       >
-                        Create claim
-                      </button>
-                    )}
-                  </td>
+                        {PRIZE_STATUSES.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className={buttonClass}
+                      disabled={isPending || !data.selectedCycleId}
+                      onClick={() =>
+                        runAction(() =>
+                          createMarketPulsePrizeClaimAction({
+                            cycleId: data.selectedCycleId!,
+                            userId: row.userId,
+                            rank: row.rank,
+                          }),
+                        )
+                      }
+                    >
+                      Create claim
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-5 hidden overflow-x-auto rounded-lg border border-foreground/10 md:block">
+            <table className="min-w-full text-left text-sm">
+              <thead className="border-b border-foreground/10 bg-foreground/[0.02] text-xs uppercase tracking-wide text-foreground/50">
+                <tr>
+                  <th className="px-3 py-2.5 font-medium">Rank</th>
+                  <th className="px-3 py-2.5 font-medium">Player</th>
+                  <th className="px-3 py-2.5 font-medium">Score</th>
+                  <th className="px-3 py-2.5 font-medium">Prize</th>
+                  <th className="px-3 py-2.5 font-medium">Review</th>
+                  <th className="px-3 py-2.5 font-medium">Claim</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-foreground/10">
+                {data.candidates.map((row) => (
+                  <tr key={row.userId} className="align-top">
+                    <td className="px-3 py-3 font-semibold tabular-nums text-foreground">
+                      #{row.rank}
+                    </td>
+                    <td className="px-3 py-3">
+                      <p className="font-medium text-foreground">{row.playerName}</p>
+                      <p className="mt-0.5 text-xs text-foreground/55">{row.email}</p>
+                      <p className="mt-2 text-xs text-foreground/50">
+                        Account: {formatDateTime(row.accountCreatedAt)}
+                      </p>
+                    </td>
+                    <td className="px-3 py-3 tabular-nums text-foreground">{row.score}</td>
+                    <td className="px-3 py-3 text-foreground/80">{row.prizeName}</td>
+                    <td className="px-3 py-3 text-xs text-foreground/65">
+                      <p>{row.decisionsCount} decisions</p>
+                      <p className="mt-1">First: {formatDateTime(row.firstPlayedAt)}</p>
+                      <p>Last: {formatDateTime(row.lastPlayedAt)}</p>
+                      <p className="mt-1">
+                        Shared IP hashes: {row.duplicateIpHashCount}
+                      </p>
+                    </td>
+                    <td className="px-3 py-3">
+                      {row.claimId ? (
+                        <div className="space-y-2">
+                          <span
+                            className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${statusTone(row.claimStatus)}`}
+                          >
+                            {row.claimStatus}
+                          </span>
+                          <select
+                            className={`block w-full min-w-[10rem] rounded-md border border-foreground/15 bg-background px-2 py-1.5 text-xs text-foreground outline-none disabled:opacity-60 ${focusRing}`}
+                            value={row.claimStatus ?? "PENDING_REVIEW"}
+                            disabled={isPending}
+                            onChange={(event) =>
+                              runAction(() =>
+                                updateMarketPulsePrizeClaimStatusAction({
+                                  claimId: row.claimId!,
+                                  status: event.target.value as MarketPulsePrizeStatus,
+                                }),
+                              )
+                            }
+                          >
+                            {PRIZE_STATUSES.map((status) => (
+                              <option key={status} value={status}>
+                                {status}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className={buttonClass}
+                          disabled={isPending || !data.selectedCycleId}
+                          onClick={() =>
+                            runAction(() =>
+                              createMarketPulsePrizeClaimAction({
+                                cycleId: data.selectedCycleId!,
+                                userId: row.userId,
+                                rank: row.rank,
+                              }),
+                            )
+                          }
+                        >
+                          Create claim
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </section>
   );

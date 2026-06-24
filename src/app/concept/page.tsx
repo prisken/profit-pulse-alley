@@ -32,10 +32,10 @@ const achievementCard =
 
 export default function ConceptPage() {
   return (
-    <main className="bg-background text-foreground">
+    <main className="overflow-x-hidden bg-background text-foreground">
       {/* Section 1: The Hook */}
       <section
-        className="border-b border-foreground/10 px-3 py-6 sm:px-6 sm:py-10 md:py-12"
+        className="border-b border-foreground/10 px-3 py-5 sm:px-6 sm:py-10 md:py-12"
         aria-labelledby="concept-hook-heading"
       >
         <div className="mx-auto max-w-3xl">
@@ -53,7 +53,7 @@ export default function ConceptPage() {
 
       {/* Section 2: Three Pillars */}
       <section
-        className="border-b border-foreground/10 bg-foreground/[0.02] px-3 py-6 sm:px-6 sm:py-9 md:py-11"
+        className="border-b border-foreground/10 bg-foreground/[0.02] px-3 py-5 sm:px-6 sm:py-9 md:py-11"
         aria-labelledby="concept-pillars-heading"
       >
         <div className="mx-auto max-w-5xl">
@@ -123,7 +123,7 @@ export default function ConceptPage() {
 
       {/* Section 3: Achievements — 2×2 on all breakpoints */}
       <section
-        className="border-b border-foreground/10 px-3 py-6 sm:px-6 sm:py-9 md:py-11"
+        className="border-b border-foreground/10 px-3 py-5 sm:px-6 sm:py-9 md:py-11"
         aria-labelledby="concept-achievements-heading"
       >
         <div className="mx-auto max-w-3xl">
@@ -192,7 +192,7 @@ export default function ConceptPage() {
 
       {/* Section 4: CTA */}
       <section
-        className="px-3 py-6 sm:px-6 sm:py-10 md:py-12"
+        className="px-3 py-5 sm:px-6 sm:py-10 md:py-12"
         aria-labelledby="concept-cta-heading"
       >
         <div className="mx-auto max-w-lg text-center">

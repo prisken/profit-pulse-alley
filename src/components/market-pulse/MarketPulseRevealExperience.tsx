@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
   CheckCircle2,
@@ -53,11 +53,13 @@ function StatCard({
   value,
   sub,
   index,
+  compact = false,
 }: Readonly<{
   label: string;
   value: string;
   sub?: string;
   index: number;
+  compact?: boolean;
 }>) {
   return (
     <motion.div
@@ -65,15 +67,29 @@ function StatCard({
       initial="hidden"
       animate="visible"
       variants={fadeUp}
-      className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 text-center shadow-lg shadow-black/20 sm:p-5"
+      className={`rounded-xl border border-zinc-800 bg-zinc-900/60 text-center shadow-lg shadow-black/20 sm:rounded-2xl ${
+        compact ? "p-3 sm:p-5" : "p-4 sm:p-5"
+      }`}
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+      <p
+        className={`font-semibold uppercase tracking-[0.14em] text-zinc-500 ${
+          compact ? "text-[10px]" : "text-xs tracking-[0.16em]"
+        }`}
+      >
         {label}
       </p>
-      <p className="mt-2 text-2xl font-bold tabular-nums text-white sm:text-3xl">
+      <p
+        className={`mt-1.5 font-bold tabular-nums text-white sm:mt-2 ${
+          compact ? "text-xl sm:text-3xl" : "text-2xl sm:text-3xl"
+        }`}
+      >
         {value}
       </p>
-      {sub ? <p className="mt-1 text-xs text-zinc-500">{sub}</p> : null}
+      {sub ? (
+        <p className={`mt-0.5 text-zinc-500 ${compact ? "text-[10px]" : "text-xs"}`}>
+          {sub}
+        </p>
+      ) : null}
     </motion.div>
   );
 }
@@ -115,67 +131,69 @@ function RevealCardItem({
       initial="hidden"
       animate="visible"
       variants={fadeUp}
-      className={`overflow-hidden rounded-2xl border bg-gradient-to-br from-zinc-900/90 to-zinc-950 shadow-xl shadow-black/25 ${
+      className={`overflow-hidden rounded-xl border bg-gradient-to-br from-zinc-900/90 to-zinc-950 shadow-xl shadow-black/25 sm:rounded-2xl ${
         card.isMatch
           ? "border-emerald-500/25"
           : "border-zinc-800"
       }`}
     >
-      <div className="border-b border-zinc-800/80 px-4 py-3 sm:px-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Day {card.dayIndex + 1}
-            </p>
-            <h3 className="mt-1 text-lg font-semibold text-white">
+      <div className="border-b border-zinc-800/80 px-3 py-2.5 sm:px-5 sm:py-3">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-xs">
+                Day {card.dayIndex + 1}
+              </p>
+              <div
+                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs ${
+                  card.isMatch
+                    ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30"
+                    : "bg-zinc-800 text-zinc-400 ring-1 ring-zinc-700"
+                }`}
+              >
+                {card.isMatch ? (
+                  <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+                ) : (
+                  <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+                )}
+                {card.isMatch ? "Match" : "No match"}
+              </div>
+            </div>
+            <h3 className="mt-1 truncate text-base font-semibold text-white sm:text-lg">
               {card.companyName}
             </h3>
-            <p className="mt-1 text-sm leading-relaxed text-zinc-400">
+            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-zinc-400 sm:mt-1 sm:text-sm">
               {card.headline}
             </p>
-          </div>
-          <div
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
-              card.isMatch
-                ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30"
-                : "bg-zinc-800 text-zinc-400 ring-1 ring-zinc-700"
-            }`}
-          >
-            {card.isMatch ? (
-              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-            ) : (
-              <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
-            )}
-            {card.isMatch ? "Match" : "No match"}
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
-        <div className="space-y-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+      <div className="grid gap-3 p-3 sm:grid-cols-2 sm:gap-4 sm:p-5">
+        <div className="grid grid-cols-2 gap-2 sm:block sm:space-y-3">
+          <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2 sm:border-0 sm:bg-transparent sm:p-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
               Your call
             </p>
-            <p className={`mt-1 font-semibold ${userTone.textClass}`}>
+            <p className={`mt-0.5 text-sm font-semibold sm:mt-1 ${userTone.textClass}`}>
               {formatSignal(card.userDecision as MarketPulseDecision)}
             </p>
           </div>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-              PPA Insight signal
+          <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2 sm:border-0 sm:bg-transparent sm:p-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
+              PPA signal
             </p>
-            <p className={`mt-1 font-semibold ${ppaTone.textClass}`}>
+            <p className={`mt-0.5 text-sm font-semibold sm:mt-1 ${ppaTone.textClass}`}>
               {formatSignal(card.ppaSignal as MarketPulseDecision)}
             </p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3 sm:p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-            Score breakdown
+        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-2.5 sm:rounded-xl sm:p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
+            Score
           </p>
-          <ul className="mt-2 space-y-1.5">
+          <ul className="mt-1.5 space-y-1 sm:mt-2 sm:space-y-1.5">
             <ScoreLine
               label={`+${PARTICIPATION_POINTS} participation`}
               points={card.participationPoints}
@@ -191,21 +209,26 @@ function RevealCardItem({
               highlight
             />
           </ul>
-          <p className="mt-3 border-t border-zinc-800 pt-3 text-sm font-bold tabular-nums text-emerald-300">
+          <p className="mt-2 border-t border-zinc-800 pt-2 text-sm font-bold tabular-nums text-emerald-300 sm:mt-3 sm:pt-3">
             {formatPoints(card.totalPoints)} pts
           </p>
         </div>
       </div>
 
       {card.ppaInsight ? (
-        <div className="border-t border-zinc-800/80 bg-emerald-500/5 px-4 py-4 sm:px-5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400/80">
-            PPA Insight
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-            {card.ppaInsight}
-          </p>
-        </div>
+        <details className="group border-t border-zinc-800/80 bg-emerald-500/5">
+          <summary
+            className={`cursor-pointer list-none px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400/80 marker:content-none sm:px-5 sm:py-3 sm:text-[11px] [&::-webkit-details-marker]:hidden ${focusRing}`}
+          >
+            <span className="group-open:hidden">Show PPA Insight</span>
+            <span className="hidden group-open:inline">Hide PPA Insight</span>
+          </summary>
+          <div className="border-t border-emerald-500/10 px-3 pb-3 pt-2 sm:px-5 sm:pb-4 sm:pt-3">
+            <p className="text-xs leading-relaxed text-zinc-300 sm:text-sm">
+              {card.ppaInsight}
+            </p>
+          </div>
+        </details>
       ) : null}
     </motion.article>
   );
@@ -296,7 +319,7 @@ export default function MarketPulseRevealExperience({
 
   if (data.status === "pending") {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white">
+      <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
         <PageShell cycleId={data.results?.cycleId}>
           <PendingState data={data} />
         </PageShell>
@@ -306,7 +329,7 @@ export default function MarketPulseRevealExperience({
 
   if (!data.isAuthenticated || !data.results) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white">
+      <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
         <PageShell cycleId={data.results?.cycleId}>
           <GuestRevealedState />
           <CtaBar
@@ -321,77 +344,85 @@ export default function MarketPulseRevealExperience({
   const { results } = data;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
       <div
         className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-5%,rgba(16,185,129,0.16),transparent_55%)]"
         aria-hidden="true"
       />
       <PageShell cycleId={results.cycleId}>
-        <motion.header
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55 }}
-          className="relative overflow-hidden rounded-3xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/15 via-zinc-900 to-zinc-950 px-6 py-10 text-center shadow-2xl shadow-emerald-950/20 sm:px-10 sm:py-12"
-        >
-          <motion.div
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(251,191,36,0.12),transparent_50%)]"
-            aria-hidden="true"
-          />
-          <Trophy
-            className="relative mx-auto h-12 w-12 text-amber-400"
-            aria-hidden="true"
-          />
-          <p className="relative mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300/90">
-            Results ceremony
-          </p>
-          <h1 className="relative mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            Challenge complete
-          </h1>
-          <p className="relative mt-2 text-lg text-zinc-300">{results.cycleName}</p>
-        </motion.header>
+        <div className="flex flex-col">
+          <div className="order-1 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4 lg:order-2">
+            <StatCard
+              index={0}
+              compact
+              label="Final score"
+              value={formatPoints(results.totalPoints)}
+            />
+            <StatCard
+              index={1}
+              compact
+              label="Final rank"
+              value={results.rank != null ? `#${results.rank}` : "—"}
+            />
+            <StatCard
+              index={2}
+              compact
+              label="Matches"
+              value={`${results.matchesCount}/${results.totalPlayed}`}
+              sub="cards played"
+            />
+            <StatCard
+              index={3}
+              compact
+              label="Best streak"
+              value={String(results.bestStreak)}
+              sub="consecutive matches"
+            />
+          </div>
 
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          <StatCard
-            index={0}
-            label="Final score"
-            value={formatPoints(results.totalPoints)}
-          />
-          <StatCard
-            index={1}
-            label="Final rank"
-            value={results.rank != null ? `#${results.rank}` : "—"}
-          />
-          <StatCard
-            index={2}
-            label="Matches"
-            value={`${results.matchesCount}/${results.totalPlayed}`}
-            sub="cards played"
-          />
-          <StatCard
-            index={3}
-            label="Best streak"
-            value={String(results.bestStreak)}
-            sub="consecutive matches"
-          />
+          <motion.header
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55 }}
+            className="relative order-2 mt-4 overflow-hidden rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/15 via-zinc-900 to-zinc-950 px-4 py-6 text-center shadow-2xl shadow-emerald-950/20 sm:mt-8 sm:rounded-3xl sm:px-10 sm:py-12 lg:order-1 lg:mt-0"
+          >
+            <motion.div
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(251,191,36,0.12),transparent_50%)]"
+              aria-hidden="true"
+            />
+            <Trophy
+              className="relative mx-auto h-10 w-10 text-amber-400 sm:h-12 sm:w-12"
+              aria-hidden="true"
+            />
+            <p className="relative mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300/90 sm:mt-4 sm:text-xs sm:tracking-[0.2em]">
+              Results ceremony
+            </p>
+            <h1 className="relative mt-1.5 text-2xl font-bold tracking-tight sm:mt-2 sm:text-4xl">
+              Challenge complete
+            </h1>
+            <p className="relative mt-1.5 text-base text-zinc-300 sm:mt-2 sm:text-lg">
+              {results.cycleName}
+            </p>
+          </motion.header>
         </div>
 
         <motion.section
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.35 }}
-          className="mt-10"
+          className="mt-6 sm:mt-10"
           aria-labelledby="reveal-cards-heading"
         >
           <h2
             id="reveal-cards-heading"
-            className="text-xl font-semibold text-white sm:text-2xl"
+            className="text-lg font-semibold text-white sm:text-2xl"
           >
             Your challenge breakdown
           </h2>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
             PPA Insight signals and scoring for every card you played.
           </p>
-          <div className="mt-6 space-y-4">
+          <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
             {results.cards.map((card, index) => (
               <RevealCardItem key={card.cardId} card={card} index={index} />
             ))}
@@ -414,16 +445,18 @@ function CtaBar({
   reportRequested: boolean;
   onReportClick: () => void;
 }>) {
+  const reduceMotion = useReducedMotion() ?? false;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-      className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center"
+      transition={reduceMotion ? { duration: 0 } : { delay: 0.4 }}
+      className="mt-8 flex flex-col gap-2.5 sm:mt-10 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3"
     >
       <Link
         href="/market-pulse/leaderboard"
-        className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 text-sm font-bold text-zinc-950 transition-colors hover:bg-emerald-300 ${focusRing}`}
+        className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 text-sm font-bold text-zinc-950 transition-colors hover:bg-emerald-300 sm:w-auto ${focusRing}`}
       >
         View Final Leaderboard
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -431,14 +464,15 @@ function CtaBar({
       <button
         type="button"
         onClick={onReportClick}
-        className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-6 text-sm font-semibold text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 ${focusRing}`}
+        aria-live="polite"
+        className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-6 text-sm font-semibold text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 sm:w-auto ${focusRing}`}
       >
         <Download className="h-4 w-4" aria-hidden="true" />
         {reportRequested ? "Report coming soon" : "Download PPA Report"}
       </button>
       <Link
         href="/market-pulse/play"
-        className={`inline-flex min-h-11 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-6 text-sm font-semibold text-emerald-200 transition-colors hover:bg-emerald-500/20 ${focusRing}`}
+        className={`inline-flex min-h-11 w-full items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-6 text-sm font-semibold text-emerald-200 transition-colors hover:bg-emerald-500/20 sm:w-auto ${focusRing}`}
       >
         Join next challenge
       </Link>
@@ -451,16 +485,16 @@ function PageShell({
   cycleId,
 }: Readonly<{ children: React.ReactNode; cycleId?: string }>) {
   return (
-    <div className="relative mx-auto w-full max-w-3xl px-3 py-8 sm:px-6 sm:py-12">
+    <div className="relative mx-auto flex w-full max-w-3xl flex-col px-3 py-6 sm:px-6 sm:py-12">
       <Link
         href="/market-pulse"
-        className={`mb-6 inline-flex text-sm text-zinc-400 transition-colors hover:text-white ${focusRing}`}
+        className={`mb-4 inline-flex min-h-11 items-center text-sm text-zinc-400 transition-colors hover:text-white sm:mb-6 ${focusRing}`}
       >
         ← Market Pulse
       </Link>
       {children}
       <MarketPulseInlineDisclaimer
-        className="mt-10"
+        className="mt-8 sm:mt-10"
         surface="reveal"
         cycleId={cycleId}
       />

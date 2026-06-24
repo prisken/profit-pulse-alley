@@ -31,32 +31,34 @@ const accentStyles = {
 export default function PlayLearnWinSection() {
   return (
     <section
-      className="border-t border-white/10 bg-zinc-950 px-3 py-10 sm:px-6 sm:py-14 md:py-16"
+      className="border-t border-white/10 bg-zinc-950 px-3 py-6 sm:px-6 sm:py-14 md:py-16"
       aria-labelledby="play-learn-win-heading"
     >
       <div className="mx-auto w-full max-w-6xl">
         <h2
           id="play-learn-win-heading"
-          className="text-center text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl"
+          className="text-center text-xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl"
         >
           Play. Learn. Win.
         </h2>
 
-        <ul className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+        <ul className="mt-4 grid gap-2.5 sm:mt-10 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
           {cards.map(({ icon: Icon, heading, text, accent }) => (
             <li key={heading}>
-              <article className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors hover:border-white/20 hover:bg-white/[0.05] sm:p-7">
+              <article className="flex h-full gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 transition-colors hover:border-white/20 hover:bg-white/[0.05] sm:flex-col sm:rounded-2xl sm:p-7">
                 <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-xl border ${accentStyles[accent]}`}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border sm:h-12 sm:w-12 sm:rounded-xl ${accentStyles[accent]}`}
                 >
-                  <Icon className="h-6 w-6" aria-hidden="true" />
+                  <Icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
                 </div>
-                <h3 className="mt-5 text-lg font-semibold text-white sm:text-xl">
-                  {heading}
-                </h3>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-400 sm:text-base">
-                  {text}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-semibold text-white sm:mt-5 sm:text-xl">
+                    {heading}
+                  </h3>
+                  <p className="mt-0.5 text-xs leading-snug text-zinc-400 sm:mt-2 sm:text-base sm:leading-relaxed">
+                    {text}
+                  </p>
+                </div>
               </article>
             </li>
           ))}

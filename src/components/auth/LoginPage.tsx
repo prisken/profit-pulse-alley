@@ -11,9 +11,9 @@ import { signUpWithPassword } from "@/lib/auth-actions";
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950";
 
-const inputClass = `w-full rounded-xl border border-gray-600 bg-gray-900 px-4 py-3 text-sm text-white placeholder:text-gray-500 disabled:opacity-60 ${focusRing}`;
+const inputClass = `w-full min-h-11 rounded-xl border border-gray-600 bg-gray-900 px-4 py-3 text-base text-white placeholder:text-gray-500 disabled:opacity-60 sm:text-sm ${focusRing}`;
 
-const primaryButtonClass = `w-full rounded-full bg-amber-500 px-4 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`;
+const primaryButtonClass = `w-full min-h-11 rounded-full bg-amber-500 px-4 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`;
 
 type AuthTab = "sign-in" | "create-account";
 
@@ -209,14 +209,14 @@ function LoginForm() {
             alt=""
             width={40}
             height={40}
-            className="h-10 w-10 rounded-sm"
+            className="h-9 w-9 rounded-sm sm:h-10 sm:w-10"
             priority
           />
         </Link>
-        <h1 className="mt-5 text-2xl font-semibold tracking-tight text-white">
+        <h1 className="mt-4 text-xl font-semibold tracking-tight text-white sm:mt-5 sm:text-2xl">
           {activeTab === "sign-in" ? "Welcome back" : "Join the community"}
         </h1>
-        <p className="mt-2 text-sm text-gray-400">
+        <p className="mt-1.5 text-xs text-gray-400 sm:mt-2 sm:text-sm">
           {activeTab === "sign-in"
             ? "Sign in to your Profit Pulse Ally membership"
             : "Create your Profit Pulse Ally account"}
@@ -224,7 +224,7 @@ function LoginForm() {
       </div>
 
       <div
-        className="mt-8 flex rounded-xl border border-gray-700 bg-gray-900/50 p-1"
+        className="mt-5 flex rounded-xl border border-gray-700 bg-gray-900/50 p-1 sm:mt-6"
         role="tablist"
         aria-label="Authentication mode"
       >
@@ -235,7 +235,7 @@ function LoginForm() {
           aria-selected={activeTab === "sign-in"}
           aria-controls="panel-sign-in"
           onClick={() => switchTab("sign-in")}
-          className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${focusRing} ${
+          className={`min-h-11 flex-1 rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-colors sm:px-3 sm:py-2.5 sm:text-sm ${focusRing} ${
             activeTab === "sign-in"
               ? "bg-gray-800 text-white shadow-sm"
               : "text-gray-400 hover:text-gray-200"
@@ -250,7 +250,7 @@ function LoginForm() {
           aria-selected={activeTab === "create-account"}
           aria-controls="panel-create-account"
           onClick={() => switchTab("create-account")}
-          className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${focusRing} ${
+          className={`min-h-11 flex-1 rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-colors sm:px-3 sm:py-2.5 sm:text-sm ${focusRing} ${
             activeTab === "create-account"
               ? "bg-gray-800 text-white shadow-sm"
               : "text-gray-400 hover:text-gray-200"
@@ -260,72 +260,77 @@ function LoginForm() {
         </button>
       </div>
 
-      <div className="mt-5">
+        <div className="mt-4">
         {success ? (
           <div
-            className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-300"
+            className="mb-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-center text-sm text-emerald-300 sm:mb-4 sm:px-4 sm:py-3"
             role="status"
           >
             {success}
           </div>
         ) : null}
 
-        {activeTab === "sign-in" ? (
-          <form
-            id="panel-sign-in"
-            role="tabpanel"
-            aria-labelledby="tab-sign-in"
-            onSubmit={(e) => void handleCredentialsSignIn(e)}
-            className="space-y-3"
-          >
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-gray-400">
-                Email
-              </span>
-              <input
-                type="email"
-                name="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={signInEmail}
-                onChange={(e) => setSignInEmail(e.target.value)}
-                disabled={isBusy}
-                className={inputClass}
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-gray-400">
-                Password
-              </span>
-              <input
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                placeholder="Your password"
-                value={signInPassword}
-                onChange={(e) => setSignInPassword(e.target.value)}
-                disabled={isBusy}
-                className={inputClass}
-              />
-            </label>
-            <button
-              type="submit"
+        <form
+          id="panel-sign-in"
+          role="tabpanel"
+          aria-labelledby="tab-sign-in"
+          hidden={activeTab !== "sign-in"}
+          onSubmit={(e) => void handleCredentialsSignIn(e)}
+          className="space-y-2.5 sm:space-y-3"
+        >
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-gray-400">
+              Email
+            </span>
+            <input
+              type="email"
+              name="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={signInEmail}
+              onChange={(e) => setSignInEmail(e.target.value)}
               disabled={isBusy}
-              className={primaryButtonClass}
-            >
-              {isCredentialsLoading ? "Signing in…" : "Sign In"}
-            </button>
-          </form>
-        ) : (
-          <form
-            id="panel-create-account"
-            role="tabpanel"
-            aria-labelledby="tab-create-account"
-            onSubmit={(e) => void handleSignUp(e)}
-            className="space-y-3"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? "auth-error" : undefined}
+              className={inputClass}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-gray-400">
+              Password
+            </span>
+            <input
+              type="password"
+              name="password"
+              autoComplete="current-password"
+              placeholder="Your password"
+              value={signInPassword}
+              onChange={(e) => setSignInPassword(e.target.value)}
+              disabled={isBusy}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? "auth-error" : undefined}
+              className={inputClass}
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={isBusy}
+            className={primaryButtonClass}
           >
+            {isCredentialsLoading ? "Signing in…" : "Sign In"}
+          </button>
+        </form>
+
+        <form
+          id="panel-create-account"
+          role="tabpanel"
+          aria-labelledby="tab-create-account"
+          hidden={activeTab !== "create-account"}
+          onSubmit={(e) => void handleSignUp(e)}
+          className="space-y-2.5 sm:space-y-3"
+        >
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-gray-400">
+              <span className="mb-1 block text-xs font-medium text-gray-400">
                 Name
               </span>
               <input
@@ -340,7 +345,7 @@ function LoginForm() {
               />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-gray-400">
+              <span className="mb-1 block text-xs font-medium text-gray-400">
                 Email
               </span>
               <input
@@ -355,7 +360,7 @@ function LoginForm() {
               />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-gray-400">
+              <span className="mb-1 block text-xs font-medium text-gray-400">
                 Contact Number
               </span>
               <input
@@ -370,7 +375,7 @@ function LoginForm() {
               />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-gray-400">
+              <span className="mb-1 block text-xs font-medium text-gray-400">
                 Password
               </span>
               <input
@@ -392,32 +397,31 @@ function LoginForm() {
               {isSignUpLoading ? "Creating account…" : "Create Account"}
             </button>
           </form>
-        )}
 
         {error ? (
-          <p className="mt-3 text-center text-sm text-red-400" role="alert">
+          <p id="auth-error" className="mt-2.5 text-center text-sm text-red-400" role="alert">
             {error}
           </p>
         ) : null}
       </div>
 
-      <div className="relative py-6">
+      <div className="relative py-4 sm:py-6">
         <div className="absolute inset-0 flex items-center" aria-hidden="true">
           <div className="w-full border-t border-gray-700" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-gray-950 px-3 text-xs font-medium uppercase tracking-wide text-gray-500">
+          <span className="bg-gray-950 px-3 text-[10px] font-medium uppercase tracking-wide text-gray-500 sm:text-xs">
             or continue with
           </span>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <button
           type="button"
           onClick={() => void handleGoogleSignIn()}
           disabled={isBusy}
-          className={`flex w-full items-center justify-center gap-3 rounded-full border border-gray-600 bg-white px-4 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
+          className={`flex min-h-11 w-full items-center justify-center gap-2.5 rounded-full border border-gray-600 bg-white px-4 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 sm:gap-3 ${focusRing}`}
         >
           <GoogleIcon className="h-5 w-5 shrink-0" />
           {isGoogleLoading ? "Redirecting…" : "Sign in with Google"}
@@ -425,22 +429,22 @@ function LoginForm() {
 
         {emailSent ? (
           <div
-            className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-4 text-center"
+            className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-3 text-center sm:px-4 sm:py-4"
             role="status"
           >
             <p className="text-sm font-medium text-emerald-300">Check your email</p>
-            <p className="mt-1 text-sm text-gray-300">
+            <p className="mt-1 text-xs text-gray-300 sm:text-sm">
               We sent a sign-in link to{" "}
-              <span className="font-medium text-white">{magicLinkEmail}</span>.
+              <span className="break-all font-medium text-white">{magicLinkEmail}</span>.
             </p>
           </div>
         ) : (
           <form
             onSubmit={(e) => void handleMagicLinkSignIn(e)}
-            className="space-y-3"
+            className="space-y-2.5 sm:space-y-3"
           >
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-gray-400">
+              <span className="mb-1 block text-xs font-medium text-gray-400">
                 Email for magic link
               </span>
               <input
@@ -457,7 +461,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={isBusy}
-              className={`w-full rounded-full border border-gray-600 bg-transparent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
+              className={`min-h-11 w-full rounded-full border border-gray-600 bg-transparent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
             >
               {isMagicLinkLoading ? "Sending link…" : "Sign in with Email"}
             </button>
@@ -465,7 +469,7 @@ function LoginForm() {
         )}
       </div>
 
-      <p className="mt-8 text-center text-xs text-gray-500">
+      <p className="mt-6 text-center text-[11px] text-gray-500 sm:mt-8 sm:text-xs">
         By signing in, you agree to join the Profit Pulse Ally community.
       </p>
     </div>
@@ -475,8 +479,8 @@ function LoginForm() {
 function LoginFormFallback() {
   return (
     <div className="w-full max-w-sm text-center">
-      <div className="mx-auto h-10 w-10 animate-pulse rounded-sm bg-gray-800" />
-      <div className="mx-auto mt-5 h-8 w-48 animate-pulse rounded bg-gray-800" />
+      <div className="mx-auto h-9 w-9 animate-pulse rounded-sm bg-gray-800 sm:h-10 sm:w-10" />
+      <div className="mx-auto mt-4 h-8 w-48 animate-pulse rounded bg-gray-800" />
       <div className="mx-auto mt-2 h-4 w-64 animate-pulse rounded bg-gray-800" />
     </div>
   );
@@ -484,7 +488,7 @@ function LoginFormFallback() {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-gray-950 px-4 py-12 text-gray-200">
+    <main className="flex min-h-dvh items-center justify-center overflow-x-hidden overflow-y-auto bg-gray-950 px-3 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-gray-200 sm:px-4 sm:py-12">
       <Suspense fallback={<LoginFormFallback />}>
         <LoginForm />
       </Suspense>

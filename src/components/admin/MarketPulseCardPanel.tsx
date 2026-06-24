@@ -20,9 +20,9 @@ import {
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
-const buttonClass = `rounded-md border border-foreground/15 bg-foreground/5 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-50 ${focusRing}`;
+const buttonClass = `min-h-11 w-full rounded-md border border-foreground/15 bg-foreground/5 px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-50 sm:w-auto ${focusRing}`;
 
-const primaryButtonClass = `rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50 ${focusRing}`;
+const primaryButtonClass = `min-h-11 w-full rounded-md bg-foreground px-3 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto ${focusRing}`;
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -205,9 +205,9 @@ export function MarketPulseCardPanel({
   }
 
   return (
-    <article className="rounded-lg border border-foreground/10 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+    <article className="rounded-lg border border-foreground/10 p-3 sm:p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-medium text-foreground">
               Day {card.dayIndex} · {card.companyName} ({card.ticker})
@@ -229,7 +229,7 @@ export function MarketPulseCardPanel({
             {card.publishedAt ? ` · Published ${formatDateTime(card.publishedAt)}` : ""}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {card.status !== "PUBLISHED" ? (
             <button
               type="button"

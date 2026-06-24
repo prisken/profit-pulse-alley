@@ -26,10 +26,14 @@ import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseIn
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
 
-const tabs: Array<{ id: MarketPulseLeaderboardTab; label: string }> = [
-  { id: "current", label: "Current Challenge" },
-  { id: "monthly", label: "Monthly" },
-  { id: "all-time", label: "All-Time" },
+const tabs: Array<{
+  id: MarketPulseLeaderboardTab;
+  label: string;
+  shortLabel: string;
+}> = [
+  { id: "current", label: "Current Challenge", shortLabel: "Current" },
+  { id: "monthly", label: "Monthly", shortLabel: "Monthly" },
+  { id: "all-time", label: "All-Time", shortLabel: "All-Time" },
 ];
 
 function formatPoints(score: number): string {
@@ -54,11 +58,11 @@ function RankBadge({ rank }: Readonly<{ rank: number }>) {
 
   return (
     <span
-      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ring-1 ${rankStyles(rank)}`}
+      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ring-1 sm:h-9 sm:w-9 sm:text-sm ${rankStyles(rank)}`}
       aria-label={`Rank ${rank}`}
     >
       {rank <= 3 ? (
-        <Icon className="h-4 w-4" aria-hidden="true" />
+        <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
       ) : (
         <span className="tabular-nums">{rank}</span>
       )}
@@ -90,7 +94,7 @@ function LeaderboardRow({
           : { type: "spring", stiffness: 380, damping: 30, delay: index * 0.045 }
       }
       whileHover={reduceMotion ? undefined : { scale: 1.01, x: 3 }}
-      className={`flex items-center gap-3 rounded-2xl border px-3 py-3 sm:gap-4 sm:px-4 sm:py-3.5 ${
+      className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 sm:gap-4 sm:rounded-2xl sm:px-4 sm:py-3.5 ${
         isTopThree
           ? "border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 to-zinc-900/40 shadow-lg shadow-emerald-950/10"
           : "border-zinc-800/80 bg-zinc-900/50"
@@ -98,33 +102,42 @@ function LeaderboardRow({
     >
       <RankBadge rank={entry.rank} />
 
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        {entry.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={entry.image}
-            alt=""
-            className="hidden h-9 w-9 shrink-0 rounded-full border border-zinc-700 object-cover sm:block"
-          />
-        ) : (
-          <div
-            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800 text-xs font-semibold text-zinc-300 sm:flex"
-            aria-hidden="true"
-          >
-            {entry.playerName.slice(0, 1).toUpperCase()}
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          {entry.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={entry.image}
+              alt=""
+              className="hidden h-9 w-9 shrink-0 rounded-full border border-zinc-700 object-cover sm:block"
+            />
+          ) : (
+            <div
+              className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800 text-xs font-semibold text-zinc-300 sm:flex"
+              aria-hidden="true"
+            >
+              {entry.playerName.slice(0, 1).toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0">
+            <span
+              className={`block truncate text-sm font-medium sm:text-base ${
+                isTopThree ? "text-white" : "text-zinc-200"
+              }`}
+            >
+              {entry.playerName}
+            </span>
+            {showCardsPlayed && entry.cardsPlayed != null ? (
+              <span className="mt-0.5 block text-[11px] text-zinc-500 sm:hidden">
+                {entry.cardsPlayed} card{entry.cardsPlayed === 1 ? "" : "s"} played
+              </span>
+            ) : null}
           </div>
-        )}
-        <span
-          className={`min-w-0 truncate font-medium ${
-            isTopThree ? "text-white" : "text-zinc-200"
-          }`}
-        >
-          {entry.playerName}
-        </span>
+        </div>
       </div>
 
       {showCardsPlayed && entry.cardsPlayed != null ? (
-        <div className="hidden text-right sm:block">
+        <div className="hidden shrink-0 text-right sm:block">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
             Cards
           </p>
@@ -134,12 +147,12 @@ function LeaderboardRow({
         </div>
       ) : null}
 
-      <div className="text-right">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
-          Points
+      <div className="shrink-0 text-right">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+          Pts
         </p>
         <p
-          className={`text-base font-bold tabular-nums sm:text-lg ${
+          className={`text-sm font-bold tabular-nums sm:text-lg ${
             isTopThree ? "text-emerald-300" : "text-emerald-400/90"
           }`}
         >
@@ -157,33 +170,37 @@ function TabPanel({
   tab: MarketPulseLeaderboardTab;
   data: MarketPulseLeaderboardTabData;
 }>) {
+  const reduceMotion = useReducedMotion() ?? false;
   const showCardsPlayed = data.entries.some((entry) => entry.cardsPlayed != null);
   const isCurrent = tab === "current";
 
   return (
     <motion.div
       key={tab}
-      initial={{ opacity: 0, y: 10 }}
+      id={`leaderboard-panel-${tab}`}
+      role="tabpanel"
+      aria-labelledby={`leaderboard-tab-${tab}`}
+      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.25 }}
-      className="space-y-4"
+      exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.25 }}
+      className="space-y-3 sm:space-y-4"
     >
       {isCurrent && data.cycleName ? (
-        <p className="text-sm text-zinc-400">
+        <p className="text-xs text-zinc-400 sm:text-sm">
           <span className="font-medium text-zinc-200">{data.cycleName}</span>
           {data.isRevealed ? " — final scores" : " — participation standings"}
         </p>
       ) : null}
 
       {isCurrent && !data.isRevealed ? (
-        <p className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+        <p className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-100 sm:px-4 sm:py-3 sm:text-sm">
           Final match bonuses unlock after PPA Insight reveal.
         </p>
       ) : null}
 
       {data.entries.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/40 px-6 py-14 text-center">
+        <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/40 px-4 py-12 text-center sm:px-6 sm:py-14">
           <Sparkles
             className="mx-auto h-8 w-8 text-zinc-600"
             aria-hidden="true"
@@ -191,31 +208,23 @@ function TabPanel({
           <p className="mt-3 text-sm font-medium text-zinc-300">
             No scores yet
           </p>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
             Play today&apos;s card to claim the first spot.
           </p>
         </div>
       ) : (
-        <>
-          <div className="hidden grid-cols-[auto_1fr_auto_auto] gap-4 px-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 sm:grid">
-            <span>Rank</span>
-            <span>Player</span>
-            {showCardsPlayed ? <span className="text-right">Cards</span> : <span />}
-            <span className="text-right">Points</span>
-          </div>
-          <ul className="space-y-2 sm:space-y-2.5">
-            <AnimatePresence mode="popLayout">
-              {data.entries.map((entry, index) => (
-                <LeaderboardRow
-                  key={`${tab}-${entry.userId}`}
-                  entry={entry}
-                  index={index}
-                  showCardsPlayed={showCardsPlayed}
-                />
-              ))}
-            </AnimatePresence>
-          </ul>
-        </>
+        <ul className="space-y-2 sm:space-y-2.5">
+          <AnimatePresence mode="popLayout">
+            {data.entries.map((entry, index) => (
+              <LeaderboardRow
+                key={`${tab}-${entry.userId}`}
+                entry={entry}
+                index={index}
+                showCardsPlayed={showCardsPlayed}
+              />
+            ))}
+          </AnimatePresence>
+        </ul>
       )}
     </motion.div>
   );
@@ -224,6 +233,7 @@ function TabPanel({
 export default function MarketPulseLeaderboard({
   data,
 }: Readonly<{ data: MarketPulseLeaderboardPageData }>) {
+  const reduceMotion = useReducedMotion() ?? false;
   const [activeTab, setActiveTab] =
     useState<MarketPulseLeaderboardTab>("current");
 
@@ -253,31 +263,31 @@ export default function MarketPulseLeaderboard({
         aria-hidden="true"
       />
 
-      <div className="relative mx-auto w-full max-w-3xl px-3 py-8 sm:px-6 sm:py-12">
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <Link
-              href="/market-pulse"
-              className={`mb-3 inline-flex items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-white ${focusRing}`}
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              Market Pulse
-            </Link>
+      <div className="relative mx-auto w-full max-w-3xl px-3 py-6 sm:px-6 sm:py-12">
+        <header className="mb-5 space-y-4 sm:mb-6">
+          <Link
+            href="/market-pulse"
+            className={`inline-flex min-h-11 items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-white ${focusRing}`}
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Market Pulse
+          </Link>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
-              <Trophy className="h-7 w-7 text-amber-400" aria-hidden="true" />
+              <Trophy className="h-6 w-6 shrink-0 text-amber-400 sm:h-7 sm:w-7" aria-hidden="true" />
               Leaderboard
             </h1>
+            <Link
+              href="/market-pulse/play"
+              className={`inline-flex min-h-11 w-full items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-bold text-zinc-950 transition-colors hover:bg-emerald-300 sm:w-auto ${focusRing}`}
+            >
+              Play Today&apos;s Card
+            </Link>
           </div>
-          <Link
-            href="/market-pulse/play"
-            className={`inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-bold text-zinc-950 transition-colors hover:bg-emerald-300 ${focusRing}`}
-          >
-            Play Today&apos;s Card
-          </Link>
         </header>
 
         <div
-          className="mb-6 flex gap-1 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-1"
+          className="mb-5 flex gap-1 rounded-xl border border-zinc-800 bg-zinc-900/60 p-1 sm:mb-6 sm:rounded-2xl"
           role="tablist"
           aria-label="Leaderboard views"
         >
@@ -288,20 +298,30 @@ export default function MarketPulseLeaderboard({
                 key={tab.id}
                 type="button"
                 role="tab"
+                id={`leaderboard-tab-${tab.id}`}
                 aria-selected={selected}
+                aria-controls={`leaderboard-panel-${tab.id}`}
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative flex-1 rounded-xl px-2 py-2.5 text-xs font-semibold transition-colors sm:px-3 sm:text-sm ${focusRing} ${
+                className={`relative min-h-11 flex-1 rounded-lg px-1.5 py-2 text-[11px] font-semibold leading-tight transition-colors sm:rounded-xl sm:px-3 sm:py-2.5 sm:text-sm ${focusRing} ${
                   selected ? "text-white" : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
                 {selected ? (
-                  <motion.span
-                    layoutId="leaderboard-tab-highlight"
-                    className="absolute inset-0 rounded-xl bg-emerald-500/15 ring-1 ring-emerald-500/30"
-                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                  />
+                  reduceMotion ? (
+                    <span
+                      className="absolute inset-0 rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/30 sm:rounded-xl"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <motion.span
+                      layoutId="leaderboard-tab-highlight"
+                      className="absolute inset-0 rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/30 sm:rounded-xl"
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                    />
+                  )
                 ) : null}
-                <span className="relative">{tab.label}</span>
+                <span className="relative sm:hidden">{tab.shortLabel}</span>
+                <span className="relative hidden sm:inline">{tab.label}</span>
               </button>
             );
           })}
@@ -314,7 +334,7 @@ export default function MarketPulseLeaderboard({
         </section>
 
         <MarketPulseInlineDisclaimer
-          className="mt-8"
+          className="mt-6 sm:mt-8"
           surface="leaderboard"
           cycleId={activeData.cycleId ?? undefined}
         />

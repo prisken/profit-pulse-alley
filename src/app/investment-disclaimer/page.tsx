@@ -15,7 +15,7 @@ export default function InvestmentDisclaimerPage() {
     <ContentPageLayout title="Investment Disclaimer">
       <LegalDraftNotice />
 
-      <h3>No Financial Advice</h3>
+      <h2>No Financial Advice</h2>
       <p>
         The information provided on the Profit Pulse Ally website, including
         through the Market Pulse game, events, and all related content, is for
@@ -25,7 +25,7 @@ export default function InvestmentDisclaimerPage() {
         fiduciary relationship.
       </p>
 
-      <h3>Not a Fiduciary</h3>
+      <h2>Not a Fiduciary</h2>
       <p>
         We are not financial advisors, and we are not licensed to provide
         financial advice. Your participation in any activity on this site does
@@ -33,7 +33,7 @@ export default function InvestmentDisclaimerPage() {
         any of its employees or affiliates.
       </p>
 
-      <h3>Accuracy of Information</h3>
+      <h2>Accuracy of Information</h2>
       <p>
         While we strive to provide accurate and up-to-date information, we make
         no representation or warranty of any kind, express or implied,
@@ -41,7 +41,7 @@ export default function InvestmentDisclaimerPage() {
         or completeness of any information on the site.
       </p>
 
-      <h3>Use at Your Own Risk</h3>
+      <h2>Use at Your Own Risk</h2>
       <p>
         You agree that you are using the site and its information at your own
         risk. You should consult with a professional financial advisor before
@@ -50,7 +50,7 @@ export default function InvestmentDisclaimerPage() {
         of the use of the site or reliance on any information provided.
       </p>
 
-      <h3>Market Pulse</h3>
+      <h2>Market Pulse</h2>
       <p>{MARKET_PULSE_INLINE_DISCLAIMER}</p>
       <p>
         News-style cards, PPA signals, insights, leaderboards, and simulated

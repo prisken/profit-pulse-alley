@@ -30,13 +30,13 @@ const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 const inputClass =
-  `w-full rounded-md border border-foreground/15 bg-background px-3 py-2 text-sm text-foreground ${focusRing}`;
+  `w-full min-h-11 rounded-md border border-foreground/15 bg-background px-3 py-2.5 text-base text-foreground sm:text-sm sm:max-w-xs ${focusRing}`;
 
 const buttonClass =
-  `rounded-md border border-foreground/15 bg-foreground/5 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-50 ${focusRing}`;
+  `min-h-11 w-full rounded-md border border-foreground/15 bg-foreground/5 px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-50 sm:w-auto ${focusRing}`;
 
 const primaryButtonClass =
-  `rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50 ${focusRing}`;
+  `min-h-11 w-full rounded-md bg-foreground px-3 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto ${focusRing}`;
 
 const RUNTIME_OPTIONS: MarketPulseGameRuntimeStatus[] = [
   "OPEN",
@@ -157,7 +157,7 @@ export default function MarketPulseAdminDashboard({
   const activeCyclePlayable = activeCycle?.isPlayableNow ?? false;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6 lg:space-y-10">
       {(message || error) && (
         <div
           className={`rounded-md border px-4 py-3 text-sm ${
@@ -173,7 +173,7 @@ export default function MarketPulseAdminDashboard({
 
       {activeCycle?.isActive && !activeCyclePlayable && activeCycle.playabilityIssue ? (
         <div
-          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100"
+          className="sticky top-0 z-20 rounded-lg border-2 border-amber-500/50 bg-amber-500/15 px-3 py-3 text-sm text-amber-950 shadow-sm dark:text-amber-100 sm:px-4"
           role="alert"
         >
           <p className="font-semibold">Active cycle is not visible to players</p>
@@ -184,149 +184,110 @@ export default function MarketPulseAdminDashboard({
         </div>
       ) : null}
 
-      <section aria-labelledby="overview-heading">
-        <h2 id="overview-heading" className="text-lg font-semibold text-foreground">
-          Overview
-        </h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Runtime" value={initialData.runtimeStatus} />
-          <StatCard
-            label="Active cycle"
-            value={activeCycle?.name ?? "None"}
+      <details className="rounded-lg border border-foreground/10 lg:hidden" open>
+        <summary className="cursor-pointer list-none px-4 py-3 text-base font-semibold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
+          Overview &amp; runtime
+        </summary>
+        <div className="space-y-4 border-t border-foreground/10 px-4 pb-4 pt-3">
+          <OverviewSection
+            initialData={initialData}
+            activeCycle={activeCycle}
+            totals={totals}
           />
-          <StatCard
-            label="Cycle status"
-            value={activeCycle?.status ?? "—"}
-          />
-          <StatCard
-            label="Cards"
-            value={totals ? String(totals.cards) : "—"}
-          />
-          <StatCard
-            label="Decisions"
-            value={totals ? String(totals.decisions) : "—"}
-          />
-          <StatCard
-            label="Users played"
-            value={totals ? String(totals.usersPlayed) : "—"}
-          />
-          <StatCard
-            label="Reveal date"
-            value={totals ? formatDateTime(totals.revealAt) : "—"}
-          />
-          <StatCard
-            label="Prize"
-            value={totals?.prizeLabel?.trim() || "—"}
-          />
-          <StatCard
-            label="PPA gaps"
-            value={
-              totals
-                ? `${totals.missingSignal} missing · ${totals.unlocked} unlocked`
-                : "—"
-            }
-          />
-        </div>
-      </section>
-
-      <section aria-labelledby="runtime-heading" className="rounded-lg border border-foreground/10 p-4 sm:p-5">
-        <h2 id="runtime-heading" className="text-lg font-semibold text-foreground">
-          Runtime status
-        </h2>
-        <p className="mt-1 text-sm text-foreground/65">
-          Controls whether players can access Market Pulse (OPEN, CLOSED, MAINTENANCE).
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <select
-            value={runtimeStatus}
-            onChange={(event) =>
-              setRuntimeStatus(event.target.value as MarketPulseGameRuntimeStatus)
-            }
-            className={inputClass}
-            style={{ maxWidth: "14rem" }}
-          >
-            {RUNTIME_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className={primaryButtonClass}
-            disabled={isPending || runtimeStatus === initialData.runtimeStatus}
-            onClick={() =>
+          <RuntimeSection
+            runtimeStatus={runtimeStatus}
+            setRuntimeStatus={setRuntimeStatus}
+            initialRuntimeStatus={initialData.runtimeStatus}
+            isPending={isPending}
+            onSave={() =>
               runAction(() => updateMarketPulseRuntimeStatusAction(runtimeStatus))
             }
-          >
-            Save runtime
-          </button>
+          />
         </div>
-      </section>
+      </details>
 
-      <section aria-labelledby="cycles-heading">
-        <h2 id="cycles-heading" className="text-lg font-semibold text-foreground">
-          Cycles
-        </h2>
-        <CreateCycleSection
-          disabled={isPending}
-          onRefresh={() => router.refresh()}
+      <div className="hidden space-y-10 lg:block">
+        <OverviewSection
+          initialData={initialData}
+          activeCycle={activeCycle}
+          totals={totals}
         />
-        <div className="mt-6 space-y-4">
-          {initialData.cycles.length === 0 ? (
-            <p className="text-sm text-foreground/65">No cycles yet.</p>
-          ) : (
-            initialData.cycles.map((cycle) => (
-              <CyclePanel
-                key={cycle.id}
-                cycle={cycle}
-                disabled={isPending}
-                selected={cycle.id === selectedCycleId}
-                onSelect={() => setSelectedCycleId(cycle.id)}
-                onRefresh={() => router.refresh()}
-                onClose={() => runAction(() => closeMarketPulseCycleAction(cycle.id))}
-                onExport={() => runAction(() => exportMarketPulseLeaderboardAction(cycle.id))}
-              />
-            ))
-          )}
+        <RuntimeSection
+          runtimeStatus={runtimeStatus}
+          setRuntimeStatus={setRuntimeStatus}
+          initialRuntimeStatus={initialData.runtimeStatus}
+          isPending={isPending}
+          onSave={() =>
+            runAction(() => updateMarketPulseRuntimeStatusAction(runtimeStatus))
+          }
+        />
+      </div>
+
+      <details className="rounded-lg border border-foreground/10 lg:hidden">
+        <summary className="cursor-pointer list-none px-4 py-3 text-base font-semibold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
+          Cycles
+        </summary>
+        <div className="border-t border-foreground/10 px-4 pb-4 pt-3">
+          <CyclesSection
+            cycles={initialData.cycles}
+            selectedCycleId={selectedCycleId}
+            isPending={isPending}
+            onSelectCycle={setSelectedCycleId}
+            onRefresh={() => router.refresh()}
+            onClose={(cycleId) => runAction(() => closeMarketPulseCycleAction(cycleId))}
+            onExport={(cycleId) =>
+              runAction(() => exportMarketPulseLeaderboardAction(cycleId))
+            }
+          />
         </div>
-      </section>
+      </details>
+
+      <div className="hidden lg:block">
+        <CyclesSection
+          cycles={initialData.cycles}
+          selectedCycleId={selectedCycleId}
+          isPending={isPending}
+          onSelectCycle={setSelectedCycleId}
+          onRefresh={() => router.refresh()}
+          onClose={(cycleId) => runAction(() => closeMarketPulseCycleAction(cycleId))}
+          onExport={(cycleId) =>
+            runAction(() => exportMarketPulseLeaderboardAction(cycleId))
+          }
+        />
+      </div>
 
       {selectedCycle && (
-        <section aria-labelledby="cards-heading">
-          <h2 id="cards-heading" className="text-lg font-semibold text-foreground">
+        <details className="rounded-lg border border-foreground/10 lg:hidden" open>
+          <summary className="cursor-pointer list-none px-4 py-3 text-base font-semibold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
             Cards · {selectedCycle.name}
-          </h2>
-          <CreateCardSection
-            cycleId={selectedCycle.id}
-            cycleName={selectedCycle.name}
-            nextDayIndex={(cycleCards.at(-1)?.dayIndex ?? 0) + 1}
-            existingDayIndexes={cycleDayIndexes}
-            disabled={isPending}
+          </summary>
+          <div className="border-t border-foreground/10 px-4 pb-4 pt-3">
+            <CardsSection
+              selectedCycle={selectedCycle}
+              cycleCards={cycleCards}
+              cycleDayIndexes={cycleDayIndexes}
+              isPending={isPending}
+              onRefresh={() => router.refresh()}
+            />
+          </div>
+        </details>
+      )}
+
+      {selectedCycle ? (
+        <div className="hidden lg:block">
+          <CardsSection
+            selectedCycle={selectedCycle}
+            cycleCards={cycleCards}
+            cycleDayIndexes={cycleDayIndexes}
+            isPending={isPending}
             onRefresh={() => router.refresh()}
           />
-          <div className="mt-6 space-y-4">
-            {cycleCards.length === 0 ? (
-              <p className="text-sm text-foreground/65">No cards for this cycle.</p>
-            ) : (
-              cycleCards.map((card) => (
-                <MarketPulseCardPanel
-                  key={card.id}
-                  card={card}
-                  cycleName={selectedCycle.name}
-                  existingDayIndexes={cycleDayIndexes}
-                  disabled={isPending}
-                  onRefresh={() => router.refresh()}
-                />
-              ))
-            )}
-          </div>
-        </section>
-      )}
+        </div>
+      ) : null}
 
       <MarketPulsePrizeReview data={prizeReview} />
 
-      <section aria-labelledby="activity-heading">
+      <section aria-labelledby="activity-heading" className="rounded-lg border border-foreground/10 p-4 sm:p-5">
         <h2 id="activity-heading" className="text-lg font-semibold text-foreground">
           Recent activity
         </h2>
@@ -352,6 +313,195 @@ export default function MarketPulseAdminDashboard({
   );
 }
 
+function OverviewSection({
+  initialData,
+  activeCycle,
+  totals,
+}: {
+  initialData: MarketPulseAdminDashboardData;
+  activeCycle: MarketPulseAdminDashboardData["cycles"][number] | null;
+  totals: {
+    cards: number;
+    decisions: number;
+    usersPlayed: number;
+    missingSignal: number;
+    unlocked: number;
+    revealAt: string;
+    prizeLabel: string | null;
+  } | null;
+}) {
+  return (
+    <section aria-labelledby="overview-heading">
+      <h2 id="overview-heading" className="text-base font-semibold text-foreground sm:text-lg">
+        Overview
+      </h2>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+        <StatCard label="Runtime" value={initialData.runtimeStatus} />
+        <StatCard label="Active cycle" value={activeCycle?.name ?? "None"} />
+        <StatCard label="Cycle status" value={activeCycle?.status ?? "—"} />
+        <StatCard label="Cards" value={totals ? String(totals.cards) : "—"} />
+        <StatCard label="Decisions" value={totals ? String(totals.decisions) : "—"} />
+        <StatCard label="Users played" value={totals ? String(totals.usersPlayed) : "—"} />
+        <StatCard
+          label="Reveal date"
+          value={totals ? formatDateTime(totals.revealAt) : "—"}
+        />
+        <StatCard label="Prize" value={totals?.prizeLabel?.trim() || "—"} />
+        <StatCard
+          label="PPA gaps"
+          value={
+            totals
+              ? `${totals.missingSignal} missing · ${totals.unlocked} unlocked`
+              : "—"
+          }
+        />
+      </div>
+    </section>
+  );
+}
+
+function RuntimeSection({
+  runtimeStatus,
+  setRuntimeStatus,
+  initialRuntimeStatus,
+  isPending,
+  onSave,
+}: {
+  runtimeStatus: MarketPulseGameRuntimeStatus;
+  setRuntimeStatus: (value: MarketPulseGameRuntimeStatus) => void;
+  initialRuntimeStatus: MarketPulseGameRuntimeStatus;
+  isPending: boolean;
+  onSave: () => void;
+}) {
+  return (
+    <section
+      aria-labelledby="runtime-heading"
+      className="rounded-lg border border-foreground/10 p-4 sm:p-5"
+    >
+      <h2 id="runtime-heading" className="text-base font-semibold text-foreground sm:text-lg">
+        Runtime status
+      </h2>
+      <p className="mt-1 text-xs text-foreground/65 sm:text-sm">
+        Controls whether players can access Market Pulse (OPEN, CLOSED, MAINTENANCE).
+      </p>
+      <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <select
+          value={runtimeStatus}
+          onChange={(event) =>
+            setRuntimeStatus(event.target.value as MarketPulseGameRuntimeStatus)
+          }
+          className={inputClass}
+        >
+          {RUNTIME_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={primaryButtonClass}
+          disabled={isPending || runtimeStatus === initialRuntimeStatus}
+          onClick={onSave}
+        >
+          Save runtime
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function CyclesSection({
+  cycles,
+  selectedCycleId,
+  isPending,
+  onSelectCycle,
+  onRefresh,
+  onClose,
+  onExport,
+}: {
+  cycles: MarketPulseAdminDashboardData["cycles"];
+  selectedCycleId: string;
+  isPending: boolean;
+  onSelectCycle: (id: string) => void;
+  onRefresh: () => void;
+  onClose: (cycleId: string) => void;
+  onExport: (cycleId: string) => void;
+}) {
+  return (
+    <section aria-labelledby="cycles-heading">
+      <h2 id="cycles-heading" className="text-base font-semibold text-foreground sm:text-lg">
+        Cycles
+      </h2>
+      <CreateCycleSection disabled={isPending} onRefresh={onRefresh} />
+      <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
+        {cycles.length === 0 ? (
+          <p className="text-sm text-foreground/65">No cycles yet.</p>
+        ) : (
+          cycles.map((cycle) => (
+            <CyclePanel
+              key={cycle.id}
+              cycle={cycle}
+              disabled={isPending}
+              selected={cycle.id === selectedCycleId}
+              onSelect={() => onSelectCycle(cycle.id)}
+              onRefresh={onRefresh}
+              onClose={() => onClose(cycle.id)}
+              onExport={() => onExport(cycle.id)}
+            />
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CardsSection({
+  selectedCycle,
+  cycleCards,
+  cycleDayIndexes,
+  isPending,
+  onRefresh,
+}: {
+  selectedCycle: MarketPulseAdminDashboardData["cycles"][number];
+  cycleCards: MarketPulseAdminDashboardData["cards"];
+  cycleDayIndexes: number[];
+  isPending: boolean;
+  onRefresh: () => void;
+}) {
+  return (
+    <section aria-labelledby="cards-heading">
+      <h2 id="cards-heading" className="text-base font-semibold text-foreground sm:text-lg">
+        Cards · {selectedCycle.name}
+      </h2>
+      <CreateCardSection
+        cycleId={selectedCycle.id}
+        cycleName={selectedCycle.name}
+        nextDayIndex={(cycleDayIndexes.at(-1) ?? 0) + 1}
+        existingDayIndexes={cycleDayIndexes}
+        disabled={isPending}
+        onRefresh={onRefresh}
+      />
+      <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
+        {cycleCards.length === 0 ? (
+          <p className="text-sm text-foreground/65">No cards for this cycle.</p>
+        ) : (
+          cycleCards.map((card) => (
+            <MarketPulseCardPanel
+              key={card.id}
+              card={card}
+              cycleName={selectedCycle.name}
+              existingDayIndexes={cycleDayIndexes}
+              disabled={isPending}
+              onRefresh={onRefresh}
+            />
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
 function StatCard({
   label,
   value,
@@ -362,11 +512,13 @@ function StatCard({
   sub?: string;
 }) {
   return (
-    <div className="rounded-lg border border-foreground/10 px-4 py-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-foreground/45">
+    <div className="rounded-lg border border-foreground/10 px-3 py-2.5 sm:px-4 sm:py-3">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-foreground/45 sm:text-xs">
         {label}
       </p>
-      <p className="mt-1 text-base font-semibold text-foreground">{value}</p>
+      <p className="mt-1 text-sm font-semibold leading-snug text-foreground sm:text-base">
+        {value}
+      </p>
       {sub ? (
         <span
           className={`mt-1 inline-block rounded px-1.5 py-0.5 text-xs font-medium ${statusBadge(sub)}`}
@@ -476,18 +628,13 @@ function CyclePanel({
             {cycle.missingSignalCount} missing signal · {cycle.unlockedCount} unlocked
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <button type="button" className={buttonClass} onClick={onSelect}>
             {selected ? "Viewing cards" : "Manage cards"}
           </button>
           <button type="button" className={buttonClass} disabled={disabled} onClick={onExport}>
             Export leaderboard
           </button>
-          {cycle.status !== "CLOSED" && cycle.status !== "REVEALED" ? (
-            <button type="button" className={buttonClass} disabled={disabled} onClick={onClose}>
-              Close cycle
-            </button>
-          ) : null}
           <button
             type="button"
             className={buttonClass}
@@ -498,14 +645,24 @@ function CyclePanel({
         </div>
       </div>
 
-      <div className="mt-4 border-t border-foreground/10 pt-4">
-        <RevealCycleButton
-          cycleId={cycle.id}
-          cycleName={cycle.name}
-          cycleStatus={cycle.status}
-          disabled={disabled}
-          onSuccess={onRefresh}
-        />
+      <div className="mt-4 space-y-2 border-t border-foreground/10 pt-4">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/45">
+          Cycle actions
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          {cycle.status !== "CLOSED" && cycle.status !== "REVEALED" ? (
+            <button type="button" className={buttonClass} disabled={disabled} onClick={onClose}>
+              Close cycle
+            </button>
+          ) : null}
+          <RevealCycleButton
+            cycleId={cycle.id}
+            cycleName={cycle.name}
+            cycleStatus={cycle.status}
+            disabled={disabled}
+            onSuccess={onRefresh}
+          />
+        </div>
       </div>
 
       {editing ? (

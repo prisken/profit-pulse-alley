@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import LayoutShell from "@/components/LayoutShell";
 import AuthSessionProvider from "@/components/providers/AuthSessionProvider";
@@ -20,6 +20,12 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://profit-pulse-alley.vercel.app"),
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,7 +36,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-dvh flex flex-col bg-background text-foreground">
+      <body className="flex min-h-dvh min-w-0 flex-col overflow-x-clip bg-background font-sans text-foreground">
         <AuthSessionProvider>
           <LayoutShell>{children}</LayoutShell>
         </AuthSessionProvider>

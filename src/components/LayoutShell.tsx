@@ -4,14 +4,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import { useCallback, useState } from "react";
 
+import MobileNav from "@/components/layout/MobileNav";
 import SiteFooter from "@/components/SiteFooter";
 import {
   MARKET_PULSE_ANALYTICS_EVENTS,
   trackMarketPulseEvent,
 } from "@/lib/market-pulse/analytics";
-
-const FULL_PAGE_ROUTES = ["/fortify-survey", "/admin", "/login", "/auth/onboarding"];
+import {
+  isFullPageRoute,
+  isImmersiveRoute,
+  isMarketPulseRoute,
+} from "@/lib/layout/route-chrome";
 
 const navLinkClass =
   "rounded-md px-2.5 py-1.5 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 sm:px-3 sm:py-2";
@@ -28,25 +33,34 @@ export default function LayoutShell({
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isLoadingSession = status === "loading";
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const fullPage = FULL_PAGE_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
-  const isMarketPulseRoute =
-    pathname === "/market-pulse" || pathname.startsWith("/market-pulse/");
+  const fullPage = isFullPageRoute(pathname) || isImmersiveRoute(pathname);
+  const marketPulseRoute = isMarketPulseRoute(pathname);
+
+  const closeMobileNav = useCallback(() => {
+    setMobileNavOpen(false);
+  }, []);
+
+  const openMobileNav = useCallback(() => {
+    setMobileNavOpen(true);
+  }, []);
 
   if (fullPage) {
-    return <div className="flex-1">{children}</div>;
+    return <div className="flex min-w-0 flex-1 flex-col">{children}</div>;
   }
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-foreground/10 bg-background/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-3 py-2.5 sm:px-6 sm:py-3">
-          <div className="flex min-w-0 flex-1 items-center gap-4 sm:gap-6 lg:gap-8">
+      <header className="site-header sticky top-0 z-50 border-b border-foreground/10 bg-background/90 pt-[env(safe-area-inset-top,0px)] backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] md:h-[3.75rem]">
+          <div
+            className="flex min-w-0 flex-1 items-center gap-4 md:gap-6 lg:gap-8"
+            {...(mobileNavOpen ? { inert: true } : {})}
+          >
             <Link
               href="/"
-              className="flex shrink-0 items-center gap-2 font-semibold tracking-tight transition-opacity active:opacity-80"
+              className={`inline-flex min-h-11 min-w-11 shrink-0 items-center gap-2 font-semibold tracking-tight transition-opacity active:opacity-80 ${focusRing}`}
               aria-label="Profit Pulse Ally home"
             >
               <Image
@@ -55,16 +69,16 @@ export default function LayoutShell({
                 width={32}
                 height={32}
                 priority
-                className="h-7 w-7 rounded-sm sm:h-8 sm:w-8"
+                className="h-7 w-7 rounded-sm md:h-8 md:w-8"
               />
-              <span className="hidden text-sm sm:inline sm:text-base md:text-lg">
+              <span className="hidden text-sm sm:inline md:text-base lg:text-lg">
                 Profit Pulse Ally
               </span>
             </Link>
 
             <nav
               aria-label="Main"
-              className="flex min-w-0 flex-wrap items-center gap-0.5 text-[13px] font-medium sm:gap-1 sm:text-sm"
+              className="hidden min-w-0 flex-wrap items-center gap-0.5 text-[13px] font-medium md:flex md:gap-1 md:text-sm"
             >
               <Link href="/market-pulse" className={navLinkClass}>
                 Market Pulse
@@ -73,7 +87,7 @@ export default function LayoutShell({
                 href="/events"
                 className={navLinkClass}
                 onClick={() => {
-                  if (isMarketPulseRoute) {
+                  if (marketPulseRoute) {
                     trackMarketPulseEvent(
                       MARKET_PULSE_ANALYTICS_EVENTS.webinar_cta_clicked,
                       { cta: "nav_events", surface: "nav" },
@@ -92,54 +106,72 @@ export default function LayoutShell({
             </nav>
           </div>
 
-          <div
-            className="flex shrink-0 items-center gap-2 sm:gap-2.5"
-            aria-label="Account"
-          >
-            {isLoadingSession || !isAuthenticated ? (
-              <>
-                <Link href="/login" className={navLinkClass}>
-                  Login
-                </Link>
-                <Link
-                  href="/login"
-                  className={`inline-flex min-h-9 items-center justify-center rounded-full bg-foreground px-4 py-1.5 text-[13px] font-semibold text-background transition-colors hover:bg-foreground/90 sm:px-5 sm:text-sm ${focusRing}`}
-                >
-                  Sign Up
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/profile"
-                  className={navLinkClass}
-                  onClick={() => {
-                    if (isMarketPulseRoute) {
-                      trackMarketPulseEvent(
-                        MARKET_PULSE_ANALYTICS_EVENTS.profile_cta_clicked,
-                        { cta: "nav_profile", surface: "nav" },
-                      );
-                    }
-                  }}
-                >
-                  My Profile
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => void signOut({ callbackUrl: "/" })}
-                  className={`inline-flex min-h-9 items-center justify-center rounded-full border border-foreground/20 bg-background px-3.5 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:border-foreground/35 hover:bg-foreground/5 sm:px-4 sm:text-sm ${focusRing}`}
-                >
-                  Sign Out
-                </button>
-              </>
-            )}
+          <div className="flex shrink-0 items-center gap-1 md:gap-2.5">
+            <div
+              className="hidden items-center gap-2 md:flex"
+              aria-label="Account"
+              {...(mobileNavOpen ? { inert: true } : {})}
+            >
+              {isLoadingSession || !isAuthenticated ? (
+                <>
+                  <Link href="/login" className={navLinkClass}>
+                    Login
+                  </Link>
+                  <Link
+                    href="/login"
+                    className={`inline-flex min-h-9 items-center justify-center rounded-full bg-foreground px-4 py-1.5 text-[13px] font-semibold text-background transition-colors hover:bg-foreground/90 md:px-5 md:text-sm ${focusRing}`}
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/profile"
+                    className={navLinkClass}
+                    onClick={() => {
+                      if (marketPulseRoute) {
+                        trackMarketPulseEvent(
+                          MARKET_PULSE_ANALYTICS_EVENTS.profile_cta_clicked,
+                          { cta: "nav_profile", surface: "nav" },
+                        );
+                      }
+                    }}
+                  >
+                    My Profile
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => void signOut({ callbackUrl: "/" })}
+                    className={`inline-flex min-h-9 items-center justify-center rounded-full border border-foreground/20 bg-background px-3.5 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:border-foreground/35 hover:bg-foreground/5 md:px-4 md:text-sm ${focusRing}`}
+                  >
+                    Sign Out
+                  </button>
+                </>
+              )}
+            </div>
+
+            <MobileNav
+              isOpen={mobileNavOpen}
+              onOpen={openMobileNav}
+              onClose={closeMobileNav}
+              isAuthenticated={isAuthenticated}
+              isLoadingSession={isLoadingSession}
+            />
           </div>
         </div>
       </header>
 
-      <div className="flex-1">{children}</div>
+      <div
+        className="flex min-w-0 flex-1 flex-col"
+        {...(mobileNavOpen ? { inert: true } : {})}
+      >
+        {children}
+      </div>
 
-      <SiteFooter />
+      <div {...(mobileNavOpen ? { inert: true } : {})}>
+        <SiteFooter />
+      </div>
     </>
   );
 }
