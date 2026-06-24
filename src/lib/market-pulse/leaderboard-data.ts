@@ -2,6 +2,8 @@ import "server-only";
 
 import type { MarketPulseLeaderboardType } from "@prisma/client";
 
+import { isDatabaseConfigured } from "@/lib/db-config";
+
 import type { MarketPulseLeaderboardEntryRow } from "@/lib/market-pulse/types";
 import {
   getActiveMarketPulseCycle,
@@ -42,7 +44,17 @@ async function loadTab(
   }
 }
 
+const EMPTY_LEADERBOARD_PAGE_DATA: MarketPulseLeaderboardPageData = {
+  current: { entries: [], isRevealed: false, cycleName: null, cycleId: null },
+  monthly: { entries: [], isRevealed: true },
+  allTime: { entries: [], isRevealed: true },
+};
+
 export async function getMarketPulseLeaderboardPageData(): Promise<MarketPulseLeaderboardPageData> {
+  if (!isDatabaseConfigured()) {
+    return EMPTY_LEADERBOARD_PAGE_DATA;
+  }
+
   let activeCycle = null;
   try {
     activeCycle = await getActiveMarketPulseCycle();

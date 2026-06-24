@@ -1,6 +1,7 @@
 import "server-only";
 
 import { auth } from "@/auth";
+import { isDatabaseConfigured } from "@/lib/db-config";
 import {
   getMarketPulseRevealForUser,
   getRevealedMarketPulseCycleForPage,
@@ -29,6 +30,15 @@ export async function getMarketPulseRevealPageData(): Promise<MarketPulseRevealP
   const session = await auth();
   const userId = session?.user?.id;
   const isAuthenticated = Boolean(userId);
+
+  if (!isDatabaseConfigured()) {
+    return {
+      status: "pending",
+      isAuthenticated,
+      pendingCycle: null,
+      results: null,
+    };
+  }
 
   let revealedCycle: Awaited<
     ReturnType<typeof getRevealedMarketPulseCycleForPage>

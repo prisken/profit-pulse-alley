@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isDatabaseConfigured } from "@/lib/db-config";
 import { getCurrentMarketPulseCycle as getSyntheticChallengeCycle } from "@/lib/market-pulse/challenge-cycle";
 import {
   getActiveMarketPulseCycle,
@@ -46,6 +47,10 @@ function getDayProgress(
 export async function getMarketPulseHubPageData(): Promise<MarketPulseHubPageData> {
   const now = new Date();
   const synthetic = getSyntheticChallengeCycle();
+
+  if (!isDatabaseConfigured()) {
+    return buildFallbackHubData(synthetic, now, true);
+  }
 
   let settings;
   let prismaCycle = null;

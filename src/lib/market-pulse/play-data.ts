@@ -3,6 +3,7 @@ import "server-only";
 import type { MarketPulseCycleStatus } from "@prisma/client";
 
 import { auth } from "@/auth";
+import { isDatabaseConfigured } from "@/lib/db-config";
 import type { MarketPulseDecision } from "@/lib/market-pulse/constants";
 import {
   describeCyclePlayabilityIssue,
@@ -140,6 +141,25 @@ export async function getMarketPulsePlayPageData(): Promise<MarketPulsePlayPageD
   const session = await auth();
   const userId = session?.user?.id;
   const isAuthenticated = Boolean(userId);
+
+  if (!isDatabaseConfigured()) {
+    return {
+      status: "no_active_cycle",
+      isAuthenticated,
+      unavailableReason: null,
+      challengeName: "Market Pulse",
+      dayCurrent: 0,
+      dayTotal: 0,
+      revealAtIso: now.toISOString(),
+      revealRemainingMs: 0,
+      revealAtLabel: "",
+      cycleId: null,
+      leaderboardEntries: [],
+      leaderboardRevealed: false,
+      card: null,
+      lockedDecision: null,
+    };
+  }
 
   let activeCycle = null;
   try {

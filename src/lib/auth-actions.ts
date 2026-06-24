@@ -3,6 +3,7 @@
 import bcrypt from "bcrypt";
 
 import { auth, signOut } from "@/auth";
+import { syncMemberSignupToCrm } from "@/lib/crm-member-sync";
 import { prisma } from "@/lib/prisma";
 
 const BCRYPT_SALT_ROUNDS = 12;
@@ -60,13 +61,32 @@ export async function signUpWithPassword(
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
         contactNumber: contactNumber || null,
       },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        contactNumber: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    await syncMemberSignupToCrm({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      contactNumber: user.contactNumber,
+      provider: "credentials",
+      role: user.role,
+      signedUpAt: user.createdAt,
+      source: "Profit Pulse Ally Password Signup",
     });
 
     return {
@@ -105,10 +125,30 @@ export async function updateContactNumber(
   }
 
   try {
-    await prisma.user.update({
+    const user = await prisma.user.update({
       where: { id: session.user.id },
       data: { contactNumber: trimmed },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        contactNumber: true,
+        role: true,
+        createdAt: true,
+      },
     });
+
+    await syncMemberSignupToCrm({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      contactNumber: user.contactNumber,
+      provider: "google-or-onboarding",
+      role: user.role,
+      signedUpAt: user.createdAt,
+      source: "Profit Pulse Ally OAuth Onboarding",
+    });
+
     return { success: true };
   } catch (error) {
     console.error("[auth-actions] updateContactNumber failed:", error);
