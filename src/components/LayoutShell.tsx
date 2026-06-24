@@ -50,9 +50,17 @@ export default function LayoutShell({
     return <div className="flex min-w-0 flex-1 flex-col">{children}</div>;
   }
 
+  const headerZIndexClass = mobileNavOpen
+    ? "z-[203]"
+    : marketPulseRoute
+      ? "z-[100]"
+      : "z-50";
+
   return (
     <>
-      <header className="site-header sticky top-0 z-50 border-b border-foreground/10 bg-background/90 pt-[env(safe-area-inset-top,0px)] backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header
+        className={`site-header sticky top-0 ${headerZIndexClass} border-b border-foreground/10 bg-background/90 pt-[env(safe-area-inset-top,0px)] backdrop-blur supports-[backdrop-filter]:bg-background/80`}
+      >
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] md:h-[3.75rem]">
           <div
             className="flex min-w-0 flex-1 items-center gap-4 md:gap-6 lg:gap-8"

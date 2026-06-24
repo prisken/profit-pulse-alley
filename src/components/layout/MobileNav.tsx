@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useCallback, useEffect, useId, useRef, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { Menu, X } from "lucide-react";
 
 import {
@@ -75,7 +76,7 @@ export function MobileNavMenuButton({
     <button
       ref={menuButtonRef}
       type="button"
-      className={`relative ${isOpen ? "z-[70]" : ""} inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-foreground/80 transition-colors hover:bg-foreground/5 hover:text-foreground md:hidden ${focusRing}`}
+      className={`relative z-[1] inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-foreground/80 transition-colors hover:bg-foreground/5 hover:text-foreground md:hidden ${focusRing}`}
       aria-label={isOpen ? "Close menu" : "Open menu"}
       aria-expanded={isOpen}
       aria-controls={isOpen ? controlsId : undefined}
@@ -184,6 +185,134 @@ export default function MobileNav({
     };
   }, [isOpen, onClose]);
 
+  const menuOverlay =
+    isOpen ? (
+      <div className="fixed inset-0 z-[200] md:hidden" role="presentation">
+        <button
+          type="button"
+          tabIndex={-1}
+          className={`absolute inset-0 bg-black/40 backdrop-blur-[1px] ${focusRing}`}
+          aria-label="Close menu"
+          onClick={onClose}
+        />
+        <div
+          ref={panelRef}
+          id={panelId}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Site navigation"
+          className="absolute inset-y-0 right-0 z-[201] flex w-[min(100%,20rem)] max-w-[calc(100vw-3rem)] flex-col border-l border-foreground/10 bg-background shadow-xl pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pr-[max(0.75rem,env(safe-area-inset-right))]"
+        >
+          <div className="flex items-center justify-between border-b border-foreground/10 px-3 py-2">
+            <p className="text-sm font-semibold text-foreground">Menu</p>
+            <button
+              ref={closeButtonRef}
+              type="button"
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-lg text-foreground/80 hover:bg-foreground/5 ${focusRing}`}
+              aria-label="Close menu"
+              onClick={onClose}
+            >
+              <X className="h-5 w-5 shrink-0" aria-hidden="true" />
+            </button>
+          </div>
+
+          <nav
+            aria-label="Main"
+            className="flex-1 overflow-y-auto overscroll-contain px-3 py-3"
+          >
+            <ul className="space-y-1">
+              {MAIN_LINKS.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={`${menuLinkClass} ${
+                      pathname === link.href ||
+                      pathname.startsWith(`${link.href}/`)
+                        ? "bg-foreground/5 text-foreground"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      handleNavClick(
+                        "analyticsCta" in link ? link.analyticsCta : undefined,
+                      )
+                    }
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-4 border-t border-foreground/10 pt-4">
+              <p className="px-3 text-xs font-semibold uppercase tracking-wider text-foreground/45">
+                Account
+              </p>
+              <ul className="mt-2 space-y-1">
+                {isLoadingSession ? (
+                  <li className="px-3 py-2 text-sm text-foreground/50">
+                    Checking session…
+                  </li>
+                ) : isAuthenticated ? (
+                  <>
+                    <li>
+                      <Link
+                        href="/profile"
+                        className={menuLinkClass}
+                        onClick={() => {
+                          if (marketPulseRoute) {
+                            trackMarketPulseEvent(
+                              MARKET_PULSE_ANALYTICS_EVENTS.profile_cta_clicked,
+                              { cta: "nav_profile", surface: "nav" },
+                            );
+                          }
+                          onClose();
+                        }}
+                      >
+                        My Profile
+                      </Link>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        className={`${menuLinkClass} w-full text-left`}
+                        onClick={() => {
+                          onClose();
+                          void signOut({ callbackUrl: "/" });
+                        }}
+                      >
+                        Sign Out
+                      </button>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li>
+                      <Link
+                        href="/login"
+                        className={menuLinkClass}
+                        onClick={onClose}
+                      >
+                        Login
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/login"
+                        className={`${menuLinkClass} font-semibold text-foreground`}
+                        onClick={onClose}
+                      >
+                        Sign Up
+                      </Link>
+                    </li>
+                  </>
+                )}
+              </ul>
+            </div>
+          </nav>
+        </div>
+      </div>
+    ) : null;
+
   return (
     <>
       <MobileNavMenuButton
@@ -194,132 +323,9 @@ export default function MobileNav({
         menuButtonRef={menuButtonRef}
       />
 
-      {isOpen ? (
-        <div className="fixed inset-0 z-[60] md:hidden" role="presentation">
-          <button
-            type="button"
-            tabIndex={-1}
-            className={`absolute inset-0 bg-black/40 backdrop-blur-[1px] ${focusRing}`}
-            aria-label="Close menu"
-            onClick={onClose}
-          />
-          <div
-            ref={panelRef}
-            id={panelId}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Site navigation"
-            className="absolute inset-y-0 right-0 flex w-[min(100%,20rem)] max-w-[calc(100vw-3rem)] flex-col border-l border-foreground/10 bg-background shadow-xl pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pr-[max(0.75rem,env(safe-area-inset-right))]"
-          >
-            <div className="flex items-center justify-between border-b border-foreground/10 px-3 py-2">
-              <p className="text-sm font-semibold text-foreground">Menu</p>
-              <button
-                ref={closeButtonRef}
-                type="button"
-                className={`inline-flex h-11 w-11 items-center justify-center rounded-lg text-foreground/80 hover:bg-foreground/5 ${focusRing}`}
-                aria-label="Close menu"
-                onClick={onClose}
-              >
-                <X className="h-5 w-5 shrink-0" aria-hidden="true" />
-              </button>
-            </div>
-
-            <nav
-              aria-label="Main"
-              className="flex-1 overflow-y-auto overscroll-contain px-3 py-3"
-            >
-              <ul className="space-y-1">
-                {MAIN_LINKS.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className={`${menuLinkClass} ${
-                        pathname === link.href ||
-                        pathname.startsWith(`${link.href}/`)
-                          ? "bg-foreground/5 text-foreground"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        handleNavClick(
-                          "analyticsCta" in link ? link.analyticsCta : undefined,
-                        )
-                      }
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-4 border-t border-foreground/10 pt-4">
-                <p className="px-3 text-xs font-semibold uppercase tracking-wider text-foreground/45">
-                  Account
-                </p>
-                <ul className="mt-2 space-y-1">
-                  {isLoadingSession ? (
-                    <li className="px-3 py-2 text-sm text-foreground/50">
-                      Checking session…
-                    </li>
-                  ) : isAuthenticated ? (
-                    <>
-                      <li>
-                        <Link
-                          href="/profile"
-                          className={menuLinkClass}
-                          onClick={() => {
-                            if (marketPulseRoute) {
-                              trackMarketPulseEvent(
-                                MARKET_PULSE_ANALYTICS_EVENTS.profile_cta_clicked,
-                                { cta: "nav_profile", surface: "nav" },
-                              );
-                            }
-                            onClose();
-                          }}
-                        >
-                          My Profile
-                        </Link>
-                      </li>
-                      <li>
-                        <button
-                          type="button"
-                          className={`${menuLinkClass} w-full text-left`}
-                          onClick={() => {
-                            onClose();
-                            void signOut({ callbackUrl: "/" });
-                          }}
-                        >
-                          Sign Out
-                        </button>
-                      </li>
-                    </>
-                  ) : (
-                    <>
-                      <li>
-                        <Link
-                          href="/login"
-                          className={menuLinkClass}
-                          onClick={onClose}
-                        >
-                          Login
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          href="/login"
-                          className={`${menuLinkClass} font-semibold text-foreground`}
-                          onClick={onClose}
-                        >
-                          Sign Up
-                        </Link>
-                      </li>
-                    </>
-                  )}
-                </ul>
-              </div>
-            </nav>
-          </div>
-        </div>
-      ) : null}
+      {menuOverlay && typeof document !== "undefined"
+        ? createPortal(menuOverlay, document.body)
+        : null}
     </>
   );
 }

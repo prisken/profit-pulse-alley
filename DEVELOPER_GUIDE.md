@@ -431,7 +431,7 @@ Responsive and accessibility improvements across public routes. **No changes** t
 | Area | Key files | Notes |
 |------|-----------|--------|
 | **Route chrome** | `src/lib/layout/route-chrome.ts` | `FULL_PAGE_ROUTES`, `IMMERSIVE_ROUTES`, `isMarketPulseRoute()` |
-| **Mobile nav** | `src/components/layout/MobileNav.tsx` | Drawer menu (`md:hidden`); body scroll lock; Escape to close; focus trap; safe-area insets |
+| **Mobile nav** | `src/components/layout/MobileNav.tsx` | Drawer portaled to `document.body`; elevated header z-index on Market Pulse routes (see §9) |
 | **Shell** | `LayoutShell.tsx`, `globals.css`, `layout.tsx` | `overflow-x-clip`; `viewportFit: cover`; `scroll-padding-top` for sticky header; `inert` on main/footer when menu open |
 | **Footer** | `SiteFooter.tsx` | Accordion link groups on mobile; `min-h-11` tap targets |
 | **Market Pulse** | `MarketPulse*`, `MarketPulseSwipeCard` | Mobile play layout; button + swipe paths; reduced-motion support; PPA still stripped pre-reveal |
@@ -523,9 +523,13 @@ Desktop nav links fire Market Pulse analytics when on `/market-pulse/*` (`trackM
 ### Mobile nav (`MobileNav.tsx`)
 
 - Slide-in drawer from the right; backdrop dismiss; **Escape** closes
+- Drawer + backdrop are **portaled to `document.body`** (`z-[200]`/`z-[201]`) so Framer Motion layers on Market Pulse pages cannot block the menu
+- **`LayoutShell`** raises header z-index on Market Pulse routes (`z-[100]`); `z-[203]` while menu is open so the hamburger stays tappable
 - Body scroll locked while open; focus returns to menu button on close
 - Main content + footer get `inert` while open; menu toggle stays interactive
 - Account links: Login / Sign Up (guest) or Profile / Sign Out (member)
+
+**`/market-pulse/play` has no site mobile nav** — it is an immersive route (`IMMERSIVE_ROUTES` in `route-chrome.ts`). Play uses `PlayChromeHeader` only (back to hub, leaderboard link, collapsible cycle timer).
 
 ### Footer (`SiteFooter.tsx`)
 
@@ -865,4 +869,4 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 ---
 
-*Last updated: 24 Jun 2026 — mobile UX pass: responsive layout, mobile nav drawer, admin/mobile Market Pulse UI, accessibility fixes. Business logic unchanged (`src/lib/market-pulse/*`, auth, Prisma). See [§9](#9-layout--navigation) and [Making Market Pulse visible](#making-market-pulse-visible-to-players-go-live).*
+*Last updated: 24 Jun 2026 — mobile nav fix: portal drawer to `document.body`, elevated header z-index on Market Pulse routes (hub/leaderboard/reveal/rules). Play route remains immersive without site nav. See [§9](#9-layout--navigation).*
