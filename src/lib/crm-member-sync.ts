@@ -19,9 +19,16 @@ export async function syncMemberSignupToCrm(
   const webhookUrl = process.env.CRM_MEMBER_SIGNUP_WEBHOOK_URL;
   const webhookSecret = process.env.CRM_WEBHOOK_SECRET;
 
-  if (!webhookUrl || !webhookSecret) {
+  if (!webhookUrl) {
     console.warn(
-      "[crm-member-sync] Skipping CRM sync: CRM_MEMBER_SIGNUP_WEBHOOK_URL or CRM_WEBHOOK_SECRET is not set.",
+      "[crm-member-sync] Skipping CRM sync: CRM_MEMBER_SIGNUP_WEBHOOK_URL is not set.",
+    );
+    return;
+  }
+
+  if (!webhookSecret) {
+    console.error(
+      "[crm-member-sync] Skipping CRM sync: CRM_WEBHOOK_SECRET is not set.",
     );
     return;
   }
@@ -49,7 +56,7 @@ export async function syncMemberSignupToCrm(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-crm-webhook-secret": webhookSecret,
+        "x-webhook-secret": webhookSecret,
       },
       body: JSON.stringify(body),
     });
