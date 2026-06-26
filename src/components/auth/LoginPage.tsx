@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { Suspense, useState, type FormEvent } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 import { signUpWithPassword } from "@/lib/auth-actions";
 
@@ -41,8 +42,24 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const { status, data: session } = useSession();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.user?.needsOnboarding) {
+      return;
+    }
+
+    const onboardingTarget = callbackUrl.startsWith("/auth/onboarding")
+      ? callbackUrl
+      : callbackUrl === "/" || callbackUrl === "/login"
+        ? "/auth/onboarding"
+        : `/auth/onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+
+    router.replace(onboardingTarget);
+  }, [status, session, callbackUrl, router]);
 
   const [activeTab, setActiveTab] = useState<AuthTab>("sign-in");
 

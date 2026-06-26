@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Suspense, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import { updateContactNumber } from "@/lib/auth-actions";
 
@@ -15,11 +15,23 @@ const inputClass = `w-full min-h-11 rounded-xl border border-gray-600 bg-gray-90
 
 const primaryButtonClass = `w-full min-h-11 rounded-full bg-amber-500 px-4 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`;
 
-function OnboardingForm({ userName }: Readonly<{ userName: string | null }>) {
+export type OnboardingAuthState = "ready" | "pending";
+
+function buildOnboardingLoginUrl(callbackUrl: string): string {
+  const onboardingPath =
+    callbackUrl === "/"
+      ? "/auth/onboarding"
+      : `/auth/onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+
+  return `/login?callbackUrl=${encodeURIComponent(onboardingPath)}`;
+}
+
+function OnboardingForm({
+  userName,
+  callbackUrl,
+}: Readonly<{ userName: string | null; callbackUrl: string }>) {
   const router = useRouter();
   const { update } = useSession();
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
 
   const [contactNumber, setContactNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -122,22 +134,77 @@ function OnboardingForm({ userName }: Readonly<{ userName: string | null }>) {
 
 function OnboardingFormFallback() {
   return (
-    <div className="w-full max-w-sm text-center">
+    <div className="w-full max-w-sm text-center" role="status" aria-live="polite">
       <div className="mx-auto h-9 w-9 animate-pulse rounded-sm bg-gray-800 sm:h-10 sm:w-10" />
       <div className="mx-auto mt-4 h-8 w-40 animate-pulse rounded bg-gray-800" />
       <div className="mx-auto mt-2 h-4 w-56 animate-pulse rounded bg-gray-800" />
+      <p className="mt-4 text-sm text-gray-500">Loading your profile…</p>
     </div>
   );
 }
 
+function OnboardingAuthGate({
+  authState,
+  callbackUrl,
+  userName,
+  children,
+}: Readonly<{
+  authState: OnboardingAuthState;
+  callbackUrl: string;
+  userName: string | null;
+  children: (resolvedUserName: string | null) => ReactNode;
+}>) {
+  const router = useRouter();
+  const { status, data: session } = useSession();
+
+  useEffect(() => {
+    if (authState !== "pending" || status !== "unauthenticated") {
+      return;
+    }
+
+    router.replace(buildOnboardingLoginUrl(callbackUrl));
+  }, [authState, status, callbackUrl, router]);
+
+  useEffect(() => {
+    if (authState !== "pending" || status !== "authenticated") {
+      return;
+    }
+
+    if (session?.user?.needsOnboarding === false) {
+      router.replace(callbackUrl);
+    }
+  }, [authState, status, session, callbackUrl, router]);
+
+  if (authState === "pending" && (status === "loading" || status === "unauthenticated")) {
+    return <OnboardingFormFallback />;
+  }
+
+  const resolvedUserName =
+    authState === "pending" ? (session?.user?.name ?? userName) : userName;
+
+  return <>{children(resolvedUserName)}</>;
+}
+
 export default function OnboardingPageClient({
   userName,
-}: Readonly<{ userName: string | null }>) {
+  callbackUrl,
+  authState,
+}: Readonly<{
+  userName: string | null;
+  callbackUrl: string;
+  authState: OnboardingAuthState;
+}>) {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center overflow-x-hidden overflow-y-auto bg-gray-950 px-3 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-gray-200 sm:px-4 sm:py-12">
-      <Suspense fallback={<OnboardingFormFallback />}>
-        <OnboardingForm userName={userName} />
-      </Suspense>
+    <main className="flex min-h-screen min-h-dvh flex-col items-center justify-center overflow-x-hidden overflow-y-auto bg-gray-950 px-3 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-gray-200 sm:px-4 sm:py-12">
+      <OnboardingAuthGate
+        authState={authState}
+        callbackUrl={callbackUrl}
+        userName={userName}
+      >
+        {(resolvedUserName) => (
+          <OnboardingForm userName={resolvedUserName} callbackUrl={callbackUrl} />
+        )}
+      </OnboardingAuthGate>
     </main>
   );
 }
