@@ -22,7 +22,10 @@ import {
   trackMarketPulseEvent,
 } from "@/lib/market-pulse/analytics";
 import type { MarketPulseHubPageData } from "@/lib/market-pulse/hub-data";
-import { isBeforePublicLaunch } from "@/lib/market-pulse/launch-config";
+import {
+  canAccessMarketPulsePlay,
+  isBeforePublicLaunch,
+} from "@/lib/market-pulse/launch-config";
 import { MARKET_PULSE_EASE } from "@/lib/market-pulse/motion";
 
 const focusRing =
@@ -147,7 +150,7 @@ export default function MarketPulseHubPage({
   data,
 }: Readonly<{ data: MarketPulseHubPageData }>) {
   const { t } = useTranslations();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isLoading = status === "loading";
   const reduceMotion = useReducedMotion() ?? false;
@@ -157,7 +160,10 @@ export default function MarketPulseHubPage({
 
   const playHref = "/market-pulse/play";
   const loginHref = `/login?callbackUrl=${encodeURIComponent(playHref)}`;
-  const preLaunch = isBeforePublicLaunch();
+  const showPreLaunchMarketing = isBeforePublicLaunch();
+  const adminRole =
+    status === "authenticated" ? session?.user?.role : undefined;
+  const playBlocked = !canAccessMarketPulsePlay(adminRole);
 
   const leaderboardSubtitle = data.leaderboardRevealed
     ? t("mp.hub.leaderboard.subtitleRevealed")
@@ -178,7 +184,7 @@ export default function MarketPulseHubPage({
       />
 
       <main className="relative mx-auto w-full max-w-5xl px-3 py-6 sm:px-6 sm:py-12 lg:py-16">
-        {preLaunch ? (
+        {showPreLaunchMarketing ? (
           <MarketPulseLaunchAnnouncement className="mb-4 sm:mb-6" />
         ) : null}
 
@@ -205,7 +211,7 @@ export default function MarketPulseHubPage({
             >
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-200 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]">
                 <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
-                {preLaunch
+                {playBlocked
                   ? t("mp.hub.badge.preLaunch")
                   : data.runtimeOpen
                     ? t("mp.hub.badge.live")
@@ -243,7 +249,7 @@ export default function MarketPulseHubPage({
                 isAuthenticated={isAuthenticated}
                 isLoading={isLoading}
                 runtimeOpen={data.runtimeOpen}
-                preLaunch={preLaunch}
+                preLaunch={playBlocked}
                 playHref={playHref}
                 loginHref={loginHref}
               />
@@ -294,7 +300,7 @@ export default function MarketPulseHubPage({
                 isAuthenticated={isAuthenticated}
                 isLoading={isLoading}
                 runtimeOpen={data.runtimeOpen}
-                preLaunch={preLaunch}
+                preLaunch={playBlocked}
                 playHref={playHref}
                 loginHref={loginHref}
               />

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
@@ -24,7 +25,10 @@ import {
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
 import MarketPulseLaunchAnnouncement from "@/components/market-pulse/MarketPulseLaunchAnnouncement";
 import { useTranslations } from "@/components/providers/LocaleProvider";
-import { isBeforePublicLaunch } from "@/lib/market-pulse/launch-config";
+import {
+  canAccessMarketPulsePlay,
+  isBeforePublicLaunch,
+} from "@/lib/market-pulse/launch-config";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
@@ -244,8 +248,12 @@ export default function MarketPulseLeaderboard({
   data,
 }: Readonly<{ data: MarketPulseLeaderboardPageData }>) {
   const { t } = useTranslations();
+  const { data: session, status } = useSession();
   const reduceMotion = useReducedMotion() ?? false;
-  const preLaunch = isBeforePublicLaunch();
+  const showPreLaunchMarketing = isBeforePublicLaunch();
+  const adminRole =
+    status === "authenticated" ? session?.user?.role : undefined;
+  const playBlocked = !canAccessMarketPulsePlay(adminRole);
   const labels = tabLabels(t);
   const [activeTab, setActiveTab] =
     useState<MarketPulseLeaderboardTab>("current");
@@ -293,19 +301,19 @@ export default function MarketPulseLeaderboard({
             <Link
               href="/market-pulse/play"
               className={`inline-flex min-h-11 w-full items-center justify-center rounded-full px-5 text-sm font-bold transition-colors sm:w-auto ${focusRing} ${
-                preLaunch
+                playBlocked
                   ? "cursor-not-allowed bg-emerald-400/50 text-zinc-950/70"
                   : "bg-emerald-400 text-zinc-950 hover:bg-emerald-300"
               }`}
-              aria-disabled={preLaunch}
-              onClick={preLaunch ? (event) => event.preventDefault() : undefined}
+              aria-disabled={playBlocked}
+              onClick={playBlocked ? (event) => event.preventDefault() : undefined}
             >
-              {preLaunch ? t("mp.hub.cta.opens") : t("mp.hub.cta.playToday")}
+              {playBlocked ? t("mp.hub.cta.opens") : t("mp.hub.cta.playToday")}
             </Link>
           </div>
         </header>
 
-        {preLaunch ? (
+        {showPreLaunchMarketing ? (
           <MarketPulseLaunchAnnouncement className="mb-5 sm:mb-6" variant="compact" />
         ) : null}
 
