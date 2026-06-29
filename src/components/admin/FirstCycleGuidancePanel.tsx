@@ -20,6 +20,7 @@ type FirstCycleGuidancePanelProps = Readonly<{
   activeCycle: MarketPulseAdminCycleRow | null;
   cards: MarketPulseAdminCardRow[];
   onPrefillCreateCycle: () => void;
+  embedded?: boolean;
 }>;
 
 export default function FirstCycleGuidancePanel({
@@ -27,6 +28,7 @@ export default function FirstCycleGuidancePanel({
   activeCycle,
   cards,
   onPrefillCreateCycle,
+  embedded = false,
 }: FirstCycleGuidancePanelProps) {
   const evaluation = useMemo(
     () =>
@@ -41,7 +43,11 @@ export default function FirstCycleGuidancePanel({
   return (
     <section
       aria-labelledby="first-cycle-guidance-heading"
-      className="rounded-lg border border-sky-500/25 bg-sky-500/5 p-4 sm:p-5"
+      className={
+        embedded
+          ? undefined
+          : "rounded-lg border border-sky-500/25 bg-sky-500/5 p-4 sm:p-5"
+      }
     >
       <h2
         id="first-cycle-guidance-heading"
@@ -78,6 +84,10 @@ export default function FirstCycleGuidancePanel({
         <li>
           <span className="font-medium text-foreground">Cards:</span>{" "}
           {FIRST_CYCLE_GUIDANCE.cardRequirements}
+        </li>
+        <li>
+          <span className="font-medium text-foreground">PPA & reveal:</span>{" "}
+          {FIRST_CYCLE_GUIDANCE.ppaRevealNote}
         </li>
       </ul>
 

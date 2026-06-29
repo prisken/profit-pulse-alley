@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { auth } from "@/auth";
 import MarketPulseLeaderboard from "@/components/market-pulse/MarketPulseLeaderboard";
 import { getServerSiteLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
@@ -13,8 +14,17 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function MarketPulseLeaderboardPage() {
-  const data = await getMarketPulseLeaderboardPageData();
+export default async function MarketPulseLeaderboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cycleId?: string }>;
+}) {
+  const { cycleId } = await searchParams;
+  const session = await auth();
+  const data = await getMarketPulseLeaderboardPageData(
+    cycleId,
+    session?.user?.id,
+  );
 
   return <MarketPulseLeaderboard data={data} />;
 }

@@ -30,6 +30,12 @@ function buildCycle(
     usersPlayed: 0,
     missingSignalCount: 0,
     unlockedCount: 0,
+    averageDecisionsPerParticipant: 0,
+    completionRatePercent: null,
+    scoreEventCount: 0,
+    scoresGenerated: false,
+    topWinnerName: null,
+    topWinnerScore: null,
     ...overrides,
   };
 }
@@ -125,7 +131,7 @@ describe("evaluateFirstPublicCycleSetup", () => {
     expect(result.warnings.length).toBeGreaterThan(0);
   });
 
-  it("warns about unpublished or unlocked PPA cards", () => {
+  it("warns about unpublished cards", () => {
     const result = evaluateFirstPublicCycleSetup({
       runtimeStatus: "OPEN",
       activeCycle: buildCycle(),
@@ -139,7 +145,7 @@ describe("evaluateFirstPublicCycleSetup", () => {
       true,
     );
     expect(result.warnings.some((warning) => warning.includes("locked PPA"))).toBe(
-      true,
+      false,
     );
   });
 });

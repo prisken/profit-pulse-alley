@@ -15,6 +15,13 @@ import {
   type MarketPulseDecision,
 } from "@/lib/market-pulse/constants";
 import {
+  buildCycleUserScoreRows,
+  resolveDecisionsSubmitted,
+  resolveParticipationScore,
+  resolveTotalCards,
+  type StoredCycleParticipation,
+} from "@/lib/market-pulse/cycle-user-score";
+import {
   buildScoreEventsForUser,
   type ScoreCalculationDecision,
 } from "@/lib/market-pulse/score-calculation";
@@ -116,6 +123,7 @@ export type UserMarketPulseProgress = {
   decisionsCount: number;
   cardsPlayed: number;
   cardsRemaining: number;
+  totalCards: number;
   participationPoints: number;
   totalPoints: number | null;
   rank: number | null;
@@ -413,10 +421,6 @@ export async function submitMarketPulseDecision(
     };
   }
 
-  if (!card.ppaSignalLockedAt) {
-    return { ok: false, error: "This card is not ready for decisions." };
-  }
-
   const revealDeadline = effectiveCardRevealAt(card, card.cycle);
   if (now >= revealDeadline) {
     return { ok: false, error: "The decision window for this card has closed." };
@@ -500,6 +504,10 @@ export async function calculateAndPersistCycleScores(
     );
   }
 
+  const totalCards = await prisma.marketPulseCard.count({
+    where: { cycleId },
+  });
+
   const decisions = await prisma.marketPulseDecision.findMany({
     where: { cycleId },
     select: {
@@ -527,6 +535,12 @@ export async function calculateAndPersistCycleScores(
   const allEvents = Array.from(byUser.values()).flatMap((userDecisions) =>
     buildScoreEventsForUser(cycleId, userDecisions),
   );
+  const cycleUserScores = buildCycleUserScoreRows(
+    cycleId,
+    byUser,
+    allEvents,
+    totalCards,
+  );
 
   // Idempotent scoring: wipe prior events for this cycle, then insert the freshly
   // computed set in one transaction. Re-running reveal/recalculate therefore replaces
@@ -535,10 +549,19 @@ export async function calculateAndPersistCycleScores(
     await tx.marketPulseScoreEvent.deleteMany({
       where: { cycleId },
     });
+    await tx.marketPulseScore.deleteMany({
+      where: { cycleId },
+    });
 
     if (allEvents.length > 0) {
       await tx.marketPulseScoreEvent.createMany({
         data: allEvents,
+      });
+    }
+
+    if (cycleUserScores.length > 0) {
+      await tx.marketPulseScore.createMany({
+        data: cycleUserScores,
       });
     }
   });
@@ -952,6 +975,7 @@ export async function getUserMarketPulseProgress(
       decisionsCount: 0,
       cardsPlayed: 0,
       cardsRemaining: 0,
+      totalCards: 0,
       participationPoints: 0,
       totalPoints: null,
       rank: null,
@@ -963,23 +987,55 @@ export async function getUserMarketPulseProgress(
   const revealed = isMarketPulseCycleRevealed(cycle, now);
   const publishedCardCount = countPublishedCards(cycle, now);
 
-  const decisions = await prisma.marketPulseDecision.findMany({
-    where: { userId, cycleId: cycle.id },
-    select: {
-      decision: true,
-      card: {
-        select: {
-          dayIndex: true,
-          ppaSignal: true,
+  const [decisions, storedScoreRow] = await Promise.all([
+    prisma.marketPulseDecision.findMany({
+      where: { userId, cycleId: cycle.id },
+      select: {
+        decision: true,
+        card: {
+          select: {
+            dayIndex: true,
+            ppaSignal: true,
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.marketPulseScore.findUnique({
+      where: {
+        userId_cycleId: {
+          userId,
+          cycleId: cycle.id,
+        },
+      },
+      select: {
+        participationScore: true,
+        decisionsSubmitted: true,
+        totalCards: true,
+      },
+    }),
+  ]);
 
-  const decisionsCount = decisions.length;
-  const participationPoints = decisionsCount * PARTICIPATION_POINTS;
+  const storedParticipation: StoredCycleParticipation = storedScoreRow
+    ? {
+        participationScore: storedScoreRow.participationScore,
+        decisionsSubmitted: storedScoreRow.decisionsSubmitted,
+        totalCards: storedScoreRow.totalCards,
+      }
+    : null;
+
+  const liveDecisionsCount = decisions.length;
+  const decisionsCount = resolveDecisionsSubmitted(
+    storedParticipation,
+    liveDecisionsCount,
+  );
+  const participationPoints = resolveParticipationScore(
+    storedParticipation,
+    liveDecisionsCount,
+  );
+  const fallbackTotalCards = revealed ? cycle.cards.length : publishedCardCount;
+  const totalCards = resolveTotalCards(storedParticipation, fallbackTotalCards);
   const cardsPlayed = decisionsCount;
-  const cardsRemaining = Math.max(publishedCardCount - cardsPlayed, 0);
+  const cardsRemaining = Math.max(totalCards - cardsPlayed, 0);
 
   let totalPoints: number | null = null;
   let currentStreak: number | null = null;
@@ -1005,6 +1061,7 @@ export async function getUserMarketPulseProgress(
     decisionsCount,
     cardsPlayed,
     cardsRemaining,
+    totalCards,
     participationPoints,
     totalPoints: revealed ? (totalPoints ?? 0) : null,
     rank: rankEntry?.rank ?? null,

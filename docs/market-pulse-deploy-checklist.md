@@ -89,15 +89,16 @@ Then open **`/admin/market-pulse`** (requires `role = ADMIN`).
 | Step | Action | Check |
 |------|--------|-------|
 | 1 | **Create cycle** | Name, `startsAt`, `endsAt`, `revealAt` (HKT-aligned), prize label; status → `OPEN` when ready |
-| 2 | **Create 10 cards** | One card per `dayIndex` (0–9); headline, ticker, summary, PPA signal + insight filled |
-| 3 | **Lock PPA signals** | Each card: **Lock PPA signal** (sets `ppaSignalLockedAt`); required before publish |
-| 4 | **Publish cards** | Status → `PUBLISHED`; `publishedAt` on or before the card’s play day |
+| 2 | **Create 10 cards** | One card per `dayIndex` (1–10); headline, ticker, summary |
+| 3 | **Publish cards** | Status → `PUBLISHED`; `publishedAt` on or before the card’s play day (PPA lock required for **publish** in admin UI, not for player decisions on already-published cards) |
+| 4 | **Enter & lock PPA** | Before reveal: set PPA signal + insight and **Lock PPA** on each published card |
 | 5 | **Set active cycle** | Pin cycle in admin so `activeCycleId` matches the live challenge |
 | 6 | **Runtime open** | Game setting `runtimeStatus` = `OPEN` (not `CLOSED` / `MAINTENANCE`) |
 
 **End-of-cycle (after `revealAt`)**
 
-- [ ] All published cards have locked PPA before **Reveal cycle**
+- [ ] All **published** cards have locked PPA signal + insight before **Reveal cycle** (blocked in admin if incomplete)
+- [ ] Admin **PPA insight needed before reveal** banner appears when `revealAt` is within **72 hours** and PPA is missing (`PPA_REVEAL_WARNING_HOURS` in `constants.ts`)
 - [ ] Reveal action run from admin (generates score events, sets cycle/cards to `REVEALED`)
 - [ ] Prize review completed at `/admin/market-pulse?prizeCycleId=<cycleId>` if running a contest
 
@@ -139,8 +140,11 @@ Test in **production-like** build (`npm run build && npm start`) on desktop and 
 
 ### Leaderboard & reveal
 
-- [ ] **Leaderboard (unrevealed)** — `/market-pulse/leaderboard` shows participation points only
-- [ ] **Leaderboard (revealed)** — after admin reveal, shows final scores with match bonuses
+- [ ] **Leaderboard default** — `/market-pulse/leaderboard` opens on the active/current cycle (or latest revealed if none active)
+- [ ] **Cycle archive** — dropdown lists revealed past cycles; `?cycleId=` deep-links to a selected cycle
+- [ ] **Leaderboard (unrevealed)** — public standings locked; no scores in page payload; signed-in user sees locked **My score** messaging only (no rank/points exposed)
+- [ ] **Leaderboard (revealed)** — public standings show final scores; signed-in user sees **My score for this cycle** (total, participation, rank, optional per-card breakdown)
+- [ ] **Historical retention** — switching cycles shows that cycle's standings only (scores do not carry over visually)
 - [ ] **Reveal** — `/market-pulse/reveal` pending before `revealAt`; personal ceremony after reveal (authenticated)
 
 ### Admin
@@ -167,7 +171,7 @@ Test in **production-like** build (`npm run build && npm start`) on desktop and 
 - [ ] **Hidden PPA data not exposed** — before reveal, card API/UI has no `ppaSignal` / `ppaInsight` (check Network tab on `/market-pulse/play` and `GET /api/market-pulse/today`)
 - [ ] **Reveal gating** — PPA only after `cycle.status === REVEALED` or `now >= revealAt` (server logic in `reveal-access.ts`)
 - [ ] **Server-side scoring only** — clients send only `cardId` + `decision`; no client score field; match/streak points computed on reveal
-- [ ] **Decision validation** — invalid decision, closed runtime, unpublished card, unlocked PPA, wrong card/day, post-deadline all rejected server-side
+- [ ] **Decision validation** — invalid decision, closed runtime, unpublished card, wrong card/day, post-deadline rejected server-side (**not** blocked by missing/unlocked PPA)
 - [ ] **Admin-only actions protected** — `requireAdminSession()` on admin data/actions; PPA visible in admin UI only
 - [ ] **Analytics** — `trackMarketPulseEvent` strips email and PPA fields from payloads
 - [ ] **Rate limiting** — TODO: decision API rate limits not yet implemented; monitor abuse manually at launch

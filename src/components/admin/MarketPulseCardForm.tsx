@@ -5,6 +5,7 @@ import type { MarketPulseCardStatus, MarketPulseSignal } from "@prisma/client";
 
 import MarketPulseAdminCardPreview from "@/components/admin/MarketPulseAdminCardPreview";
 import type { AdminActionResult } from "@/lib/market-pulse/admin-actions";
+import { invokeAdminAction } from "@/lib/admin/action-result";
 import {
   cardFormValuesToPreview,
   DEFAULT_CARD_FORM_VALUES,
@@ -12,15 +13,18 @@ import {
   MARKET_PULSE_CARD_STATUS_OPTIONS,
   MARKET_PULSE_DEFAULT_USER_PROMPT,
   MARKET_PULSE_SIGNAL_OPTIONS,
+  validateCardPublishable,
   type CardFormFieldErrors,
   type MarketPulseCardFormValues,
   validateMarketPulseCardForm,
 } from "@/lib/market-pulse/card-validation";
+import { useTranslations } from "@/components/providers/LocaleProvider";
+import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
 
-const fieldClass = `mt-2 w-full min-h-11 rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-base text-foreground outline-none disabled:opacity-60 sm:text-sm ${focusRing}`;
+const fieldClass = `mt-2 w-full min-h-11 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-base text-zinc-100 outline-none placeholder:text-zinc-500 disabled:opacity-60 sm:text-sm ${focusRing}`;
 
 const fieldErrorClass = "border-red-500/50";
 
@@ -54,19 +58,30 @@ function mergeInitialValues(
 function FieldLabel({
   children,
   error,
+  hint,
 }: {
   children: React.ReactNode;
   error?: string;
+  hint?: string;
 }) {
   return (
-    <span className="text-sm font-medium text-foreground/80">
+    <span className="text-sm font-medium text-zinc-300">
       {children}
+      {hint ? (
+        <span className="mt-0.5 block text-xs font-normal text-zinc-500">{hint}</span>
+      ) : null}
       {error ? (
-        <span className="mt-1 block text-xs font-normal text-red-600 dark:text-red-400">
-          {error}
-        </span>
+        <span className="mt-1 block text-xs font-normal text-red-400">{error}</span>
       ) : null}
     </span>
+  );
+}
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
+      {children}
+    </h3>
   );
 }
 
@@ -83,6 +98,7 @@ export default function MarketPulseCardForm({
   onCancel,
   onSuccess,
 }: MarketPulseCardFormProps) {
+  const { t, locale } = useTranslations();
   const excludeDayIndex =
     mode === "edit" ? initialValues?.dayIndex : undefined;
 
@@ -92,12 +108,27 @@ export default function MarketPulseCardForm({
   const [fieldErrors, setFieldErrors] = useState<CardFormFieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusWarning, setStatusWarning] = useState<string | null>(null);
   const [statusIsError, setStatusIsError] = useState(false);
 
   const locked = Boolean(ppaSignalLockedAt);
 
   const preview = useMemo(
     () => cardFormValuesToPreview(values, ppaSignalLockedAt),
+    [values, ppaSignalLockedAt],
+  );
+
+  const publishBlocker = useMemo(
+    () =>
+      validateCardPublishable({
+        headline: values.headline,
+        companyName: values.companyName,
+        ticker: values.ticker,
+        summary: values.summary,
+        ppaSignal: values.ppaSignal || null,
+        ppaInsight: values.ppaInsight,
+        ppaSignalLockedAt: ppaSignalLockedAt,
+      }),
     [values, ppaSignalLockedAt],
   );
 
@@ -128,124 +159,89 @@ export default function MarketPulseCardForm({
     if (!validation.valid) {
       setFieldErrors(validation.errors);
       setStatusIsError(true);
-      setStatusMessage("Fix the highlighted fields before saving.");
+      setStatusMessage(t("auth.admin.mp.cards.fixFields"));
       return;
     }
 
     setFieldErrors({});
     setIsSubmitting(true);
 
-    const result = await onSubmit({
-      ...values,
-      cycleId,
-      cardId,
-    });
+    try {
+      const succeeded = await invokeAdminAction(
+        () => onSubmit({ ...values, cycleId, cardId }),
+        {
+          onSuccess: (successMessage, warning) => {
+            setStatusIsError(false);
+            setStatusMessage(successMessage ?? t("auth.admin.mp.cards.saved"));
+            setStatusWarning(warning ?? null);
 
-    setIsSubmitting(false);
+            if (mode === "create") {
+              setValues(
+                mergeInitialValues(cycleId, {
+                  dayIndex: values.dayIndex + 1,
+                }),
+              );
+            }
 
-    if (!result.ok) {
-      setStatusIsError(true);
-      setStatusMessage(result.error);
-      return;
-    }
-
-    setStatusIsError(false);
-    setStatusMessage(result.message ?? "Card saved.");
-
-    if (mode === "create") {
-      setValues(
-        mergeInitialValues(cycleId, {
-          dayIndex: values.dayIndex + 1,
-        }),
+            onSuccess?.();
+          },
+          onError: (error, serverFieldErrors) => {
+            setStatusIsError(true);
+            setStatusWarning(null);
+            setStatusMessage(error);
+            if (serverFieldErrors) {
+              const nextErrors: CardFormFieldErrors = {};
+              for (const [key, messages] of Object.entries(serverFieldErrors)) {
+                if (messages[0]) {
+                  nextErrors[key as keyof CardFormFieldErrors] = messages[0];
+                }
+              }
+              setFieldErrors(nextErrors);
+            }
+          },
+          onThrow: () => onSuccess?.(),
+        },
       );
-    }
 
-    onSuccess?.();
+      if (!succeeded) {
+        return;
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const busy = disabled || isSubmitting;
 
   return (
     <form
-      className="space-y-6 rounded-xl border border-foreground/10 bg-background p-4 shadow-sm sm:p-6"
+      className="space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 shadow-sm sm:p-6"
       onSubmit={(event) => void handleSubmit(event)}
       noValidate
     >
       <div>
-        <p className="text-sm font-semibold text-foreground">
-          {mode === "create" ? "New card" : "Edit card"}
+        <p className="text-sm font-semibold text-zinc-100">
+          {mode === "create"
+            ? t("auth.admin.mp.cards.newCard")
+            : t("auth.admin.mp.cards.editCard")}
         </p>
         {cycleName ? (
-          <p className="mt-1 text-sm text-foreground/65">Cycle: {cycleName}</p>
+          <p className="mt-1 text-sm text-zinc-400">
+            {t("auth.admin.mp.cards.cycleLabel")}: {cycleName}
+          </p>
         ) : null}
       </div>
 
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
-        <div className="space-y-6">
+        <div className="space-y-8">
           <section className="grid gap-4 sm:grid-cols-2">
-            <h3 className="sm:col-span-2 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
-              Schedule
-            </h3>
-            <label className="block">
-              <FieldLabel error={fieldErrors.dayIndex}>
-                Day number (1 = first day of cycle)
-              </FieldLabel>
-              <input
-                type="number"
-                min={1}
-                className={`${fieldClass} ${fieldErrors.dayIndex ? fieldErrorClass : ""}`}
-                value={values.dayIndex}
-                onChange={(event) =>
-                  updateField("dayIndex", Number(event.target.value))
-                }
-                disabled={busy}
-              />
-            </label>
-            <label className="block">
-              <FieldLabel>Status</FieldLabel>
-              <select
-                className={fieldClass}
-                value={values.status}
-                onChange={(event) =>
-                  updateField("status", event.target.value as MarketPulseCardStatus)
-                }
-                disabled={busy}
-              >
-                {MARKET_PULSE_CARD_STATUS_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <FieldLabel error={fieldErrors.publishedAt}>Published at</FieldLabel>
-              <input
-                type="datetime-local"
-                className={`${fieldClass} ${fieldErrors.publishedAt ? fieldErrorClass : ""}`}
-                value={values.publishedAt}
-                onChange={(event) => updateField("publishedAt", event.target.value)}
-                disabled={busy}
-              />
-            </label>
-            <label className="block">
-              <FieldLabel error={fieldErrors.revealAt}>Reveal at</FieldLabel>
-              <input
-                type="datetime-local"
-                className={`${fieldClass} ${fieldErrors.revealAt ? fieldErrorClass : ""}`}
-                value={values.revealAt}
-                onChange={(event) => updateField("revealAt", event.target.value)}
-                disabled={busy}
-              />
-            </label>
-          </section>
-
-          <section className="grid gap-4 sm:grid-cols-2">
-            <h3 className="sm:col-span-2 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
-              A · News
+            <h3 className="sm:col-span-2">
+              <SectionHeading>{t("auth.admin.mp.cards.sectionContent")}</SectionHeading>
             </h3>
             <label className="block sm:col-span-2">
-              <FieldLabel error={fieldErrors.headline}>News headline</FieldLabel>
+              <FieldLabel error={fieldErrors.headline}>
+                {t("auth.admin.mp.cards.fieldHeadline")}
+              </FieldLabel>
               <input
                 className={`${fieldClass} ${fieldErrors.headline ? fieldErrorClass : ""}`}
                 value={values.headline}
@@ -254,164 +250,18 @@ export default function MarketPulseCardForm({
               />
             </label>
             <label className="block sm:col-span-2">
-              <FieldLabel>News body / content</FieldLabel>
+              <FieldLabel>{t("auth.admin.mp.cards.fieldNewsBody")}</FieldLabel>
               <textarea
                 className={`${fieldClass} min-h-[5rem]`}
                 value={values.newsBody}
                 onChange={(event) => updateField("newsBody", event.target.value)}
                 disabled={busy}
-                placeholder="Longer news text shown under the headline."
-              />
-            </label>
-            <label className="block">
-              <FieldLabel>News source name</FieldLabel>
-              <input
-                className={fieldClass}
-                value={values.sourceName}
-                onChange={(event) => updateField("sourceName", event.target.value)}
-                disabled={busy}
-              />
-            </label>
-            <label className="block">
-              <FieldLabel error={fieldErrors.sourceDate}>News published date</FieldLabel>
-              <input
-                type="datetime-local"
-                className={`${fieldClass} ${fieldErrors.sourceDate ? fieldErrorClass : ""}`}
-                value={values.sourceDate}
-                onChange={(event) => updateField("sourceDate", event.target.value)}
-                disabled={busy}
               />
             </label>
             <label className="block sm:col-span-2">
-              <FieldLabel error={fieldErrors.sourceUrl}>News source URL (optional)</FieldLabel>
-              <input
-                className={`${fieldClass} ${fieldErrors.sourceUrl ? fieldErrorClass : ""}`}
-                value={values.sourceUrl}
-                onChange={(event) => updateField("sourceUrl", event.target.value)}
-                disabled={busy}
-                placeholder="https://"
-              />
-            </label>
-          </section>
-
-          <section className="grid gap-4 sm:grid-cols-2">
-            <h3 className="sm:col-span-2 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
-              B · Company / security
-            </h3>
-            <label className="block sm:col-span-2">
-              <FieldLabel error={fieldErrors.companyName}>Company name</FieldLabel>
-              <input
-                className={`${fieldClass} ${fieldErrors.companyName ? fieldErrorClass : ""}`}
-                value={values.companyName}
-                onChange={(event) => updateField("companyName", event.target.value)}
-                disabled={busy}
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <FieldLabel>Company name (ZH)</FieldLabel>
-              <input
-                className={fieldClass}
-                value={values.companyNameZh}
-                onChange={(event) => updateField("companyNameZh", event.target.value)}
-                disabled={busy}
-              />
-            </label>
-            <label className="block">
-              <FieldLabel error={fieldErrors.ticker}>Ticker</FieldLabel>
-              <input
-                className={`${fieldClass} ${fieldErrors.ticker ? fieldErrorClass : ""}`}
-                value={values.ticker}
-                onChange={(event) => updateField("ticker", event.target.value)}
-                disabled={busy}
-              />
-            </label>
-            <label className="block">
-              <FieldLabel>Exchange</FieldLabel>
-              <input
-                className={fieldClass}
-                value={values.exchange}
-                onChange={(event) => updateField("exchange", event.target.value)}
-                disabled={busy}
-              />
-            </label>
-            <label className="block">
-              <FieldLabel>Logo initials</FieldLabel>
-              <input
-                className={fieldClass}
-                value={values.logoInitials}
-                onChange={(event) => updateField("logoInitials", event.target.value)}
-                disabled={busy}
-                placeholder="e.g. TS"
-                maxLength={4}
-              />
-            </label>
-            <label className="block">
-              <FieldLabel error={fieldErrors.logoUrl}>Company logo URL (optional)</FieldLabel>
-              <input
-                className={`${fieldClass} ${fieldErrors.logoUrl ? fieldErrorClass : ""}`}
-                value={values.logoUrl}
-                onChange={(event) => updateField("logoUrl", event.target.value)}
-                disabled={busy}
-                placeholder="https://"
-              />
-            </label>
-            <label className="block">
-              <FieldLabel>Current price text</FieldLabel>
-              <input
-                className={fieldClass}
-                value={values.priceLabel}
-                onChange={(event) => updateField("priceLabel", event.target.value)}
-                disabled={busy}
-                placeholder="$248.30"
-              />
-            </label>
-            <label className="block">
-              <FieldLabel>Price change text</FieldLabel>
-              <input
-                className={fieldClass}
-                value={values.priceDirection}
-                onChange={(event) => updateField("priceDirection", event.target.value)}
-                disabled={busy}
-                placeholder="↘ -1.2%"
-              />
-            </label>
-          </section>
-
-          <section className="grid gap-4 sm:grid-cols-2">
-            <h3 className="sm:col-span-2 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
-              C · Card image
-            </h3>
-            <p className="sm:col-span-2 text-sm leading-relaxed text-foreground/60">
-              {MARKET_PULSE_CARD_IMAGE_GUIDANCE}
-            </p>
-            <label className="block sm:col-span-2">
-              <FieldLabel error={fieldErrors.cardImageUrl}>Card image URL</FieldLabel>
-              <input
-                className={`${fieldClass} ${fieldErrors.cardImageUrl ? fieldErrorClass : ""}`}
-                value={values.cardImageUrl}
-                onChange={(event) => updateField("cardImageUrl", event.target.value)}
-                disabled={busy}
-                placeholder="https://"
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <FieldLabel error={fieldErrors.cardImageAlt}>Card image alt text</FieldLabel>
-              <input
-                className={`${fieldClass} ${fieldErrors.cardImageAlt ? fieldErrorClass : ""}`}
-                value={values.cardImageAlt}
-                onChange={(event) => updateField("cardImageAlt", event.target.value)}
-                disabled={busy}
-                placeholder="Describe the image for screen readers"
-              />
-            </label>
-          </section>
-
-          <section className="grid gap-4 sm:grid-cols-2">
-            <h3 className="sm:col-span-2 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
-              D · Summary / prompt
-            </h3>
-            <label className="block sm:col-span-2">
-              <FieldLabel error={fieldErrors.summary}>Summary</FieldLabel>
+              <FieldLabel error={fieldErrors.summary}>
+                {t("auth.admin.mp.cards.fieldSummary")}
+              </FieldLabel>
               <textarea
                 className={`${fieldClass} min-h-[5rem] ${fieldErrors.summary ? fieldErrorClass : ""}`}
                 value={values.summary}
@@ -420,7 +270,7 @@ export default function MarketPulseCardForm({
               />
             </label>
             <label className="block sm:col-span-2">
-              <FieldLabel>User prompt / question</FieldLabel>
+              <FieldLabel>{t("auth.admin.mp.cards.fieldUserPrompt")}</FieldLabel>
               <input
                 className={fieldClass}
                 value={values.userPrompt}
@@ -432,11 +282,190 @@ export default function MarketPulseCardForm({
           </section>
 
           <section className="grid gap-4 sm:grid-cols-2">
-            <h3 className="sm:col-span-2 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
-              E · PPA signal (hidden until reveal)
+            <h3 className="sm:col-span-2">
+              <SectionHeading>{t("auth.admin.mp.cards.sectionMarket")}</SectionHeading>
             </h3>
+            <label className="block sm:col-span-2">
+              <FieldLabel error={fieldErrors.companyName}>
+                {t("auth.admin.mp.cards.fieldCompany")}
+              </FieldLabel>
+              <input
+                className={`${fieldClass} ${fieldErrors.companyName ? fieldErrorClass : ""}`}
+                value={values.companyName}
+                onChange={(event) => updateField("companyName", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <FieldLabel>{t("auth.admin.mp.cards.fieldCompanyZh")}</FieldLabel>
+              <input
+                className={fieldClass}
+                value={values.companyNameZh}
+                onChange={(event) => updateField("companyNameZh", event.target.value)}
+                disabled={busy}
+              />
+            </label>
             <label className="block">
-              <FieldLabel error={fieldErrors.ppaSignal}>PPA signal</FieldLabel>
+              <FieldLabel error={fieldErrors.ticker}>
+                {t("auth.admin.mp.cards.fieldTicker")}
+              </FieldLabel>
+              <input
+                className={`${fieldClass} ${fieldErrors.ticker ? fieldErrorClass : ""}`}
+                value={values.ticker}
+                onChange={(event) => updateField("ticker", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block">
+              <FieldLabel>{t("auth.admin.mp.cards.fieldExchange")}</FieldLabel>
+              <input
+                className={fieldClass}
+                value={values.exchange}
+                onChange={(event) => updateField("exchange", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block">
+              <FieldLabel error={fieldErrors.logoUrl}>
+                {t("auth.admin.mp.cards.fieldLogoUrl")}
+              </FieldLabel>
+              <input
+                className={`${fieldClass} ${fieldErrors.logoUrl ? fieldErrorClass : ""}`}
+                value={values.logoUrl}
+                onChange={(event) => updateField("logoUrl", event.target.value)}
+                disabled={busy}
+                placeholder="https://"
+              />
+            </label>
+            <label className="block">
+              <FieldLabel>{t("auth.admin.mp.cards.fieldPrice")}</FieldLabel>
+              <input
+                className={fieldClass}
+                value={values.priceLabel}
+                onChange={(event) => updateField("priceLabel", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block">
+              <FieldLabel>{t("auth.admin.mp.cards.fieldPriceChange")}</FieldLabel>
+              <input
+                className={fieldClass}
+                value={values.priceDirection}
+                onChange={(event) => updateField("priceDirection", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block">
+              <FieldLabel>{t("auth.admin.mp.cards.fieldSourceName")}</FieldLabel>
+              <input
+                className={fieldClass}
+                value={values.sourceName}
+                onChange={(event) => updateField("sourceName", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block">
+              <FieldLabel error={fieldErrors.sourceDate}>
+                {t("auth.admin.mp.cards.fieldSourceDate")}
+              </FieldLabel>
+              <input
+                type="datetime-local"
+                className={`${fieldClass} ${fieldErrors.sourceDate ? fieldErrorClass : ""}`}
+                value={values.sourceDate}
+                onChange={(event) => updateField("sourceDate", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <FieldLabel error={fieldErrors.sourceUrl}>
+                {t("auth.admin.mp.cards.fieldSourceUrl")}
+              </FieldLabel>
+              <input
+                className={`${fieldClass} ${fieldErrors.sourceUrl ? fieldErrorClass : ""}`}
+                value={values.sourceUrl}
+                onChange={(event) => updateField("sourceUrl", event.target.value)}
+                disabled={busy}
+                placeholder="https://"
+              />
+            </label>
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-2">
+            <h3 className="sm:col-span-2">
+              <SectionHeading>{t("auth.admin.mp.cards.sectionVisual")}</SectionHeading>
+            </h3>
+            <p className="sm:col-span-2 text-sm leading-relaxed text-zinc-400">
+              {MARKET_PULSE_CARD_IMAGE_GUIDANCE}
+            </p>
+            <label className="block">
+              <FieldLabel>{t("auth.admin.mp.cards.fieldLogoInitials")}</FieldLabel>
+              <input
+                className={fieldClass}
+                value={values.logoInitials}
+                onChange={(event) => updateField("logoInitials", event.target.value)}
+                disabled={busy}
+                maxLength={4}
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <FieldLabel
+                error={fieldErrors.cardImageUrl}
+                hint={t("auth.admin.mp.cards.imageUrlHint")}
+              >
+                {t("auth.admin.mp.cards.fieldImageUrl")}
+              </FieldLabel>
+              <input
+                className={`${fieldClass} ${fieldErrors.cardImageUrl ? fieldErrorClass : ""}`}
+                value={values.cardImageUrl}
+                onChange={(event) => updateField("cardImageUrl", event.target.value)}
+                disabled={busy}
+                placeholder="https://"
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <FieldLabel error={fieldErrors.cardImageAlt}>
+                {t("auth.admin.mp.cards.fieldImageAlt")}
+              </FieldLabel>
+              <input
+                className={`${fieldClass} ${fieldErrors.cardImageAlt ? fieldErrorClass : ""}`}
+                value={values.cardImageAlt}
+                onChange={(event) => updateField("cardImageAlt", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            {values.cardImageUrl.trim() ? (
+              <div className="sm:col-span-2 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={values.cardImageUrl.trim()}
+                  alt={values.cardImageAlt || t("auth.admin.mp.cards.imagePreviewAlt")}
+                  className="aspect-video w-full object-cover"
+                />
+              </div>
+            ) : (
+              <p className="sm:col-span-2 text-sm text-zinc-500">
+                {t("auth.admin.mp.cards.imagePreviewEmpty")}
+              </p>
+            )}
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-2">
+            <h3 className="sm:col-span-2">
+              <SectionHeading>{t("auth.admin.mp.cards.sectionPpa")}</SectionHeading>
+            </h3>
+            {!locked ? (
+              <p className="sm:col-span-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+                {t("auth.admin.mp.cards.ppaLockWarning")}
+              </p>
+            ) : (
+              <p className="sm:col-span-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+                {t("auth.admin.mp.cards.ppaLockedNote")}
+              </p>
+            )}
+            <label className="block">
+              <FieldLabel error={fieldErrors.ppaSignal}>
+                {t("auth.admin.mp.cards.fieldPpaSignal")}
+              </FieldLabel>
               <select
                 className={`${fieldClass} ${fieldErrors.ppaSignal ? fieldErrorClass : ""}`}
                 value={values.ppaSignal}
@@ -457,7 +486,9 @@ export default function MarketPulseCardForm({
               </select>
             </label>
             <label className="block sm:col-span-2">
-              <FieldLabel error={fieldErrors.ppaInsight}>PPA insight</FieldLabel>
+              <FieldLabel error={fieldErrors.ppaInsight}>
+                {t("auth.admin.mp.cards.fieldPpaInsight")}
+              </FieldLabel>
               <textarea
                 className={`${fieldClass} min-h-[5rem] ${fieldErrors.ppaInsight ? fieldErrorClass : ""}`}
                 value={values.ppaInsight}
@@ -467,9 +498,7 @@ export default function MarketPulseCardForm({
             </label>
             {locked ? (
               <label className="block sm:col-span-2">
-                <FieldLabel>
-                  Reason for PPA change (required if signal or insight changes)
-                </FieldLabel>
+                <FieldLabel>{t("auth.admin.mp.cards.fieldChangeReason")}</FieldLabel>
                 <input
                   className={fieldClass}
                   value={values.changeReason}
@@ -479,11 +508,90 @@ export default function MarketPulseCardForm({
               </label>
             ) : null}
           </section>
+
+          <section className="grid gap-4 sm:grid-cols-2">
+            <h3 className="sm:col-span-2">
+              <SectionHeading>{t("auth.admin.mp.cards.sectionPublishing")}</SectionHeading>
+            </h3>
+            <label className="block">
+              <FieldLabel error={fieldErrors.dayIndex}>
+                {t("auth.admin.mp.cards.fieldDay")}
+              </FieldLabel>
+              <input
+                type="number"
+                min={1}
+                className={`${fieldClass} ${fieldErrors.dayIndex ? fieldErrorClass : ""}`}
+                value={values.dayIndex}
+                onChange={(event) =>
+                  updateField("dayIndex", Number(event.target.value))
+                }
+                disabled={busy}
+              />
+            </label>
+            <label className="block">
+              <FieldLabel>{t("auth.admin.mp.cards.fieldStatus")}</FieldLabel>
+              <select
+                className={fieldClass}
+                value={values.status}
+                onChange={(event) =>
+                  updateField("status", event.target.value as MarketPulseCardStatus)
+                }
+                disabled={busy}
+              >
+                {MARKET_PULSE_CARD_STATUS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <FieldLabel error={fieldErrors.publishedAt}>
+                {t("auth.admin.mp.cards.fieldPublishedAt")}
+              </FieldLabel>
+              <input
+                type="datetime-local"
+                className={`${fieldClass} ${fieldErrors.publishedAt ? fieldErrorClass : ""}`}
+                value={values.publishedAt}
+                onChange={(event) => updateField("publishedAt", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block">
+              <FieldLabel error={fieldErrors.revealAt}>
+                {t("auth.admin.mp.cards.fieldRevealAt")}
+              </FieldLabel>
+              <input
+                type="datetime-local"
+                className={`${fieldClass} ${fieldErrors.revealAt ? fieldErrorClass : ""}`}
+                value={values.revealAt}
+                onChange={(event) => updateField("revealAt", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <div className="sm:col-span-2 rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-3 text-sm text-zinc-400">
+              <p className="font-medium text-zinc-300">
+                {t("auth.admin.mp.cards.publishNotesTitle")}
+              </p>
+              <ul className="mt-2 list-inside list-disc space-y-1 text-xs leading-relaxed">
+                <li>{t("auth.admin.mp.cards.publishNoteRequired")}</li>
+                <li>{t("auth.admin.mp.cards.publishNoteImage")}</li>
+                <li>{t("auth.admin.mp.cards.publishNotePpa")}</li>
+              </ul>
+              {publishBlocker ? (
+                <p className="mt-2 text-xs font-medium text-amber-200">{publishBlocker}</p>
+              ) : (
+                <p className="mt-2 text-xs text-emerald-300">
+                  {t("auth.admin.mp.cards.publishReady")}
+                </p>
+              )}
+            </div>
+          </section>
         </div>
 
-        <div className="xl:sticky xl:top-6 xl:self-start">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
-            Preview
+        <div className="xl:sticky xl:top-36 xl:self-start">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
+            {t("auth.admin.mp.cards.livePreview")}
           </p>
           <div className="rounded-2xl bg-zinc-950 p-3 sm:p-4">
             <MarketPulseAdminCardPreview card={preview} />
@@ -491,22 +599,26 @@ export default function MarketPulseCardForm({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 border-t border-foreground/10 pt-4">
+      <div className="flex flex-wrap gap-2 border-t border-zinc-800 pt-4">
         <button
           type="submit"
           disabled={busy}
-          className={`inline-flex min-h-10 items-center justify-center rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
+          className={`inline-flex min-h-10 items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
         >
-          {isSubmitting ? "Saving…" : mode === "create" ? "Create card" : "Save card"}
+          {isSubmitting
+            ? t("auth.admin.mp.cards.saving")
+            : mode === "create"
+              ? t("auth.admin.mp.cards.createButton")
+              : t("auth.admin.mp.cards.saveButton")}
         </button>
         {onCancel ? (
           <button
             type="button"
             disabled={busy}
             onClick={onCancel}
-            className={`inline-flex min-h-10 items-center justify-center rounded-full border border-foreground/15 px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/5 disabled:opacity-60 ${focusRing}`}
+            className={`inline-flex min-h-10 items-center justify-center rounded-lg border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-800 disabled:opacity-60 ${focusRing}`}
           >
-            Cancel
+            {t("auth.admin.users.cancel")}
           </button>
         ) : null}
       </div>
@@ -514,13 +626,17 @@ export default function MarketPulseCardForm({
       {statusMessage ? (
         <p
           className={`text-sm font-medium ${
-            statusIsError
-              ? "text-red-600 dark:text-red-400"
-              : "text-emerald-600 dark:text-emerald-400"
+            statusIsError ? "text-red-400" : "text-emerald-400"
           }`}
           role="status"
+          aria-live="polite"
         >
-          {statusMessage}
+          {translateAuthMessage(locale, statusMessage)}
+        </p>
+      ) : null}
+      {statusWarning ? (
+        <p className="text-sm font-medium text-amber-200" role="status">
+          {statusWarning}
         </p>
       ) : null}
     </form>

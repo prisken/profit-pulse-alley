@@ -327,10 +327,24 @@ describe("submitMarketPulseDecision", () => {
     expect(prismaMocks.decisionCreate).not.toHaveBeenCalled();
   });
 
-  it("rejects when PPA signal is not locked", async () => {
+  // Player decisions do not require PPA signal, insight, or lock.
+  it("allows submission when PPA is missing and unlocked", async () => {
     setupOpenRuntime();
     prismaMocks.cardFindUnique.mockResolvedValue(
-      buildPlayableCard({ ppaSignalLockedAt: null }),
+      buildPlayableCard({
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
+      }),
+    );
+    prismaMocks.cycleFindUnique.mockResolvedValue(
+      buildActiveCycleWithCards([
+        buildPlayableCard({
+          ppaSignal: null,
+          ppaInsight: null,
+          ppaSignalLockedAt: null,
+        }),
+      ]),
     );
 
     const result = await submitMarketPulseDecision({
@@ -339,11 +353,12 @@ describe("submitMarketPulseDecision", () => {
       decision: "BULLISH",
     });
 
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error).toContain("not ready");
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.alreadySubmitted).toBe(false);
+      expect(result.decision.decision).toBe("BULLISH");
     }
-    expect(prismaMocks.decisionCreate).not.toHaveBeenCalled();
+    expect(prismaMocks.decisionCreate).toHaveBeenCalledTimes(1);
   });
 
   it("rejects decisions after reveal deadline", async () => {

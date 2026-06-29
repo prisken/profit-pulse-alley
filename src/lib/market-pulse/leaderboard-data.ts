@@ -1,59 +1,76 @@
 import "server-only";
 
-import type { MarketPulseLeaderboardType } from "@prisma/client";
-
 import { isDatabaseConfigured } from "@/lib/db-config";
-
-import type { MarketPulseLeaderboardEntryRow } from "@/lib/market-pulse/types";
+import { prisma } from "@/lib/prisma";
+import {
+  buildLeaderboardCycleOptions,
+  getLeaderboardViewState,
+  resolveLeaderboardSelectedCycleId,
+  type LeaderboardCycleOption,
+  type LeaderboardViewState,
+} from "@/lib/market-pulse/leaderboard-cycle-select";
 import {
   getActiveMarketPulseCycle,
   getMarketPulseLeaderboard,
-  isMarketPulseCycleRevealed,
 } from "@/lib/market-pulse/server";
+import {
+  getLeaderboardViewerScore,
+  type LeaderboardViewerScorePanel,
+} from "@/lib/market-pulse/leaderboard-viewer-score";
+import type { MarketPulseLeaderboardEntryRow } from "@/lib/market-pulse/types";
 
 const LEADERBOARD_LIMIT = 50;
 
-export type MarketPulseLeaderboardTab = "current" | "monthly" | "all-time";
+export type {
+  LeaderboardCycleOption,
+  LeaderboardViewState,
+} from "@/lib/market-pulse/leaderboard-cycle-select";
 
-export type MarketPulseLeaderboardTabData = {
-  entries: MarketPulseLeaderboardEntryRow[];
-  isRevealed: boolean;
-  cycleName?: string | null;
-  cycleId?: string | null;
-};
+export type { LeaderboardViewerScorePanel } from "@/lib/market-pulse/leaderboard-viewer-score";
 
 export type MarketPulseLeaderboardPageData = {
-  current: MarketPulseLeaderboardTabData;
-  monthly: MarketPulseLeaderboardTabData;
-  allTime: MarketPulseLeaderboardTabData;
+  cycles: LeaderboardCycleOption[];
+  selectedCycle: LeaderboardCycleOption | null;
+  entries: MarketPulseLeaderboardEntryRow[];
+  viewState: LeaderboardViewState;
+  viewerScore: LeaderboardViewerScorePanel;
 };
 
-async function loadTab(
-  mode: MarketPulseLeaderboardType,
-  cycleId?: string | null,
-): Promise<MarketPulseLeaderboardEntryRow[]> {
-  try {
-    return await getMarketPulseLeaderboard({
-      mode,
-      cycleId: cycleId ?? null,
-      limit: LEADERBOARD_LIMIT,
-    });
-  } catch (error) {
-    console.error(`[market-pulse/leaderboard-data] Failed ${mode}:`, error);
-    return [];
-  }
+const EMPTY_PAGE_DATA: MarketPulseLeaderboardPageData = {
+  cycles: [],
+  selectedCycle: null,
+  entries: [],
+  viewState: "no_cycles",
+  viewerScore: { state: "logged_out" },
+};
+
+async function listHistoricalCyclesForLeaderboard(now: Date) {
+  return prisma.marketPulseCycle.findMany({
+    where: {
+      status: { not: "ARCHIVED" },
+      OR: [{ status: "REVEALED" }, { revealAt: { lte: now } }],
+    },
+    orderBy: { revealAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      startsAt: true,
+      endsAt: true,
+      revealAt: true,
+      status: true,
+    },
+  });
 }
 
-const EMPTY_LEADERBOARD_PAGE_DATA: MarketPulseLeaderboardPageData = {
-  current: { entries: [], isRevealed: false, cycleName: null, cycleId: null },
-  monthly: { entries: [], isRevealed: true },
-  allTime: { entries: [], isRevealed: true },
-};
-
-export async function getMarketPulseLeaderboardPageData(): Promise<MarketPulseLeaderboardPageData> {
+export async function getMarketPulseLeaderboardPageData(
+  requestedCycleId?: string | null,
+  viewerUserId?: string | null,
+): Promise<MarketPulseLeaderboardPageData> {
   if (!isDatabaseConfigured()) {
-    return EMPTY_LEADERBOARD_PAGE_DATA;
+    return EMPTY_PAGE_DATA;
   }
+
+  const now = new Date();
 
   let activeCycle = null;
   try {
@@ -62,34 +79,73 @@ export async function getMarketPulseLeaderboardPageData(): Promise<MarketPulseLe
     console.error("[market-pulse/leaderboard-data] Active cycle failed:", error);
   }
 
-  const cycleId = activeCycle?.id ?? null;
-  const isRevealed = activeCycle
-    ? isMarketPulseCycleRevealed(activeCycle)
-    : false;
+  let historicalCycles: Awaited<ReturnType<typeof listHistoricalCyclesForLeaderboard>> =
+    [];
+  try {
+    historicalCycles = await listHistoricalCyclesForLeaderboard(now);
+  } catch (error) {
+    console.error(
+      "[market-pulse/leaderboard-data] Historical cycles failed:",
+      error,
+    );
+  }
 
-  const [currentEntries, monthlyEntries, allTimeEntries] = await Promise.all([
-    loadTab("CURRENT_CYCLE", cycleId),
-    loadTab("MONTHLY"),
-    loadTab("ALL_TIME"),
-  ]);
+  const cycles = buildLeaderboardCycleOptions(
+    activeCycle,
+    historicalCycles,
+    now,
+  );
 
-  const currentRevealed =
-    currentEntries.length > 0 ? currentEntries[0]!.isRevealed : isRevealed;
+  const { cycleId: selectedCycleId, unavailable } = resolveLeaderboardSelectedCycleId(
+    requestedCycleId,
+    cycles,
+    activeCycle?.id ?? null,
+  );
+
+  const selectedCycle =
+    selectedCycleId != null
+      ? (cycles.find((cycle) => cycle.id === selectedCycleId) ?? null)
+      : null;
+
+  let entries: MarketPulseLeaderboardEntryRow[] = [];
+
+  if (selectedCycle?.isRevealed && selectedCycleId) {
+    try {
+      entries = await getMarketPulseLeaderboard({
+        mode: "CURRENT_CYCLE",
+        cycleId: selectedCycleId,
+        limit: LEADERBOARD_LIMIT,
+      });
+    } catch (error) {
+      console.error("[market-pulse/leaderboard-data] Leaderboard failed:", error);
+      entries = [];
+    }
+  }
+
+  const viewState = getLeaderboardViewState(
+    selectedCycle,
+    entries.length,
+    unavailable,
+  );
+
+  let viewerScore: LeaderboardViewerScorePanel = { state: "logged_out" };
+  try {
+    viewerScore = await getLeaderboardViewerScore(viewerUserId, selectedCycle);
+  } catch (error) {
+    console.error(
+      "[market-pulse/leaderboard-data] Viewer score failed:",
+      error,
+    );
+    viewerScore = viewerUserId
+      ? { state: "no_cycle" }
+      : { state: "logged_out" };
+  }
 
   return {
-    current: {
-      entries: currentEntries,
-      isRevealed: currentRevealed,
-      cycleName: activeCycle?.name ?? null,
-      cycleId,
-    },
-    monthly: {
-      entries: monthlyEntries,
-      isRevealed: true,
-    },
-    allTime: {
-      entries: allTimeEntries,
-      isRevealed: true,
-    },
+    cycles,
+    selectedCycle,
+    entries: viewState === "ready" ? entries : [],
+    viewState,
+    viewerScore,
   };
 }

@@ -1,0 +1,167 @@
+import { describe, expect, it } from "vitest";
+
+import type {
+  MarketPulseAdminCardRow,
+  MarketPulseAdminCycleRow,
+} from "@/lib/market-pulse/admin-data";
+import {
+  buildMarketPulsePlayabilityAlerts,
+  buildMarketPulseStatusSnapshot,
+  getTodayCardStatus,
+} from "@/lib/market-pulse/admin-mp-status";
+
+const baseCycle: MarketPulseAdminCycleRow = {
+  id: "cycle-1",
+  name: "Test Cycle",
+  status: "OPEN",
+  startsAt: "2026-06-01T00:00:00.000Z",
+  endsAt: "2026-06-10T00:00:00.000Z",
+  revealAt: "2026-06-11T00:00:00.000Z",
+  prizeLabel: "Prize",
+  isActive: true,
+  isPlayableNow: true,
+  playabilityIssue: null,
+  cardCount: 1,
+  decisionCount: 0,
+  usersPlayed: 0,
+  missingSignalCount: 0,
+  unlockedCount: 0,
+  averageDecisionsPerParticipant: 0,
+  completionRatePercent: null,
+  scoreEventCount: 0,
+  scoresGenerated: false,
+  topWinnerName: null,
+  topWinnerScore: null,
+};
+
+function buildCard(
+  overrides: Partial<MarketPulseAdminCardRow> = {},
+): MarketPulseAdminCardRow {
+  return {
+    id: "card-1",
+    cycleId: "cycle-1",
+    dayIndex: 1,
+    companyName: "Acme",
+    companyNameZh: null,
+    ticker: "ACME",
+    exchange: null,
+    logoUrl: null,
+    logoInitials: null,
+    priceLabel: null,
+    priceDirection: null,
+    headline: "News",
+    newsBody: null,
+    sourceName: null,
+    sourceUrl: null,
+    sourceDate: null,
+    cardImageUrl: null,
+    cardImageAlt: null,
+    summary: null,
+    userPrompt: null,
+    status: "PUBLISHED",
+    ppaSignal: "BULLISH",
+    ppaInsight: null,
+    ppaSignalLockedAt: "2026-05-31T00:00:00.000Z",
+    publishedAt: "2026-06-01T00:00:00.000Z",
+    revealAt: null,
+    decisionCount: 0,
+    ...overrides,
+  };
+}
+
+describe("buildMarketPulseStatusSnapshot", () => {
+  it("marks player visible when runtime and cycle are playable", () => {
+    const snapshot = buildMarketPulseStatusSnapshot({
+      runtimeStatus: "OPEN",
+      activeCycle: baseCycle,
+      activeCycleCards: [buildCard()],
+      now: new Date("2026-06-01T12:00:00.000Z"),
+    });
+
+    expect(snapshot.playerVisible).toBe(true);
+    expect(snapshot.activeCycleName).toBe("Test Cycle");
+    expect(snapshot.prizeLabel).toBe("Prize");
+  });
+
+  it("explains when runtime is not open", () => {
+    const snapshot = buildMarketPulseStatusSnapshot({
+      runtimeStatus: "MAINTENANCE",
+      activeCycle: baseCycle,
+      activeCycleCards: [],
+    });
+
+    expect(snapshot.playerVisible).toBe(false);
+    expect(snapshot.playerVisibilityReason).toMatch(/MAINTENANCE/);
+  });
+});
+
+describe("buildMarketPulsePlayabilityAlerts", () => {
+  it("reports missing active cycle and runtime issues", () => {
+    const alerts = buildMarketPulsePlayabilityAlerts({
+      runtimeStatus: "CLOSED",
+      activeCycle: null,
+      activeCycleCards: [],
+    });
+
+    expect(alerts.map((alert) => alert.id)).toEqual([
+      "runtime-not-open",
+      "no-active-cycle",
+    ]);
+  });
+
+  it("reports unpublished cards and PPA setup when reveal is far away", () => {
+    const alerts = buildMarketPulsePlayabilityAlerts({
+      runtimeStatus: "OPEN",
+      activeCycle: baseCycle,
+      activeCycleCards: [
+        buildCard({ status: "DRAFT", ppaSignalLockedAt: null }),
+        buildCard({
+          id: "card-2",
+          status: "PUBLISHED",
+          ppaInsight: null,
+        }),
+      ],
+      now: new Date("2026-06-01T12:00:00.000Z"),
+    });
+
+    expect(alerts.some((alert) => alert.id === "unpublished-cards")).toBe(true);
+    expect(alerts.some((alert) => alert.id === "ppa-setup")).toBe(true);
+    expect(alerts.some((alert) => alert.id === "ppa-urgent")).toBe(false);
+  });
+
+  it("reports urgent PPA alert within 72 hours of reveal", () => {
+    const alerts = buildMarketPulsePlayabilityAlerts({
+      runtimeStatus: "OPEN",
+      activeCycle: baseCycle,
+      activeCycleCards: [buildCard({ ppaSignalLockedAt: null })],
+      now: new Date("2026-06-10T12:00:00.000Z"),
+    });
+
+    expect(alerts.some((alert) => alert.id === "ppa-urgent")).toBe(true);
+    expect(alerts.some((alert) => alert.id === "ppa-setup")).toBe(false);
+  });
+
+  it("reports missing today card", () => {
+    const alerts = buildMarketPulsePlayabilityAlerts({
+      runtimeStatus: "OPEN",
+      activeCycle: baseCycle,
+      activeCycleCards: [],
+      now: new Date("2026-06-01T12:00:00.000Z"),
+    });
+
+    expect(alerts.some((alert) => alert.id === "today-card-issue")).toBe(true);
+  });
+});
+
+describe("getTodayCardStatus", () => {
+  it("returns playable card for the current day", () => {
+    const status = getTodayCardStatus(
+      baseCycle,
+      [buildCard({ dayIndex: 1 })],
+      new Date("2026-06-01T12:00:00.000Z"),
+    );
+
+    expect(status?.tone).toBe("ok");
+    expect(status?.companyName).toBe("Acme");
+  });
+});

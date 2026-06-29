@@ -1,22 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
   Award,
+  CalendarDays,
+  ChevronDown,
   Medal,
   Sparkles,
   Trophy,
 } from "lucide-react";
 
-import type {
-  MarketPulseLeaderboardPageData,
-  MarketPulseLeaderboardTab,
-  MarketPulseLeaderboardTabData,
-} from "@/lib/market-pulse/leaderboard-data";
+import type { MarketPulseLeaderboardPageData } from "@/lib/market-pulse/leaderboard-data";
+import type { LeaderboardCycleOption } from "@/lib/market-pulse/leaderboard-cycle-select";
 import type { MarketPulseLeaderboardEntryRow } from "@/lib/market-pulse/types";
 import {
   MARKET_PULSE_ANALYTICS_EVENTS,
@@ -24,7 +24,9 @@ import {
 } from "@/lib/market-pulse/analytics";
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
 import MarketPulseLaunchAnnouncement from "@/components/market-pulse/MarketPulseLaunchAnnouncement";
+import MarketPulseLeaderboardMyScore from "@/components/market-pulse/MarketPulseLeaderboardMyScore";
 import { useTranslations } from "@/components/providers/LocaleProvider";
+import type { SiteLocale } from "@/lib/i18n/locales";
 import {
   canAccessMarketPulsePlay,
   isBeforePublicLaunch,
@@ -33,18 +35,25 @@ import {
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
 
-const tabIds: MarketPulseLeaderboardTab[] = ["current", "monthly", "all-time"];
-
-function tabLabels(t: (key: import("@/lib/i18n/messages").MessageKey) => string) {
-  return {
-    current: { label: t("mp.leaderboard.tab.current"), shortLabel: t("mp.leaderboard.tab.currentShort") },
-    monthly: { label: t("mp.leaderboard.tab.monthly"), shortLabel: t("mp.leaderboard.tab.monthlyShort") },
-    "all-time": { label: t("mp.leaderboard.tab.allTime"), shortLabel: t("mp.leaderboard.tab.allTimeShort") },
-  } as const;
-}
-
 function formatPoints(score: number): string {
   return new Intl.NumberFormat("en-HK").format(score);
+}
+
+function formatCycleDate(value: string, locale: SiteLocale): string {
+  const intlLocale = locale === "zh-Hant" ? "zh-HK" : "en-HK";
+  return new Intl.DateTimeFormat(intlLocale, {
+    dateStyle: "medium",
+    timeZone: "Asia/Hong_Kong",
+  }).format(new Date(value));
+}
+
+function formatRevealDate(value: string, locale: SiteLocale): string {
+  const intlLocale = locale === "zh-Hant" ? "zh-HK" : "en-HK";
+  return new Intl.DateTimeFormat(intlLocale, {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "Asia/Hong_Kong",
+  }).format(new Date(value));
 }
 
 function rankStyles(rank: number): string {
@@ -174,73 +183,95 @@ function LeaderboardRow({
   );
 }
 
-function TabPanel({
-  tab,
-  data,
-}: Readonly<{
-  tab: MarketPulseLeaderboardTab;
-  data: MarketPulseLeaderboardTabData;
-}>) {
+function CycleStatusBadge({
+  cycle,
+}: Readonly<{ cycle: LeaderboardCycleOption }>) {
   const { t } = useTranslations();
-  const reduceMotion = useReducedMotion() ?? false;
-  const showCardsPlayed = data.entries.some((entry) => entry.cardsPlayed != null);
-  const isCurrent = tab === "current";
+
+  if (cycle.labelKind === "current") {
+    return (
+      <span className="inline-flex rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300 ring-1 ring-emerald-500/30">
+        {t("mp.leaderboard.status.current")}
+      </span>
+    );
+  }
 
   return (
-    <motion.div
-      key={tab}
-      id={`leaderboard-panel-${tab}`}
-      role="tabpanel"
-      aria-labelledby={`leaderboard-tab-${tab}`}
-      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
-      transition={reduceMotion ? { duration: 0 } : { duration: 0.25 }}
-      className="space-y-3 sm:space-y-4"
-    >
-      {isCurrent && data.cycleName ? (
-        <p className="text-xs text-zinc-400 sm:text-sm">
-          <span className="font-medium text-zinc-200">{data.cycleName}</span>
-          {data.isRevealed
-            ? t("mp.leaderboard.cycleFinal")
-            : t("mp.leaderboard.cycleParticipation")}
-        </p>
-      ) : null}
+    <span className="inline-flex rounded-full bg-zinc-800/80 px-2.5 py-0.5 text-[11px] font-semibold text-zinc-300 ring-1 ring-zinc-700/60">
+      {t("mp.leaderboard.status.archived")}
+    </span>
+  );
+}
 
-      {isCurrent && !data.isRevealed ? (
-        <p className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-100 sm:px-4 sm:py-3 sm:text-sm">
-          {t("mp.leaderboard.bonusNotice")}
-        </p>
-      ) : null}
+function CycleMeta({
+  cycle,
+}: Readonly<{ cycle: LeaderboardCycleOption }>) {
+  const { t, locale } = useTranslations();
 
-      {data.entries.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/40 px-4 py-12 text-center sm:px-6 sm:py-14">
-          <Sparkles
-            className="mx-auto h-8 w-8 text-zinc-600"
-            aria-hidden="true"
+  return (
+    <div className="space-y-2 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 px-4 py-3 sm:px-5 sm:py-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="text-base font-semibold text-white sm:text-lg">{cycle.name}</h2>
+        <CycleStatusBadge cycle={cycle} />
+        <span
+          className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ${
+            cycle.isRevealed
+              ? "bg-sky-500/10 text-sky-300 ring-sky-500/25"
+              : "bg-amber-500/10 text-amber-200 ring-amber-500/25"
+          }`}
+        >
+          {cycle.isRevealed
+            ? t("mp.leaderboard.status.revealed")
+            : t("mp.leaderboard.status.locked")}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1 text-xs text-zinc-400 sm:text-sm">
+        <p className="inline-flex items-center gap-1.5">
+          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-zinc-500" aria-hidden="true" />
+          {t("mp.leaderboard.cycleDateRange")
+            .replace("{start}", formatCycleDate(cycle.startsAtIso, locale))
+            .replace("{end}", formatCycleDate(cycle.endsAtIso, locale))}
+        </p>
+        <p>
+          {t("mp.leaderboard.revealDate").replace(
+            "{date}",
+            formatRevealDate(cycle.revealAtIso, locale),
+          )}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function StateMessage({
+  message,
+}: Readonly<{ message: string }>) {
+  return (
+    <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/40 px-4 py-12 text-center sm:px-6 sm:py-14">
+      <Sparkles className="mx-auto h-8 w-8 text-zinc-600" aria-hidden="true" />
+      <p className="mt-3 text-sm font-medium text-zinc-300">{message}</p>
+    </div>
+  );
+}
+
+function LeaderboardPanel({
+  entries,
+}: Readonly<{ entries: MarketPulseLeaderboardEntryRow[] }>) {
+  const showCardsPlayed = entries.some((entry) => entry.cardsPlayed != null);
+
+  return (
+    <ul className="space-y-2 sm:space-y-2.5">
+      <AnimatePresence mode="popLayout">
+        {entries.map((entry, index) => (
+          <LeaderboardRow
+            key={entry.userId}
+            entry={entry}
+            index={index}
+            showCardsPlayed={showCardsPlayed}
           />
-          <p className="mt-3 text-sm font-medium text-zinc-300">
-            {t("mp.leaderboard.emptyTitle")}
-          </p>
-          <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
-            {t("mp.leaderboard.emptyBody")}
-          </p>
-        </div>
-      ) : (
-        <ul className="space-y-2 sm:space-y-2.5">
-          <AnimatePresence mode="popLayout">
-            {data.entries.map((entry, index) => (
-              <LeaderboardRow
-                key={`${tab}-${entry.userId}`}
-                entry={entry}
-                index={index}
-                showCardsPlayed={showCardsPlayed}
-              />
-            ))}
-          </AnimatePresence>
-        </ul>
-      )}
-    </motion.div>
+        ))}
+      </AnimatePresence>
+    </ul>
   );
 }
 
@@ -248,34 +279,38 @@ export default function MarketPulseLeaderboard({
   data,
 }: Readonly<{ data: MarketPulseLeaderboardPageData }>) {
   const { t } = useTranslations();
+  const router = useRouter();
   const { data: session, status } = useSession();
-  const reduceMotion = useReducedMotion() ?? false;
   const showPreLaunchMarketing = isBeforePublicLaunch();
   const adminRole =
     status === "authenticated" ? session?.user?.role : undefined;
   const playBlocked = !canAccessMarketPulsePlay(adminRole);
-  const labels = tabLabels(t);
-  const [activeTab, setActiveTab] =
-    useState<MarketPulseLeaderboardTab>("current");
-
-  const activeData = useMemo(() => {
-    switch (activeTab) {
-      case "monthly":
-        return data.monthly;
-      case "all-time":
-        return data.allTime;
-      default:
-        return data.current;
-    }
-  }, [activeTab, data]);
+  const { cycles, selectedCycle, entries, viewState, viewerScore } = data;
 
   useEffect(() => {
     trackMarketPulseEvent(MARKET_PULSE_ANALYTICS_EVENTS.leaderboard_viewed, {
-      tab: activeTab,
-      cycleId: activeData.cycleId ?? undefined,
+      cycleId: selectedCycle?.id,
+      status: viewState,
       surface: "leaderboard",
     });
-  }, [activeTab, activeData.cycleId]);
+  }, [selectedCycle?.id, viewState]);
+
+  function handleCycleChange(nextCycleId: string) {
+    const params = new URLSearchParams();
+    params.set("cycleId", nextCycleId);
+    router.push(`/market-pulse/leaderboard?${params.toString()}`);
+  }
+
+  const stateMessage =
+    viewState === "locked"
+      ? t("mp.leaderboard.state.locked")
+      : viewState === "no_scores"
+        ? t("mp.leaderboard.state.noScores")
+        : viewState === "no_cycles"
+          ? t("mp.leaderboard.state.noCycles")
+          : viewState === "unavailable"
+            ? t("mp.leaderboard.state.unavailable")
+            : null;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
@@ -317,58 +352,61 @@ export default function MarketPulseLeaderboard({
           <MarketPulseLaunchAnnouncement className="mb-5 sm:mb-6" variant="compact" />
         ) : null}
 
-        <div
-          className="mb-5 flex gap-1 rounded-xl border border-zinc-800 bg-zinc-900/60 p-1 sm:mb-6 sm:rounded-2xl"
-          role="tablist"
-          aria-label={t("mp.leaderboard.aria.tablist")}
-        >
-          {tabIds.map((tabId) => {
-            const tab = { id: tabId, ...labels[tabId] };
-            const selected = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                id={`leaderboard-tab-${tab.id}`}
-                aria-selected={selected}
-                aria-controls={`leaderboard-panel-${tab.id}`}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative min-h-11 flex-1 rounded-lg px-1.5 py-2 text-[11px] font-semibold leading-tight transition-colors sm:rounded-xl sm:px-3 sm:py-2.5 sm:text-sm ${focusRing} ${
-                  selected ? "text-white" : "text-zinc-400 hover:text-zinc-200"
-                }`}
+        <p className="mb-4 text-xs text-zinc-400 sm:mb-5 sm:text-sm">
+          {t("mp.leaderboard.cycleResetNotice")}
+        </p>
+
+        {cycles.length > 0 ? (
+          <div className="mb-4 sm:mb-5">
+            <label
+              htmlFor="leaderboard-cycle-select"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-zinc-500"
+            >
+              {t("mp.leaderboard.cycleSelector.label")}
+            </label>
+            <div className="relative">
+              <select
+                id="leaderboard-cycle-select"
+                value={selectedCycle?.id ?? ""}
+                onChange={(event) => handleCycleChange(event.target.value)}
+                aria-label={t("mp.leaderboard.cycleSelector.aria")}
+                className={`w-full appearance-none rounded-xl border border-zinc-800 bg-zinc-900/80 py-3 pl-4 pr-10 text-sm font-medium text-white ${focusRing}`}
               >
-                {selected ? (
-                  reduceMotion ? (
-                    <span
-                      className="absolute inset-0 rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/30 sm:rounded-xl"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <motion.span
-                      layoutId="leaderboard-tab-highlight"
-                      className="absolute inset-0 rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/30 sm:rounded-xl"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    />
-                  )
-                ) : null}
-                <span className="relative sm:hidden">{tab.shortLabel}</span>
-                <span className="relative hidden sm:inline">{tab.label}</span>
-              </button>
-            );
-          })}
+                {cycles.map((cycle) => (
+                  <option key={cycle.id} value={cycle.id}>
+                    {cycle.name}
+                    {cycle.labelKind === "current"
+                      ? ` (${t("mp.leaderboard.status.current")})`
+                      : ` (${t("mp.leaderboard.status.archived")})`}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+                aria-hidden="true"
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {selectedCycle ? <CycleMeta cycle={selectedCycle} /> : null}
+
+        <div className="mt-5 sm:mt-6">
+          <MarketPulseLeaderboardMyScore
+            panel={viewerScore}
+            cycleId={selectedCycle?.id}
+          />
         </div>
 
-        <section aria-live="polite">
-          <AnimatePresence mode="wait">
-            <TabPanel key={activeTab} tab={activeTab} data={activeData} />
-          </AnimatePresence>
+        <section className="mt-5 space-y-3 sm:mt-6 sm:space-y-4" aria-live="polite">
+          {stateMessage ? <StateMessage message={stateMessage} /> : null}
+          {viewState === "ready" ? <LeaderboardPanel entries={entries} /> : null}
         </section>
 
         <MarketPulseInlineDisclaimer
           className="mt-6 sm:mt-8"
           surface="leaderboard"
-          cycleId={activeData.cycleId ?? undefined}
+          cycleId={selectedCycle?.id}
         />
       </div>
     </div>

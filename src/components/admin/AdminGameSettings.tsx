@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Legacy KV-backed VC Challenge theme/event editor.
+ * Not rendered on `/admin` — Market Pulse runtime uses Prisma `MarketPulseGameSetting`
+ * via `/admin/market-pulse`. Kept for reference; `/api/game-settings` remains API-only.
+ */
 import { useCallback, useEffect, useState } from "react";
 
 import {

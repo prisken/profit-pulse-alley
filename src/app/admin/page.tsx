@@ -2,11 +2,12 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import AdminGameSettings from "@/components/admin/AdminGameSettings";
+import AdminOverviewCards from "@/components/admin/AdminOverviewCards";
 import AdminUserManagement from "@/components/admin/AdminUserManagement";
 import { auth } from "@/auth";
 import { getServerSiteLocale, getServerTranslations } from "@/lib/i18n/server";
 import { translate, translateWith } from "@/lib/i18n/messages";
+import { getAdminOverviewData } from "@/lib/market-pulse/admin-overview-data";
 import { prisma } from "@/lib/prisma";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,47 +27,52 @@ export default async function AdminPage() {
 
   const { t, locale } = await getServerTranslations();
 
-  let members: Array<{
-    id: string;
-    name: string | null;
-    email: string;
-    contactNumber: string | null;
-    role: "USER" | "ADMIN";
-    emailVerified: string | null;
-    createdAt: string;
-    gameScoreCount: number;
-  }> = [];
-
-  try {
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        contactNumber: true,
-        role: true,
-        emailVerified: true,
-        createdAt: true,
-        _count: {
-          select: { gameScores: true },
+  const [overview, usersResult] = await Promise.all([
+    getAdminOverviewData(),
+    prisma.user
+      .findMany({
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          contactNumber: true,
+          role: true,
+          emailVerified: true,
+          createdAt: true,
+          _count: {
+            select: { gameScores: true },
+          },
         },
-      },
-    });
+      })
+      .then((users) =>
+        users.map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          contactNumber: user.contactNumber,
+          role: user.role,
+          emailVerified: user.emailVerified?.toISOString() ?? null,
+          createdAt: user.createdAt.toISOString(),
+          gameScoreCount: user._count.gameScores,
+        })),
+      )
+      .catch((error) => {
+        console.error("[admin] Failed to load members:", error);
+        return [] as Array<{
+          id: string;
+          name: string | null;
+          email: string;
+          contactNumber: string | null;
+          role: "USER" | "ADMIN";
+          emailVerified: string | null;
+          createdAt: string;
+          gameScoreCount: number;
+        }>;
+      }),
+  ]);
 
-    members = users.map((user) => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      contactNumber: user.contactNumber,
-      role: user.role,
-      emailVerified: user.emailVerified?.toISOString() ?? null,
-      createdAt: user.createdAt.toISOString(),
-      gameScoreCount: user._count.gameScores,
-    }));
-  } catch (error) {
-    console.error("[admin] Failed to load members:", error);
-  }
+  const members = usersResult;
 
   const signedInLine =
     members.length === 1
@@ -80,32 +86,39 @@ export default async function AdminPage() {
         });
 
   return (
-    <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-12">
-      <header className="border-b border-foreground/10 pb-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/45">
-          {t("auth.admin.badge")}
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-          {t("auth.admin.dashboardTitle")}
-        </h1>
-        <p className="mt-2 text-sm text-foreground/65">{signedInLine}</p>
-        <p className="mt-3 text-sm">
-          <Link
-            href="/admin/market-pulse"
-            className="font-medium text-foreground/80 underline-offset-4 hover:text-foreground hover:underline"
-          >
-            {t("auth.admin.marketPulseLink")}
-          </Link>
-        </p>
-      </header>
+    <main className="min-h-screen bg-zinc-950 text-zinc-50">
+      <div className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-12">
+        <header className="border-b border-zinc-800 pb-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            {t("auth.admin.badge")}
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
+            {t("auth.admin.dashboardTitle")}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
+            {t("auth.admin.opsSubtitle")}
+          </p>
+          <p className="mt-2 text-sm text-zinc-500">{signedInLine}</p>
+          <p className="mt-3 text-sm">
+            <Link
+              href="/admin/market-pulse"
+              className="font-medium text-emerald-400 underline-offset-4 hover:text-emerald-300 hover:underline"
+            >
+              {t("auth.admin.marketPulseLink")}
+            </Link>
+          </p>
+        </header>
 
-      <div className="mt-6 space-y-8 sm:mt-8 sm:space-y-10">
-        <AdminGameSettings />
+        <div className="mt-8 space-y-10">
+          <AdminOverviewCards overview={overview} />
 
-        <AdminUserManagement
-          members={members}
-          currentAdminUserId={session.user.id}
-        />
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 shadow-sm sm:p-6 lg:p-8">
+            <AdminUserManagement
+              members={members}
+              currentAdminUserId={session.user.id}
+            />
+          </div>
+        </div>
       </div>
     </main>
   );

@@ -9,7 +9,7 @@ export const marketPulseEnMessages = {
     "Read today's market signal, make your Bullish or Cautious call, and compare your instinct with PPA Insight.",
   "mp.meta.leaderboard.title": "Market Pulse Leaderboard | Profit Pulse Ally",
   "mp.meta.leaderboard.description":
-    "View Current Challenge, Monthly, and All-Time Market Pulse leaderboard standings.",
+    "View Market Pulse standings by challenge cycle. Sign in to see your personal score for each revealed cycle.",
   "mp.meta.reveal.title": "PPA Insight Reveal | Market Pulse",
   "mp.meta.reveal.description":
     "View your Market Pulse challenge results and PPA Insight breakdown.",
@@ -58,7 +58,7 @@ export const marketPulseEnMessages = {
     "Check back soon or visit the hub for the next challenge window.",
   "mp.play.status.noCardTitle": "Today's Market Pulse card is coming soon.",
   "mp.play.status.noCardBody":
-    "An admin must publish today's card: Lock PPA → Publish, with Published at set to now or earlier. The cycle must be OPEN, active, and within its start/reveal dates.",
+    "An admin must publish today's card with Published at set to now or earlier. The cycle must be OPEN, active, and within its start/reveal dates. PPA is not required for players to decide.",
   "mp.play.signInBanner": "Sign in to lock your read and earn points.",
   "mp.play.mobile.leaderboard": "Leaderboard",
   "mp.play.mobile.leaderboardLegal": "Leaderboard & legal",
@@ -123,6 +123,47 @@ export const marketPulseEnMessages = {
   "mp.leaderboard.cardsPlayedPlural": "{count} cards played",
   "mp.leaderboard.aria.rank": "Rank {rank}",
   "mp.leaderboard.aria.tablist": "Leaderboard views",
+  "mp.leaderboard.cycleResetNotice":
+    "Each cycle has its own leaderboard — standings reset when a new cycle begins. Choose a past revealed cycle below to view archived results.",
+  "mp.leaderboard.cycleSelector.label": "Challenge cycle",
+  "mp.leaderboard.cycleSelector.aria": "Select leaderboard cycle",
+  "mp.leaderboard.status.current": "Current cycle",
+  "mp.leaderboard.status.archived": "Archived result",
+  "mp.leaderboard.status.revealed": "Revealed",
+  "mp.leaderboard.status.locked": "Locked until reveal",
+  "mp.leaderboard.cycleDateRange": "{start} – {end}",
+  "mp.leaderboard.revealDate": "Reveal: {date}",
+  "mp.leaderboard.state.locked": "Leaderboard locked until reveal.",
+  "mp.leaderboard.state.noScores": "No eligible scores for this cycle.",
+  "mp.leaderboard.state.noCycles": "No Market Pulse results yet.",
+  "mp.leaderboard.state.unavailable":
+    "This cycle is not available. Choose another cycle from the list.",
+  "mp.leaderboard.myScore.title": "My score for this cycle",
+  "mp.leaderboard.myScore.loggedOut":
+    "Sign in to see your cycle score and participation summary.",
+  "mp.leaderboard.myScore.lockedParticipating":
+    "Your score will appear after reveal.",
+  "mp.leaderboard.myScore.lockedHint": "Scores unlock when PPA Insight is revealed.",
+  "mp.leaderboard.myScore.noParticipation":
+    "You did not participate in this cycle.",
+  "mp.leaderboard.myScore.noScore": "No score for this cycle.",
+  "mp.leaderboard.myScore.decisionsProgress":
+    "Decisions submitted: {submitted} of {total} cards",
+  "mp.leaderboard.myScore.total": "Total score",
+  "mp.leaderboard.myScore.participation": "Participation",
+  "mp.leaderboard.myScore.rank": "Rank",
+  "mp.leaderboard.myScore.decisions": "Cards played",
+  "mp.leaderboard.myScore.notAvailable": "Not available",
+  "mp.leaderboard.myScore.breakdownToggle": "Score breakdown",
+  "mp.leaderboard.myScore.breakdownDay": "Day {day}",
+  "mp.leaderboard.myScore.breakdownYourCall": "Your call",
+  "mp.leaderboard.myScore.breakdownPpa": "PPA signal",
+  "mp.leaderboard.myScore.breakdownMatch": "Match",
+  "mp.leaderboard.myScore.breakdownNoMatch": "No match",
+  "mp.leaderboard.myScore.breakdownParticipation": "+{points} participation",
+  "mp.leaderboard.myScore.breakdownMatchBonus": "+{points} match",
+  "mp.leaderboard.myScore.breakdownStreakBonus": "+{points} streak",
+  "mp.leaderboard.myScore.breakdownCardTotal": "{points} pts",
 
   "mp.reveal.pending.title": "PPA Insights have not been revealed yet.",
   "mp.reveal.pending.withCycle":
@@ -176,15 +217,17 @@ export const marketPulseEnMessages = {
   "mp.rules.section.howWorks1":
     "Cycles repeat on a regular schedule from our published epoch (see site countdown).",
   "mp.rules.section.howWorks2":
-    "Scores saved during a cycle are tagged with that cycle's ID for leaderboard purposes.",
+    "Decisions during a cycle are stored against that cycle; leaderboard rankings are cycle-scoped, not all-time.",
   "mp.rules.section.howWorks3":
-    "When a new cycle begins, the current-cycle leaderboard resets for ranking; your past runs remain visible in your profile history.",
+    "When a new cycle begins, the leaderboard starts fresh for that cycle. Revealed results from earlier cycles stay available on the leaderboard archive selector.",
+  "mp.rules.section.howWorks4":
+    "Until PPA Insight is revealed for a cycle, public standings and personal scores stay hidden on the leaderboard page.",
   "mp.rules.section.scoring": "How scores are calculated",
   "mp.rules.section.scoringBody":
-    "When a run ends, your score is your total net worth in the simulation: remaining virtual cash plus the value of portfolio holdings, rounded to the nearest whole number. Bankrupt or invalid runs may not be saved. Exact deal data, themes, and events can change as we refine the game.",
+    "After PPA Insight is revealed, scores are calculated server-side: +10 participation per decision submitted, +50 when your call matches PPA's signal, and streak bonuses for consecutive matches. Match and streak points are not shown publicly until reveal.",
   "mp.rules.section.prize": "Leaderboard and cycle prize",
   "mp.rules.section.prizeIntro":
-    "The Market Pulse Hub shows top scores for the current cycle when available. If no scores have been posted yet in a cycle, we may display all-time leaders until the cycle board fills up.",
+    "The Market Pulse Hub shows top scores for the current cycle when available. The full leaderboard page defaults to the active cycle and lets you browse archived standings from past revealed cycles. Sign in to see your personal score, participation summary, and per-card breakdown for the cycle you select.",
   "mp.rules.section.prizeDisclaimer":
     "Participation does not guarantee a prize. We reserve the right to verify eligibility, withhold or substitute the prize where permitted, and update terms for future cycles.",
   "mp.rules.section.fairPlay": "Fair play",
@@ -195,7 +238,7 @@ export const marketPulseEnMessages = {
     "Simulated outcomes do not predict real-world results. See our Investment Disclaimer and Contest Rules for eligibility, prizes, and fair play.",
   "mp.rules.section.account": "Account requirement",
   "mp.rules.section.accountBody":
-    "You must sign in with a Profit Pulse Ally member account to play and save scores to the leaderboard. Guest visitors can view Market Pulse Hub but cannot post scores. One account per person is expected; profile history shows your saved runs.",
+    "You must sign in with a Profit Pulse Ally member account to play and appear on cycle leaderboards. Guest visitors can browse the hub and revealed standings but cannot see a personal score panel. One account per person is expected; profile history and the leaderboard archive show your past cycle results.",
   "mp.rules.footer.questions": "Questions? Visit the",
   "mp.rules.footer.or": "or",
   "mp.rules.footer.contact": "contact us",
@@ -233,7 +276,7 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.meta.play.description":
     "閱讀今日市場訊號，選擇看升或謹慎，並與 PPA 觀點比較你的判斷。",
   "mp.meta.leaderboard.title": "Market Pulse 排行榜 | Profit Pulse Ally",
-  "mp.meta.leaderboard.description": "查看本期挑戰、月度及總排行榜排名。",
+  "mp.meta.leaderboard.description": "按挑戰週期查看 Market Pulse 排行榜。登入後可查看各已揭曉週期的個人分數。",
   "mp.meta.reveal.title": "PPA 觀點揭曉 | Market Pulse",
   "mp.meta.reveal.description": "查看你的 Market Pulse 挑戰結果及 PPA 觀點詳情。",
   "mp.meta.rules.title": "Market Pulse 規則 | Profit Pulse Ally",
@@ -276,7 +319,7 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.play.status.checkBack": "請稍後再來，或前往主頁查看下一期挑戰。",
   "mp.play.status.noCardTitle": "今日的 Market Pulse 卡片即將推出。",
   "mp.play.status.noCardBody":
-    "管理員須發布今日卡片：鎖定 PPA → 發布，並將發布時間設為現在或更早。週期須為 OPEN、有效，且在開始／揭曉日期內。",
+    "管理員須發布今日卡片，並將發布時間設為現在或更早。週期須為 OPEN、有效，且在開始／揭曉日期內。玩家決策不需等待 PPA。",
   "mp.play.signInBanner": "登入以鎖定判斷並賺取分數。",
   "mp.play.mobile.leaderboard": "排行榜",
   "mp.play.mobile.leaderboardLegal": "排行榜與法律聲明",
@@ -338,6 +381,42 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.leaderboard.cardsPlayedPlural": "已玩 {count} 張",
   "mp.leaderboard.aria.rank": "第 {rank} 名",
   "mp.leaderboard.aria.tablist": "排行榜檢視",
+  "mp.leaderboard.cycleResetNotice":
+    "每個週期都有獨立排行榜，新週期開始時排名重新計算。可在下方選擇已揭曉的過往週期查看歷史結果。",
+  "mp.leaderboard.cycleSelector.label": "挑戰週期",
+  "mp.leaderboard.cycleSelector.aria": "選擇排行榜週期",
+  "mp.leaderboard.status.current": "本期週期",
+  "mp.leaderboard.status.archived": "歷史結果",
+  "mp.leaderboard.status.revealed": "已揭曉",
+  "mp.leaderboard.status.locked": "揭曉前鎖定",
+  "mp.leaderboard.cycleDateRange": "{start} – {end}",
+  "mp.leaderboard.revealDate": "揭曉：{date}",
+  "mp.leaderboard.state.locked": "排行榜於揭曉前鎖定。",
+  "mp.leaderboard.state.noScores": "此週期尚無符合資格的分數。",
+  "mp.leaderboard.state.noCycles": "尚無 Market Pulse 結果。",
+  "mp.leaderboard.state.unavailable": "此週期無法查看，請從列表選擇其他週期。",
+  "mp.leaderboard.myScore.title": "我的本期分數",
+  "mp.leaderboard.myScore.loggedOut": "登入以查看你的週期分數與參與摘要。",
+  "mp.leaderboard.myScore.lockedParticipating": "你的分數將於揭曉後顯示。",
+  "mp.leaderboard.myScore.lockedHint": "PPA 觀點揭曉後解鎖分數。",
+  "mp.leaderboard.myScore.noParticipation": "你未參與此週期。",
+  "mp.leaderboard.myScore.noScore": "此週期尚無分數。",
+  "mp.leaderboard.myScore.decisionsProgress": "已提交決定：{submitted} / {total} 張卡片",
+  "mp.leaderboard.myScore.total": "總分",
+  "mp.leaderboard.myScore.participation": "參與分",
+  "mp.leaderboard.myScore.rank": "排名",
+  "mp.leaderboard.myScore.decisions": "已玩卡片",
+  "mp.leaderboard.myScore.notAvailable": "無法提供",
+  "mp.leaderboard.myScore.breakdownToggle": "分數明細",
+  "mp.leaderboard.myScore.breakdownDay": "第 {day} 日",
+  "mp.leaderboard.myScore.breakdownYourCall": "你的選擇",
+  "mp.leaderboard.myScore.breakdownPpa": "PPA 信號",
+  "mp.leaderboard.myScore.breakdownMatch": "配對",
+  "mp.leaderboard.myScore.breakdownNoMatch": "未配對",
+  "mp.leaderboard.myScore.breakdownParticipation": "+{points} 參與分",
+  "mp.leaderboard.myScore.breakdownMatchBonus": "+{points} 配對加分",
+  "mp.leaderboard.myScore.breakdownStreakBonus": "+{points} 連勝加分",
+  "mp.leaderboard.myScore.breakdownCardTotal": "{points} 分",
 
   "mp.reveal.pending.title": "PPA 觀點尚未揭曉。",
   "mp.reveal.pending.withCycle":
@@ -387,15 +466,17 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.rules.section.howWorksIntro":
     "排行榜競賽以定期 {days} 日為一週期（香港時間）。每期有固定開始與結束；主頁倒數顯示本期剩餘時間。",
   "mp.rules.section.howWorks1": "週期按已公布的起點定期重複（見網站倒數）。",
-  "mp.rules.section.howWorks2": "期內儲存的分數會標記該期 ID 以供排行榜使用。",
+  "mp.rules.section.howWorks2": "期內提交的決定會歸入該週期；排行榜以週期為單位，並非總榜。",
   "mp.rules.section.howWorks3":
-    "新一期開始時，本期排行榜排名重置；過往紀錄仍可在個人檔案查閱。",
+    "新一期開始時，該期排行榜重新計算；已揭曉的過往週期結果仍可在排行榜歷史選單查閱。",
+  "mp.rules.section.howWorks4":
+    "在 PPA 觀點揭曉前，排行榜頁面的公開排名與個人分數均不顯示。",
   "mp.rules.section.scoring": "分數如何計算",
   "mp.rules.section.scoringBody":
-    "一局結束時，分數為模擬中的總資產淨值：剩餘虛擬現金加投資組合市值，四捨五入至整數。破產或無效局可能不會儲存。具體交易、主題及事件可能隨遊戲優化而調整。",
+    "PPA 觀點揭曉後，伺服器計算分數：每項決定 +10 參與分、與 PPA 信號一致 +50 配對分，連續配對另有連勝加分。配對與連勝分數在揭曉前不會公開顯示。",
   "mp.rules.section.prize": "排行榜與本期獎賞",
   "mp.rules.section.prizeIntro":
-    "Market Pulse 主頁在可用時顯示本期最高分。若本期尚無分數，可能暫時顯示總榜領先者。",
+    "Market Pulse 主頁在可用時顯示本期最高分。完整排行榜頁面預設為進行中週期，並可瀏覽已揭曉週期的歷史排名。登入後可查看所選週期的個人分數、參與摘要及逐卡明細。",
   "mp.rules.section.prizeDisclaimer":
     "參加並不保證獲獎。我們保留核實資格、扣留或替換獎品（在法律允許下）及更新未來週期條款的權利。",
   "mp.rules.section.fairPlay": "公平競賽",
@@ -406,7 +487,7 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
     "模擬結果不代表真實世界表現。請參閱投資免責聲明及比賽規則了解資格、獎賞及公平競賽。",
   "mp.rules.section.account": "帳戶要求",
   "mp.rules.section.accountBody":
-    "須以 Profit Pulse Ally 會員帳戶登入方可遊玩並將分數存入排行榜。訪客可瀏覽主頁但無法上榜。預期每人一個帳戶；個人檔案顯示你的紀錄。",
+    "須以 Profit Pulse Ally 會員帳戶登入方可參與並登上週期排行榜。訪客可瀏覽主頁及已揭曉排名，但無法查看個人分數面板。預期每人一個帳戶；個人檔案與排行榜歷史可查看過往週期結果。",
   "mp.rules.footer.questions": "有疑問？請瀏覽",
   "mp.rules.footer.or": "或",
   "mp.rules.footer.contact": "聯絡我們",

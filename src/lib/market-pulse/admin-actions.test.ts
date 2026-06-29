@@ -1,0 +1,156 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const prismaMocks = vi.hoisted(() => ({
+  cycleFindUnique: vi.fn(),
+  cardFindFirst: vi.fn(),
+  cardFindUnique: vi.fn(),
+  cardCreate: vi.fn(),
+  cardUpdate: vi.fn(),
+  auditCreate: vi.fn(),
+}));
+
+const authMocks = vi.hoisted(() => ({
+  requireAdminSession: vi.fn(),
+}));
+
+vi.mock("server-only", () => ({}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
+vi.mock("@/lib/market-pulse/admin-auth", () => ({
+  requireAdminSession: authMocks.requireAdminSession,
+}));
+
+vi.mock("@/lib/market-pulse/server", () => ({
+  calculateAndPersistCycleScores: vi.fn(),
+  getMarketPulseLeaderboard: vi.fn(),
+  isMarketPulseCycleRevealed: vi.fn(),
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    marketPulseCycle: {
+      findUnique: prismaMocks.cycleFindUnique,
+    },
+    marketPulseCard: {
+      findFirst: prismaMocks.cardFindFirst,
+      findUnique: prismaMocks.cardFindUnique,
+      create: prismaMocks.cardCreate,
+      update: prismaMocks.cardUpdate,
+    },
+    marketPulseAuditLog: {
+      create: prismaMocks.auditCreate,
+    },
+  },
+}));
+
+import {
+  createMarketPulseCardAction,
+  lockMarketPulseCardPpaAction,
+  publishMarketPulseCardAction,
+} from "@/lib/market-pulse/admin-actions";
+
+const ADMIN = { userId: "admin-1", email: "admin@example.com" };
+
+const validCreateInput = {
+  cycleId: "cycle-1",
+  dayIndex: 1,
+  companyName: "Acme Corp",
+  companyNameZh: "",
+  ticker: "ACME",
+  exchange: "",
+  logoUrl: "",
+  logoInitials: "",
+  priceLabel: "",
+  priceDirection: "",
+  headline: "Acme reports earnings",
+  newsBody: "",
+  sourceName: "",
+  sourceUrl: "",
+  sourceDate: "",
+  cardImageUrl: "",
+  cardImageAlt: "",
+  summary: "Earnings beat expectations.",
+  userPrompt: "What would you do?",
+  ppaSignal: null,
+  ppaInsight: "",
+  status: "DRAFT" as const,
+  publishedAt: "",
+  revealAt: "",
+};
+
+describe("market-pulse admin-actions reliability", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authMocks.requireAdminSession.mockResolvedValue(ADMIN);
+    prismaMocks.cycleFindUnique.mockResolvedValue({ id: "cycle-1" });
+    prismaMocks.cardFindFirst.mockResolvedValue(null);
+    prismaMocks.cardCreate.mockResolvedValue({ id: "card-1" });
+    prismaMocks.cardUpdate.mockResolvedValue({ id: "card-1" });
+    prismaMocks.auditCreate.mockResolvedValue({ id: "audit-1" });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns ok true when a card is created", async () => {
+    const result = await createMarketPulseCardAction(validCreateInput);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.message).toBe("Card saved.");
+    }
+    expect(prismaMocks.cardCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns ok true when publish succeeds even if audit log fails", async () => {
+    prismaMocks.cardFindUnique.mockResolvedValue({
+      id: "card-1",
+      status: "READY",
+      publishedAt: null,
+      headline: "Headline",
+      companyName: "Acme",
+      ticker: "ACME",
+      summary: "Summary",
+      ppaSignal: "BUY",
+      ppaInsight: "Strong outlook",
+      ppaSignalLockedAt: new Date(),
+    });
+    prismaMocks.auditCreate.mockRejectedValue(new Error("audit failed"));
+
+    const result = await publishMarketPulseCardAction("card-1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.message).toBe("Card published.");
+      expect(result.warning).toContain("audit log");
+    }
+    expect(prismaMocks.cardUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns ok true when lock PPA succeeds even if cache refresh fails", async () => {
+    const { revalidatePath } = await import("next/cache");
+    vi.mocked(revalidatePath).mockImplementation(() => {
+      throw new Error("revalidate failed");
+    });
+
+    prismaMocks.cardFindUnique.mockResolvedValue({
+      id: "card-1",
+      ppaSignal: "BUY",
+      ppaInsight: "Strong outlook",
+      ppaSignalLockedAt: null,
+    });
+
+    const result = await lockMarketPulseCardPpaAction("card-1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.message).toBe("PPA signal locked.");
+      expect(result.warning).toContain("cache refresh");
+    }
+    expect(prismaMocks.cardUpdate).toHaveBeenCalledTimes(1);
+  });
+});

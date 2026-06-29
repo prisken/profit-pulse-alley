@@ -8,6 +8,14 @@ import type {
   MarketPulseSignal,
 } from "@prisma/client";
 
+import {
+  adminFail,
+  adminOk,
+  fieldErrorsFromRecord,
+  finishAdminMutation,
+  runAdminSideEffects,
+  type AdminActionResult,
+} from "@/lib/admin/action-result";
 import { requireAdminSession } from "@/lib/market-pulse/admin-auth";
 import { prizeNameForRank } from "@/lib/market-pulse/prize-constants";
 import {
@@ -27,19 +35,12 @@ import {
   getMarketPulseLeaderboard,
   isMarketPulseCycleRevealed,
 } from "@/lib/market-pulse/server";
+import { validateCycleReadyForReveal } from "@/lib/market-pulse/reveal-ppa-validation.server";
 import { prisma } from "@/lib/prisma";
 
 const ADMIN_PATH = "/admin/market-pulse";
 
-export type AdminActionResult =
-  | {
-      ok: true;
-      message?: string;
-      csv?: string;
-      filename?: string;
-      revealSummary?: RevealCycleSummary;
-    }
-  | { ok: false; error: string };
+export type { AdminActionResult } from "@/lib/admin/action-result";
 
 export type RevealCycleSummary = {
   cycleId: string;
@@ -50,15 +51,24 @@ export type RevealCycleSummary = {
 };
 
 function unauthorized(): AdminActionResult {
-  return { ok: false, error: "Unauthorized" };
+  return adminFail("Unauthorized");
 }
 
-function revalidateAdmin() {
+function revalidateAdminPaths() {
   revalidatePath(ADMIN_PATH);
   revalidatePath("/market-pulse");
   revalidatePath("/market-pulse/play");
   revalidatePath("/market-pulse/leaderboard");
   revalidatePath("/market-pulse/reveal");
+}
+
+function revalidateAdminEffect() {
+  return {
+    label: "cache refresh",
+    run: () => {
+      revalidateAdminPaths();
+    },
+  };
 }
 
 function parseDate(value: string): Date | null {
@@ -168,14 +178,18 @@ async function setActiveCycleId(
   adminUserId: string,
   cycleId: string,
   previousActiveCycleId: string | null,
-) {
+): Promise<{ applied: boolean; warning?: string }> {
   const settings = await getGameSettings();
   if (!settings) {
-    return { ok: false as const, error: "Game settings not found." };
+    return {
+      applied: false,
+      warning:
+        "Game settings not found — the cycle was saved but could not be set as active.",
+    };
   }
 
   if (settings.activeCycleId === cycleId) {
-    return { ok: true as const };
+    return { applied: true };
   }
 
   await prisma.marketPulseGameSetting.update({
@@ -183,16 +197,22 @@ async function setActiveCycleId(
     data: { activeCycleId: cycleId },
   });
 
-  await writeCycleAuditLog({
-    adminUserId,
-    cycleId,
-    action: "SET_ACTIVE",
-    fieldName: "activeCycleId",
-    oldValue: previousActiveCycleId,
-    newValue: cycleId,
-  });
+  const warning = await runAdminSideEffects([
+    {
+      label: "audit log",
+      run: () =>
+        writeCycleAuditLog({
+          adminUserId,
+          cycleId,
+          action: "SET_ACTIVE",
+          fieldName: "activeCycleId",
+          oldValue: previousActiveCycleId,
+          newValue: cycleId,
+        }),
+    },
+  ]);
 
-  return { ok: true as const };
+  return { applied: true, warning };
 }
 
 async function writePpaAuditLog(input: {
@@ -228,7 +248,7 @@ export async function updateMarketPulseRuntimeStatusAction(
   });
 
   if (!settings) {
-    return { ok: false, error: "Game settings not found." };
+    return adminFail("Game settings not found.");
   }
 
   await prisma.marketPulseGameSetting.update({
@@ -236,8 +256,7 @@ export async function updateMarketPulseRuntimeStatusAction(
     data: { runtimeStatus },
   });
 
-  revalidateAdmin();
-  return { ok: true, message: `Runtime status set to ${runtimeStatus}.` };
+  return finishAdminMutation("Runtime updated.", [revalidateAdminEffect()]);
 }
 
 export async function setActiveMarketPulseCycleAction(
@@ -251,25 +270,28 @@ export async function setActiveMarketPulseCycleAction(
     select: { id: true },
   });
   if (!cycle) {
-    return { ok: false, error: "Cycle not found." };
+    return adminFail("Cycle not found.");
   }
 
   const settings = await getGameSettings();
   if (!settings) {
-    return { ok: false, error: "Game settings not found." };
+    return adminFail("Game settings not found.");
   }
 
-  const result = await setActiveCycleId(
+  const activeResult = await setActiveCycleId(
     admin.userId,
     cycleId,
     settings.activeCycleId,
   );
-  if (!result.ok) {
-    return result;
+  if (!activeResult.applied) {
+    return adminFail(
+      activeResult.warning ?? "Game settings not found.",
+    );
   }
 
-  revalidateAdmin();
-  return { ok: true, message: "Active cycle updated." };
+  return finishAdminMutation("Active cycle updated.", [revalidateAdminEffect()], {
+    extraWarning: activeResult.warning,
+  });
 }
 
 export type CreateMarketPulseCycleInput = {
@@ -300,43 +322,59 @@ export async function createMarketPulseCycleAction(
     revealAt,
   });
   if (validationError) {
-    return { ok: false, error: validationError };
+    return adminFail(validationError);
   }
 
   const settings = await getGameSettings();
 
-  const cycle = await prisma.marketPulseCycle.create({
-    data: {
-      name,
-      startsAt: startsAt!,
-      endsAt: endsAt!,
-      revealAt: revealAt!,
-      prizeLabel: input.prizeLabel?.trim() || null,
-      status: input.status,
-    },
-  });
+  let cycle;
+  try {
+    cycle = await prisma.marketPulseCycle.create({
+      data: {
+        name,
+        startsAt: startsAt!,
+        endsAt: endsAt!,
+        revealAt: revealAt!,
+        prizeLabel: input.prizeLabel?.trim() || null,
+        status: input.status,
+      },
+    });
+  } catch (error) {
+    console.error("[admin] createMarketPulseCycleAction failed:", error);
+    return adminFail("Could not create cycle. Please try again.");
+  }
 
-  await writeCycleAuditLog({
-    adminUserId: admin.userId,
-    cycleId: cycle.id,
-    action: "CREATE",
-    newValue: input.status,
-    reason: `Created cycle "${name}"`,
-  });
-
+  let extraWarning: string | undefined;
   if (input.setActive) {
     const activeResult = await setActiveCycleId(
       admin.userId,
       cycle.id,
       settings?.activeCycleId ?? null,
     );
-    if (!activeResult.ok) {
-      return activeResult;
-    }
+    extraWarning = activeResult.applied
+      ? activeResult.warning
+      : activeResult.warning ??
+        "The cycle was saved but could not be set as active.";
   }
 
-  revalidateAdmin();
-  return { ok: true, message: `Cycle "${name}" created.` };
+  return finishAdminMutation(
+    "Cycle saved.",
+    [
+      {
+        label: "audit log",
+        run: () =>
+          writeCycleAuditLog({
+            adminUserId: admin.userId,
+            cycleId: cycle.id,
+            action: "CREATE",
+            newValue: input.status,
+            reason: `Created cycle "${name}"`,
+          }),
+      },
+      revalidateAdminEffect(),
+    ],
+    { extraWarning },
+  );
 }
 
 export type UpdateMarketPulseCycleInput = {
@@ -360,7 +398,7 @@ export async function updateMarketPulseCycleAction(
     where: { id: input.cycleId },
   });
   if (!existing) {
-    return { ok: false, error: "Cycle not found." };
+    return adminFail("Cycle not found.");
   }
 
   const name = input.name.trim();
@@ -375,47 +413,61 @@ export async function updateMarketPulseCycleAction(
     revealAt,
   });
   if (validationError) {
-    return { ok: false, error: validationError };
+    return adminFail(validationError);
   }
 
   const settings = await getGameSettings();
 
-  await prisma.marketPulseCycle.update({
-    where: { id: input.cycleId },
-    data: {
-      name,
-      startsAt: startsAt!,
-      endsAt: endsAt!,
-      revealAt: revealAt!,
-      prizeLabel: input.prizeLabel?.trim() || null,
-      status: input.status,
-    },
-  });
+  try {
+    await prisma.marketPulseCycle.update({
+      where: { id: input.cycleId },
+      data: {
+        name,
+        startsAt: startsAt!,
+        endsAt: endsAt!,
+        revealAt: revealAt!,
+        prizeLabel: input.prizeLabel?.trim() || null,
+        status: input.status,
+      },
+    });
+  } catch (error) {
+    console.error("[admin] updateMarketPulseCycleAction failed:", error);
+    return adminFail("Could not update cycle. Please try again.");
+  }
+
+  const sideEffects = [];
 
   if (existing.status !== input.status) {
-    await writeCycleAuditLog({
-      adminUserId: admin.userId,
-      cycleId: input.cycleId,
-      action: "STATUS_CHANGE",
-      fieldName: "status",
-      oldValue: existing.status,
-      newValue: input.status,
+    sideEffects.push({
+      label: "audit log",
+      run: () =>
+        writeCycleAuditLog({
+          adminUserId: admin.userId,
+          cycleId: input.cycleId,
+          action: "STATUS_CHANGE",
+          fieldName: "status",
+          oldValue: existing.status,
+          newValue: input.status,
+        }),
     });
   }
 
+  sideEffects.push(revalidateAdminEffect());
+
+  let extraWarning: string | undefined;
   if (input.setActive) {
     const activeResult = await setActiveCycleId(
       admin.userId,
       input.cycleId,
       settings?.activeCycleId ?? null,
     );
-    if (!activeResult.ok) {
-      return activeResult;
-    }
+    extraWarning = activeResult.applied
+      ? activeResult.warning
+      : activeResult.warning ??
+        "The cycle was saved but could not be set as active.";
   }
 
-  revalidateAdmin();
-  return { ok: true, message: "Cycle updated." };
+  return finishAdminMutation("Cycle saved.", sideEffects, { extraWarning });
 }
 
 export async function closeMarketPulseCycleAction(
@@ -429,29 +481,38 @@ export async function closeMarketPulseCycleAction(
     select: { id: true, status: true },
   });
   if (!existing) {
-    return { ok: false, error: "Cycle not found." };
+    return adminFail("Cycle not found.");
   }
 
   if (existing.status === "CLOSED") {
-    return { ok: false, error: "Cycle is already closed." };
+    return adminFail("Cycle is already closed.");
   }
 
-  await prisma.marketPulseCycle.update({
-    where: { id: cycleId },
-    data: { status: "CLOSED" },
-  });
+  try {
+    await prisma.marketPulseCycle.update({
+      where: { id: cycleId },
+      data: { status: "CLOSED" },
+    });
+  } catch (error) {
+    console.error("[admin] closeMarketPulseCycleAction failed:", error);
+    return adminFail("Could not close cycle. Please try again.");
+  }
 
-  await writeCycleAuditLog({
-    adminUserId: admin.userId,
-    cycleId,
-    action: "STATUS_CHANGE",
-    fieldName: "status",
-    oldValue: existing.status,
-    newValue: "CLOSED",
-  });
-
-  revalidateAdmin();
-  return { ok: true, message: "Cycle closed." };
+  return finishAdminMutation("Cycle closed.", [
+    {
+      label: "audit log",
+      run: () =>
+        writeCycleAuditLog({
+          adminUserId: admin.userId,
+          cycleId,
+          action: "STATUS_CHANGE",
+          fieldName: "status",
+          oldValue: existing.status,
+          newValue: "CLOSED",
+        }),
+    },
+    revalidateAdminEffect(),
+  ]);
 }
 
 export async function revealMarketPulseCycleAction(
@@ -465,27 +526,14 @@ export async function revealMarketPulseCycleAction(
     select: { id: true, name: true, status: true, revealAt: true },
   });
   if (!cycle) {
-    return { ok: false, error: "Cycle not found." };
+    return adminFail("Cycle not found.");
   }
 
-  const unlockedPublishedCards = await prisma.marketPulseCard.findMany({
-    where: {
-      cycleId,
-      status: "PUBLISHED",
-      ppaSignalLockedAt: null,
-    },
-    select: { dayIndex: true, companyName: true },
-    orderBy: { dayIndex: "asc" },
-  });
-
-  if (unlockedPublishedCards.length > 0) {
-    const labels = unlockedPublishedCards
-      .map((card) => `day ${card.dayIndex} (${card.companyName})`)
-      .join(", ");
-    return {
-      ok: false,
-      error: `Cannot reveal: published cards missing locked PPA signal — ${labels}.`,
-    };
+  const ppaValidation = await validateCycleReadyForReveal(cycleId);
+  if (!ppaValidation.ready) {
+    return adminFail(ppaValidation.message, undefined, {
+      missingCards: ppaValidation.missingCards,
+    });
   }
 
   const now = new Date();
@@ -505,44 +553,64 @@ export async function revealMarketPulseCycleAction(
         data: { status: "REVEALED" },
       });
     });
+  } catch (error) {
+    console.error("[admin] revealMarketPulseCycleAction transaction failed:", error);
+    return adminFail(
+      error instanceof Error
+        ? error.message
+        : "Reveal failed. Check server logs and try again.",
+    );
+  }
 
-    await writeCycleAuditLog({
-      adminUserId: admin.userId,
-      cycleId,
-      action: "REVEAL",
-      fieldName: "status",
-      oldValue: cycle.status,
-      newValue: "REVEALED",
-      reason: `Revealed cycle "${cycle.name}" and calculated scores`,
-    });
+  let extraWarning: string | undefined;
+  let revealSummary: RevealCycleSummary = {
+    cycleId,
+    decisionsScored: 0,
+    usersScored: 0,
+    eventsCreated: 0,
+    topScore: null,
+  };
 
+  try {
     const summary = await calculateAndPersistCycleScores(cycleId);
-
-    revalidateAdmin();
-
-    const revealSummary: RevealCycleSummary = {
+    revealSummary = {
       cycleId,
       decisionsScored: summary.decisionsScored,
       usersScored: summary.usersScored,
       eventsCreated: summary.eventsCreated,
       topScore: summary.topScore,
     };
-
-    return {
-      ok: true,
-      message: `Cycle "${cycle.name}" revealed. Scored ${summary.decisionsScored} decisions for ${summary.usersScored} players (${summary.eventsCreated} score events).`,
-      revealSummary,
-    };
   } catch (error) {
-    console.error("[admin] revealMarketPulseCycleAction failed:", error);
-    return {
-      ok: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Reveal failed. Check server logs and try again.",
-    };
+    console.error("[admin] revealMarketPulseCycleAction scoring failed:", error);
+    extraWarning =
+      "Cycle was revealed but score calculation failed. Check server logs and refresh.";
   }
+
+  const scoredMessage =
+    revealSummary.decisionsScored > 0
+      ? ` Scored ${revealSummary.decisionsScored} decisions for ${revealSummary.usersScored} players (${revealSummary.eventsCreated} score events).`
+      : "";
+
+  return finishAdminMutation(
+    `Cycle "${cycle.name}" revealed.${scoredMessage}`,
+    [
+      {
+        label: "audit log",
+        run: () =>
+          writeCycleAuditLog({
+            adminUserId: admin.userId,
+            cycleId,
+            action: "REVEAL",
+            fieldName: "status",
+            oldValue: cycle.status,
+            newValue: "REVEALED",
+            reason: `Revealed cycle "${cycle.name}" and calculated scores`,
+          }),
+      },
+      revalidateAdminEffect(),
+    ],
+    { extraWarning, revealSummary },
+  );
 }
 
 export async function createMarketPulseCardAction(
@@ -572,7 +640,7 @@ export async function createMarketPulseCardAction(
       validation.errors.ppaSignal ??
       validation.errors.ppaInsight ??
       "Invalid card data.";
-    return { ok: false, error: firstError };
+    return adminFail(firstError, fieldErrorsFromRecord(validation.errors));
   }
 
   const uniqueError = await assertUniqueDayIndex({
@@ -580,7 +648,7 @@ export async function createMarketPulseCardAction(
     dayIndex: input.dayIndex,
   });
   if (uniqueError) {
-    return { ok: false, error: uniqueError };
+    return adminFail(uniqueError);
   }
 
   const statusPpaError = validateCardStatusPpa({
@@ -589,7 +657,7 @@ export async function createMarketPulseCardAction(
     ppaInsight: trimOrNull(input.ppaInsight),
   });
   if (statusPpaError) {
-    return { ok: false, error: statusPpaError };
+    return adminFail(statusPpaError);
   }
 
   const cycle = await prisma.marketPulseCycle.findUnique({
@@ -597,15 +665,19 @@ export async function createMarketPulseCardAction(
     select: { id: true },
   });
   if (!cycle) {
-    return { ok: false, error: "Cycle not found." };
+    return adminFail("Cycle not found.");
   }
 
-  await prisma.marketPulseCard.create({
-    data: cardPayloadFromInput(input),
-  });
+  try {
+    await prisma.marketPulseCard.create({
+      data: cardPayloadFromInput(input),
+    });
+  } catch (error) {
+    console.error("[admin] createMarketPulseCardAction failed:", error);
+    return adminFail("Could not create card. Please try again.");
+  }
 
-  revalidateAdmin();
-  return { ok: true, message: "Card created." };
+  return finishAdminMutation("Card saved.", [revalidateAdminEffect()]);
 }
 
 export type UpdateMarketPulseCardInput = CreateMarketPulseCardInput & {
@@ -623,7 +695,7 @@ export async function updateMarketPulseCardAction(
     where: { id: input.cardId },
   });
   if (!card) {
-    return { ok: false, error: "Card not found." };
+    return adminFail("Card not found.");
   }
 
   const formValues: MarketPulseCardFormValues = {
@@ -649,7 +721,7 @@ export async function updateMarketPulseCardAction(
       validation.errors.ppaSignal ??
       validation.errors.ppaInsight ??
       "Invalid card data.";
-    return { ok: false, error: firstError };
+    return adminFail(firstError, fieldErrorsFromRecord(validation.errors));
   }
 
   const uniqueError = await assertUniqueDayIndex({
@@ -658,7 +730,7 @@ export async function updateMarketPulseCardAction(
     excludeCardId: input.cardId,
   });
   if (uniqueError) {
-    return { ok: false, error: uniqueError };
+    return adminFail(uniqueError);
   }
 
   const nextSignal = input.ppaSignal ?? null;
@@ -669,7 +741,7 @@ export async function updateMarketPulseCardAction(
     ppaInsight: nextInsight,
   });
   if (statusPpaError) {
-    return { ok: false, error: statusPpaError };
+    return adminFail(statusPpaError);
   }
 
   const locked = Boolean(card.ppaSignalLockedAt);
@@ -680,69 +752,85 @@ export async function updateMarketPulseCardAction(
   if (signalChanged || insightChanged) {
     const reason = input.changeReason?.trim();
     if (!reason) {
-      return {
-        ok: false,
-        error: "A reason is required when changing locked PPA fields.",
-      };
+      return adminFail(
+        "A reason is required when changing locked PPA fields.",
+      );
     }
+  }
 
+  try {
+    await prisma.marketPulseCard.update({
+      where: { id: input.cardId },
+      data: cardPayloadFromInput(
+        {
+          cycleId: input.cycleId,
+          dayIndex: input.dayIndex,
+          companyName: input.companyName,
+          companyNameZh: input.companyNameZh,
+          ticker: input.ticker,
+          exchange: input.exchange,
+          logoUrl: input.logoUrl,
+          logoInitials: input.logoInitials,
+          priceLabel: input.priceLabel,
+          priceDirection: input.priceDirection,
+          headline: input.headline,
+          newsBody: input.newsBody,
+          sourceName: input.sourceName,
+          sourceUrl: input.sourceUrl,
+          sourceDate: input.sourceDate,
+          cardImageUrl: input.cardImageUrl,
+          cardImageAlt: input.cardImageAlt,
+          summary: input.summary,
+          userPrompt: input.userPrompt,
+          ppaSignal: nextSignal,
+          ppaInsight: input.ppaInsight,
+          status: input.status,
+          publishedAt: input.publishedAt,
+          revealAt: input.revealAt,
+        },
+        { existingPublishedAt: card.publishedAt },
+      ),
+    });
+  } catch (error) {
+    console.error("[admin] updateMarketPulseCardAction failed:", error);
+    return adminFail("Could not save card. Please try again.");
+  }
+
+  const sideEffects = [revalidateAdminEffect()];
+
+  if (signalChanged || insightChanged) {
+    const reason = input.changeReason!.trim();
     if (signalChanged) {
-      await writePpaAuditLog({
-        adminUserId: admin.userId,
-        cardId: card.id,
-        fieldName: "ppaSignal",
-        oldValue: card.ppaSignal,
-        newValue: nextSignal,
-        reason,
+      sideEffects.unshift({
+        label: "PPA audit log",
+        run: () =>
+          writePpaAuditLog({
+            adminUserId: admin.userId,
+            cardId: card.id,
+            fieldName: "ppaSignal",
+            oldValue: card.ppaSignal,
+            newValue: nextSignal,
+            reason,
+          }),
       });
     }
     if (insightChanged) {
-      await writePpaAuditLog({
-        adminUserId: admin.userId,
-        cardId: card.id,
-        fieldName: "ppaInsight",
-        oldValue: card.ppaInsight,
-        newValue: nextInsight,
-        reason,
+      sideEffects.unshift({
+        label: "PPA audit log",
+        run: () =>
+          writePpaAuditLog({
+            adminUserId: admin.userId,
+            cardId: card.id,
+            fieldName: "ppaInsight",
+            oldValue: card.ppaInsight,
+            newValue: nextInsight,
+            reason,
+          }),
       });
     }
   }
 
-  await prisma.marketPulseCard.update({
-    where: { id: input.cardId },
-    data: cardPayloadFromInput(
-      {
-        cycleId: input.cycleId,
-        dayIndex: input.dayIndex,
-        companyName: input.companyName,
-        companyNameZh: input.companyNameZh,
-        ticker: input.ticker,
-        exchange: input.exchange,
-        logoUrl: input.logoUrl,
-        logoInitials: input.logoInitials,
-        priceLabel: input.priceLabel,
-        priceDirection: input.priceDirection,
-        headline: input.headline,
-        newsBody: input.newsBody,
-        sourceName: input.sourceName,
-        sourceUrl: input.sourceUrl,
-        sourceDate: input.sourceDate,
-        cardImageUrl: input.cardImageUrl,
-        cardImageAlt: input.cardImageAlt,
-        summary: input.summary,
-        userPrompt: input.userPrompt,
-        ppaSignal: nextSignal,
-        ppaInsight: input.ppaInsight,
-        status: input.status,
-        publishedAt: input.publishedAt,
-        revealAt: input.revealAt,
-      },
-      { existingPublishedAt: card.publishedAt },
-    ),
-  });
-
-  revalidateAdmin();
-  return { ok: true, message: "Card updated." };
+  return finishAdminMutation("Card saved.", sideEffects);
 }
 
 export async function publishMarketPulseCardAction(
@@ -755,36 +843,45 @@ export async function publishMarketPulseCardAction(
     where: { id: cardId },
   });
   if (!card) {
-    return { ok: false, error: "Card not found." };
+    return adminFail("Card not found.");
   }
 
   const publishError = validateCardPublishable(card);
   if (publishError) {
-    return { ok: false, error: publishError };
+    return adminFail(publishError);
   }
 
-  await prisma.marketPulseCard.update({
-    where: { id: cardId },
-    data: {
-      status: "PUBLISHED",
-      publishedAt: card.publishedAt ?? new Date(),
-    },
-  });
+  try {
+    await prisma.marketPulseCard.update({
+      where: { id: cardId },
+      data: {
+        status: "PUBLISHED",
+        publishedAt: card.publishedAt ?? new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("[admin] publishMarketPulseCardAction failed:", error);
+    return adminFail("Could not publish card. Please try again.");
+  }
 
-  await prisma.marketPulseAuditLog.create({
-    data: {
-      adminUserId: admin.userId,
-      entityType: "MarketPulseCard",
-      entityId: cardId,
-      action: "PUBLISH",
-      fieldName: "status",
-      oldValue: card.status,
-      newValue: "PUBLISHED",
+  return finishAdminMutation("Card published.", [
+    {
+      label: "audit log",
+      run: () =>
+        prisma.marketPulseAuditLog.create({
+          data: {
+            adminUserId: admin.userId,
+            entityType: "MarketPulseCard",
+            entityId: cardId,
+            action: "PUBLISH",
+            fieldName: "status",
+            oldValue: card.status,
+            newValue: "PUBLISHED",
+          },
+        }),
     },
-  });
-
-  revalidateAdmin();
-  return { ok: true, message: "Card published." };
+    revalidateAdminEffect(),
+  ]);
 }
 
 export async function lockMarketPulseCardPpaAction(
@@ -797,37 +894,43 @@ export async function lockMarketPulseCardPpaAction(
     where: { id: cardId },
   });
   if (!card) {
-    return { ok: false, error: "Card not found." };
+    return adminFail("Card not found.");
   }
 
   if (!card.ppaSignal || !card.ppaInsight?.trim()) {
-    return {
-      ok: false,
-      error: "PPA signal and insight must be set before locking.",
-    };
+    return adminFail("PPA signal and insight must be set before locking.");
   }
 
   if (card.ppaSignalLockedAt) {
-    return { ok: false, error: "PPA signal is already locked." };
+    return adminFail("PPA signal is already locked.");
   }
 
-  await prisma.marketPulseCard.update({
-    where: { id: cardId },
-    data: { ppaSignalLockedAt: new Date() },
-  });
+  try {
+    await prisma.marketPulseCard.update({
+      where: { id: cardId },
+      data: { ppaSignalLockedAt: new Date() },
+    });
+  } catch (error) {
+    console.error("[admin] lockMarketPulseCardPpaAction failed:", error);
+    return adminFail("Could not lock PPA signal. Please try again.");
+  }
 
-  await prisma.marketPulseAuditLog.create({
-    data: {
-      adminUserId: admin.userId,
-      entityType: "MarketPulseCard",
-      entityId: cardId,
-      action: "LOCK_PPA",
-      reason: "PPA signal locked by admin",
+  return finishAdminMutation("PPA signal locked.", [
+    {
+      label: "audit log",
+      run: () =>
+        prisma.marketPulseAuditLog.create({
+          data: {
+            adminUserId: admin.userId,
+            entityType: "MarketPulseCard",
+            entityId: cardId,
+            action: "LOCK_PPA",
+            reason: "PPA signal locked by admin",
+          },
+        }),
     },
-  });
-
-  revalidateAdmin();
-  return { ok: true, message: "PPA signal locked." };
+    revalidateAdminEffect(),
+  ]);
 }
 
 function csvEscape(value: string): string {
@@ -848,7 +951,7 @@ export async function exportMarketPulseLeaderboardAction(
     select: { id: true, name: true },
   });
   if (!cycle) {
-    return { ok: false, error: "Cycle not found." };
+    return adminFail("Cycle not found.");
   }
 
   const rows = await getMarketPulseLeaderboard({
@@ -869,12 +972,10 @@ export async function exportMarketPulseLeaderboardAction(
   const csv = [header, ...lines].join("\n");
   const slug = cycle.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-  return {
-    ok: true,
+  return adminOk(`Exported ${rows.length} rows.`, {
     csv,
     filename: `market-pulse-leaderboard-${slug || cycle.id}.csv`,
-    message: `Exported ${rows.length} rows.`,
-  };
+  });
 }
 
 const PRIZE_CLAIM_STATUSES: MarketPulsePrizeStatus[] = [
@@ -913,12 +1014,12 @@ export async function createMarketPulsePrizeClaimAction(input: {
   if (!admin) return unauthorized();
 
   if (!Number.isInteger(input.rank) || input.rank < 1 || input.rank > 10) {
-    return { ok: false, error: "Rank must be between 1 and 10." };
+    return adminFail("Rank must be between 1 and 10.");
   }
 
   const cycleResult = await assertRevealedCycle(input.cycleId);
   if (!cycleResult.ok) {
-    return cycleResult;
+    return adminFail(cycleResult.error);
   }
 
   const existing = await prisma.marketPulsePrizeClaim.findFirst({
@@ -930,7 +1031,7 @@ export async function createMarketPulsePrizeClaimAction(input: {
     select: { id: true },
   });
   if (existing) {
-    return { ok: false, error: `A prize claim already exists for rank ${input.rank}.` };
+    return adminFail(`A prize claim already exists for rank ${input.rank}.`);
   }
 
   const leaderboard = await getMarketPulseLeaderboard({
@@ -942,28 +1043,29 @@ export async function createMarketPulsePrizeClaimAction(input: {
     (row) => row.rank === input.rank && row.userId === input.userId,
   );
   if (!entry) {
-    return {
-      ok: false,
-      error: "User does not match the leaderboard entry for this rank.",
-    };
+    return adminFail("User does not match the leaderboard entry for this rank.");
   }
 
-  await prisma.marketPulsePrizeClaim.create({
-    data: {
-      userId: input.userId,
-      cycleId: input.cycleId,
-      leaderboardType: "CURRENT_CYCLE",
-      rank: input.rank,
-      prizeName: prizeNameForRank(input.rank),
-      status: "PENDING_REVIEW",
-    },
-  });
+  try {
+    await prisma.marketPulsePrizeClaim.create({
+      data: {
+        userId: input.userId,
+        cycleId: input.cycleId,
+        leaderboardType: "CURRENT_CYCLE",
+        rank: input.rank,
+        prizeName: prizeNameForRank(input.rank),
+        status: "PENDING_REVIEW",
+      },
+    });
+  } catch (error) {
+    console.error("[admin] createMarketPulsePrizeClaimAction failed:", error);
+    return adminFail("Could not create prize claim. Please try again.");
+  }
 
-  revalidateAdmin();
-  return {
-    ok: true,
-    message: `Prize claim created for rank ${input.rank}.`,
-  };
+  return finishAdminMutation(
+    `Prize claim created for rank ${input.rank}.`,
+    [revalidateAdminEffect()],
+  );
 }
 
 export async function createAllMarketPulsePrizeClaimsAction(
@@ -974,7 +1076,7 @@ export async function createAllMarketPulsePrizeClaimsAction(
 
   const cycleResult = await assertRevealedCycle(cycleId);
   if (!cycleResult.ok) {
-    return cycleResult;
+    return adminFail(cycleResult.error);
   }
 
   const leaderboard = await getMarketPulseLeaderboard({
@@ -984,7 +1086,7 @@ export async function createAllMarketPulsePrizeClaimsAction(
   });
 
   if (leaderboard.length === 0) {
-    return { ok: false, error: "No leaderboard entries to award." };
+    return adminFail("No leaderboard entries to award.");
   }
 
   const existing = await prisma.marketPulsePrizeClaim.findMany({
@@ -999,25 +1101,29 @@ export async function createAllMarketPulsePrizeClaimsAction(
 
   const toCreate = leaderboard.filter((row) => !existingRanks.has(row.rank));
   if (toCreate.length === 0) {
-    return { ok: false, error: "Prize claims already exist for the top 10." };
+    return adminFail("Prize claims already exist for the top 10.");
   }
 
-  await prisma.marketPulsePrizeClaim.createMany({
-    data: toCreate.map((row) => ({
-      userId: row.userId,
-      cycleId,
-      leaderboardType: "CURRENT_CYCLE" as const,
-      rank: row.rank,
-      prizeName: prizeNameForRank(row.rank),
-      status: "PENDING_REVIEW" as const,
-    })),
-  });
+  try {
+    await prisma.marketPulsePrizeClaim.createMany({
+      data: toCreate.map((row) => ({
+        userId: row.userId,
+        cycleId,
+        leaderboardType: "CURRENT_CYCLE" as const,
+        rank: row.rank,
+        prizeName: prizeNameForRank(row.rank),
+        status: "PENDING_REVIEW" as const,
+      })),
+    });
+  } catch (error) {
+    console.error("[admin] createAllMarketPulsePrizeClaimsAction failed:", error);
+    return adminFail("Could not create prize claims. Please try again.");
+  }
 
-  revalidateAdmin();
-  return {
-    ok: true,
-    message: `Created ${toCreate.length} prize claim${toCreate.length === 1 ? "" : "s"}.`,
-  };
+  return finishAdminMutation(
+    `Created ${toCreate.length} prize claim${toCreate.length === 1 ? "" : "s"}.`,
+    [revalidateAdminEffect()],
+  );
 }
 
 export async function updateMarketPulsePrizeClaimStatusAction(input: {
@@ -1028,7 +1134,7 @@ export async function updateMarketPulsePrizeClaimStatusAction(input: {
   if (!admin) return unauthorized();
 
   if (!isValidPrizeStatus(input.status)) {
-    return { ok: false, error: "Invalid prize claim status." };
+    return adminFail("Invalid prize claim status.");
   }
 
   const claim = await prisma.marketPulsePrizeClaim.findUnique({
@@ -1036,22 +1142,29 @@ export async function updateMarketPulsePrizeClaimStatusAction(input: {
     select: { id: true, status: true, verifiedAt: true, claimedAt: true },
   });
   if (!claim) {
-    return { ok: false, error: "Prize claim not found." };
+    return adminFail("Prize claim not found.");
   }
 
   const now = new Date();
-  await prisma.marketPulsePrizeClaim.update({
-    where: { id: input.claimId },
-    data: {
-      status: input.status,
-      verifiedAt:
-        input.status === "VERIFIED" || input.status === "CLAIMED"
-          ? (claim.verifiedAt ?? now)
-          : claim.verifiedAt,
-      claimedAt: input.status === "CLAIMED" ? (claim.claimedAt ?? now) : claim.claimedAt,
-    },
-  });
+  try {
+    await prisma.marketPulsePrizeClaim.update({
+      where: { id: input.claimId },
+      data: {
+        status: input.status,
+        verifiedAt:
+          input.status === "VERIFIED" || input.status === "CLAIMED"
+            ? (claim.verifiedAt ?? now)
+            : claim.verifiedAt,
+        claimedAt:
+          input.status === "CLAIMED" ? (claim.claimedAt ?? now) : claim.claimedAt,
+      },
+    });
+  } catch (error) {
+    console.error("[admin] updateMarketPulsePrizeClaimStatusAction failed:", error);
+    return adminFail("Could not update prize claim. Please try again.");
+  }
 
-  revalidateAdmin();
-  return { ok: true, message: `Prize claim marked ${input.status}.` };
+  return finishAdminMutation(`Prize claim marked ${input.status}.`, [
+    revalidateAdminEffect(),
+  ]);
 }

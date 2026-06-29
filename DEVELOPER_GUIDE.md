@@ -54,13 +54,13 @@ The public site centers on **Market Pulse** — a recurring multi-day investment
 | **Member profile** | `/profile` | Members only | Profile + Market Pulse history; **i18n** |
 | **Market Pulse Hub** | `/market-pulse` | Public | Cycle progress, prize banner, leaderboard, Play CTA; **i18n** |
 | **Market Pulse play** | `/market-pulse/play` | Login to submit | News-style card + image; Bullish/Cautious + swipe; language switcher in header |
-| **Market Pulse leaderboard** | `/market-pulse/leaderboard` | Public | Current / Monthly / All-time; **i18n** |
+| **Market Pulse leaderboard** | `/market-pulse/leaderboard` | Public | Per-cycle standings with archive selector (`?cycleId=`); **My score** panel for signed-in members; **i18n** |
 | **PPA Insight reveal** | `/market-pulse/reveal` | Login for personal results | Gated until `revealAt`; **i18n** |
 | **Market Pulse rules** | `/market-pulse/rules` | Public | Challenge rules + scoring; **i18n** |
 | **Contest rules** | `/contest-rules` | Public | Prize eligibility + legal |
-| **Admin dashboard** | `/admin` | `ADMIN` only | **User management** (add/role/delete) + KV theme settings |
-| **Market Pulse admin** | `/admin/market-pulse` | `ADMIN` only | Cycles, cards, publish, lock PPA, reveal, prizes, **first-cycle guidance** |
-| Game settings API | `/api/game-settings` | GET public; POST ADMIN | KV theme/event (legacy compat) |
+| **Admin dashboard** | `/admin` | `ADMIN` only | **Command center** — overview cards, quick actions, user management |
+| **Market Pulse admin** | `/admin/market-pulse` | `ADMIN` only | Full MP ops — status header, cycles, cards, reveal/scoring, prizes |
+| Game settings API | `/api/game-settings` | GET public; POST ADMIN | KV theme/event (legacy API-only; no admin UI) |
 | Market Pulse APIs | `/api/market-pulse/*` | Mixed | `today`, `decision`, `leaderboard`, `reveal` |
 | **Contact** | `/contact` | Public | `contact@profitpulseally.com` |
 | **FAQ** | `/faq` | Public | Placeholder |
@@ -102,22 +102,46 @@ Google OAuth redirect URIs (must match exactly):
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
 
-### Verification — last run 29 Jun 2026 (final revamp QA)
+### Verification — last run 29 Jun 2026 (PPA timing final QA)
 
 | Check | Result |
 |-------|--------|
 | **Lint** | `npm run lint` — pass (0 errors; 10 pre-existing warnings) |
 | **Typecheck** | `npm run typecheck` — pass |
 | **Build** | `npm run build` — pass (`prisma db push && next build`) |
-| **Tests** | `npm test` — **110** Vitest tests (20 files) |
-| **Launch gating** | Non-admin blocked before 1 Jul 2026; ADMIN bypass server-side; announcement hidden after launch |
-| **Onboarding** | No redirect loop; recovery UI on `/auth/onboarding` |
-| **`/fortify-survey`** | URL unchanged; HTTP 200; no redirect; QR funnel intact |
-| **Homepage past events** | Placeholder cards no longer link to missing `/events/archive/*` routes |
+| **Tests** | `npm test` — **179** Vitest tests (31 files) |
+| **PPA timing workflow** | Players may decide before PPA is entered/locked; reveal/scoring requires locked PPA on all published cards; admin 72h warning (`admin-ppa-reveal-warning.ts`) |
+| **Player submit without PPA** | `server-core.test.ts` — “allows submission when PPA is missing and unlocked”; no `ppaSignalLockedAt` check in `submitMarketPulseDecision` |
+| **Reveal PPA gate** | `admin-reveal-action.test.ts` — blocks transaction + scoring when PPA incomplete; succeeds when complete |
+| **PPA stripping** | `server-security.test.ts` — PPA omitted pre-reveal; `toMarketPulseSwipeCardData` never forwards PPA |
+| **Admin-only warnings** | `/admin/market-pulse` redirects non-admin (`getMarketPulseAdminDashboardData` → `null`) |
+| **Admin action reliability** | `invokeAdminAction` + `finishAdminMutation` — post-commit side effects no longer surface false errors |
+| **Launch gating** | Unchanged — `launch-config.ts`; non-admin blocked before 1 Jul 2026 |
+| **PPA pre-reveal** | Unchanged — `reveal-access.ts`, `player-handlers.ts` strip PPA before reveal |
+| **`/fortify-survey`** | Unchanged — full-page route; no redirect |
 
 **Deploy checklist:** `docs/market-pulse-deploy-checklist.md`
 
 **Auth notes:** JWT strategy; middleware onboarding via `auth.config.ts`; JWT `update` re-fetches `contactNumber` from DB.
+
+### PPA timing — manual QA matrix (29 Jun 2026)
+
+Automated tests cover server rules below. Live browser sign-in was not re-run in this session; use this matrix for production smoke.
+
+| # | Scenario | Verification | Result |
+|---|----------|--------------|--------|
+| 1 | Player decision without PPA | `submitMarketPulseDecision` has no PPA checks; test with null signal/insight/lock; `stripPpaFromCardPayload` on API | **Pass** (unit) |
+| 2 | Player blocked (normal gates) | Tests: runtime closed, cycle not open, unpublished, reveal window closed, duplicate decision; errors never mention PPA | **Pass** (unit) |
+| 3 | Admin missing PPA warning ≤72h | `evaluatePpaRevealWarning` → `urgent`; `MarketPulsePpaRevealWarningBanner` on dashboard; admin route gated | **Pass** (unit + code) |
+| 4 | Missing PPA >72h away | `evaluatePpaRevealWarning` → `setup`; playability `ppa-setup` alert only, no red banner | **Pass** (unit) |
+| 5 | PPA complete | `severity: complete`; overview `MarketPulsePpaCompleteBadge`; reveal readiness `canReveal` | **Pass** (unit) |
+| 6 | Reveal/scoring safety | `validateCycleReadyForReveal` before `$transaction`; no score on failure (`admin-reveal-action.test.ts`) | **Pass** (unit) |
+| 7 | Public pages no PPA leak | `server-security.test.ts`, `player-handlers.ts` strip; swipe card type excludes PPA | **Pass** (unit) |
+| 8 | Admin card list PPA UX | `PpaStatusBadge`, **Needs PPA** filter, separate **Live for players** badge (`admin-card-ppa-status.ts`) | **Pass** (code) |
+
+**Note:** Admin **Publish** still requires locked PPA (`validateCardPublishable`). Checklist #1 applies to cards that are already `PUBLISHED` (seed, migration, or future publish-rule change) — not via the normal Publish button today.
+
+**Dead copy:** `mp.error.cardNotReady` remains in i18n but `submitMarketPulseDecision` no longer returns that string.
 
 ### July 2026 revamp — requirements closure
 
@@ -145,7 +169,9 @@ Google OAuth redirect URIs (must match exactly):
 
 **At launch:** USER can play when runtime `OPEN` + published card exists; pre-launch UI hidden.
 
-**Admin:** add/change role/delete user on `/admin`; create card with image URL on `/admin/market-pulse`; first-cycle guidance panel matches Jul dates.
+**Admin:** `/admin` overview + user management (search, filters, delete confirm); `/admin/market-pulse` status header, PPA reveal warning (≤72h), card PPA badges/filters, reveal confirm modal, prize claims; first-cycle guidance in collapsible Setup section.
+
+**Public sanity:** `/market-pulse`, `/market-pulse/play`, `/fortify-survey` routes unchanged; scoring/reveal/launch gating not modified by admin redesign.
 
 **Auth:** Google signup → contact onboarding → profile (no loop).
 
@@ -174,17 +200,32 @@ Cards can look correct in admin but still be **hidden** on `/market-pulse/play` 
 | Cycle `OPEN` + **active** | Create/edit cycle, check “Set as active cycle” | “No active challenge…” |
 | **Date window** | `startsAt ≤ now ≤ revealAt` | “No active challenge…” or “not open right now” (expired demo cycles) |
 | Card **PUBLISHED** | **Publish** button (not just status dropdown) | “Today’s card is coming soon…” |
-| PPA **locked** | Lock PPA signal before Publish | Publish disabled / submit rejected |
 | `publishedAt ≤ now` | Published at field or Publish button | Card filtered out |
 | Day number | Day 1 = first day of cycle (1-based in admin form) | Wrong or missing card for today |
 
+**Not a player gate:** PPA signal/insight/lock. Players can submit and lock decisions on published cards even when PPA is incomplete. PPA remains hidden until reveal (`reveal-access.ts`).
+
+**Admin publish gate (separate):** `validateCardPublishable` in `card-validation.ts` still requires PPA signal, insight, and lock before **Publish** — this controls getting a card live, not whether an already-published card accepts decisions.
+
+**Reveal/scoring gate:** All **published** cards must have `ppaSignal`, `ppaInsight`, and `ppaSignalLockedAt` before admin reveal (`reveal-ppa-validation.ts`, `admin-reveal-status.ts`). Missing PPA blocks reveal, not play.
+
+**Admin PPA warning:** When `revealAt` is within **72 hours** (`PPA_REVEAL_WARNING_HOURS`), `/admin/market-pulse` shows an urgent banner and per-card emphasis for published cards missing locked PPA (`admin-ppa-reveal-warning.ts`, `MarketPulseCardPanel`).
+
 **Common pitfall:** Demo seed cycle `[DEMO] Market Pulse Local Seed` uses **2025** dates — after `revealAt` passes, admin still shows “Active” but players see no challenge. Edit cycle dates to the current window or create a new 2026 cycle.
 
-Admin dashboard shows an amber **“Active cycle is not visible to players”** banner when dates/status block playability (`cycle-playability.ts`).
+Playability issues (runtime, cycle dates, unpublished cards — **not** missing PPA) appear in the **alert panel** on `/admin/market-pulse` (`admin-mp-status.ts`, `cycle-playability.ts`). PPA setup notes appear when reveal is **>72h** away; urgent PPA warnings when **≤72h**.
+
+### PPA timing workflow (summary)
+
+1. **Player decisions** — Eligibility does **not** depend on PPA being locked or complete (`submitMarketPulseDecision` in `server.ts`).
+2. **Card visibility / playability** — Controlled by runtime `OPEN`, active cycle, date window, `PUBLISHED` status, and `publishedAt` — not PPA completion.
+3. **Reveal / scoring** — Requires locked PPA signal + insight on every published card before admin reveal runs.
+4. **Admin warnings** — Urgent banner when `revealAt` is within 72 hours and PPA is incomplete; card list shows PPA status badges and **Needs PPA** filter.
+5. **Public / player UI** — PPA fields stripped before reveal; never shown on play, hub, or leaderboard pre-reveal APIs.
 
 ### First public cycle guidance (`/admin/market-pulse`)
 
-Panel **“First public cycle guidance”** (`FirstCycleGuidancePanel.tsx`, `first-cycle-admin-guidance.ts`):
+Panel **“First public cycle guidance”** — collapsible under **Setup guide** on `/admin/market-pulse` (`FirstCycleGuidancePanel.tsx`, `first-cycle-admin-guidance.ts`):
 
 | Setting | Recommended |
 |---------|-------------|
@@ -193,9 +234,10 @@ Panel **“First public cycle guidance”** (`FirstCycleGuidancePanel.tsx`, `fir
 | Reveal | On or after cycle end (recommended 11 Jul 00:00 HKT) |
 | Prize label | One Ocean Park ticket |
 | Runtime | `OPEN` |
-| Cards | `PUBLISHED` + locked PPA |
+| Cards | All cards **PUBLISHED** for play (PPA not required for player decisions) |
+| PPA & reveal | Locked PPA signal + insight on all published cards **before reveal/scoring**; 72h admin warning if incomplete |
 
-Inform-only (no auto-overwrite). **Prefill create-cycle form** opens recommended values; admin saves manually.
+Inform-only (no auto-overwrite). **Prefill create-cycle form** opens recommended values; admin saves manually. Incomplete PPA does **not** block the first-cycle launch window check — only unpublished cards do (`first-cycle-admin-guidance.ts`).
 
 ### Vercel checklist (production)
 
@@ -239,7 +281,7 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 - **Membership** — Auth.js sign-in (Google + email), profile, role-based admin, **admin user management**
 - **i18n** — Cookie `ppa_locale` (`en` / `zh-Hant`); `LanguageSwitcher` in header, mobile nav, play header
 - **Philosophy & trust** — PPA investment philosophy; expert headshots on homepage
-- **Admin** — member + user ops (`/admin`) + Market Pulse ops (`/admin/market-pulse`) + KV theme settings
+- **Admin** — member + user ops (`/admin`) + Market Pulse ops (`/admin/market-pulse`)
 - **Lead migration** — `scripts/import-leads.ts` for legacy Google Form CSV
 
 ---
@@ -301,7 +343,7 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 ├── src/
 │   ├── app/
 │   │   ├── admin/
-│   │   │   ├── page.tsx        ← User management + KV settings
+│   │   │   ├── page.tsx        ← User management
 │   │   │   └── market-pulse/   ← Cycle/card CMS, reveal, prizes
 │   │   ├── api/market-pulse/   ← today, decision, leaderboard, reveal
 │   │   ├── market-pulse/
@@ -329,7 +371,7 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 │   │       ├── launch-config.ts        ← Public launch Jul 2026, ADMIN bypass
 │   │       ├── first-cycle-admin-guidance.ts
 │   │       ├── server.ts, cycle-playability.ts, reveal-access.ts, admin-actions.ts
-│   │       └── *.test.ts               ← 110 unit tests total (repo)
+│   │       └── *.test.ts               ← 147 unit tests total (repo)
 └── …
 ```
 
@@ -351,7 +393,7 @@ npm run dev
 | `npm run build` | **`prisma db push && next build`** (Vercel uses this) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript (`tsc --noEmit`) |
-| `npm test` | Vitest unit tests (`vitest run`) — **110 tests** |
+| `npm test` | Vitest unit tests (`vitest run`) — **147 tests** |
 | `npm run db:migrate` | Prisma migrate dev (when using migration files) |
 | `npm run db:push` | Push schema without migration files |
 | `npm run db:seed` | Seed **demo Market Pulse** data (dev only — see [§4.1](#41-market-pulse-demo-seed)) |
@@ -444,7 +486,8 @@ Then change `package.json` build to `prisma migrate deploy && next build` and ba
 | `MarketPulseCycle` | Challenge window — `startsAt`, `endsAt`, `revealAt`, `status`, `prizeLabel` |
 | `MarketPulseCard` | Daily signal card — headline, ticker, `newsBody`, `cardImageUrl`/`cardImageAlt`, `logoInitials`, `userPrompt`, `ppaSignal` (admin-only until reveal), `status` |
 | `MarketPulseDecision` | User's Bullish/Cautious call per card (`@@unique([userId, cardId])`) |
-| `MarketPulseScoreEvent` | Participation + match + streak points (computed on reveal) |
+| `MarketPulseScoreEvent` | Per-card participation + match + streak points (computed on reveal) |
+| `MarketPulseScore` | Per-user per-cycle aggregate (`participationScore`, `decisionsSubmitted`, `totalCards`) — written on reveal |
 | `MarketPulsePrizeClaim` | Prize fulfillment workflow |
 | `MarketPulseAuditLog` | Admin action audit trail |
 | `MarketPulseGameSetting` | Runtime singleton — `activeCycleId`, `runtimeStatus`, leaderboard mode |
@@ -510,7 +553,7 @@ Event **detail** pages and admin MP operational UI remain largely static bilingu
 | `/login` | Public | Tabbed Sign In / Create Account; Google + magic link below; full-page |
 | `/auth/onboarding` | Logged-in | Contact form; recovery buttons; OAuth grace period |
 | `/profile` | Logged-in | Profile Details + Market Pulse History; sign out |
-| `/admin` | `role === ADMIN` | **User management** + game settings; others → `/` |
+| `/admin` | `role === ADMIN` | **Command center** — overview + user management; non-admin → `/` |
 
 **Full-page routes (no header/footer):** `/fortify-survey`, `/login`, `/admin`, `/auth/onboarding`
 
@@ -527,10 +570,10 @@ Responsive and accessibility improvements across public routes. **No changes** t
 | **Shell** | `LayoutShell.tsx`, `globals.css`, `layout.tsx` | `overflow-x-clip`; `viewportFit: cover`; `scroll-padding-top` for sticky header; `inert` on main/footer when menu open |
 | **Footer** | `SiteFooter.tsx` | Accordion link groups on mobile; `min-h-11` tap targets |
 | **Market Pulse** | `MarketPulse*`, `MarketPulseSwipeCard` | Mobile play layout; button + swipe paths; reduced-motion support; PPA still stripped pre-reveal |
-| **Admin** | `admin/*`, `MarketPulseAdminDashboard` | Card lists on mobile; accordions; sticky playability warning |
+| **Admin** | `admin/*`, `MarketPulseAdminDashboard`, `AdminOverviewCards` | Zinc command-center shell; stacked sections + anchor nav on MP admin; responsive card list |
 | **Home / events / auth** | `src/components/home/*`, `events/*`, `LoginPage` | Compact sections; touch-friendly forms |
 
-**Breakpoints:** Most mobile patterns use `< md` (768px) or `< lg` (1024px) for admin accordions vs desktop stacks.
+**Breakpoints:** Most mobile patterns use `< md` (768px) or `< lg` (1024px); MP admin uses stacked sections + sticky anchor nav on all widths.
 
 ### Client session
 
@@ -565,18 +608,18 @@ if (session.user.role !== "ADMIN") redirect("/");
 | `/game` | — | **301** → `/market-pulse` (`next.config.ts`) |
 | `/market-pulse` | `src/app/market-pulse/page.tsx` | Hub — cycle progress, prizes, top-5 leaderboard |
 | `/market-pulse/play` | `src/app/market-pulse/play/page.tsx` | Daily swipe card (Bullish / Cautious) |
-| `/market-pulse/leaderboard` | `src/app/market-pulse/leaderboard/page.tsx` | Full leaderboard (current / monthly / all-time) |
+| `/market-pulse/leaderboard` | `src/app/market-pulse/leaderboard/page.tsx` | Per-cycle leaderboard + cycle archive (`?cycleId=`); personal score panel when signed in |
 | `/market-pulse/reveal` | `src/app/market-pulse/reveal/page.tsx` | PPA Insight results (gated until reveal) |
 | `/market-pulse/rules` | `src/app/market-pulse/rules/page.tsx` | Challenge rules |
 | `/contest-rules` | `src/app/contest-rules/page.tsx` | Contest / prize legal |
-| `/admin` | `src/app/admin/page.tsx` | User management + KV settings |
-| `/admin/market-pulse` | `src/app/admin/market-pulse/page.tsx` | Cycle/card CMS, reveal, scoring, prizes |
+| `/admin` | `src/app/admin/page.tsx` | Admin command center — overview cards, user management |
+| `/admin/market-pulse` | `src/app/admin/market-pulse/page.tsx` | Market Pulse Admin — full ops dashboard |
 | `/fortify-survey` | `src/app/fortify-survey/page.tsx` | Fortify registration (QR URL) |
 | `/events/fortify-your-future` | `src/app/events/fortify-your-future/page.tsx` | Past Fortify event |
 | `/events/fortify-sales-marketing` | `src/app/events/fortify-sales-marketing/page.tsx` | Coming soon event |
 | `/concept`, `/blog/*`, `/events` | … | Content & events |
 | `/api/auth/[...nextauth]` | Auth.js handlers | |
-| `/api/game-settings` | KV theme/event config | Legacy compat |
+| `/api/game-settings` | KV theme/event config | Legacy API-only (no admin UI) |
 | `/api/market-pulse/today` | Today's card (auth) | PPA stripped pre-reveal |
 | `/api/market-pulse/decision` | `player-handlers.ts` | POST — submit decision; **403 pre-launch** unless `ADMIN` |
 | `/api/market-pulse/leaderboard` | Leaderboard JSON | Public GET |
@@ -684,15 +727,42 @@ Dark zinc layout (`bg-zinc-950`). Composes five sections — **no blog preview**
 
 - **Server:** `getMarketPulsePlayPageData()` — today's published card, locked decision, sidebar leaderboard
 - **Client:** `MarketPulsePlayExperience` + `MarketPulseSwipeCard` — news-style card with optional **card image** (+ fallback); drag/tap Bullish or Cautious
-- **Submit:** `submitMarketPulseDecisionAction` → `MarketPulseDecision` row + participation score event
+- **Submit:** `submitMarketPulseDecisionAction` → `MarketPulseDecision` row (scores persisted on admin reveal, not at submit time)
 - **States:** `pre_launch`, `no_active_cycle`, `cycle_unavailable`, `no_card_today`, `sign_in_required`, `playable`, `locked`
 - **Pre-launch:** non-admin → `pre_launch` status; ADMIN bypass via `launch-config.ts`
 - **Playability:** `getActiveMarketPulseCycle()` returns null when `revealAt < now` even if cycle is pinned active — see [Making Market Pulse visible](#making-market-pulse-visible-to-players-go-live)
 - PPA signal/insight **never** exposed before reveal (`reveal-access.ts`, `stripPpaFromCardPayload`)
+- **Decisions:** Players may lock Bullish/Cautious on published cards without PPA lock (`server-core.test.ts`: “allows submission when PPA is missing and unlocked”)
 
-### 10.5 Leaderboard & reveal
+### 10.5 Leaderboard, personal scores & reveal
 
-- **`/market-pulse/leaderboard`** — `MarketPulseLeaderboard.tsx`; tabs: current cycle, monthly, all-time
+#### Public leaderboard (`/market-pulse/leaderboard`)
+
+- **Component:** `MarketPulseLeaderboard.tsx` — cycle dropdown, public standings table, **My score for this cycle** panel (`MarketPulseLeaderboardMyScore.tsx`).
+- **Data:** `getMarketPulseLeaderboardPageData(cycleId?, viewerUserId?)` in `leaderboard-data.ts`; cycle list/selection in `leaderboard-cycle-select.ts`.
+- **Default cycle:** Active/current cycle when one exists; otherwise the most recent **revealed** cycle; empty state if none.
+- **Route:** `?cycleId=<uuid>` selects a cycle. Newest-first ordering in the selector.
+- **Archive:** Revealed past cycles appear as **Archived result**; active unrevealed cycle appears as **Current cycle** (locked until reveal).
+- **Public standings:** Loaded only when the selected cycle is **revealed** (`viewState === ready`). Unrevealed cycles show a locked message — **no scores in page props or client payload**.
+- **Scoring unchanged:** `getMarketPulseLeaderboard` + `calculateAndPersistCycleScores` on admin reveal; formulas in `score-calculation.ts` (+10 participation, +50 match, +100 streak every 3 matches).
+
+#### My score for this cycle (logged-in only)
+
+- **Loader:** `getLeaderboardViewerScore()` in `leaderboard-viewer-score.ts` — queries **only** `session.user.id` + `selectedCycle.id`.
+- **States:** `logged_out` (sign-in prompt), `locked_participating` / `locked_no_participation` (unrevealed — **no score/rank/participation points exposed**), `revealed_no_score`, `revealed_summary` (total, participation, rank, cards played).
+- **Per-card breakdown (revealed only):** `getLeaderboardViewerScoreBreakdown()` joins `MarketPulseDecision` + `MarketPulseScoreEvent` per card; PPA **signal** label only (no `ppaInsight` text on leaderboard).
+- **Participation score source:**
+  - **After reveal scoring:** `MarketPulseScore.participationScore` per user/cycle (written in `calculateAndPersistCycleScores`), or sum of `MarketPulseScoreEvent.participationPoints`.
+  - **Pre-reveal / no aggregate row:** Derived on read as `decisionsSubmitted × 10` (`PARTICIPATION_POINTS`) — shown only in locked messaging paths that **omit numeric scores** on the public leaderboard page.
+  - **Display on revealed summary:** Prefer stored `MarketPulseScore`; fallback to derived participation from decisions when historical rows are missing.
+
+#### Hub & play sidebar (unchanged scope)
+
+- Hub (`hub-data.ts`) and play sidebar still show **current-cycle** top-N preview only — not the full archive UI.
+- Legacy API `GET /api/market-pulse/leaderboard?mode=monthly|all-time` still exists for compatibility; the **public leaderboard page** is cycle-scoped only.
+
+#### Reveal page (`/market-pulse/reveal`)
+
 - **`/market-pulse/reveal`** — personal results + PPA Insight after `revealAt`; pending countdown otherwise
 - Scoring: participation (+10), match bonus, streak bonus — computed in `calculateAndPersistCycleScores` on admin reveal
 
@@ -707,24 +777,41 @@ Server component: Profile Details + Market Pulse history (`getUserMarketPulseHis
 
 ### 10.8 Admin
 
-**`/admin`** — **user management** (`AdminUserManagement`, `AdminAddUserForm`, `AdminMembersTable`) + KV theme settings. Server actions: `admin-user-actions.ts`; safeguards in `admin-user-validation.ts` (self-delete, last-admin demotion, self-demotion).
+Admin uses a **zinc command-center** shell on both `/admin` and `/admin/market-pulse`. Non-`ADMIN` sessions redirect to `/`. All mutations return a shared `AdminActionResult` (`src/lib/admin/action-result.ts`); clients use `invokeAdminAction` so successful DB writes are not reported as errors when post-commit side effects (audit log, `revalidatePath`) fail.
 
-**`/admin/market-pulse`** — full ops dashboard (`MarketPulseAdminDashboard`):
+#### `/admin` — command center
 
-1. **First-cycle guidance** panel + optional prefill for create-cycle form
-2. **Runtime** → `OPEN` (master switch for submissions)
-3. **Create cycle** → status `OPEN`, Jul 2026 window, prize label, **Set as active cycle**
-4. **Create cards** — day 1 = first day; headline, ticker, **news body**, **card image URL/alt**, PPA signal + insight
-5. **Lock PPA signal** (required before Publish)
-6. **Publish** (`PUBLISHED` + `publishedAt`)
-7. **Reveal cycle** + calculate scores (after `revealAt`)
-8. Prize claim review
+| Area | Components | Behavior |
+|------|------------|----------|
+| **Overview** | `AdminOverviewCards`, `admin-overview-data.ts` | User count, MP runtime, active cycle, player visibility, system alerts |
+| **Quick actions** | Links in page shell | Manage Market Pulse, Hub, Play, Leaderboard |
+| **User management** | `AdminUserManagement`, `AdminMembersTable`, `AdminUserFilters`, `AdminRoleBadge`, `AdminConfirmDialog` | Add user; change role; delete with modal confirm; search/filter (`user-member-filter.ts`) |
+| **Safeguards** | `admin-user-validation.ts` | Block self-delete, self-demotion, final-admin demotion |
 
-Card image guidance in form: `MARKET_PULSE_CARD_IMAGE_GUIDANCE` (1200×675, 16:9).
+**Not on `/admin`:** VC/KV Game Settings UI removed. `AdminGameSettings.tsx` is retained but unmounted. `/api/game-settings` remains legacy API-only (see §11).
 
-Dashboard shows **Not playable** badge and playability reason when cycle dates or status block players.
+#### `/admin/market-pulse` — Market Pulse Admin
 
-Requires `role = ADMIN`. See `docs/market-pulse-deploy-checklist.md` §4.
+Shell: `MarketPulseAdminShell` — sticky **status header**, **quick actions**, **PPA reveal warning** (≤72h), **alert panel** (playability/runtime warnings), **anchor nav**, stacked sections.
+
+| Section | Key components | Ops |
+|---------|----------------|-----|
+| **Overview** | Summary cards, PPA complete badge | Runtime, active cycle, card counts |
+| **Setup guide** | `FirstCycleGuidancePanel` (collapsible) | Jul 2026 first-cycle recommendations + PPA/reveal note + prefill create-cycle |
+| **Runtime** | Runtime form | Master `OPEN`/`CLOSED` switch for submissions |
+| **Cycles** | Cycle list + form + participation/scoring stats | Create/edit; set active; per-cycle cards/participants/decisions/completion; scores-generated flag; top winner after reveal |
+| **Cards** | `MarketPulseCardList`, `MarketPulseCardFilters`, `MarketPulseCardPanel`, `MarketPulseCardForm` | PPA status badges; **Needs PPA** filter; reveal-urgent card styling; lock/publish/edit PPA |
+| **Reveal & scoring** | `MarketPulseRevealScoringSection`, `RevealCycleButton` | Blocked until all published cards have locked PPA; confirm modal; top-5 preview |
+| **Prize claims** | `MarketPulsePrizeReview` | Review claims; contact number; empty states |
+| **Audit** | Existing audit table | Admin action log |
+
+**Card workflow (admin):** create card → fill content → set **PPA signal + insight** → **Lock PPA** → **Publish** (`PUBLISHED` + `publishedAt`). Publish validation requires PPA (`card-validation.ts`); player decisions on published cards do not. Image guidance: `MARKET_PULSE_CARD_IMAGE_GUIDANCE` (1200×675, 16:9).
+
+**PPA helpers:** `admin-card-ppa-status.ts` (per-card status), `admin-ppa-reveal-warning.ts` (72h window), `reveal-ppa-validation.ts` (reveal block), `PPA_REVEAL_WARNING_HOURS = 72` in `constants.ts`.
+
+**Playability:** `admin-mp-status.ts` drives alert panel when cycle dates/runtime/unpublished cards block `/market-pulse/play` (`cycle-playability.ts`). PPA missing → setup note (>72h) or urgent banner (≤72h), not a player playability block.
+
+Server actions: `src/lib/market-pulse/admin-actions.ts` (wrapped with `finishAdminMutation`). Requires `role = ADMIN`. See `docs/market-pulse-deploy-checklist.md` §4.
 
 ### 10.9 Blog, events, concept
 
@@ -770,13 +857,14 @@ Then add the route to `SiteFooter.tsx` if it should appear in the footer.
 
 Standard Auth.js v5 endpoints (sign-in, sign-out, callbacks, session).
 
-### Game settings — `/api/game-settings`
+### Game settings — `/api/game-settings` (legacy API-only)
 
 | Method | Auth | Behavior |
 |--------|------|----------|
-| GET | Public | Returns KV settings (`theme`, `event`, …) or defaults — legacy homepage theming |
+| GET | Public | Returns KV settings (`theme`, `event`, …) or defaults — legacy arcade compat |
+| POST | ADMIN | Writes KV settings — no admin UI; kept for compatibility |
 
-Admin UI: `AdminGameSettings.tsx` on `/admin`.
+Not shown on `/admin`. Component `AdminGameSettings.tsx` is retained but unmounted. Market Pulse runtime uses Prisma `MarketPulseGameSetting` via `/admin/market-pulse`.
 
 ### Market Pulse — `/api/market-pulse/*`
 
@@ -784,7 +872,7 @@ Admin UI: `AdminGameSettings.tsx` on `/admin`.
 |-------|--------|------|----------|
 | `/api/market-pulse/today` | GET | User | Today's card + decision state; **PPA stripped** pre-reveal |
 | `/api/market-pulse/decision` | POST | User | Submit Bullish/Cautious; **403 before public launch** unless `ADMIN` |
-| `/api/market-pulse/leaderboard` | GET | Public | `?mode=current-cycle\|monthly\|all-time`; empty array if DB unavailable |
+| `/api/market-pulse/leaderboard` | GET | Public | `?cycleId=` (page) or `?mode=current-cycle\|monthly\|all-time` (legacy API); empty array if DB unavailable |
 | `/api/market-pulse/reveal` | GET | User | Personal reveal payload; 404 until cycle revealed |
 
 Handlers: `src/lib/market-pulse/player-handlers.ts`. Core logic: `src/lib/market-pulse/server.ts`.
@@ -796,7 +884,7 @@ Handlers: `src/lib/market-pulse/player-handlers.ts`. Core logic: `src/lib/market
 ### Unit tests (Vitest)
 
 ```bash
-npm test          # vitest run — 110 tests across MP, i18n, auth, events, admin users
+npm test          # vitest run — see current count in CI; MP tests under src/lib/market-pulse/**/*.test.ts
 npm run typecheck # tsc --noEmit
 ```
 
@@ -874,13 +962,13 @@ if (!session?.user?.id) redirect("/login?callbackUrl=/your-path");
 
 ### Submit a Market Pulse decision
 
-`submitMarketPulseDecisionAction` in `player-actions.ts` → `submitMarketPulseDecision` in `server.ts`. One decision per user per card; participation points on submit; match/streak on reveal. **Pre-launch:** `canSubmitMarketPulseDecision` in `launch-config.ts` blocks non-admin USER before 1 Jul 2026 HKT.
+`submitMarketPulseDecisionAction` in `player-actions.ts` → `submitMarketPulseDecision` in `server.ts`. One decision per user per card (`MarketPulseDecision` only at submit); participation/match/streak points persisted on admin reveal. **Pre-launch:** `canSubmitMarketPulseDecision` in `launch-config.ts` blocks non-admin USER before 1 Jul 2026 HKT.
 
-**Leaderboard:** `getMarketPulseLeaderboard` in `server.ts`; page loaders in `hub-data.ts`, `leaderboard-data.ts`.
+**Leaderboard:** `getMarketPulseLeaderboardPageData` in `leaderboard-data.ts` (cycle selector + viewer score); `getMarketPulseLeaderboard` in `server.ts` for public entries.
 
 **Reveal gating:** `reveal-access.ts` — `getMarketPulseCardPublicPayload` strips `ppaSignal` / `ppaInsight` until `revealAt`.
 
-**Admin ops:** `admin-actions.ts` — create cycle/card, lock PPA, publish, reveal + `calculateAndPersistCycleScores`.
+**Admin ops:** `admin-actions.ts` — create cycle/card, lock PPA, publish, reveal + `calculateAndPersistCycleScores`. Reveal blocked when published cards lack locked PPA (`reveal-ppa-validation.server.ts`).
 
 **Local demo data:** `npm run db:seed` (dev only).
 
@@ -930,7 +1018,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 3. **Social URLs** — LinkedIn/Twitter placeholders; Instagram live.
 4. **Past events placeholders** — “Zero-Cost Life Salon” and “Founder's Funding Roundtable” show on homepage without archive links until detail pages exist (`archiveHref` optional in `home-events-hub.ts`).
 5. **Event detail pages** — Static bilingual strings; not fully driven by `ppa_locale`.
-6. **KV vs Prisma settings** — KV theme/event on `/admin` is legacy; runtime game state is Prisma `MarketPulseGameSetting`.
+6. **KV vs Prisma settings** — KV theme/event API (`/api/game-settings`) is legacy API-only with no admin UI; runtime game state is Prisma `MarketPulseGameSetting` on `/admin/market-pulse`. VC/KV Game Settings removed from `/admin` (Jun 2026 redesign).
 7. **Demo seed dates** — `npm run db:seed` creates a cycle relative to seed time; production may retain expired `[DEMO]` cycles — update in admin or create new Jul 2026 cycle.
 8. **No migration files** — Production uses `prisma db push` in build; adopt `migrate deploy` when ready.
 9. **Legacy GameScore** — Profile may still show old arcade scores alongside swipe challenge history.
@@ -947,7 +1035,13 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | Auth actions | `src/lib/auth-actions.ts`, `src/lib/auth/onboarding-routes.ts` |
 | Login / onboarding | `LoginPage.tsx`, `OnboardingPage.tsx`, `OnboardingRecoveryPanel.tsx`, `/auth/onboarding/*` |
 | i18n | `src/lib/i18n/*`, `LocaleProvider.tsx`, `LanguageSwitcher.tsx` |
-| Admin users | `AdminUserManagement.tsx`, `admin-user-actions.ts`, `admin-user-validation.ts` |
+| Admin users | `AdminUserManagement.tsx`, `AdminMembersTable.tsx`, `admin-user-actions.ts`, `admin-user-validation.ts`, `user-member-filter.ts` |
+| Admin action results | `src/lib/admin/action-result.ts` — `finishAdminMutation`, `invokeAdminAction` |
+| Admin overview | `AdminOverviewCards.tsx`, `admin-overview-data.ts` |
+| MP admin shell | `MarketPulseAdminShell.tsx`, `admin-mp-status.ts`, `MarketPulseAdminDashboard.tsx` |
+| MP admin cards | `MarketPulseCardList.tsx`, `MarketPulseCardForm.tsx`, `MarketPulseAdminCardPreview.tsx`, `admin-card-filter.ts` |
+| MP reveal/prize | `MarketPulseRevealScoringSection.tsx`, `RevealCycleButton.tsx`, `admin-reveal-status.ts`, `reveal-ppa-validation.ts`, `admin-ppa-reveal-warning.ts`, `MarketPulsePrizeReview.tsx` |
+| MP card admin | `MarketPulseCardPanel.tsx`, `admin-card-ppa-status.ts`, `admin-card-filter.ts` |
 | Launch / pre-launch | `src/lib/market-pulse/launch-config.ts`, `MarketPulseLaunchAnnouncement.tsx` |
 | First-cycle admin | `first-cycle-admin-guidance.ts`, `FirstCycleGuidancePanel.tsx` |
 | Content layout | `src/components/layout/ContentPageLayout.tsx` |
@@ -956,7 +1050,8 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | Admin | `src/app/admin/page.tsx`, `src/app/admin/market-pulse/page.tsx`, `MarketPulseAdminDashboard.tsx` |
 | Market Pulse Hub | `src/app/market-pulse/page.tsx`, `MarketPulseHubPage.tsx`, `hub-data.ts` |
 | Market Pulse play | `src/app/market-pulse/play/page.tsx`, `MarketPulsePlayExperience.tsx`, `MarketPulseSwipeCard.tsx` |
-| Leaderboard / reveal | `leaderboard/page.tsx`, `reveal/page.tsx`, `leaderboard-data.ts`, `reveal-data.ts` |
+| Leaderboard / reveal | `leaderboard/page.tsx`, `reveal/page.tsx`, `leaderboard-data.ts`, `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `leaderboard-score-breakdown.ts`, `reveal-data.ts` |
+| Admin cycle stats | `admin-cycle-stats.ts`, `admin-data.ts` (`MarketPulseAdminCycleRow` participation fields) |
 | Market Pulse domain | `server.ts`, `cycle-playability.ts`, `playable-card.ts`, `reveal-access.ts`, `admin-actions.ts`, `card-validation.ts` |
 | Market Pulse APIs | `src/app/api/market-pulse/*`, `player-handlers.ts` |
 | Deploy checklist | `docs/market-pulse-deploy-checklist.md` |
@@ -975,10 +1070,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 - **Languages:** EN + Traditional Chinese (`ppa_locale` cookie); MP launch messages in `launch-config.ts`
 - **Data stores:** Postgres (users, Market Pulse, auth), KV (legacy theme), Markdown (blog)
-- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (110), `npm run build`
-- **Production smoke:** guest/USER/ADMIN before launch; language switch; Google onboarding; admin users; card with image; `/fortify-survey` unchanged
+- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (179), `npm run build`
+- **Production smoke:** PPA timing matrix above; guest/USER/ADMIN before launch; admin MP card/reveal flow; `/fortify-survey` unchanged
 - **Lint warnings:** Legacy castle-siege; TanStack Table in admin members table
 
 ---
 
-*Last updated: 29 Jun 2026 — Final revamp QA on `main`: requirements closure table, production smoke/rollback notes, 110 tests, homepage past-event placeholder fix (`archiveHref` optional). Revamp merged at `79033a4`.*
+*Last updated: 29 Jun 2026 — PPA timing final QA: 179 tests pass; manual QA matrix in §Current site status.*

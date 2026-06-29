@@ -23,7 +23,10 @@ export const FIRST_CYCLE_GUIDANCE = {
     "On or after cycle end — recommended 11 July 2026 00:00 HKT (existing rule: reveal ≥ end)",
   prizeLabel: "One Ocean Park ticket",
   runtimeRequired: "OPEN" as const,
-  cardRequirements: "All cards PUBLISHED with locked PPA signal",
+  cardRequirements:
+    "All cards PUBLISHED for player visibility (runtime, cycle dates, and publish status control play — not PPA completion)",
+  ppaRevealNote:
+    "PPA signal + insight must be locked before reveal/scoring. Players can decide before PPA is entered; PPA stays hidden until reveal. Admin dashboard warns when reveal is within 72 hours and PPA is incomplete.",
   preLaunchNote:
     "Public users are blocked before July 1, 2026. ADMIN accounts can test earlier.",
 } as const;
@@ -124,13 +127,6 @@ export function evaluateFirstPublicCycleSetup(input: {
     if (unpublished.length > 0) {
       warnings.push(
         `${unpublished.length} card(s) are not PUBLISHED on the active cycle.`,
-      );
-    }
-
-    const unlockedPpa = cycleCards.filter((card) => !card.ppaSignalLockedAt);
-    if (unlockedPpa.length > 0) {
-      warnings.push(
-        `${unlockedPpa.length} card(s) are missing locked PPA on the active cycle.`,
       );
     }
   }

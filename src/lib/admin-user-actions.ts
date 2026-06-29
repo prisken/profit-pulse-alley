@@ -1,30 +1,40 @@
 "use server";
 
 import bcrypt from "bcrypt";
-import { revalidatePath } from "next/cache";
 import type { Role } from "@prisma/client";
 
-import { requireAdminSession } from "@/lib/market-pulse/admin-auth";
+import {
+  adminFail,
+  adminOk,
+  fieldErrorsFromRecord,
+  finishAdminMutation,
+  type AdminActionResult,
+} from "@/lib/admin/action-result";
 import {
   getDeleteUserBlockReason,
   getRoleChangeBlockReason,
   validateAdminCreateUserInput,
 } from "@/lib/admin-user-validation";
+import { requireAdminSession } from "@/lib/market-pulse/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 const BCRYPT_SALT_ROUNDS = 12;
 const ADMIN_PAGE = "/admin";
 
-export type AdminUserActionResult =
-  | { ok: true; message?: string }
-  | { ok: false; error: string };
+export type { AdminActionResult as AdminUserActionResult } from "@/lib/admin/action-result";
 
-function unauthorized(): AdminUserActionResult {
-  return { ok: false, error: "Unauthorized" };
+function unauthorized(): AdminActionResult {
+  return adminFail("Unauthorized");
 }
 
-function revalidateAdminUsers() {
-  revalidatePath(ADMIN_PAGE);
+function revalidateAdminUsersEffect() {
+  return {
+    label: "cache refresh",
+    run: () => {
+      revalidatePath(ADMIN_PAGE);
+    },
+  };
 }
 
 async function writeUserAuditLog(input: {
@@ -64,7 +74,7 @@ export type CreateAdminUserInput = {
 
 export async function createAdminUserAction(
   input: CreateAdminUserInput,
-): Promise<AdminUserActionResult> {
+): Promise<AdminActionResult> {
   const admin = await requireAdminSession();
   if (!admin) {
     return unauthorized();
@@ -84,7 +94,7 @@ export async function createAdminUserAction(
       validation.errors.password ??
       validation.errors.role ??
       "Invalid user data.";
-    return { ok: false, error: firstError };
+    return adminFail(firstError, fieldErrorsFromRecord(validation.errors));
   }
 
   const { email, name, contactNumber, role, password } = validation.normalized;
@@ -94,15 +104,16 @@ export async function createAdminUserAction(
     select: { id: true },
   });
   if (existing) {
-    return { ok: false, error: "A user with this email already exists." };
+    return adminFail("A user with this email already exists.");
   }
 
   const hashedPassword = password
     ? await bcrypt.hash(password, BCRYPT_SALT_ROUNDS)
     : null;
 
+  let user: { id: string; email: string; role: Role };
   try {
-    const user = await prisma.user.create({
+    user = await prisma.user.create({
       data: {
         email,
         name: name || null,
@@ -112,34 +123,33 @@ export async function createAdminUserAction(
       },
       select: { id: true, email: true, role: true },
     });
-
-    await writeUserAuditLog({
-      adminUserId: admin.userId,
-      entityId: user.id,
-      action: "CREATE_USER",
-      newValue: JSON.stringify({
-        email: user.email,
-        role: user.role,
-        hasPassword: Boolean(hashedPassword),
-      }),
-    });
-
-    revalidateAdminUsers();
-    return {
-      ok: true,
-      message: hashedPassword
-        ? "User created with password credentials."
-        : "User created. They can sign in when OAuth or magic-link is enabled.",
-    };
   } catch (error) {
     console.error("[admin-user-actions] createAdminUserAction failed:", error);
-    return { ok: false, error: "Could not create user. Please try again." };
+    return adminFail("Could not create user. Please try again.");
   }
+
+  return finishAdminMutation("User added.", [
+    {
+      label: "audit log",
+      run: () =>
+        writeUserAuditLog({
+          adminUserId: admin.userId,
+          entityId: user.id,
+          action: "CREATE_USER",
+          newValue: JSON.stringify({
+            email: user.email,
+            role: user.role,
+            hasPassword: Boolean(hashedPassword),
+          }),
+        }),
+    },
+    revalidateAdminUsersEffect(),
+  ]);
 }
 
 export async function deleteAdminUserAction(
   userId: string,
-): Promise<AdminUserActionResult> {
+): Promise<AdminActionResult> {
   const admin = await requireAdminSession();
   if (!admin) {
     return unauthorized();
@@ -147,7 +157,7 @@ export async function deleteAdminUserAction(
 
   const targetId = userId.trim();
   if (!targetId) {
-    return { ok: false, error: "User id is required." };
+    return adminFail("User id is required.");
   }
 
   const selfDeleteReason = getDeleteUserBlockReason({
@@ -155,7 +165,7 @@ export async function deleteAdminUserAction(
     targetUserId: targetId,
   });
   if (selfDeleteReason) {
-    return { ok: false, error: selfDeleteReason };
+    return adminFail(selfDeleteReason);
   }
 
   const user = await prisma.user.findUnique({
@@ -163,37 +173,39 @@ export async function deleteAdminUserAction(
     select: { id: true, email: true, role: true },
   });
   if (!user) {
-    return { ok: false, error: "User not found." };
+    return adminFail("User not found.");
   }
 
   try {
     await prisma.$transaction(async (tx) => {
       await tx.user.delete({ where: { id: targetId } });
     });
-
-    await writeUserAuditLog({
-      adminUserId: admin.userId,
-      entityId: targetId,
-      action: "DELETE_USER",
-      oldValue: JSON.stringify({ email: user.email, role: user.role }),
-    });
-
-    revalidateAdminUsers();
-    return { ok: true, message: `Deleted ${user.email}.` };
   } catch (error) {
     console.error("[admin-user-actions] deleteAdminUserAction failed:", error);
-    return {
-      ok: false,
-      error:
-        "Could not delete user. Related records may prevent removal — contact engineering.",
-    };
+    return adminFail(
+      "Could not delete user. Related records may prevent removal — contact engineering.",
+    );
   }
+
+  return finishAdminMutation("User deleted.", [
+    {
+      label: "audit log",
+      run: () =>
+        writeUserAuditLog({
+          adminUserId: admin.userId,
+          entityId: targetId,
+          action: "DELETE_USER",
+          oldValue: JSON.stringify({ email: user.email, role: user.role }),
+        }),
+    },
+    revalidateAdminUsersEffect(),
+  ]);
 }
 
 export async function updateAdminUserRoleAction(
   userId: string,
   role: Role,
-): Promise<AdminUserActionResult> {
+): Promise<AdminActionResult> {
   const admin = await requireAdminSession();
   if (!admin) {
     return unauthorized();
@@ -201,11 +213,11 @@ export async function updateAdminUserRoleAction(
 
   const targetId = userId.trim();
   if (!targetId) {
-    return { ok: false, error: "User id is required." };
+    return adminFail("User id is required.");
   }
 
   if (role !== "USER" && role !== "ADMIN") {
-    return { ok: false, error: "Role must be USER or ADMIN." };
+    return adminFail("Role must be USER or ADMIN.");
   }
 
   const user = await prisma.user.findUnique({
@@ -213,11 +225,11 @@ export async function updateAdminUserRoleAction(
     select: { id: true, email: true, role: true },
   });
   if (!user) {
-    return { ok: false, error: "User not found." };
+    return adminFail("User not found.");
   }
 
   if (user.role === role) {
-    return { ok: true, message: "Role unchanged." };
+    return adminOk("User role updated.");
   }
 
   const adminCount = await countAdmins();
@@ -229,7 +241,7 @@ export async function updateAdminUserRoleAction(
     adminCount,
   });
   if (blockReason) {
-    return { ok: false, error: blockReason };
+    return adminFail(blockReason);
   }
 
   try {
@@ -237,20 +249,24 @@ export async function updateAdminUserRoleAction(
       where: { id: targetId },
       data: { role },
     });
-
-    await writeUserAuditLog({
-      adminUserId: admin.userId,
-      entityId: targetId,
-      action: "UPDATE_USER_ROLE",
-      fieldName: "role",
-      oldValue: user.role,
-      newValue: role,
-    });
-
-    revalidateAdminUsers();
-    return { ok: true, message: `Role updated to ${role} for ${user.email}.` };
   } catch (error) {
     console.error("[admin-user-actions] updateAdminUserRoleAction failed:", error);
-    return { ok: false, error: "Could not update user role. Please try again." };
+    return adminFail("Could not update user role. Please try again.");
   }
+
+  return finishAdminMutation("User role updated.", [
+    {
+      label: "audit log",
+      run: () =>
+        writeUserAuditLog({
+          adminUserId: admin.userId,
+          entityId: targetId,
+          action: "UPDATE_USER_ROLE",
+          fieldName: "role",
+          oldValue: user.role,
+          newValue: role,
+        }),
+    },
+    revalidateAdminUsersEffect(),
+  ]);
 }

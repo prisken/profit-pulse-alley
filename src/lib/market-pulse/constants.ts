@@ -8,6 +8,9 @@ export const MATCH_BONUS_POINTS = 50;
 export const STREAK_BONUS_POINTS = 100;
 export const STREAK_INTERVAL = 3;
 
+/** Hours before cycle revealAt to show urgent admin PPA completion warning. */
+export const PPA_REVEAL_WARNING_HOURS = 72;
+
 export const VALID_DECISIONS = ["BULLISH", "CAUTIOUS"] as const;
 
 export type MarketPulseDecision = (typeof VALID_DECISIONS)[number];

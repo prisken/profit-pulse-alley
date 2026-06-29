@@ -7,11 +7,16 @@ import type {
   MarketPulseSignal,
 } from "@prisma/client";
 
+import {
+  computeAdminCycleParticipationStats,
+  buildAdminCycleWinnerMap,
+} from "@/lib/market-pulse/admin-cycle-stats";
 import { requireAdminSession } from "@/lib/market-pulse/admin-auth";
 import {
   describeCyclePlayabilityIssue,
   getCyclePlayabilityIssue,
 } from "@/lib/market-pulse/cycle-playability";
+import { isMarketPulseCycleRevealed } from "@/lib/market-pulse/reveal-access";
 import { getMarketPulseSettings } from "@/lib/market-pulse/server";
 import { prisma } from "@/lib/prisma";
 
@@ -61,6 +66,12 @@ export type MarketPulseAdminCycleRow = {
   usersPlayed: number;
   missingSignalCount: number;
   unlockedCount: number;
+  averageDecisionsPerParticipant: number;
+  completionRatePercent: number | null;
+  scoreEventCount: number;
+  scoresGenerated: boolean;
+  topWinnerName: string | null;
+  topWinnerScore: number | null;
 };
 
 export type MarketPulseAdminActivityRow = {
@@ -106,11 +117,58 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
 
   const now = new Date();
 
+  const [scoreEventCounts, userCycleTotals] = await Promise.all([
+    prisma.marketPulseScoreEvent.groupBy({
+      by: ["cycleId"],
+      _count: { _all: true },
+    }),
+    prisma.marketPulseScoreEvent.groupBy({
+      by: ["cycleId", "userId"],
+      _sum: { totalPoints: true },
+    }),
+  ]);
+
+  const scoreCountByCycle = new Map(
+    scoreEventCounts.map((row) => [row.cycleId, row._count._all]),
+  );
+  const winnerByCycle = buildAdminCycleWinnerMap(
+    userCycleTotals.map((row) => ({
+      cycleId: row.cycleId,
+      userId: row.userId,
+      totalPoints: row._sum.totalPoints ?? 0,
+    })),
+  );
+  const winnerUserIds = [
+    ...new Set([...winnerByCycle.values()].map((winner) => winner.userId)),
+  ];
+  const winnerUsers =
+    winnerUserIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: winnerUserIds } },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
+  const winnerNameByUserId = new Map(
+    winnerUsers.map((user) => [
+      user.id,
+      user.name?.trim() || user.email,
+    ]),
+  );
+
   const cycleRows: MarketPulseAdminCycleRow[] = cycles.map((cycle) => {
     const usersPlayed = new Set(cycle.decisions.map((d) => d.userId)).size;
     const missingSignalCount = cycle.cards.filter((c) => !c.ppaSignal).length;
     const unlockedCount = cycle.cards.filter((c) => !c.ppaSignalLockedAt).length;
     const playabilityIssue = getCyclePlayabilityIssue(cycle, now);
+    const participationStats = computeAdminCycleParticipationStats({
+      cardCount: cycle._count.cards,
+      participantCount: usersPlayed,
+      decisionCount: cycle._count.decisions,
+    });
+    const scoreEventCount = scoreCountByCycle.get(cycle.id) ?? 0;
+    const winner = isMarketPulseCycleRevealed(cycle, now)
+      ? winnerByCycle.get(cycle.id)
+      : undefined;
 
     return {
       id: cycle.id,
@@ -130,6 +188,15 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
       usersPlayed,
       missingSignalCount,
       unlockedCount,
+      averageDecisionsPerParticipant:
+        participationStats.averageDecisionsPerParticipant,
+      completionRatePercent: participationStats.completionRatePercent,
+      scoreEventCount,
+      scoresGenerated: scoreEventCount > 0,
+      topWinnerName: winner
+        ? (winnerNameByUserId.get(winner.userId) ?? null)
+        : null,
+      topWinnerScore: winner?.score ?? null,
     };
   });
 

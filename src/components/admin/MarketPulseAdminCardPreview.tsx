@@ -233,7 +233,8 @@ export default function MarketPulseAdminCardPreview({ card, className = "" }: Pr
           </div>
         ) : (
           <p className="mt-3 text-sm italic text-amber-100/60">
-            Set PPA signal and insight before locking or publishing.
+            Set PPA signal and insight before locking or publishing. Players never see
+            PPA until reveal; decisions do not require PPA.
           </p>
         )}
       </div>

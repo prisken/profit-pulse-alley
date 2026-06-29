@@ -3,19 +3,17 @@
 import { useState, useTransition } from "react";
 import type { Role } from "@prisma/client";
 
-import {
-  createAdminUserAction,
-  type AdminUserActionResult,
-} from "@/lib/admin-user-actions";
+import { createAdminUserAction } from "@/lib/admin-user-actions";
+import { invokeAdminAction } from "@/lib/admin/action-result";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
 
-const fieldClass = `mt-2 w-full min-h-11 rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-base text-foreground outline-none disabled:opacity-60 sm:text-sm ${focusRing}`;
+const fieldClass = `mt-2 w-full min-h-11 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-base text-zinc-100 outline-none placeholder:text-zinc-500 disabled:opacity-60 sm:text-sm ${focusRing}`;
 
-const buttonClass = `inline-flex min-h-11 items-center justify-center rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`;
+const buttonClass = `inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`;
 
 type Props = {
   onSuccess?: () => void;
@@ -29,54 +27,56 @@ export default function AdminAddUserForm({ onSuccess }: Readonly<Props>) {
   const [role, setRole] = useState<Role>("USER");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [isPending, startTransition] = useTransition();
-
-  function handleResult(result: AdminUserActionResult) {
-    if (!result.ok) {
-      setIsError(true);
-      setMessage(result.error);
-      return;
-    }
-    setIsError(false);
-    setMessage(result.message ?? t("auth.admin.users.userCreated"));
-    setEmail("");
-    setName("");
-    setContactNumber("");
-    setRole("USER");
-    setPassword("");
-    onSuccess?.();
-  }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
+    setWarning(null);
     startTransition(async () => {
-      const result = await createAdminUserAction({
-        email,
-        name,
-        contactNumber,
-        role,
-        password: password || undefined,
-      });
-      handleResult(result);
+      await invokeAdminAction(
+        () =>
+          createAdminUserAction({
+            email,
+            name,
+            contactNumber,
+            role,
+            password: password || undefined,
+          }),
+        {
+          onSuccess: (successMessage, successWarning) => {
+            setIsError(false);
+            setMessage(successMessage ?? t("auth.admin.users.userCreated"));
+            setWarning(successWarning ?? null);
+            setEmail("");
+            setName("");
+            setContactNumber("");
+            setRole("USER");
+            setPassword("");
+            onSuccess?.();
+          },
+          onError: (error) => {
+            setIsError(true);
+            setWarning(null);
+            setMessage(error);
+          },
+        },
+      );
     });
   }
 
   return (
-    <form
-      className="rounded-xl border border-foreground/10 bg-background p-4 shadow-sm sm:p-5"
-      onSubmit={handleSubmit}
-      noValidate
-    >
-      <h3 className="text-sm font-semibold text-foreground">{t("auth.admin.users.addTitle")}</h3>
-      <p className="mt-1 text-sm text-foreground/65">
-        {t("auth.admin.users.addSubtitle")}
-      </p>
+    <form onSubmit={handleSubmit} noValidate>
+      <h3 className="text-sm font-semibold text-zinc-100">
+        {t("auth.admin.users.addTitle")}
+      </h3>
+      <p className="mt-1 text-sm text-zinc-400">{t("auth.admin.users.addSubtitle")}</p>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="block sm:col-span-2">
-          <span className="text-sm font-medium text-foreground/80">{t("auth.login.email")}</span>
+          <span className="text-sm font-medium text-zinc-300">{t("auth.login.email")}</span>
           <input
             type="email"
             required
@@ -89,7 +89,7 @@ export default function AdminAddUserForm({ onSuccess }: Readonly<Props>) {
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium text-foreground/80">
+          <span className="text-sm font-medium text-zinc-300">
             {t("auth.admin.users.nameOptional")}
           </span>
           <input
@@ -100,7 +100,7 @@ export default function AdminAddUserForm({ onSuccess }: Readonly<Props>) {
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium text-foreground/80">
+          <span className="text-sm font-medium text-zinc-300">
             {t("auth.admin.users.contactOptional")}
           </span>
           <input
@@ -111,7 +111,7 @@ export default function AdminAddUserForm({ onSuccess }: Readonly<Props>) {
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium text-foreground/80">{t("auth.admin.users.role")}</span>
+          <span className="text-sm font-medium text-zinc-300">{t("auth.admin.users.role")}</span>
           <select
             className={fieldClass}
             value={role}
@@ -123,7 +123,7 @@ export default function AdminAddUserForm({ onSuccess }: Readonly<Props>) {
           </select>
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-sm font-medium text-foreground/80">
+          <span className="text-sm font-medium text-zinc-300">
             {t("auth.admin.users.tempPassword")}
           </span>
           <input
@@ -147,13 +147,21 @@ export default function AdminAddUserForm({ onSuccess }: Readonly<Props>) {
       {message ? (
         <p
           className={`mt-3 text-sm font-medium ${
-            isError
-              ? "text-red-600 dark:text-red-400"
-              : "text-emerald-600 dark:text-emerald-400"
+            isError ? "text-red-400" : "text-emerald-400"
           }`}
           role="status"
+          aria-live="polite"
         >
           {translateAuthMessage(locale, message)}
+        </p>
+      ) : null}
+      {warning ? (
+        <p
+          className="mt-2 text-sm font-medium text-amber-300"
+          role="status"
+          aria-live="polite"
+        >
+          {warning}
         </p>
       ) : null}
     </form>

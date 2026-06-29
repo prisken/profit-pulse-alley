@@ -107,6 +107,7 @@ export default async function MarketPulseRulesPage() {
             <li>{t("mp.rules.section.howWorks1")}</li>
             <li>{t("mp.rules.section.howWorks2")}</li>
             <li>{t("mp.rules.section.howWorks3")}</li>
+            <li>{t("mp.rules.section.howWorks4")}</li>
           </ul>
         </RulesCard>
 

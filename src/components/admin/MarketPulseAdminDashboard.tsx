@@ -9,9 +9,15 @@ import type {
 import MarketPulsePrizeReview from "@/components/admin/MarketPulsePrizeReview";
 import FirstCycleGuidancePanel from "@/components/admin/FirstCycleGuidancePanel";
 import {
-  CreateCardSection,
-  MarketPulseCardPanel,
-} from "@/components/admin/MarketPulseCardPanel";
+  MarketPulseAdminAlerts,
+  MarketPulseAdminQuickActions,
+  MarketPulseAdminSection,
+  MarketPulseAdminSectionNav,
+  MarketPulseAdminStatusHeader,
+  MarketPulsePpaCompleteBadge,
+  MarketPulsePpaRevealWarningBanner,
+} from "@/components/admin/MarketPulseAdminShell";
+import MarketPulseCardList from "@/components/admin/MarketPulseCardList";
 import MarketPulseCycleForm from "@/components/admin/MarketPulseCycleForm";
 import {
   closeMarketPulseCycleAction,
@@ -19,13 +25,29 @@ import {
   exportMarketPulseLeaderboardAction,
   updateMarketPulseCycleAction,
   updateMarketPulseRuntimeStatusAction,
+  type AdminActionResult,
 } from "@/lib/market-pulse/admin-actions";
+import { invokeAdminAction } from "@/lib/admin/action-result";
+import MarketPulseRevealScoringSection from "@/components/admin/MarketPulseRevealScoringSection";
 import RevealCycleButton from "@/components/admin/RevealCycleButton";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
-import type {
-  MarketPulseAdminDashboardData,
-} from "@/lib/market-pulse/admin-data";
+import { translate } from "@/lib/i18n/messages";
+import type { MarketPulseAdminDashboardData } from "@/lib/market-pulse/admin-data";
+import {
+  formatAdminAverageDecisions,
+  formatAdminCompletionRate,
+} from "@/lib/market-pulse/admin-cycle-stats";
+import {
+  buildMarketPulsePlayabilityAlerts,
+  buildMarketPulseStatusSnapshot,
+} from "@/lib/market-pulse/admin-mp-status";
+import {
+  evaluatePpaRevealWarning,
+} from "@/lib/market-pulse/admin-ppa-reveal-warning";
+import type { RevealPpaMissingField } from "@/lib/market-pulse/reveal-ppa-validation";
+import type { RevealSectionData } from "@/lib/market-pulse/admin-reveal-data";
+import { evaluateRevealReadiness } from "@/lib/market-pulse/admin-reveal-status";
 import type { PrizeReviewData } from "@/lib/market-pulse/prize-review-data";
 import {
   getFirstPublicCycleFormPrefill,
@@ -34,16 +56,16 @@ import type { MarketPulseCycleFormValues } from "@/lib/market-pulse/cycle-valida
 import { toDatetimeLocalValue } from "@/lib/market-pulse/cycle-validation";
 
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
 
 const inputClass =
-  `w-full min-h-11 rounded-md border border-foreground/15 bg-background px-3 py-2.5 text-base text-foreground sm:text-sm sm:max-w-xs ${focusRing}`;
+  `w-full min-h-11 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-base text-zinc-100 sm:text-sm sm:max-w-xs ${focusRing}`;
 
 const buttonClass =
-  `min-h-11 w-full rounded-md border border-foreground/15 bg-foreground/5 px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10 disabled:opacity-50 sm:w-auto ${focusRing}`;
+  `min-h-11 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-800 disabled:opacity-50 sm:w-auto ${focusRing}`;
 
 const primaryButtonClass =
-  `min-h-11 w-full rounded-md bg-foreground px-3 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto ${focusRing}`;
+  `min-h-11 w-full rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 sm:w-auto ${focusRing}`;
 
 const RUNTIME_OPTIONS: MarketPulseGameRuntimeStatus[] = [
   "OPEN",
@@ -69,9 +91,9 @@ function statusBadge(status: string): string {
     case "REVEALED":
       return "bg-violet-500/15 text-violet-800 dark:text-violet-200";
     case "DRAFT":
-      return "bg-foreground/10 text-foreground/70";
+      return "bg-zinc-800 text-zinc-300";
     default:
-      return "bg-foreground/10 text-foreground/70";
+      return "bg-zinc-800 text-zinc-300";
   }
 }
 
@@ -88,16 +110,19 @@ function downloadCsv(csv: string, filename: string) {
 type Props = {
   initialData: MarketPulseAdminDashboardData;
   prizeReview: PrizeReviewData;
+  revealSection: RevealSectionData;
 };
 
 export default function MarketPulseAdminDashboard({
   initialData,
   prizeReview,
+  revealSection,
 }: Props) {
   const { t, locale } = useTranslations();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [runtimeStatus, setRuntimeStatus] = useState(
@@ -111,6 +136,24 @@ export default function MarketPulseAdminDashboard({
   >(null);
   const [cyclePrefillNonce, setCyclePrefillNonce] = useState(0);
   const [createCycleOpen, setCreateCycleOpen] = useState(false);
+  const [createCardOpen, setCreateCardOpen] = useState(false);
+
+  function scrollToSection(sectionId: string) {
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  function handleQuickCreateCycle() {
+    setCreateCycleOpen(true);
+    scrollToSection("cycles");
+  }
+
+  function handleQuickCreateCard() {
+    setCreateCardOpen(true);
+    scrollToSection("cards");
+  }
 
   function handlePrefillFirstCycle() {
     setCyclePrefill(getFirstPublicCycleFormPrefill());
@@ -128,14 +171,6 @@ export default function MarketPulseAdminDashboard({
     [initialData.cycles, selectedCycleId],
   );
 
-  const cycleCards = useMemo(
-    () =>
-      initialData.cards
-        .filter((card) => card.cycleId === selectedCycleId)
-        .sort((a, b) => a.dayIndex - b.dayIndex),
-    [initialData.cards, selectedCycleId],
-  );
-
   const totals = useMemo(() => {
     if (!activeCycle) {
       return null;
@@ -151,93 +186,168 @@ export default function MarketPulseAdminDashboard({
     };
   }, [activeCycle]);
 
-  const cycleDayIndexes = useMemo(
-    () => cycleCards.map((card) => card.dayIndex),
-    [cycleCards],
+  const activeCycleCards = useMemo(
+    () =>
+      activeCycle
+        ? initialData.cards.filter((card) => card.cycleId === activeCycle.id)
+        : [],
+    [initialData.cards, activeCycle],
   );
 
-  function runAction(action: () => Promise<{ ok: boolean; error?: string; message?: string; csv?: string; filename?: string }>) {
+  const statusSnapshot = useMemo(
+    () =>
+      buildMarketPulseStatusSnapshot({
+        runtimeStatus: initialData.runtimeStatus,
+        activeCycle,
+        activeCycleCards,
+      }),
+    [initialData.runtimeStatus, activeCycle, activeCycleCards],
+  );
+
+  function handleEditCard(cardId: string) {
+    const card = initialData.cards.find((item) => item.id === cardId);
+    if (card && card.cycleId !== selectedCycleId) {
+      setSelectedCycleId(card.cycleId);
+    }
+    scrollToSection("cards");
+    window.setTimeout(() => {
+      document.getElementById(`mp-card-${cardId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 150);
+  }
+
+  const ppaRevealWarning = useMemo(
+    () =>
+      evaluatePpaRevealWarning({
+        activeCycle,
+        cards: initialData.cards,
+      }),
+    [activeCycle, initialData.cards],
+  );
+
+  const ppaWarningBannerCards = useMemo(() => {
+    if (ppaRevealWarning.severity !== "urgent") {
+      return [];
+    }
+    return ppaRevealWarning.missingCards.map((card) => ({
+      ...card,
+      missingFieldsLabel: formatPpaMissingFieldsForLocale(locale, card.missing),
+    }));
+  }, [ppaRevealWarning, locale]);
+
+  const playabilityAlerts = useMemo(
+    () =>
+      buildMarketPulsePlayabilityAlerts({
+        runtimeStatus: initialData.runtimeStatus,
+        activeCycle,
+        activeCycleCards,
+      }),
+    [initialData.runtimeStatus, activeCycle, activeCycleCards],
+  );
+
+  function runAction(action: () => Promise<AdminActionResult>) {
     setMessage(null);
+    setWarning(null);
     setError(null);
     startTransition(async () => {
-      const result = await action();
-      if (!result.ok) {
-        setError(result.error ?? t("auth.admin.mp.actionFailed"));
-        return;
-      }
-      if (result.csv && result.filename) {
-        downloadCsv(result.csv, result.filename);
-      }
-      setMessage(result.message ?? t("auth.admin.mp.done"));
-      router.refresh();
+      await invokeAdminAction(action, {
+        onSuccess: (successMessage, successWarning, success) => {
+          if (success?.csv && success.filename) {
+            downloadCsv(success.csv, success.filename);
+          }
+          setMessage(successMessage ?? t("auth.admin.mp.done"));
+          setWarning(successWarning ?? null);
+          router.refresh();
+        },
+        onError: (actionError) => {
+          setError(actionError ?? t("auth.admin.mp.actionFailed"));
+        },
+        onThrow: () => router.refresh(),
+      });
     });
   }
 
-  const activeCyclePlayable = activeCycle?.isPlayableNow ?? false;
 
   return (
-    <div className="space-y-6 lg:space-y-10">
-      {(message || error) && (
+    <div className="space-y-6">
+      {(message || warning || error) && (
         <div
-          className={`rounded-md border px-4 py-3 text-sm ${
+          className={`rounded-xl border px-4 py-3 text-sm ${
             error
-              ? "border-red-500/30 bg-red-500/10 text-red-800 dark:text-red-200"
-              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200"
+              ? "border-red-500/30 bg-red-500/10 text-red-300"
+              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
           }`}
           role="status"
         >
-          {error ? translateAuthMessage(locale, error) : message ? translateAuthMessage(locale, message) : null}
+          {error
+            ? translateAuthMessage(locale, error)
+            : message
+              ? translateAuthMessage(locale, message)
+              : null}
+          {warning ? <p className="mt-2 text-amber-200">{warning}</p> : null}
         </div>
       )}
 
-      {activeCycle?.isActive && !activeCyclePlayable && activeCycle.playabilityIssue ? (
-        <div
-          className="sticky top-0 z-20 rounded-lg border-2 border-amber-500/50 bg-amber-500/15 px-3 py-3 text-sm text-amber-950 shadow-sm dark:text-amber-100 sm:px-4"
-          role="alert"
-        >
-          <p className="font-semibold">Active cycle is not visible to players</p>
-          <p className="mt-1 text-amber-900/90 dark:text-amber-100/90">
-            {activeCycle.playabilityIssue} Update dates under Edit cycle, or create a
-            new cycle and set it active.
-          </p>
-        </div>
-      ) : null}
+      <MarketPulseAdminStatusHeader snapshot={statusSnapshot} />
 
-      <FirstCycleGuidancePanel
-        runtimeStatus={initialData.runtimeStatus}
-        activeCycle={activeCycle}
-        cards={initialData.cards}
-        onPrefillCreateCycle={handlePrefillFirstCycle}
-      />
-
-      <details className="rounded-lg border border-foreground/10 lg:hidden" open>
-        <summary className="cursor-pointer list-none px-4 py-3 text-base font-semibold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
-          Overview &amp; runtime
-        </summary>
-        <div className="space-y-4 border-t border-foreground/10 px-4 pb-4 pt-3">
-          <OverviewSection
-            initialData={initialData}
-            activeCycle={activeCycle}
-            totals={totals}
+      <div className="space-y-4">
+        <MarketPulseAdminQuickActions
+          onCreateCycle={handleQuickCreateCycle}
+          onCreateCard={handleQuickCreateCard}
+          createCardDisabled={!selectedCycle}
+        />
+        {ppaRevealWarning.severity === "urgent" && ppaRevealWarning.revealAtIso ? (
+          <MarketPulsePpaRevealWarningBanner
+            revealAtLabel={formatDateTime(ppaRevealWarning.revealAtIso)}
+            missingCount={ppaRevealWarning.missingCards.length}
+            cards={ppaWarningBannerCards}
+            onEditCard={handleEditCard}
           />
-          <RuntimeSection
-            runtimeStatus={runtimeStatus}
-            setRuntimeStatus={setRuntimeStatus}
-            initialRuntimeStatus={initialData.runtimeStatus}
-            isPending={isPending}
-            onSave={() =>
-              runAction(() => updateMarketPulseRuntimeStatusAction(runtimeStatus))
-            }
-          />
-        </div>
-      </details>
+        ) : null}
+        <MarketPulseAdminAlerts alerts={playabilityAlerts} />
+        <MarketPulseAdminSectionNav />
+      </div>
 
-      <div className="hidden space-y-10 lg:block">
+      <MarketPulseAdminSection
+        id="overview"
+        title={t("auth.admin.mp.overview")}
+      >
         <OverviewSection
           initialData={initialData}
           activeCycle={activeCycle}
           totals={totals}
+          ppaComplete={ppaRevealWarning.severity === "complete"}
         />
+      </MarketPulseAdminSection>
+
+      <MarketPulseAdminSection
+        id="setup"
+        title={t("auth.admin.mp.shell.setup")}
+        description={t("auth.admin.mp.shell.setupSummary")}
+      >
+        <details className="rounded-lg border border-sky-500/25 bg-sky-500/5">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-sky-100 marker:content-none [&::-webkit-details-marker]:hidden">
+            {t("auth.admin.mp.shell.setupSummary")}
+          </summary>
+          <div className="border-t border-sky-500/20 px-4 pb-4 pt-3">
+            <FirstCycleGuidancePanel
+              runtimeStatus={initialData.runtimeStatus}
+              activeCycle={activeCycle}
+              cards={initialData.cards}
+              onPrefillCreateCycle={handlePrefillFirstCycle}
+              embedded
+            />
+          </div>
+        </details>
+      </MarketPulseAdminSection>
+
+      <MarketPulseAdminSection
+        id="runtime"
+        title={t("auth.admin.mp.runtime")}
+        description={t("auth.admin.mp.runtimeHelp")}
+      >
         <RuntimeSection
           runtimeStatus={runtimeStatus}
           setRuntimeStatus={setRuntimeStatus}
@@ -247,34 +357,16 @@ export default function MarketPulseAdminDashboard({
             runAction(() => updateMarketPulseRuntimeStatusAction(runtimeStatus))
           }
         />
-      </div>
+      </MarketPulseAdminSection>
 
-      <details className="rounded-lg border border-foreground/10 lg:hidden">
-        <summary className="cursor-pointer list-none px-4 py-3 text-base font-semibold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
-          Cycles
-        </summary>
-        <div className="border-t border-foreground/10 px-4 pb-4 pt-3">
-          <CyclesSection
-            cycles={initialData.cycles}
-            selectedCycleId={selectedCycleId}
-            isPending={isPending}
-            cyclePrefill={cyclePrefill}
-            cyclePrefillNonce={cyclePrefillNonce}
-            createCycleOpen={createCycleOpen}
-            setCreateCycleOpen={setCreateCycleOpen}
-            onSelectCycle={setSelectedCycleId}
-            onRefresh={() => router.refresh()}
-            onClose={(cycleId) => runAction(() => closeMarketPulseCycleAction(cycleId))}
-            onExport={(cycleId) =>
-              runAction(() => exportMarketPulseLeaderboardAction(cycleId))
-            }
-          />
-        </div>
-      </details>
-
-      <div className="hidden lg:block">
+      <MarketPulseAdminSection
+        id="cycles"
+        title={t("auth.admin.mp.cycles")}
+        description={t("auth.admin.mp.shell.revealHelp")}
+      >
         <CyclesSection
           cycles={initialData.cycles}
+          cards={initialData.cards}
           selectedCycleId={selectedCycleId}
           isPending={isPending}
           cyclePrefill={cyclePrefill}
@@ -288,69 +380,105 @@ export default function MarketPulseAdminDashboard({
             runAction(() => exportMarketPulseLeaderboardAction(cycleId))
           }
         />
-      </div>
-
-      {selectedCycle && (
-        <details className="rounded-lg border border-foreground/10 lg:hidden" open>
-          <summary className="cursor-pointer list-none px-4 py-3 text-base font-semibold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
-            Cards · {selectedCycle.name}
-          </summary>
-          <div className="border-t border-foreground/10 px-4 pb-4 pt-3">
-            <CardsSection
-              selectedCycle={selectedCycle}
-              cycleCards={cycleCards}
-              cycleDayIndexes={cycleDayIndexes}
-              isPending={isPending}
-              onRefresh={() => router.refresh()}
-            />
-          </div>
-        </details>
-      )}
+      </MarketPulseAdminSection>
 
       {selectedCycle ? (
-        <div className="hidden lg:block">
+        <MarketPulseAdminSection
+          id="cards"
+          title={t("auth.admin.mp.cards").replace("{name}", selectedCycle.name)}
+        >
           <CardsSection
-            selectedCycle={selectedCycle}
-            cycleCards={cycleCards}
-            cycleDayIndexes={cycleDayIndexes}
+            cycles={initialData.cycles}
+            selectedCycleId={selectedCycleId}
+            allCards={initialData.cards}
             isPending={isPending}
+            createCardOpen={createCardOpen}
+            onCreateCardOpenChange={setCreateCardOpen}
             onRefresh={() => router.refresh()}
           />
-        </div>
-      ) : null}
+        </MarketPulseAdminSection>
+      ) : (
+        <MarketPulseAdminSection
+          id="cards"
+          title={t("auth.admin.mp.shell.cardsNav")}
+          description={t("auth.admin.mp.noCycles")}
+        >
+          <p className="text-sm text-zinc-400">{t("auth.admin.mp.manageCards")}</p>
+        </MarketPulseAdminSection>
+      )}
 
-      <MarketPulsePrizeReview data={prizeReview} />
+      <MarketPulseAdminSection
+        id="reveal-scoring"
+        title={t("auth.admin.mp.reveal.sectionTitle")}
+        description={t("auth.admin.mp.reveal.sectionDescription")}
+      >
+        <MarketPulseRevealScoringSection
+          cycles={initialData.cycles}
+          cards={initialData.cards}
+          activeCycleId={initialData.activeCycleId}
+          revealSection={revealSection}
+          disabled={isPending}
+          onSuccess={() => router.refresh()}
+        />
+      </MarketPulseAdminSection>
 
-      <section aria-labelledby="activity-heading" className="rounded-lg border border-foreground/10 p-4 sm:p-5">
-        <h2 id="activity-heading" className="text-lg font-semibold text-foreground">
-          {t("auth.admin.mp.activity")}
-        </h2>
+      <section
+        id="prize-claims"
+        className="scroll-mt-36 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 shadow-sm sm:p-5 lg:scroll-mt-44"
+      >
+        <MarketPulsePrizeReview data={prizeReview} embedded />
+      </section>
+
+      <MarketPulseAdminSection
+        id="audit"
+        title={t("auth.admin.mp.activity")}
+      >
         {initialData.recentActivity.length === 0 ? (
-          <p className="mt-2 text-sm text-foreground/65">{t("auth.admin.mp.noActivity")}</p>
+          <p className="text-sm text-zinc-400">{t("auth.admin.mp.noActivity")}</p>
         ) : (
-          <ul className="mt-3 divide-y divide-foreground/10 rounded-lg border border-foreground/10">
+          <ul className="divide-y divide-zinc-800 rounded-lg border border-zinc-800">
             {initialData.recentActivity.map((item) => (
               <li
                 key={`${item.type}-${item.id}`}
                 className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3 text-sm"
               >
-                <span className="text-foreground">{item.label}</span>
-                <span className="text-xs text-foreground/50">
+                <span className="text-zinc-200">{item.label}</span>
+                <span className="text-xs text-zinc-500">
                   {formatDateTime(item.createdAt)}
                 </span>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </MarketPulseAdminSection>
     </div>
   );
+}
+
+function formatPpaMissingFieldsForLocale(
+  locale: Parameters<typeof translate>[0],
+  missing: RevealPpaMissingField[],
+): string {
+  const labels = missing.map((field) => {
+    switch (field) {
+      case "ppaSignal":
+        return translate(locale, "auth.admin.mp.ppaWarning.fieldSignal");
+      case "ppaInsight":
+        return translate(locale, "auth.admin.mp.ppaWarning.fieldInsight");
+      case "ppaLocked":
+        return translate(locale, "auth.admin.mp.ppaWarning.fieldLock");
+      default:
+        return field;
+    }
+  });
+  return labels.join(", ");
 }
 
 function OverviewSection({
   initialData,
   activeCycle,
   totals,
+  ppaComplete,
 }: {
   initialData: MarketPulseAdminDashboardData;
   activeCycle: MarketPulseAdminDashboardData["cycles"][number] | null;
@@ -363,15 +491,14 @@ function OverviewSection({
     revealAt: string;
     prizeLabel: string | null;
   } | null;
+  ppaComplete: boolean;
 }) {
   const { t } = useTranslations();
 
   return (
-    <section aria-labelledby="overview-heading">
-      <h2 id="overview-heading" className="text-base font-semibold text-foreground sm:text-lg">
-        {t("auth.admin.mp.overview")}
-      </h2>
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+    <div className="space-y-4">
+      {activeCycle && ppaComplete ? <MarketPulsePpaCompleteBadge /> : null}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
         <StatCard label={t("auth.admin.mp.statRuntime")} value={initialData.runtimeStatus} />
         <StatCard label={t("auth.admin.mp.statActiveCycle")} value={activeCycle?.name ?? t("auth.admin.mp.none")} />
         <StatCard label={t("auth.admin.mp.statCycleStatus")} value={activeCycle?.status ?? "—"} />
@@ -392,7 +519,7 @@ function OverviewSection({
           }
         />
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -412,17 +539,7 @@ function RuntimeSection({
   const { t } = useTranslations();
 
   return (
-    <section
-      aria-labelledby="runtime-heading"
-      className="rounded-lg border border-foreground/10 p-4 sm:p-5"
-    >
-      <h2 id="runtime-heading" className="text-base font-semibold text-foreground sm:text-lg">
-        {t("auth.admin.mp.runtime")}
-      </h2>
-      <p className="mt-1 text-xs text-foreground/65 sm:text-sm">
-        {t("auth.admin.mp.runtimeHelp")}
-      </p>
-      <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+    <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
         <select
           value={runtimeStatus}
           onChange={(event) =>
@@ -444,13 +561,13 @@ function RuntimeSection({
         >
           {t("auth.admin.mp.saveRuntime")}
         </button>
-      </div>
-    </section>
+    </div>
   );
 }
 
 function CyclesSection({
   cycles,
+  cards,
   selectedCycleId,
   isPending,
   cyclePrefill,
@@ -463,6 +580,7 @@ function CyclesSection({
   onExport,
 }: {
   cycles: MarketPulseAdminDashboardData["cycles"];
+  cards: MarketPulseAdminDashboardData["cards"];
   selectedCycleId: string;
   isPending: boolean;
   cyclePrefill: Partial<MarketPulseCycleFormValues> | null;
@@ -477,10 +595,7 @@ function CyclesSection({
   const { t } = useTranslations();
 
   return (
-    <section aria-labelledby="cycles-heading">
-      <h2 id="cycles-heading" className="text-base font-semibold text-foreground sm:text-lg">
-        {t("auth.admin.mp.cycles")}
-      </h2>
+    <div>
       <CreateCycleSection
         disabled={isPending}
         onRefresh={onRefresh}
@@ -497,6 +612,7 @@ function CyclesSection({
             <CyclePanel
               key={cycle.id}
               cycle={cycle}
+              cards={cards}
               disabled={isPending}
               selected={cycle.id === selectedCycleId}
               onSelect={() => onSelectCycle(cycle.id)}
@@ -507,55 +623,37 @@ function CyclesSection({
           ))
         )}
       </div>
-    </section>
+    </div>
   );
 }
 
 function CardsSection({
-  selectedCycle,
-  cycleCards,
-  cycleDayIndexes,
+  cycles,
+  selectedCycleId,
+  allCards,
   isPending,
+  createCardOpen,
+  onCreateCardOpenChange,
   onRefresh,
 }: {
-  selectedCycle: MarketPulseAdminDashboardData["cycles"][number];
-  cycleCards: MarketPulseAdminDashboardData["cards"];
-  cycleDayIndexes: number[];
+  cycles: MarketPulseAdminDashboardData["cycles"];
+  selectedCycleId: string;
+  allCards: MarketPulseAdminDashboardData["cards"];
   isPending: boolean;
+  createCardOpen: boolean;
+  onCreateCardOpenChange: (open: boolean) => void;
   onRefresh: () => void;
 }) {
-  const { t } = useTranslations();
-
   return (
-    <section aria-labelledby="cards-heading">
-      <h2 id="cards-heading" className="text-base font-semibold text-foreground sm:text-lg">
-        {t("auth.admin.mp.cards").replace("{name}", selectedCycle.name)}
-      </h2>
-      <CreateCardSection
-        cycleId={selectedCycle.id}
-        cycleName={selectedCycle.name}
-        nextDayIndex={(cycleDayIndexes.at(-1) ?? 0) + 1}
-        existingDayIndexes={cycleDayIndexes}
-        disabled={isPending}
-        onRefresh={onRefresh}
-      />
-      <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
-        {cycleCards.length === 0 ? (
-          <p className="text-sm text-foreground/65">{t("auth.admin.mp.noCards")}</p>
-        ) : (
-          cycleCards.map((card) => (
-            <MarketPulseCardPanel
-              key={card.id}
-              card={card}
-              cycleName={selectedCycle.name}
-              existingDayIndexes={cycleDayIndexes}
-              disabled={isPending}
-              onRefresh={onRefresh}
-            />
-          ))
-        )}
-      </div>
-    </section>
+    <MarketPulseCardList
+      cycles={cycles}
+      cards={allCards}
+      selectedCycleId={selectedCycleId}
+      disabled={isPending}
+      createCardOpen={createCardOpen}
+      onCreateCardOpenChange={onCreateCardOpenChange}
+      onRefresh={onRefresh}
+    />
   );
 }
 
@@ -569,11 +667,11 @@ function StatCard({
   sub?: string;
 }) {
   return (
-    <div className="rounded-lg border border-foreground/10 px-3 py-2.5 sm:px-4 sm:py-3">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-foreground/45 sm:text-xs">
+    <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2.5 sm:px-4 sm:py-3">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 sm:text-xs">
         {label}
       </p>
-      <p className="mt-1 text-sm font-semibold leading-snug text-foreground sm:text-base">
+      <p className="mt-1 text-sm font-semibold leading-snug text-zinc-100 sm:text-base">
         {value}
       </p>
       {sub ? (
@@ -644,8 +742,78 @@ function CreateCycleSection({
   );
 }
 
+function formatAdminPoints(score: number): string {
+  return new Intl.NumberFormat("en-HK").format(score);
+}
+
+function CycleParticipationStats({
+  cycle,
+}: Readonly<{
+  cycle: MarketPulseAdminDashboardData["cycles"][number];
+}>) {
+  const { t } = useTranslations();
+
+  const hasParticipation =
+    cycle.usersPlayed > 0 || cycle.decisionCount > 0;
+
+  return (
+    <div className="mt-4 border-t border-zinc-800 pt-4">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+        {t("auth.admin.mp.cycleStats.title")}
+      </p>
+      {!hasParticipation ? (
+        <p className="text-sm text-zinc-400">
+          {t("auth.admin.mp.cycleStats.noParticipation")}
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          <StatCard
+            label={t("auth.admin.mp.cycleStats.cards")}
+            value={String(cycle.cardCount)}
+          />
+          <StatCard
+            label={t("auth.admin.mp.cycleStats.participants")}
+            value={String(cycle.usersPlayed)}
+          />
+          <StatCard
+            label={t("auth.admin.mp.cycleStats.decisions")}
+            value={String(cycle.decisionCount)}
+          />
+          <StatCard
+            label={t("auth.admin.mp.cycleStats.avgDecisions")}
+            value={formatAdminAverageDecisions(
+              cycle.averageDecisionsPerParticipant,
+            )}
+          />
+          <StatCard
+            label={t("auth.admin.mp.cycleStats.completion")}
+            value={formatAdminCompletionRate(cycle.completionRatePercent)}
+          />
+          <StatCard
+            label={t("auth.admin.mp.cycleStats.scores")}
+            value={
+              cycle.scoresGenerated
+                ? `${t("auth.admin.mp.cycleStats.scoredYes")} (${cycle.scoreEventCount})`
+                : t("auth.admin.mp.cycleStats.notScoredYet")
+            }
+          />
+          <StatCard
+            label={t("auth.admin.mp.cycleStats.topWinner")}
+            value={
+              cycle.topWinnerName
+                ? `${cycle.topWinnerName}${cycle.topWinnerScore != null ? ` · ${formatAdminPoints(cycle.topWinnerScore)}` : ""}`
+                : t("auth.admin.mp.cycleStats.noWinner")
+            }
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CyclePanel({
   cycle,
+  cards,
   disabled,
   selected,
   onSelect,
@@ -654,6 +822,7 @@ function CyclePanel({
   onExport,
 }: {
   cycle: MarketPulseAdminDashboardData["cycles"][number];
+  cards: MarketPulseAdminDashboardData["cards"];
   disabled: boolean;
   selected: boolean;
   onSelect: () => void;
@@ -663,15 +832,16 @@ function CyclePanel({
 }) {
   const { t } = useTranslations();
   const [editing, setEditing] = useState(false);
+  const revealReadiness = evaluateRevealReadiness(cycle, cards);
 
   return (
     <article
-      className={`rounded-lg border p-4 ${selected ? "border-foreground/25 bg-foreground/[0.02]" : "border-foreground/10"}`}
+      className={`rounded-lg border p-4 ${selected ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800 bg-zinc-950/40"}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold text-foreground">{cycle.name}</h3>
+            <h3 className="font-semibold text-zinc-100">{cycle.name}</h3>
             <span className={`rounded px-2 py-0.5 text-xs font-medium ${statusBadge(cycle.status)}`}>
               {cycle.status}
             </span>
@@ -691,7 +861,7 @@ function CyclePanel({
               {cycle.playabilityIssue}
             </p>
           ) : null}
-          <p className="mt-1 text-xs text-foreground/55">
+          <p className="mt-1 text-xs text-zinc-500">
             {cycle.cardCount} cards · {cycle.decisionCount} decisions · {cycle.usersPlayed} players ·{" "}
             {cycle.missingSignalCount} missing signal · {cycle.unlockedCount} unlocked
           </p>
@@ -713,8 +883,10 @@ function CyclePanel({
         </div>
       </div>
 
-      <div className="mt-4 space-y-2 border-t border-foreground/10 pt-4">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/45">
+      <CycleParticipationStats cycle={cycle} />
+
+      <div className="mt-4 space-y-2 border-t border-zinc-800 pt-4">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
           {t("auth.admin.mp.cycleActions")}
         </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -727,14 +899,15 @@ function CyclePanel({
             cycleId={cycle.id}
             cycleName={cycle.name}
             cycleStatus={cycle.status}
-            disabled={disabled}
+            disabled={disabled || !revealReadiness.canReveal}
+            blockMessage={revealReadiness.blockMessage}
             onSuccess={onRefresh}
           />
         </div>
       </div>
 
       {editing ? (
-        <div className="mt-4 border-t border-foreground/10 pt-4">
+        <div className="mt-4 border-t border-zinc-800 pt-4">
           <MarketPulseCycleForm
             mode="edit"
             cycleId={cycle.id}

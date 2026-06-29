@@ -21,6 +21,7 @@ export type PrizeReviewCandidateRow = {
   userId: string;
   playerName: string;
   email: string;
+  contactNumber: string | null;
   score: number;
   decisionsCount: number;
   firstPlayedAt: string | null;
@@ -35,6 +36,7 @@ export type PrizeReviewCandidateRow = {
 export type PrizeReviewData = {
   selectedCycleId: string | null;
   selectedCycleName: string | null;
+  prizeLabel: string | null;
   cycleRevealed: boolean;
   revealedCycles: PrizeReviewRevealedCycle[];
   candidates: PrizeReviewCandidateRow[];
@@ -66,7 +68,7 @@ export async function getMarketPulsePrizeReviewData(
   const revealedCycles = await prisma.marketPulseCycle.findMany({
     where: { status: "REVEALED" },
     orderBy: { revealAt: "desc" },
-    select: { id: true, name: true, revealAt: true, status: true },
+    select: { id: true, name: true, revealAt: true, status: true, prizeLabel: true },
   });
 
   const revealedCycleRows: PrizeReviewRevealedCycle[] = revealedCycles.map(
@@ -86,6 +88,7 @@ export async function getMarketPulsePrizeReviewData(
     return {
       selectedCycleId: null,
       selectedCycleName: null,
+      prizeLabel: null,
       cycleRevealed: false,
       revealedCycles: revealedCycleRows,
       candidates: [],
@@ -93,10 +96,13 @@ export async function getMarketPulsePrizeReviewData(
   }
 
   const cycleRevealed = isMarketPulseCycleRevealed(selectedCycle);
+  const prizeLabel = selectedCycle.prizeLabel;
+
   if (!cycleRevealed) {
     return {
       selectedCycleId: selectedCycle.id,
       selectedCycleName: selectedCycle.name,
+      prizeLabel,
       cycleRevealed: false,
       revealedCycles: revealedCycleRows,
       candidates: [],
@@ -113,6 +119,7 @@ export async function getMarketPulsePrizeReviewData(
     return {
       selectedCycleId: selectedCycle.id,
       selectedCycleName: selectedCycle.name,
+      prizeLabel,
       cycleRevealed: true,
       revealedCycles: revealedCycleRows,
       candidates: [],
@@ -124,7 +131,7 @@ export async function getMarketPulsePrizeReviewData(
   const [users, decisions, claims] = await Promise.all([
     prisma.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, name: true, email: true, createdAt: true },
+      select: { id: true, name: true, email: true, contactNumber: true, createdAt: true },
     }),
     prisma.marketPulseDecision.findMany({
       where: { cycleId: selectedCycle.id, userId: { in: userIds } },
@@ -179,6 +186,7 @@ export async function getMarketPulsePrizeReviewData(
       userId: row.userId,
       playerName: user?.name?.trim() || "Member",
       email: user?.email ?? "",
+      contactNumber: user?.contactNumber ?? null,
       score: row.score,
       decisionsCount: userDecisions.length,
       firstPlayedAt: sorted[0]?.decidedAt.toISOString() ?? null,
@@ -198,6 +206,7 @@ export async function getMarketPulsePrizeReviewData(
   return {
     selectedCycleId: selectedCycle.id,
     selectedCycleName: selectedCycle.name,
+    prizeLabel,
     cycleRevealed: true,
     revealedCycles: revealedCycleRows,
     candidates,

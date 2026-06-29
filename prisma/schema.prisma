@@ -74,6 +74,7 @@ model User {
   gameScores             GameScore[]
   marketPulseDecisions   MarketPulseDecision[]
   marketPulseScoreEvents MarketPulseScoreEvent[]
+  marketPulseScores      MarketPulseScore[]
   marketPulsePrizeClaims MarketPulsePrizeClaim[]
   marketPulseAuditLogs   MarketPulseAuditLog[]
 
@@ -115,6 +116,7 @@ model MarketPulseCycle {
   cards              MarketPulseCard[]
   decisions          MarketPulseDecision[]
   scoreEvents        MarketPulseScoreEvent[]
+  scores             MarketPulseScore[]
   prizeClaims        MarketPulsePrizeClaim[]
   activeGameSettings MarketPulseGameSetting[]
 
@@ -206,6 +208,25 @@ model MarketPulseScoreEvent {
   @@index([cycleId])
   @@index([cardId])
   @@index([createdAt])
+}
+
+/// Per-user cycle aggregate written during reveal scoring (alongside score events).
+model MarketPulseScore {
+  id                 String   @id @default(cuid())
+  userId             String
+  cycleId            String
+  participationScore Int      @default(0)
+  decisionsSubmitted Int      @default(0)
+  totalCards         Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycle MarketPulseCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cycleId])
+  @@index([userId])
+  @@index([cycleId])
 }
 
 model MarketPulsePrizeClaim {

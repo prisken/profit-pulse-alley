@@ -24,11 +24,26 @@ const AUTH_MESSAGE_KEYS: Record<string, MessageKey> = {
   "Could not save your contact number. Please try again.":
     "auth.error.contactSaveFailed",
   "Role updated.": "auth.admin.users.roleUpdated",
+  "User role updated.": "auth.admin.users.roleUpdated",
   "User deleted.": "auth.admin.users.userDeleted",
+  "User added.": "auth.admin.users.userCreated",
   "User created.": "auth.admin.users.userCreated",
+  "You cannot delete your own account from the admin dashboard.":
+    "auth.admin.users.blockedDeleteSelf",
+  "Cannot demote the last admin account.":
+    "auth.admin.users.blockedLastAdmin",
+  "You cannot demote your own admin account. Ask another admin to change your role.":
+    "auth.admin.users.blockedSelfDemote",
+  "Could not delete user. Related records may prevent removal — contact engineering.":
+    "auth.admin.users.blockedRelatedRecords",
   "Action failed.": "auth.admin.mp.actionFailed",
   "Done.": "auth.admin.mp.done",
   "Saved.": "auth.admin.mp.saved",
+  "Card saved.": "auth.admin.mp.cards.saved",
+  "No active cycle.": "auth.admin.mp.reveal.blockNoCycle",
+  "This cycle has already been revealed.": "auth.admin.mp.reveal.blockAlreadyRevealed",
+  "Prize review requires a revealed cycle.":
+    "auth.admin.mp.prize.notRevealedYet",
   "Settings saved.": "auth.admin.game.saved",
   "Save failed. Check KV configuration and try again.":
     "auth.admin.game.saveFailed",

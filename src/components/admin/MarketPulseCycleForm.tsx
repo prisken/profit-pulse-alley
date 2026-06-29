@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { MarketPulseCycleStatus } from "@prisma/client";
 
 import type { AdminActionResult } from "@/lib/market-pulse/admin-actions";
+import { invokeAdminAction } from "@/lib/admin/action-result";
 import {
   DEFAULT_CYCLE_FORM_VALUES,
   MARKET_PULSE_CYCLE_STATUS_OPTIONS,
@@ -61,6 +62,7 @@ export default function MarketPulseCycleForm({
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusWarning, setStatusWarning] = useState<string | null>(null);
   const [statusIsError, setStatusIsError] = useState(false);
 
   function updateField<K extends keyof MarketPulseCycleFormValues>(
@@ -94,27 +96,45 @@ export default function MarketPulseCycleForm({
     setFieldErrors({});
     setIsSubmitting(true);
 
-    const result = await onSubmit({
-      ...values,
-      cycleId,
-    });
+    try {
+      const succeeded = await invokeAdminAction(
+        () => onSubmit({ ...values, cycleId }),
+        {
+          onSuccess: (successMessage, warning) => {
+            setStatusIsError(false);
+            setStatusMessage(successMessage ?? "Cycle saved.");
+            setStatusWarning(warning ?? null);
 
-    setIsSubmitting(false);
+            if (mode === "create") {
+              setValues(mergeInitialValues());
+            }
 
-    if (!result.ok) {
-      setStatusIsError(true);
-      setStatusMessage(result.error);
-      return;
+            onSuccess?.();
+          },
+          onError: (error, serverFieldErrors) => {
+            setStatusIsError(true);
+            setStatusWarning(null);
+            setStatusMessage(error);
+            if (serverFieldErrors) {
+              const nextErrors: Partial<Record<keyof MarketPulseCycleFormValues, string>> =
+                {};
+              for (const [key, messages] of Object.entries(serverFieldErrors)) {
+                if (messages[0]) {
+                  nextErrors[key as keyof MarketPulseCycleFormValues] = messages[0];
+                }
+              }
+              setFieldErrors(nextErrors);
+            }
+          },
+        },
+      );
+
+      if (!succeeded) {
+        return;
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setStatusIsError(false);
-    setStatusMessage(result.message ?? "Cycle saved.");
-
-    if (mode === "create") {
-      setValues(mergeInitialValues());
-    }
-
-    onSuccess?.();
   }
 
   const busy = disabled || isSubmitting;
@@ -277,6 +297,14 @@ export default function MarketPulseCycleForm({
           role="status"
         >
           {statusMessage}
+        </p>
+      ) : null}
+      {statusWarning ? (
+        <p
+          className="text-sm font-medium text-amber-700 dark:text-amber-300"
+          role="status"
+        >
+          {statusWarning}
         </p>
       ) : null}
     </form>
