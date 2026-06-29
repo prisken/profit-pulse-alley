@@ -12,8 +12,8 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Database** | Vercel Postgres + Prisma 6 |
 | **Auth** | Auth.js v5 (`next-auth@beta`) + Prisma Adapter |
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
-| **Feature branch** | `revamp-market-pulse-july-2026` — Market Pulse July 2026 launch, i18n, admin users, onboarding fix, events update |
-| **Production status** | Deploy from `main` after merge; public launch **1 Jul 2026 00:00 HKT**; first cycle **1–10 Jul 2026**; ADMIN test bypass before launch |
+| **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
+| **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT**; first cycle **1–10 Jul 2026**; ADMIN test bypass before launch |
 
 ---
 
@@ -102,20 +102,61 @@ Google OAuth redirect URIs (must match exactly):
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
 
-### Verification — last run 29 Jun 2026 (revamp QA)
+### Verification — last run 29 Jun 2026 (final revamp QA)
 
 | Check | Result |
 |-------|--------|
 | **Lint** | `npm run lint` — pass (0 errors; 10 pre-existing warnings) |
 | **Typecheck** | `npm run typecheck` — pass |
 | **Build** | `npm run build` — pass (`prisma db push && next build`) |
-| **Tests** | `npm test` — **109** Vitest tests (20 files) |
-| **Launch gating** | Non-admin blocked before 1 Jul 2026; ADMIN bypass; announcement hidden after launch |
+| **Tests** | `npm test` — **110** Vitest tests (20 files) |
+| **Launch gating** | Non-admin blocked before 1 Jul 2026; ADMIN bypass server-side; announcement hidden after launch |
 | **Onboarding** | No redirect loop; recovery UI on `/auth/onboarding` |
+| **`/fortify-survey`** | URL unchanged; HTTP 200; no redirect; QR funnel intact |
+| **Homepage past events** | Placeholder cards no longer link to missing `/events/archive/*` routes |
 
 **Deploy checklist:** `docs/market-pulse-deploy-checklist.md`
 
 **Auth notes:** JWT strategy; middleware onboarding via `auth.config.ts`; JWT `update` re-fetches `contactNumber` from DB.
+
+### July 2026 revamp — requirements closure
+
+| # | Requirement | Status | Notes |
+|---|-------------|--------|-------|
+| 1 | Redesigned Market Pulse swipe card | **Pass** | `MarketPulseSwipeCard.tsx` — headline, news body, logo, price, 16:9 image, summary, swipe |
+| 2 | Admin card fields + image guidance | **Pass** | `card-validation.ts` (`1200×675`, 16:9); `MarketPulseCardForm.tsx` |
+| 3 | Admin user add / delete / role | **Pass** | `/admin` → `admin-user-actions.ts`, `AdminUserManagement.tsx` |
+| 4 | Close public play until 1 Jul 2026 | **Pass** | `launch-config.ts`, `play-data.ts`, `server.ts` |
+| 5 | ADMIN test before launch | **Pass** | DB role check on submit; session role for play UI |
+| 6 | Launch announcements | **Pass** | `MarketPulseLaunchAnnouncement` on hero, hub, play, leaderboard |
+| 7 | First cycle 1–10 Jul 2026 | **Pass** | `challenge-cycle.ts`, `first-cycle-admin-guidance.ts` |
+| 8 | Ocean Park ticket per cycle winner | **Pass** | `launch-config.ts`, `prize-constants.ts`, legal pages |
+| 9 | Remove other prize mentions | **Pass** | Public copy is Ocean Park only; rules *gameplay* text still references legacy arcade sim (see §16) |
+| 10 | Bilingual EN / zh-Hant | **Partial** | MP + site chrome locale-driven; event detail pages use static bilingual strings |
+| 11 | Language switcher placement | **Pass** | Header, mobile nav, MP play, login, onboarding |
+| 12 | Onboarding blank/loop fix | **Pass** | `/auth/onboarding` server + client recovery |
+| 13 | Fortify Your Future → past | **Pass** | `fortify-your-future.ts`, past banner on detail |
+| 14 | Sales & Marketing coming soon | **Pass** | 17 Jul 2026, TBC — `/events/fortify-sales-marketing` |
+| 15 | `/fortify-survey` unchanged | **Pass** | Do not modify URL or `FortifyYourFutureSurvey.tsx` |
+
+### Production smoke test (manual)
+
+**Pre-launch (before 1 Jul 2026 00:00 HKT):** guest/USER → `pre_launch` on play; USER submit blocked (403); ADMIN can play/submit when cycle/card gates pass; homepage + hub show launch announcement; EN ↔ 繁 switch works.
+
+**At launch:** USER can play when runtime `OPEN` + published card exists; pre-launch UI hidden.
+
+**Admin:** add/change role/delete user on `/admin`; create card with image URL on `/admin/market-pulse`; first-cycle guidance panel matches Jul dates.
+
+**Auth:** Google signup → contact onboarding → profile (no loop).
+
+**Events:** `/events` upcoming Sales & Marketing; past Fortify archived; `/fortify-survey` loads (no redirect).
+
+### Rollback
+
+- **Code:** redeploy previous Vercel deployment or revert commit on `main`.
+- **Schema:** avoid rolling back DB if production has new MP card data; code-only rollback is usually safe.
+- **Launch gate:** prefer promoting a prior build over editing `launch-config.ts` in prod.
+- **Never change** `/fortify-survey` URL during rollback (physical QR codes).
 
 ### Admin access
 
@@ -288,7 +329,7 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 │   │       ├── launch-config.ts        ← Public launch Jul 2026, ADMIN bypass
 │   │       ├── first-cycle-admin-guidance.ts
 │   │       ├── server.ts, cycle-playability.ts, reveal-access.ts, admin-actions.ts
-│   │       └── *.test.ts               ← 109 unit tests total (repo)
+│   │       └── *.test.ts               ← 110 unit tests total (repo)
 └── …
 ```
 
@@ -310,7 +351,7 @@ npm run dev
 | `npm run build` | **`prisma db push && next build`** (Vercel uses this) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript (`tsc --noEmit`) |
-| `npm test` | Vitest unit tests (`vitest run`) — **109 tests** |
+| `npm test` | Vitest unit tests (`vitest run`) — **110 tests** |
 | `npm run db:migrate` | Prisma migrate dev (when using migration files) |
 | `npm run db:push` | Push schema without migration files |
 | `npm run db:seed` | Seed **demo Market Pulse** data (dev only — see [§4.1](#41-market-pulse-demo-seed)) |
@@ -755,7 +796,7 @@ Handlers: `src/lib/market-pulse/player-handlers.ts`. Core logic: `src/lib/market
 ### Unit tests (Vitest)
 
 ```bash
-npm test          # vitest run — 109 tests across MP, i18n, auth, events, admin users
+npm test          # vitest run — 110 tests across MP, i18n, auth, events, admin users
 npm run typecheck # tsc --noEmit
 ```
 
@@ -779,7 +820,9 @@ npm run import-leads
 
 ## 13. Deployment
 
-**Flow:** merge `revamp-market-pulse-july-2026` → `main` → Vercel auto-deploys **profit-pulse-alley** → build runs `prisma db push && next build`.
+**Flow:** push to `main` → Vercel auto-deploys **profit-pulse-alley** → build runs `prisma db push && next build`.
+
+Revamp merged 29 Jun 2026 (`79033a4`). Subsequent fixes (e.g. homepage past-event placeholder links) deploy from `main` the same way.
 
 ### First-time / infra setup
 
@@ -885,13 +928,14 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 1. **FAQ placeholder** — `/faq` still needs full content from comms.
 2. **Newsletter** — `SiteFooter` subscribe is UI-only.
 3. **Social URLs** — LinkedIn/Twitter placeholders; Instagram live.
-4. **Past events placeholders** — Homepage cards for “Zero-Cost Life Salon” and “Founder's Funding Roundtable” link to `/events/archive/...` (404).
+4. **Past events placeholders** — “Zero-Cost Life Salon” and “Founder's Funding Roundtable” show on homepage without archive links until detail pages exist (`archiveHref` optional in `home-events-hub.ts`).
 5. **Event detail pages** — Static bilingual strings; not fully driven by `ppa_locale`.
 6. **KV vs Prisma settings** — KV theme/event on `/admin` is legacy; runtime game state is Prisma `MarketPulseGameSetting`.
 7. **Demo seed dates** — `npm run db:seed` creates a cycle relative to seed time; production may retain expired `[DEMO]` cycles — update in admin or create new Jul 2026 cycle.
 8. **No migration files** — Production uses `prisma db push` in build; adopt `migrate deploy` when ready.
 9. **Legacy GameScore** — Profile may still show old arcade scores alongside swipe challenge history.
 10. **Admin MP UI** — Operational labels mostly English; enums (`OPEN`, `PUBLISHED`) intentionally untranslated.
+11. **Rules page gameplay copy** — `/market-pulse/rules` `whatIsBody` / `scoringBody` still describe the legacy arcade simulation; prize section correctly shows Ocean Park only.
 
 ---
 
@@ -931,10 +975,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 - **Languages:** EN + Traditional Chinese (`ppa_locale` cookie); MP launch messages in `launch-config.ts`
 - **Data stores:** Postgres (users, Market Pulse, auth), KV (legacy theme), Markdown (blog)
-- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (109), `npm run build`
+- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (110), `npm run build`
 - **Production smoke:** guest/USER/ADMIN before launch; language switch; Google onboarding; admin users; card with image; `/fortify-survey` unchanged
 - **Lint warnings:** Legacy castle-siege; TanStack Table in admin members table
 
 ---
 
-*Last updated: 29 Jun 2026 — Market Pulse July 2026 revamp: launch closure, i18n, admin user management, onboarding fix, events update, first-cycle guidance, card image fields. Branch: `revamp-market-pulse-july-2026`.*
+*Last updated: 29 Jun 2026 — Final revamp QA on `main`: requirements closure table, production smoke/rollback notes, 110 tests, homepage past-event placeholder fix (`archiveHref` optional). Revamp merged at `79033a4`.*

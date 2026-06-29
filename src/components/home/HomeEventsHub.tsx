@@ -167,13 +167,15 @@ export default function HomeEventsHub({
                     {event.attendeeMetric}
                   </p>
 
-                  <Link
-                    href={event.archiveHref}
-                    className={`mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-200 underline-offset-4 transition-colors hover:text-white hover:underline ${focusRing}`}
-                  >
-                    View archive
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
+                  {event.archiveHref ? (
+                    <Link
+                      href={event.archiveHref}
+                      className={`mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-200 underline-offset-4 transition-colors hover:text-white hover:underline ${focusRing}`}
+                    >
+                      View archive
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  ) : null}
                 </article>
               </li>
             ))}

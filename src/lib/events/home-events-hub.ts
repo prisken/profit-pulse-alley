@@ -18,7 +18,8 @@ export type PastEventShowcase = {
   title: string;
   summary: string;
   attendeeMetric: string;
-  archiveHref: string;
+  /** Omit when no archive page exists — homepage card is display-only. */
+  archiveHref?: string;
 };
 
 /** Placeholder past events for the homepage showcase. */
@@ -40,13 +41,11 @@ export function getPastEventsShowcase(locale: SiteLocale): PastEventShowcase[] {
       title: translate(locale, "home.events.past2.title"),
       summary: translate(locale, "home.events.past2.summary"),
       attendeeMetric: translate(locale, "home.events.past2.metric"),
-      archiveHref: "/events/archive/zero-cost-life-salon",
     },
     {
       title: translate(locale, "home.events.past3.title"),
       summary: translate(locale, "home.events.past3.summary"),
       attendeeMetric: translate(locale, "home.events.past3.metric"),
-      archiveHref: "/events/archive/founders-funding-roundtable",
     },
   ];
 }

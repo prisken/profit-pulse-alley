@@ -154,12 +154,9 @@ export default async function LiveEventsHubSection({
             {t("home.events.pastHeading")}
           </h3>
           <ul className="mt-3 grid gap-2.5 sm:mt-5 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5">
-            {pastEvents.map((event) => (
-              <li key={event.archiveHref}>
-                <Link
-                  href={event.archiveHref}
-                  className={`group flex h-full flex-col rounded-xl border border-white/10 bg-zinc-950/60 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/30 hover:bg-zinc-950 hover:shadow-lg hover:shadow-amber-950/20 sm:rounded-2xl sm:p-6 ${focusRing}`}
-                >
+            {pastEvents.map((event) => {
+              const cardBody = (
+                <>
                   <h4 className="text-sm font-semibold leading-snug text-white group-hover:text-amber-100 sm:text-lg">
                     {event.title}
                   </h4>
@@ -170,9 +167,26 @@ export default async function LiveEventsHubSection({
                     <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
                     {event.attendeeMetric}
                   </p>
-                </Link>
-              </li>
-            ))}
+                </>
+              );
+
+              return (
+                <li key={event.title}>
+                  {event.archiveHref ? (
+                    <Link
+                      href={event.archiveHref}
+                      className={`group flex h-full flex-col rounded-xl border border-white/10 bg-zinc-950/60 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/30 hover:bg-zinc-950 hover:shadow-lg hover:shadow-amber-950/20 sm:rounded-2xl sm:p-6 ${focusRing}`}
+                    >
+                      {cardBody}
+                    </Link>
+                  ) : (
+                    <article className="flex h-full flex-col rounded-xl border border-white/10 bg-zinc-950/60 p-4 sm:rounded-2xl sm:p-6">
+                      {cardBody}
+                    </article>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>

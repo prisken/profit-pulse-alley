@@ -21,4 +21,17 @@ describe("getPastEventsShowcase", () => {
 
     expect(fortify?.title).toBe("守業增值創未來");
   });
+
+  it("omits archive links for placeholder past events without pages", () => {
+    const past = getPastEventsShowcase("en");
+    const salon = past.find((event) =>
+      event.title.includes("Zero-Cost Life Salon"),
+    );
+    const roundtable = past.find((event) =>
+      event.title.includes("Funding Roundtable"),
+    );
+
+    expect(salon?.archiveHref).toBeUndefined();
+    expect(roundtable?.archiveHref).toBeUndefined();
+  });
 });
