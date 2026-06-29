@@ -1,36 +1,34 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import ContentPageLayout from "@/components/layout/ContentPageLayout";
 import LegalDraftNotice from "@/components/legal/LegalDraftNotice";
+import { getServerTranslations, getServerSiteLocale } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n/messages";
 
-export const metadata = {
-  title: "Privacy Policy | Profit Pulse Ally",
-  description: "How Profit Pulse Ally handles your personal data.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerSiteLocale();
+  return {
+    title: translate(locale, "meta.privacy.title"),
+    description: translate(locale, "meta.privacy.description"),
+  };
+}
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const { t } = await getServerTranslations();
+
   return (
-    <ContentPageLayout title="Privacy Policy">
+    <ContentPageLayout title={t("legal.privacy.title")}>
       <LegalDraftNotice />
 
-      <p>
-        This page is currently under construction. Our Privacy Policy, detailing
-        how we handle your data, will be available here soon.
-      </p>
+      <p>{t("legal.privacy.intro")}</p>
 
-      <h2>Market Pulse</h2>
+      <h2>{t("legal.privacy.marketPulseHeading")}</h2>
+      <p>{t("legal.privacy.marketPulseBody1")}</p>
       <p>
-        When you play Market Pulse, we may process information such as your
-        account identifier, display name, gameplay decisions, timestamps,
-        leaderboard rankings, and technical signals used for integrity review
-        (for example, hashed IP or user-agent values). We use this data to
-        operate the game, display leaderboards, administer prizes, and detect
-        abuse.
-      </p>
-      <p>
-        Prize winners may be contacted using the email on file for verification
-        and fulfilment. For contest administration, see our{" "}
-        <Link href="/contest-rules">Contest Rules</Link>.
+        {t("legal.privacy.marketPulseBody2Prefix")}{" "}
+        <Link href="/contest-rules">{t("legal.privacy.link.contest")}</Link>
+        {t("legal.privacy.marketPulseBody2Suffix")}
       </p>
     </ContentPageLayout>
   );

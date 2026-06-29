@@ -11,7 +11,9 @@ import {
 } from "@/lib/market-pulse/server";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const DEFAULT_PRIZE_LABEL = "Ocean Park tickets & more";
+import { MARKET_PULSE_CYCLE_PRIZE_SHORT } from "@/lib/market-pulse/launch-config";
+
+const DEFAULT_PRIZE_LABEL = MARKET_PULSE_CYCLE_PRIZE_SHORT;
 const DEFAULT_CHALLENGE_NAME = "Market Pulse Challenge";
 
 export type MarketPulseHubPageData = {

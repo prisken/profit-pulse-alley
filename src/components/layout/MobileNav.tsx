@@ -12,6 +12,9 @@ import {
   trackMarketPulseEvent,
 } from "@/lib/market-pulse/analytics";
 import { isMarketPulseRoute } from "@/lib/layout/route-chrome";
+import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
+import { useTranslations } from "@/components/providers/LocaleProvider";
+import type { MessageKey } from "@/lib/i18n/messages";
 
 const DESKTOP_NAV_MEDIA = "(min-width: 48rem)";
 
@@ -29,12 +32,16 @@ type MobileNavProps = Readonly<{
   isLoadingSession: boolean;
 }>;
 
-const MAIN_LINKS = [
-  { label: "Market Pulse", href: "/market-pulse" },
-  { label: "Events", href: "/events", analyticsCta: "nav_events" as const },
-  { label: "Our Philosophy", href: "/concept" },
-  { label: "Blog", href: "/blog" },
-] as const;
+const MAIN_LINKS: ReadonlyArray<{
+  labelKey: MessageKey;
+  href: string;
+  analyticsCta?: "nav_events";
+}> = [
+  { labelKey: "nav.marketPulse", href: "/market-pulse" },
+  { labelKey: "nav.events", href: "/events", analyticsCta: "nav_events" },
+  { labelKey: "nav.philosophy", href: "/concept" },
+  { labelKey: "nav.blog", href: "/blog" },
+];
 
 function lockBodyScroll() {
   const scrollY = window.scrollY;
@@ -72,12 +79,14 @@ export function MobileNavMenuButton({
   controlsId: string;
   menuButtonRef: RefObject<HTMLButtonElement | null>;
 }>) {
+  const { t } = useTranslations();
+
   return (
     <button
       ref={menuButtonRef}
       type="button"
       className={`relative z-[1] inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-foreground/80 transition-colors hover:bg-foreground/5 hover:text-foreground md:hidden ${focusRing}`}
-      aria-label={isOpen ? "Close menu" : "Open menu"}
+      aria-label={isOpen ? t("common.closeMenu") : t("common.openMenu")}
       aria-expanded={isOpen}
       aria-controls={isOpen ? controlsId : undefined}
       onClick={isOpen ? onClose : onOpen}
@@ -99,6 +108,7 @@ export default function MobileNav({
   isLoadingSession,
 }: MobileNavProps) {
   const pathname = usePathname();
+  const { t } = useTranslations();
   const panelId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -192,7 +202,7 @@ export default function MobileNav({
           type="button"
           tabIndex={-1}
           className={`absolute inset-0 bg-black/40 backdrop-blur-[1px] ${focusRing}`}
-          aria-label="Close menu"
+          aria-label={t("common.closeMenu")}
           onClick={onClose}
         />
         <div
@@ -200,24 +210,27 @@ export default function MobileNav({
           id={panelId}
           role="dialog"
           aria-modal="true"
-          aria-label="Site navigation"
+          aria-label={t("common.navSiteAria")}
           className="absolute inset-y-0 right-0 z-[201] flex w-[min(100%,20rem)] max-w-[calc(100vw-3rem)] flex-col border-l border-foreground/10 bg-background shadow-xl pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pr-[max(0.75rem,env(safe-area-inset-right))]"
         >
           <div className="flex items-center justify-between border-b border-foreground/10 px-3 py-2">
-            <p className="text-sm font-semibold text-foreground">Menu</p>
-            <button
+            <p className="text-sm font-semibold text-foreground">{t("nav.menu")}</p>
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher variant="compact" />
+              <button
               ref={closeButtonRef}
               type="button"
               className={`inline-flex h-11 w-11 items-center justify-center rounded-lg text-foreground/80 hover:bg-foreground/5 ${focusRing}`}
-              aria-label="Close menu"
+              aria-label={t("common.closeMenu")}
               onClick={onClose}
             >
               <X className="h-5 w-5 shrink-0" aria-hidden="true" />
             </button>
+            </div>
           </div>
 
           <nav
-            aria-label="Main"
+            aria-label={t("common.navMainAria")}
             className="flex-1 overflow-y-auto overscroll-contain px-3 py-3"
           >
             <ul className="space-y-1">
@@ -237,7 +250,7 @@ export default function MobileNav({
                       )
                     }
                   >
-                    {link.label}
+                    {t(link.labelKey)}
                   </Link>
                 </li>
               ))}
@@ -245,12 +258,12 @@ export default function MobileNav({
 
             <div className="mt-4 border-t border-foreground/10 pt-4">
               <p className="px-3 text-xs font-semibold uppercase tracking-wider text-foreground/45">
-                Account
+                {t("nav.account")}
               </p>
               <ul className="mt-2 space-y-1">
                 {isLoadingSession ? (
                   <li className="px-3 py-2 text-sm text-foreground/50">
-                    Checking session…
+                    {t("lang.checkingSession")}
                   </li>
                 ) : isAuthenticated ? (
                   <>
@@ -268,7 +281,7 @@ export default function MobileNav({
                           onClose();
                         }}
                       >
-                        My Profile
+                        {t("nav.profile")}
                       </Link>
                     </li>
                     <li>
@@ -280,7 +293,7 @@ export default function MobileNav({
                           void signOut({ callbackUrl: "/" });
                         }}
                       >
-                        Sign Out
+                        {t("nav.signOut")}
                       </button>
                     </li>
                   </>
@@ -292,7 +305,7 @@ export default function MobileNav({
                         className={menuLinkClass}
                         onClick={onClose}
                       >
-                        Login
+                        {t("nav.login")}
                       </Link>
                     </li>
                     <li>
@@ -301,7 +314,7 @@ export default function MobileNav({
                         className={`${menuLinkClass} font-semibold text-foreground`}
                         onClick={onClose}
                       >
-                        Sign Up
+                        {t("nav.signUp")}
                       </Link>
                     </li>
                   </>

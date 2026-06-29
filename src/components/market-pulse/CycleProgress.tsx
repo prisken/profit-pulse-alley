@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 
+import { useTranslations } from "@/components/providers/LocaleProvider";
 import { MARKET_PULSE_EASE } from "@/lib/market-pulse/motion";
 
 export type CycleProgressProps = {
@@ -21,13 +22,17 @@ export default function CycleProgress({
   variant = "default",
   className = "",
 }: CycleProgressProps) {
+  const { t } = useTranslations();
   const isCompact = variant === "compact";
   const reduceMotion = useReducedMotion() ?? false;
   const safeTotal = Math.max(dayTotal, 1);
   const safeCurrent = Math.min(Math.max(dayCurrent, 0), safeTotal);
   const percent = Math.min(100, (safeCurrent / safeTotal) * 100);
   const displayLabel =
-    label ?? `Day ${safeCurrent} of ${safeTotal}`;
+    label ??
+    t("mp.cycle.dayOf")
+      .replace("{current}", String(safeCurrent))
+      .replace("{total}", String(safeTotal));
 
   return (
     <div className={className}>
@@ -37,7 +42,7 @@ export default function CycleProgress({
         >
           {!isCompact ? (
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-              Cycle progress
+              {t("mp.cycle.progressLabel")}
             </p>
           ) : null}
           <p

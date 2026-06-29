@@ -3,11 +3,16 @@ import LiveEventsHubSection from "@/components/home/LiveEventsHubSection";
 import MarketPulseHero from "@/components/home/MarketPulseHero";
 import PhilosophySection from "@/components/home/PhilosophySection";
 import PlayLearnWinSection from "@/components/home/PlayLearnWinSection";
-import { fortifyYourFutureEvent } from "@/lib/events/fortify-your-future";
-import { PAST_EVENTS_SHOWCASE } from "@/lib/events/home-events-hub";
+import { getPastEventsShowcase } from "@/lib/events/home-events-hub";
+import { getServerTranslations } from "@/lib/i18n/server";
 
-export default function Home() {
-  const primarySpeaker = fortifyYourFutureEvent.speakers[0];
+export default async function Home() {
+  const { t, locale } = await getServerTranslations();
+  const pastEvents = getPastEventsShowcase(locale);
+  const upcomingTitle =
+    locale === "zh-Hant"
+      ? t("home.events.upcoming.salesMarketing.titleZh")
+      : t("home.events.upcoming.salesMarketing.title");
 
   return (
     <main className="flex min-w-0 flex-col overflow-x-hidden bg-zinc-950 text-zinc-50">
@@ -15,16 +20,16 @@ export default function Home() {
       <PlayLearnWinSection />
       <LiveEventsHubSection
         upcomingEvent={{
-          speakerName:
-            fortifyYourFutureEvent.speakers.map((s) => s.name).join(" & ") ||
-            "Guest Speaker TBA",
-          speakerRole: primarySpeaker?.title ?? "",
-          speakerHeadshotSrc: "/vicky-headshot.png",
-          topic: fortifyYourFutureEvent.subtitle,
-          date: fortifyYourFutureEvent.eventDateTime,
-          registerHref: "/events/fortify-your-future",
+          kind: "event",
+          eventTitle: upcomingTitle,
+          topic: t("home.events.upcoming.salesMarketing.subtitle"),
+          date: t("home.events.upcoming.salesMarketing.date"),
+          location: t("home.events.upcoming.salesMarketing.location"),
+          posterSrc: "/images/fortify-hero-chess-king.png",
+          registerHref: "/events/fortify-sales-marketing",
+          comingSoon: true,
         }}
-        pastEvents={PAST_EVENTS_SHOWCASE}
+        pastEvents={pastEvents}
       />
       <PhilosophySection />
       <FinalCtaSection />

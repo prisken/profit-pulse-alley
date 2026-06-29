@@ -1,18 +1,23 @@
+import type { Metadata } from "next";
+
 import ContentPageLayout from "@/components/layout/ContentPageLayout";
+import { getServerTranslations, getServerSiteLocale } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n/messages";
 
-export const metadata = {
-  title: "Frequently Asked Questions | Profit Pulse Ally",
-  description:
-    "Answers to common questions about Market Pulse, events, and membership.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerSiteLocale();
+  return {
+    title: translate(locale, "meta.faq.title"),
+    description: translate(locale, "meta.faq.description"),
+  };
+}
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  const { t } = await getServerTranslations();
+
   return (
-    <ContentPageLayout title="Frequently Asked Questions">
-      <p>
-        This page is currently under construction. Please check back later for
-        answers to common questions about Market Pulse, events, and membership.
-      </p>
+    <ContentPageLayout title={t("faq.title")}>
+      <p>{t("faq.body")}</p>
     </ContentPageLayout>
   );
 }

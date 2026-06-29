@@ -1,11 +1,17 @@
+import type { Metadata } from "next";
+
 import MarketPulseRevealExperience from "@/components/market-pulse/MarketPulseRevealExperience";
+import { getServerSiteLocale } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n/messages";
 import { getMarketPulseRevealPageData } from "@/lib/market-pulse/reveal-data";
 
-export const metadata = {
-  title: "PPA Insight Reveal | Market Pulse",
-  description:
-    "View your Market Pulse challenge results, PPA Insight signals, and score breakdown.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerSiteLocale();
+  return {
+    title: translate(locale, "mp.meta.reveal.title"),
+    description: translate(locale, "mp.meta.reveal.description"),
+  };
+}
 
 export default async function MarketPulseRevealPage() {
   const data = await getMarketPulseRevealPageData();

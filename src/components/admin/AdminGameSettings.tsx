@@ -16,30 +16,39 @@ import type {
   MarketPulseSettingsStatus,
   WeeklyTheme,
 } from "@/lib/market-pulse/types";
+import { useTranslations } from "@/components/providers/LocaleProvider";
+import type { MessageKey } from "@/lib/i18n/messages";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 const fieldClass = `mt-2 w-full min-h-11 rounded-lg border border-foreground/15 bg-background px-3 py-2.5 text-base text-foreground outline-none disabled:opacity-60 sm:text-sm ${focusRing}`;
 
-function formatStatusLabel(status: MarketPulseSettingsStatus): string {
+function formatStatusLabel(
+  status: MarketPulseSettingsStatus,
+  t: (key: MessageKey) => string,
+): string {
   switch (status) {
     case "open":
-      return "Open";
+      return t("auth.admin.game.statusOpen");
     case "closed":
-      return "Closed";
+      return t("auth.admin.game.statusClosed");
     case "maintenance":
-      return "Maintenance";
+      return t("auth.admin.game.statusMaintenance");
   }
 }
 
 function formatLeaderboardModeLabel(
   mode: MarketPulseSettingsLeaderboardMode,
+  t: (key: MessageKey) => string,
 ): string {
-  return mode === "current-cycle" ? "Current cycle" : "All-time";
+  return mode === "current-cycle"
+    ? t("auth.admin.game.modeCurrentCycle")
+    : t("auth.admin.game.modeAllTime");
 }
 
 export default function AdminGameSettings() {
+  const { t } = useTranslations();
   const [theme, setTheme] = useState<WeeklyTheme>(
     DEFAULT_MARKET_PULSE_SETTINGS.theme as WeeklyTheme,
   );
@@ -80,7 +89,7 @@ export default function AdminGameSettings() {
       const data = (await res.json()) as MarketPulseSettings;
       applySettings(data);
     } catch {
-      setLoadError("Could not load game settings. Showing defaults.");
+      setLoadError(t("auth.admin.game.loadError"));
       applySettings(DEFAULT_MARKET_PULSE_SETTINGS);
     } finally {
       setIsLoading(false);
@@ -105,10 +114,10 @@ export default function AdminGameSettings() {
       }
       const data = (await res.json()) as MarketPulseSettings;
       applySettings(data);
-      setSaveMessage("Settings saved.");
+      setSaveMessage(t("auth.admin.game.saved"));
       await fetchSettings();
     } catch {
-      setSaveMessage("Save failed. Check KV configuration and try again.");
+      setSaveMessage(t("auth.admin.game.saveFailed"));
     } finally {
       setIsSaving(false);
       window.setTimeout(() => setSaveMessage(null), 4000);
@@ -121,11 +130,10 @@ export default function AdminGameSettings() {
         id="vc-game-settings-heading"
         className="text-lg font-semibold text-foreground sm:text-xl"
       >
-        VC Game Settings
+        {t("auth.admin.game.title")}
       </h2>
       <p className="mt-1 text-sm text-foreground/65">
-        Configure the weekly theme and active market event for all VC Challenge
-        players.
+        {t("auth.admin.game.subtitle")}
       </p>
 
       {loadError ? (
@@ -138,7 +146,7 @@ export default function AdminGameSettings() {
         <dl className="grid gap-3 sm:grid-cols-2 sm:gap-4">
           <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
             <dt className="text-xs font-medium uppercase tracking-wide text-foreground/50">
-              Current theme
+              {t("auth.admin.game.currentTheme")}
             </dt>
             <dd className="mt-1 text-sm font-semibold text-foreground">
               {isLoading ? "…" : theme}
@@ -146,7 +154,7 @@ export default function AdminGameSettings() {
           </div>
           <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
             <dt className="text-xs font-medium uppercase tracking-wide text-foreground/50">
-              Current market event
+              {t("auth.admin.game.currentEvent")}
             </dt>
             <dd className="mt-1 text-sm font-semibold text-foreground">
               {isLoading ? "…" : event}
@@ -154,25 +162,25 @@ export default function AdminGameSettings() {
           </div>
           <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
             <dt className="text-xs font-medium uppercase tracking-wide text-foreground/50">
-              Game status
+              {t("auth.admin.game.gameStatus")}
             </dt>
             <dd className="mt-1 text-sm font-semibold text-foreground">
-              {isLoading ? "…" : formatStatusLabel(status)}
+              {isLoading ? "…" : formatStatusLabel(status, t)}
             </dd>
           </div>
           <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
             <dt className="text-xs font-medium uppercase tracking-wide text-foreground/50">
-              Leaderboard mode
+              {t("auth.admin.game.leaderboardMode")}
             </dt>
             <dd className="mt-1 text-sm font-semibold text-foreground">
-              {isLoading ? "…" : formatLeaderboardModeLabel(leaderboardMode)}
+              {isLoading ? "…" : formatLeaderboardModeLabel(leaderboardMode, t)}
             </dd>
           </div>
         </dl>
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <label className="block">
-            <span className="text-sm font-medium text-foreground/80">Theme</span>
+            <span className="text-sm font-medium text-foreground/80">{t("auth.admin.game.theme")}</span>
             <select
               value={theme}
               onChange={(e) => setTheme(e.target.value as WeeklyTheme)}
@@ -189,7 +197,7 @@ export default function AdminGameSettings() {
 
           <label className="block">
             <span className="text-sm font-medium text-foreground/80">
-              Market event
+              {t("auth.admin.game.marketEvent")}
             </span>
             <select
               value={event}
@@ -206,7 +214,7 @@ export default function AdminGameSettings() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-foreground/80">Status</span>
+            <span className="text-sm font-medium text-foreground/80">{t("auth.admin.game.status")}</span>
             <select
               value={status}
               onChange={(e) =>
@@ -217,7 +225,7 @@ export default function AdminGameSettings() {
             >
               {MARKET_PULSE_STATUS_OPTIONS.map((option) => (
                 <option key={option} value={option}>
-                  {formatStatusLabel(option)}
+                  {formatStatusLabel(option, t)}
                 </option>
               ))}
             </select>
@@ -225,7 +233,7 @@ export default function AdminGameSettings() {
 
           <label className="block">
             <span className="text-sm font-medium text-foreground/80">
-              Leaderboard mode
+              {t("auth.admin.game.leaderboardMode")}
             </span>
             <select
               value={leaderboardMode}
@@ -239,7 +247,7 @@ export default function AdminGameSettings() {
             >
               {MARKET_PULSE_LEADERBOARD_MODE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
-                  {formatLeaderboardModeLabel(option)}
+                  {formatLeaderboardModeLabel(option, t)}
                 </option>
               ))}
             </select>
@@ -252,13 +260,13 @@ export default function AdminGameSettings() {
           disabled={isLoading || isSaving}
           className={`mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${focusRing}`}
         >
-          {isSaving ? "Saving…" : "Save Settings"}
+          {isSaving ? t("auth.admin.game.saving") : t("auth.admin.game.save")}
         </button>
 
         {saveMessage ? (
           <p
             className={`mt-3 text-sm font-medium ${
-              saveMessage.startsWith("Settings saved")
+              saveMessage === t("auth.admin.game.saved")
                 ? "text-emerald-600 dark:text-emerald-400"
                 : "text-red-600 dark:text-red-400"
             }`}
@@ -269,7 +277,7 @@ export default function AdminGameSettings() {
         ) : null}
 
         {isLoading ? (
-          <p className="mt-3 text-xs text-foreground/45">Loading settings…</p>
+          <p className="mt-3 text-xs text-foreground/45">{t("auth.admin.game.loading")}</p>
         ) : null}
       </div>
     </section>

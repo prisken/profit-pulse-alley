@@ -91,8 +91,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
-      if (trigger === "update") {
-        token.needsOnboarding = false;
+      if (trigger === "update" && token.id) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { contactNumber: true },
+          });
+          token.needsOnboarding = !dbUser?.contactNumber?.trim();
+        } catch (error) {
+          console.error("[auth] jwt update contact lookup failed:", error);
+          token.needsOnboarding = false;
+        }
       }
 
       return token;

@@ -16,7 +16,7 @@ describe("challenge-cycle", () => {
   it("returns a stable cycleId for the first cycle at epoch", () => {
     const cycle = getCurrentMarketPulseCycle(CHALLENGE_CYCLE_EPOCH_MS);
 
-    expect(cycle.cycleId).toBe("2026-01-01_2026-01-10");
+    expect(cycle.cycleId).toBe("2026-07-01_2026-07-10");
     expect(cycle.cycleIndex).toBe(0);
   });
 
@@ -27,8 +27,8 @@ describe("challenge-cycle", () => {
     const mid = getCurrentMarketPulseCycle(midCycle);
     const end = getCurrentMarketPulseCycle(nearEnd);
 
-    expect(mid.cycleId).toBe("2026-01-01_2026-01-10");
-    expect(end.cycleId).toBe("2026-01-01_2026-01-10");
+    expect(mid.cycleId).toBe("2026-07-01_2026-07-10");
+    expect(end.cycleId).toBe("2026-07-01_2026-07-10");
     expect(mid.cycleIndex).toBe(end.cycleIndex);
   });
 
@@ -50,8 +50,8 @@ describe("challenge-cycle", () => {
     const current = getCurrentMarketPulseCycle(lastMsOfCycle);
     const next = getCurrentMarketPulseCycle(firstMsOfNextCycle);
 
-    expect(current.cycleId).toBe("2026-01-01_2026-01-10");
-    expect(next.cycleId).toBe("2026-01-11_2026-01-20");
+    expect(current.cycleId).toBe("2026-07-01_2026-07-10");
+    expect(next.cycleId).toBe("2026-07-11_2026-07-20");
     expect(next.cycleIndex).toBe(current.cycleIndex + 1);
   });
 
@@ -59,7 +59,7 @@ describe("challenge-cycle", () => {
     const startAt = new Date(CHALLENGE_CYCLE_EPOCH_MS);
     const endAt = new Date(CHALLENGE_CYCLE_EPOCH_MS + CHALLENGE_CYCLE_MS);
 
-    expect(formatMarketPulseCycleId(startAt, endAt)).toBe("2026-01-01_2026-01-10");
+    expect(formatMarketPulseCycleId(startAt, endAt)).toBe("2026-07-01_2026-07-10");
   });
 
   it("clamps pre-epoch times to the first cycle", () => {
@@ -67,7 +67,7 @@ describe("challenge-cycle", () => {
     const cycle = getCurrentMarketPulseCycle(beforeEpoch);
 
     expect(cycle.cycleIndex).toBe(0);
-    expect(cycle.cycleId).toBe("2026-01-01_2026-01-10");
+    expect(cycle.cycleId).toBe("2026-07-01_2026-07-10");
     expect(cycle.remainingMs).toBeGreaterThan(0);
   });
 });

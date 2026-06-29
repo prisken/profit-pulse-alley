@@ -1,12 +1,13 @@
 import Image from "next/image";
 import { Quote } from "lucide-react";
 
-import {
-  EXPERTS_SHOWCASE,
-  INVESTMENT_PHILOSOPHY,
-} from "@/lib/home/proof-of-concept";
+import { getExpertsShowcase } from "@/lib/home/proof-of-concept";
+import { getServerTranslations } from "@/lib/i18n/server";
 
-export default function PhilosophySection() {
+export default async function PhilosophySection() {
+  const { t, locale } = await getServerTranslations();
+  const experts = getExpertsShowcase(locale);
+
   return (
     <section
       id="philosophy"
@@ -15,7 +16,7 @@ export default function PhilosophySection() {
     >
       <div className="mx-auto w-full max-w-6xl">
         <h2 id="philosophy-heading" className="sr-only">
-          Our Philosophy
+          {t("home.philosophy.srHeading")}
         </h2>
 
         <figure className="relative mx-auto max-w-4xl rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-6 sm:rounded-3xl sm:px-10 sm:py-12 md:px-14 md:py-14">
@@ -25,17 +26,17 @@ export default function PhilosophySection() {
           />
           <blockquote className="relative text-center">
             <p className="text-pretty text-sm font-medium leading-relaxed text-zinc-100 sm:text-xl sm:leading-relaxed md:text-2xl md:leading-relaxed">
-              &ldquo;{INVESTMENT_PHILOSOPHY}&rdquo;
+              &ldquo;{t("home.philosophy.quote")}&rdquo;
             </p>
           </blockquote>
         </figure>
 
         <div className="mt-8 sm:mt-14">
           <h3 className="text-center text-base font-semibold tracking-tight text-white sm:text-2xl">
-            The Minds Behind the Market Pulse
+            {t("home.philosophy.mindsHeading")}
           </h3>
           <ul className="mt-5 flex flex-wrap justify-center gap-6 sm:mt-10 sm:gap-12 md:gap-16">
-            {EXPERTS_SHOWCASE.map((expert) => (
+            {experts.map((expert) => (
               <li key={expert.name} className="flex flex-col items-center text-center">
                 <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-amber-400/40 ring-2 ring-amber-500/10 sm:h-28 sm:w-28 sm:ring-4 md:h-32 md:w-32">
                   <Image

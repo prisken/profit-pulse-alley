@@ -1,20 +1,28 @@
+import type { Metadata } from "next";
+
 import ContentPageLayout from "@/components/layout/ContentPageLayout";
+import { getServerTranslations, getServerSiteLocale } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n/messages";
 
-export const metadata = {
-  title: "Careers | Profit Pulse Ally",
-  description: "Join the Profit Pulse Ally team.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerSiteLocale();
+  return {
+    title: translate(locale, "meta.careers.title"),
+    description: translate(locale, "meta.careers.description"),
+  };
+}
 
-export default function CareersPage() {
+export default async function CareersPage() {
+  const { t } = await getServerTranslations();
+
   return (
-    <ContentPageLayout title="Careers">
+    <ContentPageLayout title={t("careers.title")}>
       <p>
-        We are always looking for talented individuals to join our mission.
-        While we have no open positions at this time, you can send your resume to{" "}
+        {t("careers.bodyPrefix")}{" "}
         <a href="mailto:careers@profitpulseally.com">
           careers@profitpulseally.com
         </a>
-        , and we will keep it on file for future opportunities.
+        {t("careers.bodySuffix")}
       </p>
     </ContentPageLayout>
   );

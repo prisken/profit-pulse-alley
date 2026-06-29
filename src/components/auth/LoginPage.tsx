@@ -8,6 +8,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 import { signUpWithPassword } from "@/lib/auth-actions";
+import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
+import { useTranslations } from "@/components/providers/LocaleProvider";
+import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950";
@@ -42,6 +45,7 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 function LoginForm() {
+  const { t, locale } = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status, data: session } = useSession();
@@ -102,7 +106,7 @@ function LoginForm() {
     try {
       await signIn("google", { callbackUrl });
     } catch {
-      setError("Could not start Google sign-in. Please try again.");
+      setError(t("auth.error.googleStart"));
       setIsGoogleLoading(false);
     }
   }
@@ -114,12 +118,12 @@ function LoginForm() {
 
     const email = signInEmail.trim();
     if (!email) {
-      setError("Please enter your email address.");
+      setError(t("auth.error.emailRequired"));
       return;
     }
 
     if (!signInPassword) {
-      setError("Please enter your password.");
+      setError(t("auth.error.passwordRequired"));
       return;
     }
 
@@ -133,7 +137,7 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setError("Invalid email or password.");
+        setError(t("auth.error.invalidCredentials"));
         return;
       }
 
@@ -141,7 +145,7 @@ function LoginForm() {
         window.location.href = callbackUrl;
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t("auth.error.generic"));
     } finally {
       setIsCredentialsLoading(false);
     }
@@ -162,7 +166,7 @@ function LoginForm() {
       });
 
       if (!result.success) {
-        setError(result.error);
+        setError(translateAuthMessage(locale, result.error));
         return;
       }
 
@@ -170,9 +174,9 @@ function LoginForm() {
       setSignInPassword("");
       setSignUpPassword("");
       setActiveTab("sign-in");
-      setSuccess(result.message);
+      setSuccess(translateAuthMessage(locale, result.message));
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t("auth.error.generic"));
     } finally {
       setIsSignUpLoading(false);
     }
@@ -185,7 +189,7 @@ function LoginForm() {
 
     const trimmed = magicLinkEmail.trim() || signInEmail.trim();
     if (!trimmed) {
-      setError("Please enter your email address for the magic link.");
+      setError(t("auth.error.magicLinkEmailRequired"));
       return;
     }
 
@@ -198,16 +202,14 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setError(
-          "Could not send sign-in link. Please check your email and try again.",
-        );
+        setError(t("auth.error.magicLinkSend"));
         return;
       }
 
       setMagicLinkEmail(trimmed);
       setEmailSent(true);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t("auth.error.generic"));
     } finally {
       setIsMagicLinkLoading(false);
     }
@@ -219,7 +221,7 @@ function LoginForm() {
         <Link
           href="/"
           className="inline-flex items-center gap-2 transition-opacity hover:opacity-90"
-          aria-label="Profit Pulse Ally home"
+          aria-label={t("common.brandHomeAria")}
         >
           <Image
             src="/logo.png"
@@ -231,19 +233,21 @@ function LoginForm() {
           />
         </Link>
         <h1 className="mt-4 text-xl font-semibold tracking-tight text-white sm:mt-5 sm:text-2xl">
-          {activeTab === "sign-in" ? "Welcome back" : "Join the community"}
+          {activeTab === "sign-in"
+            ? t("auth.login.welcomeBack")
+            : t("auth.login.joinCommunity")}
         </h1>
         <p className="mt-1.5 text-xs text-gray-400 sm:mt-2 sm:text-sm">
           {activeTab === "sign-in"
-            ? "Sign in to your Profit Pulse Ally membership"
-            : "Create your Profit Pulse Ally account"}
+            ? t("auth.login.subtitleSignIn")
+            : t("auth.login.subtitleCreate")}
         </p>
       </div>
 
       <div
         className="mt-5 flex rounded-xl border border-gray-700 bg-gray-900/50 p-1 sm:mt-6"
         role="tablist"
-        aria-label="Authentication mode"
+        aria-label={t("auth.login.tablistAria")}
       >
         <button
           type="button"
@@ -258,7 +262,7 @@ function LoginForm() {
               : "text-gray-400 hover:text-gray-200"
           }`}
         >
-          Sign In
+          {t("auth.login.tabSignIn")}
         </button>
         <button
           type="button"
@@ -273,7 +277,7 @@ function LoginForm() {
               : "text-gray-400 hover:text-gray-200"
           }`}
         >
-          Create Account
+          {t("auth.login.tabCreate")}
         </button>
       </div>
 
@@ -283,7 +287,7 @@ function LoginForm() {
             className="mb-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-center text-sm text-emerald-300 sm:mb-4 sm:px-4 sm:py-3"
             role="status"
           >
-            {success}
+            {translateAuthMessage(locale, success)}
           </div>
         ) : null}
 
@@ -297,13 +301,13 @@ function LoginForm() {
         >
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-gray-400">
-              Email
+              {t("auth.login.email")}
             </span>
             <input
               type="email"
               name="email"
               autoComplete="email"
-              placeholder="you@example.com"
+              placeholder={t("auth.login.placeholderEmail")}
               value={signInEmail}
               onChange={(e) => setSignInEmail(e.target.value)}
               disabled={isBusy}
@@ -314,13 +318,13 @@ function LoginForm() {
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-gray-400">
-              Password
+              {t("auth.login.password")}
             </span>
             <input
               type="password"
               name="password"
               autoComplete="current-password"
-              placeholder="Your password"
+                placeholder={t("auth.login.placeholderPassword")}
               value={signInPassword}
               onChange={(e) => setSignInPassword(e.target.value)}
               disabled={isBusy}
@@ -334,7 +338,7 @@ function LoginForm() {
             disabled={isBusy}
             className={primaryButtonClass}
           >
-            {isCredentialsLoading ? "Signing in…" : "Sign In"}
+            {isCredentialsLoading ? t("auth.login.signingIn") : t("auth.login.signIn")}
           </button>
         </form>
 
@@ -348,13 +352,13 @@ function LoginForm() {
         >
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-gray-400">
-                Name
+                {t("auth.login.name")}
               </span>
               <input
                 type="text"
                 name="name"
                 autoComplete="name"
-                placeholder="Your name"
+                placeholder={t("auth.login.placeholderName")}
                 value={signUpName}
                 onChange={(e) => setSignUpName(e.target.value)}
                 disabled={isBusy}
@@ -363,13 +367,13 @@ function LoginForm() {
             </label>
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-gray-400">
-                Email
+                {t("auth.login.email")}
               </span>
               <input
                 type="email"
                 name="email"
                 autoComplete="email"
-                placeholder="you@example.com"
+                placeholder={t("auth.login.placeholderEmail")}
                 value={signUpEmail}
                 onChange={(e) => setSignUpEmail(e.target.value)}
                 disabled={isBusy}
@@ -378,13 +382,13 @@ function LoginForm() {
             </label>
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-gray-400">
-                Contact Number
+                {t("auth.login.contactNumber")}
               </span>
               <input
                 type="tel"
                 name="contactNumber"
                 autoComplete="tel"
-                placeholder="+852 9123 4567"
+                placeholder={t("auth.login.placeholderContact")}
                 value={signUpContactNumber}
                 onChange={(e) => setSignUpContactNumber(e.target.value)}
                 disabled={isBusy}
@@ -393,13 +397,13 @@ function LoginForm() {
             </label>
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-gray-400">
-                Password
+                {t("auth.login.password")}
               </span>
               <input
                 type="password"
                 name="password"
                 autoComplete="new-password"
-                placeholder="At least 8 characters"
+                placeholder={t("auth.login.placeholderNewPassword")}
                 value={signUpPassword}
                 onChange={(e) => setSignUpPassword(e.target.value)}
                 disabled={isBusy}
@@ -411,13 +415,15 @@ function LoginForm() {
               disabled={isBusy}
               className={primaryButtonClass}
             >
-              {isSignUpLoading ? "Creating account…" : "Create Account"}
+              {isSignUpLoading
+                ? t("auth.login.creatingAccount")
+                : t("auth.login.createAccount")}
             </button>
           </form>
 
         {error ? (
           <p id="auth-error" className="mt-2.5 text-center text-sm text-red-400" role="alert">
-            {error}
+            {translateAuthMessage(locale, error)}
           </p>
         ) : null}
       </div>
@@ -428,7 +434,7 @@ function LoginForm() {
         </div>
         <div className="relative flex justify-center">
           <span className="bg-gray-950 px-3 text-[10px] font-medium uppercase tracking-wide text-gray-500 sm:text-xs">
-            or continue with
+            {t("auth.login.orContinueWith")}
           </span>
         </div>
       </div>
@@ -441,7 +447,7 @@ function LoginForm() {
           className={`flex min-h-11 w-full items-center justify-center gap-2.5 rounded-full border border-gray-600 bg-white px-4 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 sm:gap-3 ${focusRing}`}
         >
           <GoogleIcon className="h-5 w-5 shrink-0" />
-          {isGoogleLoading ? "Redirecting…" : "Sign in with Google"}
+          {isGoogleLoading ? t("auth.login.googleRedirecting") : t("auth.login.google")}
         </button>
 
         {emailSent ? (
@@ -449,10 +455,11 @@ function LoginForm() {
             className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-3 text-center sm:px-4 sm:py-4"
             role="status"
           >
-            <p className="text-sm font-medium text-emerald-300">Check your email</p>
+            <p className="text-sm font-medium text-emerald-300">
+              {t("auth.login.checkEmailTitle")}
+            </p>
             <p className="mt-1 text-xs text-gray-300 sm:text-sm">
-              We sent a sign-in link to{" "}
-              <span className="break-all font-medium text-white">{magicLinkEmail}</span>.
+              {t("auth.login.checkEmailBody").replace("{email}", magicLinkEmail)}
             </p>
           </div>
         ) : (
@@ -462,13 +469,13 @@ function LoginForm() {
           >
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-gray-400">
-                Email for magic link
+                {t("auth.login.magicLinkLabel")}
               </span>
               <input
                 type="email"
                 name="magicLinkEmail"
                 autoComplete="email"
-                placeholder="you@example.com"
+                placeholder={t("auth.login.placeholderEmail")}
                 value={magicLinkEmail}
                 onChange={(e) => setMagicLinkEmail(e.target.value)}
                 disabled={isBusy}
@@ -480,14 +487,16 @@ function LoginForm() {
               disabled={isBusy}
               className={`min-h-11 w-full rounded-full border border-gray-600 bg-transparent px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
             >
-              {isMagicLinkLoading ? "Sending link…" : "Sign in with Email"}
+              {isMagicLinkLoading
+                ? t("auth.login.sendingLink")
+                : t("auth.login.magicLinkSubmit")}
             </button>
           </form>
         )}
       </div>
 
       <p className="mt-6 text-center text-[11px] text-gray-500 sm:mt-8 sm:text-xs">
-        By signing in, you agree to join the Profit Pulse Ally community.
+        {t("auth.login.communityAgreement")}
       </p>
     </div>
   );
@@ -505,7 +514,10 @@ function LoginFormFallback() {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center overflow-x-hidden overflow-y-auto bg-gray-950 px-3 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-gray-200 sm:px-4 sm:py-12">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-x-hidden overflow-y-auto bg-gray-950 px-3 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-gray-200 sm:px-4 sm:py-12">
+      <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 sm:right-4">
+        <LanguageSwitcher variant="dark" />
+      </div>
       <Suspense fallback={<LoginFormFallback />}>
         <LoginForm />
       </Suspense>

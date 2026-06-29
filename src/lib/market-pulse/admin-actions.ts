@@ -115,13 +115,18 @@ function cardPayloadFromInput(
     ticker: input.ticker.trim(),
     exchange: trimOrNull(input.exchange),
     logoUrl: trimOrNull(input.logoUrl),
+    logoInitials: trimOrNull(input.logoInitials),
     priceLabel: trimOrNull(input.priceLabel),
     priceDirection: trimOrNull(input.priceDirection),
     headline: input.headline.trim(),
+    newsBody: trimOrNull(input.newsBody),
     sourceName: trimOrNull(input.sourceName),
     sourceUrl: trimOrNull(input.sourceUrl),
     sourceDate: parseCardDate(input.sourceDate),
+    cardImageUrl: trimOrNull(input.cardImageUrl),
+    cardImageAlt: trimOrNull(input.cardImageAlt),
     summary: trimOrNull(input.summary),
+    userPrompt: trimOrNull(input.userPrompt),
     ppaSignal: input.ppaSignal,
     ppaInsight: trimOrNull(input.ppaInsight),
     status: input.status,
@@ -561,6 +566,9 @@ export async function createMarketPulseCardAction(
       validation.errors.companyName ??
       validation.errors.ticker ??
       validation.errors.headline ??
+      validation.errors.summary ??
+      validation.errors.cardImageUrl ??
+      validation.errors.cardImageAlt ??
       validation.errors.ppaSignal ??
       validation.errors.ppaInsight ??
       "Invalid card data.";
@@ -635,6 +643,9 @@ export async function updateMarketPulseCardAction(
       validation.errors.companyName ??
       validation.errors.ticker ??
       validation.errors.headline ??
+      validation.errors.summary ??
+      validation.errors.cardImageUrl ??
+      validation.errors.cardImageAlt ??
       validation.errors.ppaSignal ??
       validation.errors.ppaInsight ??
       "Invalid card data.";
@@ -708,13 +719,18 @@ export async function updateMarketPulseCardAction(
         ticker: input.ticker,
         exchange: input.exchange,
         logoUrl: input.logoUrl,
+        logoInitials: input.logoInitials,
         priceLabel: input.priceLabel,
         priceDirection: input.priceDirection,
         headline: input.headline,
+        newsBody: input.newsBody,
         sourceName: input.sourceName,
         sourceUrl: input.sourceUrl,
         sourceDate: input.sourceDate,
+        cardImageUrl: input.cardImageUrl,
+        cardImageAlt: input.cardImageAlt,
         summary: input.summary,
+        userPrompt: input.userPrompt,
         ppaSignal: nextSignal,
         ppaInsight: input.ppaInsight,
         status: input.status,

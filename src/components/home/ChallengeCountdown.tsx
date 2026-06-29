@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 
+import { useTranslations } from "@/components/providers/LocaleProvider";
 import { getChallengeCountdown } from "@/lib/market-pulse/challenge-cycle";
+import { isBeforePublicLaunch } from "@/lib/market-pulse/launch-config";
 import type { ChallengeCountdown } from "@/lib/market-pulse/types";
 
 function padUnit(value: number): string {
@@ -50,13 +52,21 @@ export default function ChallengeCountdown({
   large = false,
   className = "",
 }: Readonly<{ initial: ChallengeCountdown; large?: boolean; className?: string }>) {
+  const { t, locale } = useTranslations();
   const [countdown, setCountdown] = useState(initial);
+  const opensIn = isBeforePublicLaunch();
 
   useEffect(() => {
     const tick = () => setCountdown(getChallengeCountdown());
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, []);
+
+  const ariaLabel = t("home.countdown.ariaLabel")
+    .replace("{days}", String(countdown.days))
+    .replace("{hours}", String(countdown.hours))
+    .replace("{minutes}", String(countdown.minutes))
+    .replace("{seconds}", String(countdown.seconds));
 
   return (
     <div className={`space-y-2 sm:space-y-3 ${className}`}>
@@ -69,19 +79,20 @@ export default function ChallengeCountdown({
           className={`shrink-0 ${large ? "h-4 w-4" : "h-3.5 w-3.5"}`}
           aria-hidden="true"
         />
-        <span>Cycle ends in</span>
+        <span>{opensIn ? t("home.countdown.opensIn") : t("home.countdown.cycleEndsIn")}</span>
       </div>
       <div
         className={`flex flex-wrap justify-center gap-1.5 sm:gap-2 md:justify-start ${
           large ? "sm:gap-3 md:gap-4" : ""
         }`}
         role="timer"
-        aria-label={`${countdown.days} days, ${countdown.hours} hours, ${countdown.minutes} minutes, and ${countdown.seconds} seconds remaining in this Market Pulse cycle`}
+        aria-label={ariaLabel}
+        lang={locale}
       >
-        <CountdownUnit label="Days" value={countdown.days} large={large} />
-        <CountdownUnit label="Hours" value={countdown.hours} large={large} />
-        <CountdownUnit label="Mins" value={countdown.minutes} large={large} />
-        <CountdownUnit label="Secs" value={countdown.seconds} large={large} />
+        <CountdownUnit label={t("home.countdown.days")} value={countdown.days} large={large} />
+        <CountdownUnit label={t("home.countdown.hours")} value={countdown.hours} large={large} />
+        <CountdownUnit label={t("home.countdown.mins")} value={countdown.minutes} large={large} />
+        <CountdownUnit label={t("home.countdown.secs")} value={countdown.seconds} large={large} />
       </div>
     </div>
   );

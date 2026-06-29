@@ -1,15 +1,21 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import AdminGameSettings from "@/components/admin/AdminGameSettings";
-import AdminMembersTable from "@/components/admin/AdminMembersTable";
+import AdminUserManagement from "@/components/admin/AdminUserManagement";
 import { auth } from "@/auth";
+import { getServerSiteLocale, getServerTranslations } from "@/lib/i18n/server";
+import { translate, translateWith } from "@/lib/i18n/messages";
 import { prisma } from "@/lib/prisma";
 
-export const metadata = {
-  title: "Admin | Profit Pulse Ally",
-  description: "Manage members and VC game settings.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerSiteLocale();
+  return {
+    title: translate(locale, "auth.meta.admin.title"),
+    description: translate(locale, "auth.meta.admin.description"),
+  };
+}
 
 export default async function AdminPage() {
   const session = await auth();
@@ -18,10 +24,13 @@ export default async function AdminPage() {
     redirect("/");
   }
 
+  const { t, locale } = await getServerTranslations();
+
   let members: Array<{
     id: string;
     name: string | null;
     email: string;
+    contactNumber: string | null;
     role: "USER" | "ADMIN";
     emailVerified: string | null;
     createdAt: string;
@@ -35,6 +44,7 @@ export default async function AdminPage() {
         id: true,
         name: true,
         email: true,
+        contactNumber: true,
         role: true,
         emailVerified: true,
         createdAt: true,
@@ -48,6 +58,7 @@ export default async function AdminPage() {
       id: user.id,
       name: user.name,
       email: user.email,
+      contactNumber: user.contactNumber,
       role: user.role,
       emailVerified: user.emailVerified?.toISOString() ?? null,
       createdAt: user.createdAt.toISOString(),
@@ -57,25 +68,33 @@ export default async function AdminPage() {
     console.error("[admin] Failed to load members:", error);
   }
 
+  const signedInLine =
+    members.length === 1
+      ? translateWith(locale, "auth.admin.signedInAs", {
+          email: session.user.email ?? "",
+          count: members.length,
+        })
+      : translateWith(locale, "auth.admin.signedInAsPlural", {
+          email: session.user.email ?? "",
+          count: members.length,
+        });
+
   return (
     <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-12">
       <header className="border-b border-foreground/10 pb-6">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/45">
-          Admin
+          {t("auth.admin.badge")}
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-          Admin Dashboard
+          {t("auth.admin.dashboardTitle")}
         </h1>
-        <p className="mt-2 text-sm text-foreground/65">
-          Signed in as {session.user.email} · {members.length} member
-          {members.length === 1 ? "" : "s"}
-        </p>
+        <p className="mt-2 text-sm text-foreground/65">{signedInLine}</p>
         <p className="mt-3 text-sm">
           <Link
             href="/admin/market-pulse"
             className="font-medium text-foreground/80 underline-offset-4 hover:text-foreground hover:underline"
           >
-            Market Pulse admin →
+            {t("auth.admin.marketPulseLink")}
           </Link>
         </p>
       </header>
@@ -83,20 +102,10 @@ export default async function AdminPage() {
       <div className="mt-6 space-y-8 sm:mt-8 sm:space-y-10">
         <AdminGameSettings />
 
-        <section aria-labelledby="members-table-heading">
-          <h2
-            id="members-table-heading"
-            className="text-lg font-semibold text-foreground sm:text-xl"
-          >
-            Members
-          </h2>
-          <p className="mt-1 text-sm text-foreground/65">
-            All registered users and their game score counts.
-          </p>
-          <div className="mt-5">
-            <AdminMembersTable members={members} />
-          </div>
-        </section>
+        <AdminUserManagement
+          members={members}
+          currentAdminUserId={session.user.id}
+        />
       </div>
     </main>
   );

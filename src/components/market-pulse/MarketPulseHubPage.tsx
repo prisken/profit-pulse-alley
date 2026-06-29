@@ -13,13 +13,16 @@ import {
 
 import MarketPulseCountdown from "@/components/market-pulse/MarketPulseCountdown";
 import CycleProgress from "@/components/market-pulse/CycleProgress";
+import MarketPulseLaunchAnnouncement from "@/components/market-pulse/MarketPulseLaunchAnnouncement";
 import PrizeBanner from "@/components/market-pulse/PrizeBanner";
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
+import { useTranslations } from "@/components/providers/LocaleProvider";
 import {
   MARKET_PULSE_ANALYTICS_EVENTS,
   trackMarketPulseEvent,
 } from "@/lib/market-pulse/analytics";
 import type { MarketPulseHubPageData } from "@/lib/market-pulse/hub-data";
+import { isBeforePublicLaunch } from "@/lib/market-pulse/launch-config";
 import { MARKET_PULSE_EASE } from "@/lib/market-pulse/motion";
 
 const focusRing =
@@ -53,15 +56,41 @@ function PlayCta({
   isAuthenticated,
   isLoading,
   runtimeOpen,
+  preLaunch,
   playHref,
   loginHref,
 }: Readonly<{
   isAuthenticated: boolean;
   isLoading: boolean;
   runtimeOpen: boolean;
+  preLaunch: boolean;
   playHref: string;
   loginHref: string;
 }>) {
+  const { t } = useTranslations();
+
+  if (preLaunch) {
+    return (
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <button
+          type="button"
+          disabled
+          className={`inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-full bg-emerald-400/60 px-6 py-3.5 text-base font-bold text-zinc-950/80 shadow-lg shadow-emerald-900/20 sm:w-auto sm:px-8 ${focusRing}`}
+        >
+          {t("mp.hub.cta.opens")}
+        </button>
+        {!isAuthenticated && !isLoading ? (
+          <Link
+            href={loginHref}
+            className={`inline-flex min-h-11 items-center justify-center text-sm font-medium text-emerald-300 underline-offset-4 hover:underline ${focusRing}`}
+          >
+            {t("mp.hub.cta.signInReady")}
+          </Link>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
       {isAuthenticated ? (
@@ -70,7 +99,7 @@ function PlayCta({
             href={playHref}
             className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 py-3.5 text-base font-bold text-zinc-950 shadow-lg shadow-emerald-900/40 transition-colors hover:bg-emerald-300 active:bg-emerald-500 sm:w-auto sm:px-8 ${focusRing}`}
           >
-            Play Today&apos;s Card
+            {t("mp.hub.cta.playToday")}
             <ArrowRight className="h-5 w-5" aria-hidden="true" />
           </Link>
         ) : (
@@ -79,7 +108,7 @@ function PlayCta({
             disabled
             className={`inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-full bg-emerald-400/60 px-6 py-3.5 text-base font-bold text-zinc-950/80 shadow-lg shadow-emerald-900/20 sm:w-auto sm:px-8 ${focusRing}`}
           >
-            Play Today&apos;s Card
+            {t("mp.hub.cta.playToday")}
             <ArrowRight className="h-5 w-5" aria-hidden="true" />
           </button>
         )
@@ -88,26 +117,26 @@ function PlayCta({
           href={loginHref}
           className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 py-3.5 text-base font-bold text-zinc-950 shadow-lg shadow-emerald-900/40 transition-colors hover:bg-emerald-300 sm:w-auto sm:px-8 ${focusRing}`}
         >
-          Sign in to play
+          {t("mp.hub.cta.signInPlay")}
           <ArrowRight className="h-5 w-5" aria-hidden="true" />
         </Link>
       )}
 
       {!isAuthenticated && !isLoading ? (
         <p className="text-center text-sm text-zinc-400 sm:text-left">
-          New here?{" "}
+          {t("mp.hub.cta.newHere")}{" "}
           <Link
             href={loginHref}
             className={`inline-flex min-h-11 items-center font-medium text-emerald-300 underline-offset-4 hover:underline ${focusRing}`}
           >
-            Create a free account
+            {t("mp.hub.cta.createAccount")}
           </Link>
         </p>
       ) : null}
 
       {isLoading ? (
         <p className="text-center text-sm text-zinc-500 sm:text-left">
-          Checking session…
+          {t("lang.checkingSession")}
         </p>
       ) : null}
     </div>
@@ -117,6 +146,7 @@ function PlayCta({
 export default function MarketPulseHubPage({
   data,
 }: Readonly<{ data: MarketPulseHubPageData }>) {
+  const { t } = useTranslations();
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isLoading = status === "loading";
@@ -127,10 +157,11 @@ export default function MarketPulseHubPage({
 
   const playHref = "/market-pulse/play";
   const loginHref = `/login?callbackUrl=${encodeURIComponent(playHref)}`;
+  const preLaunch = isBeforePublicLaunch();
 
   const leaderboardSubtitle = data.leaderboardRevealed
-    ? "Top players this cycle — match bonuses included"
-    : "Top players this cycle — participation points only until reveal";
+    ? t("mp.hub.leaderboard.subtitleRevealed")
+    : t("mp.hub.leaderboard.subtitlePreReveal");
 
   useEffect(() => {
     trackMarketPulseEvent(MARKET_PULSE_ANALYTICS_EVENTS.market_pulse_viewed, {
@@ -147,6 +178,10 @@ export default function MarketPulseHubPage({
       />
 
       <main className="relative mx-auto w-full max-w-5xl px-3 py-6 sm:px-6 sm:py-12 lg:py-16">
+        {preLaunch ? (
+          <MarketPulseLaunchAnnouncement className="mb-4 sm:mb-6" />
+        ) : null}
+
         <motion.section
           {...revealMotion}
           className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/15 via-zinc-900/95 to-zinc-950 p-4 shadow-2xl shadow-black/40 sm:rounded-3xl sm:p-8 md:p-10"
@@ -170,7 +205,11 @@ export default function MarketPulseHubPage({
             >
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-200 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]">
                 <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
-                {data.runtimeOpen ? "Live challenge" : "Challenge paused"}
+                {preLaunch
+                  ? t("mp.hub.badge.preLaunch")
+                  : data.runtimeOpen
+                    ? t("mp.hub.badge.live")
+                    : t("mp.hub.badge.paused")}
               </div>
               <div className="min-w-[7.5rem] flex-1 sm:hidden">
                 <CycleProgress
@@ -186,14 +225,13 @@ export default function MarketPulseHubPage({
                 id="market-pulse-title"
                 className="text-balance text-3xl font-bold tracking-tight sm:text-5xl md:text-6xl"
               >
-                Market Pulse
+                {t("nav.marketPulse")}
               </h1>
               <p className="mt-2 text-sm text-zinc-400 sm:hidden">
-                Read the signal. Make your call.
+                {t("mp.hub.taglineShort")}
               </p>
               <p className="mt-4 hidden max-w-2xl text-pretty text-base leading-relaxed text-zinc-300 sm:block sm:text-lg">
-                Read the signal. Make your call. Compare your market instinct
-                with PPA Insight.
+                {t("mp.hub.taglineLong")}
               </p>
             </motion.div>
 
@@ -205,6 +243,7 @@ export default function MarketPulseHubPage({
                 isAuthenticated={isAuthenticated}
                 isLoading={isLoading}
                 runtimeOpen={data.runtimeOpen}
+                preLaunch={preLaunch}
                 playHref={playHref}
                 loginHref={loginHref}
               />
@@ -216,7 +255,7 @@ export default function MarketPulseHubPage({
             >
               <div className="col-span-2 rounded-xl border border-white/10 bg-zinc-950/50 p-3 shadow-lg shadow-black/20 sm:col-span-1 sm:rounded-2xl sm:p-4">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:text-xs sm:tracking-[0.16em]">
-                  Current challenge
+                  {t("mp.hub.challenge.label")}
                 </p>
                 <p className="mt-1.5 truncate text-base font-semibold text-white sm:mt-2 sm:text-lg">
                   {data.challengeName}
@@ -242,12 +281,7 @@ export default function MarketPulseHubPage({
                 />
               </div>
 
-              <PrizeBanner
-                className="col-span-2 lg:col-span-1"
-                variant="compact"
-                primaryPrize={`#1 wins ${data.prizeLabel}`}
-                monthlyPrize="Round-trip plane ticket to Taiwan"
-              />
+              <PrizeBanner className="col-span-2 lg:col-span-1" variant="compact" />
             </motion.div>
 
             <motion.div
@@ -260,6 +294,7 @@ export default function MarketPulseHubPage({
                 isAuthenticated={isAuthenticated}
                 isLoading={isLoading}
                 runtimeOpen={data.runtimeOpen}
+                preLaunch={preLaunch}
                 playHref={playHref}
                 loginHref={loginHref}
               />
@@ -282,7 +317,7 @@ export default function MarketPulseHubPage({
                   id="leaderboard-preview-heading"
                   className="text-lg font-semibold text-white sm:text-2xl"
                 >
-                  Leaderboard
+                  {t("nav.leaderboard")}
                 </h2>
               </div>
               <p className="mt-1 text-xs text-zinc-400 sm:text-sm">
@@ -294,13 +329,13 @@ export default function MarketPulseHubPage({
                 href="/market-pulse/rules"
                 className={`text-xs font-medium text-zinc-400 underline-offset-4 transition-colors hover:text-white hover:underline sm:text-sm ${focusRing}`}
               >
-                How scoring works
+                {t("mp.hub.leaderboard.howScoring")}
               </Link>
               <Link
                 href="/market-pulse/leaderboard"
                 className={`text-xs font-medium text-zinc-400 underline-offset-4 transition-colors hover:text-white hover:underline sm:text-sm ${focusRing}`}
               >
-                Full leaderboard
+                {t("mp.hub.leaderboard.full")}
               </Link>
             </div>
           </div>
@@ -312,10 +347,10 @@ export default function MarketPulseHubPage({
                 aria-hidden="true"
               />
               <p className="mt-3 text-sm font-medium text-zinc-300">
-                No scores yet this cycle
+                {t("mp.hub.leaderboard.emptyTitle")}
               </p>
               <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
-                Be the first to play today&apos;s card and claim the top spot.
+                {t("mp.hub.leaderboard.emptyBody")}
               </p>
             </div>
           ) : (

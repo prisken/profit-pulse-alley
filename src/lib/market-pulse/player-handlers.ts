@@ -82,6 +82,17 @@ function mapSubmitError(error: string): MarketPulsePlayerError {
   }
 
   if (
+    normalized.includes("opens on july 1, 2026") ||
+    normalized.includes("check back then to lock your read")
+  ) {
+    return {
+      ok: false,
+      code: "GAME_CLOSED",
+      error,
+    };
+  }
+
+  if (
     normalized.includes("not open") ||
     normalized.includes("not open for decisions")
   ) {

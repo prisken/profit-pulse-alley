@@ -24,13 +24,18 @@ export type MarketPulseAdminCardRow = {
   ticker: string;
   exchange: string | null;
   logoUrl: string | null;
+  logoInitials: string | null;
   priceLabel: string | null;
   priceDirection: string | null;
   headline: string;
+  newsBody: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
   sourceDate: string | null;
+  cardImageUrl: string | null;
+  cardImageAlt: string | null;
   summary: string | null;
+  userPrompt: string | null;
   status: MarketPulseCardStatus;
   ppaSignal: MarketPulseSignal | null;
   ppaInsight: string | null;
@@ -142,13 +147,18 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
     ticker: card.ticker,
     exchange: card.exchange,
     logoUrl: card.logoUrl,
+    logoInitials: card.logoInitials,
     priceLabel: card.priceLabel,
     priceDirection: card.priceDirection,
     headline: card.headline,
+    newsBody: card.newsBody,
     sourceName: card.sourceName,
     sourceUrl: card.sourceUrl,
     sourceDate: card.sourceDate?.toISOString() ?? null,
+    cardImageUrl: card.cardImageUrl,
+    cardImageAlt: card.cardImageAlt,
     summary: card.summary,
+    userPrompt: card.userPrompt,
     status: card.status,
     ppaSignal: card.ppaSignal,
     ppaInsight: card.ppaInsight,

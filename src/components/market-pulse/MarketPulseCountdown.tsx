@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Clock, Sparkles } from "lucide-react";
 
+import { useTranslations } from "@/components/providers/LocaleProvider";
+
 export type MarketPulseCountdownProps = {
   /** Target reveal or deadline — ISO string or Date. */
   targetDate: string | Date;
@@ -87,12 +89,14 @@ function CountdownUnit({
 
 export default function MarketPulseCountdown({
   targetDate,
-  label = "Reveal in",
+  label,
   showSeconds = false,
   variant = "default",
   className = "",
 }: MarketPulseCountdownProps) {
+  const { t } = useTranslations();
   const isCompact = variant === "compact";
+  const displayLabel = label ?? t("mp.countdown.revealIn");
   const targetKey = useMemo(
     () => new Date(targetDate).toISOString(),
     [targetDate],
@@ -112,18 +116,23 @@ export default function MarketPulseCountdown({
       <div className={`space-y-2 ${className}`}>
         <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 sm:text-sm">
           <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>Reveal window</span>
+          <span>{t("mp.countdown.expiredLabel")}</span>
         </div>
         <p className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-200">
-          PPA Insight is ready — results are being revealed.
+          {t("mp.countdown.expiredBody")}
         </p>
       </div>
     );
   }
 
-  const ariaLabel = showSeconds
-    ? `${parts.days} days, ${parts.hours} hours, ${parts.minutes} minutes, and ${parts.seconds} seconds remaining`
-    : `${parts.days} days, ${parts.hours} hours, and ${parts.minutes} minutes remaining`;
+  const ariaTemplate = showSeconds
+    ? t("mp.countdown.ariaWithSeconds")
+    : t("mp.countdown.ariaNoSeconds");
+  const ariaLabel = ariaTemplate
+    .replace("{days}", String(parts.days))
+    .replace("{hours}", String(parts.hours))
+    .replace("{minutes}", String(parts.minutes))
+    .replace("{seconds}", String(parts.seconds));
 
   return (
     <div className={`${isCompact ? "space-y-2" : "space-y-3"} ${className}`}>
@@ -133,18 +142,18 @@ export default function MarketPulseCountdown({
         }`}
       >
         <Clock className={`shrink-0 ${isCompact ? "h-3.5 w-3.5" : "h-4 w-4"}`} aria-hidden="true" />
-        <span>{label}</span>
+        <span>{displayLabel}</span>
       </div>
       <div
         className={`flex flex-wrap ${isCompact ? "gap-1.5" : "gap-2 sm:gap-3"}`}
         role="timer"
         aria-label={ariaLabel}
       >
-        <CountdownUnit label="Days" value={parts.days} compact={isCompact} />
-        <CountdownUnit label="Hours" value={parts.hours} compact={isCompact} />
-        <CountdownUnit label="Mins" value={parts.minutes} compact={isCompact} />
+        <CountdownUnit label={t("home.countdown.days")} value={parts.days} compact={isCompact} />
+        <CountdownUnit label={t("home.countdown.hours")} value={parts.hours} compact={isCompact} />
+        <CountdownUnit label={t("home.countdown.mins")} value={parts.minutes} compact={isCompact} />
         {showSeconds ? (
-          <CountdownUnit label="Secs" value={parts.seconds} compact={isCompact} />
+          <CountdownUnit label={t("home.countdown.secs")} value={parts.seconds} compact={isCompact} />
         ) : null}
       </div>
     </div>

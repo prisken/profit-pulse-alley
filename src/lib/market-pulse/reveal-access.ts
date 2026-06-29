@@ -14,13 +14,18 @@ export type MarketPulseCardPublicPayload = {
   ticker: string;
   exchange: string | null;
   logoUrl: string | null;
+  logoInitials: string | null;
   priceLabel: string | null;
   priceDirection: string | null;
   headline: string;
+  newsBody: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
   sourceDate: Date | null;
+  cardImageUrl: string | null;
+  cardImageAlt: string | null;
   summary: string | null;
+  userPrompt: string | null;
   status: MarketPulseCardStatus;
   publishedAt: Date | null;
   revealAt: Date | null;
@@ -73,13 +78,18 @@ export function getMarketPulseCardPublicPayload(
     ticker: card.ticker,
     exchange: card.exchange,
     logoUrl: card.logoUrl,
+    logoInitials: card.logoInitials,
     priceLabel: card.priceLabel,
     priceDirection: card.priceDirection,
     headline: card.headline,
+    newsBody: card.newsBody,
     sourceName: card.sourceName,
     sourceUrl: card.sourceUrl,
     sourceDate: card.sourceDate,
+    cardImageUrl: card.cardImageUrl,
+    cardImageAlt: card.cardImageAlt,
     summary: card.summary,
+    userPrompt: card.userPrompt,
     status: card.status,
     publishedAt: card.publishedAt,
     revealAt: card.revealAt,

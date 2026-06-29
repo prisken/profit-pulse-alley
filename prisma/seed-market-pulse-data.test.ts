@@ -28,4 +28,18 @@ describe("Market Pulse demo seed data", () => {
     expect(DEMO_CARDS[1]?.headline).toMatch(/NVIDIA/i);
     expect(DEMO_CARDS[2]?.headline).toMatch(/HSBC/i);
   });
+
+  it("includes redesigned card content on demo seeds", () => {
+    const tsmc = DEMO_CARDS[0];
+    expect(tsmc?.newsBody).toMatch(/3nm/i);
+    expect(tsmc?.cardImageUrl).toMatch(/^https:\/\//);
+    expect(tsmc?.cardImageAlt).toBeTruthy();
+    expect(tsmc?.userPrompt).toMatch(/read on this signal/i);
+    expect(tsmc?.logoInitials).toBe("TS");
+
+    for (const card of DEMO_CARDS) {
+      expect(card.newsBody?.trim()).not.toBe("");
+      expect(card.userPrompt?.trim()).not.toBe("");
+    }
+  });
 });

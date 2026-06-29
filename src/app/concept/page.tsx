@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   Award,
   Coffee,
@@ -9,11 +10,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export const metadata = {
-  title: "The Concept — 零成本人生 | Profit Pulse Ally",
-  description:
-    "當被動收入覆蓋必要支出：目標清晰、趨勢節奏、成就導向，通往零成本人生的路徑。",
-};
+import { getServerTranslations, getServerSiteLocale } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n/messages";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerSiteLocale();
+  return {
+    title: translate(locale, "meta.concept.title"),
+    description: translate(locale, "meta.concept.description"),
+  };
+}
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -30,10 +36,11 @@ const pillarIconWrap =
 const achievementCard =
   "group flex flex-col items-center gap-2 rounded-xl border border-foreground/10 bg-background p-3 text-center shadow-sm transition-[transform,box-shadow] duration-200 hover:scale-[1.03] hover:shadow-lg active:scale-[0.99] sm:gap-3 sm:rounded-2xl sm:p-4 md:p-5";
 
-export default function ConceptPage() {
+export default async function ConceptPage() {
+  const { t } = await getServerTranslations();
+
   return (
     <main className="overflow-x-hidden bg-background text-foreground">
-      {/* Section 1: The Hook */}
       <section
         className="border-b border-foreground/10 px-3 py-5 sm:px-6 sm:py-10 md:py-12"
         aria-labelledby="concept-hook-heading"
@@ -43,25 +50,21 @@ export default function ConceptPage() {
             id="concept-hook-heading"
             className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl"
           >
-            什麼是「零成本人生」?
+            {t("concept.hookHeading")}
           </h1>
           <p className="mt-2 text-pretty text-[13px] leading-snug text-foreground/80 sm:mt-3 sm:text-base sm:leading-relaxed md:text-lg">
-            一個簡單而強大的目標：當你的被動收入，足以覆蓋你的必要支出。這不是遙不可及的夢想，而是一個可以透過清晰策略達成的里程碑。
+            {t("concept.hookBody")}
           </p>
         </div>
       </section>
 
-      {/* Section 2: Three Pillars */}
       <section
         className="border-b border-foreground/10 bg-foreground/[0.02] px-3 py-5 sm:px-6 sm:py-9 md:py-11"
         aria-labelledby="concept-pillars-heading"
       >
         <div className="mx-auto max-w-5xl">
-          <h2
-            id="concept-pillars-heading"
-            className="sr-only"
-          >
-            三大支柱
+          <h2 id="concept-pillars-heading" className="sr-only">
+            {t("concept.pillarsSrHeading")}
           </h2>
           <div className="grid gap-3 sm:grid-cols-3 sm:gap-4 md:gap-5">
             <article className="flex flex-col gap-3 rounded-xl border border-foreground/10 bg-background p-4 shadow-sm sm:gap-4 sm:rounded-2xl sm:p-5">
@@ -74,10 +77,10 @@ export default function ConceptPage() {
               </div>
               <div className="min-w-0">
                 <h3 className="text-base font-semibold tracking-tight sm:text-lg">
-                  目標清晰
+                  {t("concept.pillar1.title")}
                 </h3>
                 <p className="mt-1.5 text-[13px] leading-snug text-foreground/75 sm:mt-2 sm:text-sm sm:leading-relaxed">
-                  先定義你想要的結果，再倒推最小可行的行動，避免被雜訊牽著走。
+                  {t("concept.pillar1.body")}
                 </p>
               </div>
             </article>
@@ -92,10 +95,10 @@ export default function ConceptPage() {
               </div>
               <div className="min-w-0">
                 <h3 className="text-base font-semibold tracking-tight sm:text-lg">
-                  趨勢節奏
+                  {t("concept.pillar2.title")}
                 </h3>
                 <p className="mt-1.5 text-[13px] leading-snug text-foreground/75 sm:mt-2 sm:text-sm sm:leading-relaxed">
-                  掌握市場與內容的節奏：何時觀望、何時出手、何時加速，保持穩定增長。
+                  {t("concept.pillar2.body")}
                 </p>
               </div>
             </article>
@@ -110,10 +113,10 @@ export default function ConceptPage() {
               </div>
               <div className="min-w-0">
                 <h3 className="text-base font-semibold tracking-tight sm:text-lg">
-                  成就導向
+                  {t("concept.pillar3.title")}
                 </h3>
                 <p className="mt-1.5 text-[13px] leading-snug text-foreground/75 sm:mt-2 sm:text-sm sm:leading-relaxed">
-                  以里程碑衡量進度，把努力變成可累積的成果，逐步解鎖更高層級的回報。
+                  {t("concept.pillar3.body")}
                 </p>
               </div>
             </article>
@@ -121,7 +124,6 @@ export default function ConceptPage() {
         </div>
       </section>
 
-      {/* Section 3: Achievements — 2×2 on all breakpoints */}
       <section
         className="border-b border-foreground/10 px-3 py-5 sm:px-6 sm:py-9 md:py-11"
         aria-labelledby="concept-achievements-heading"
@@ -131,10 +133,10 @@ export default function ConceptPage() {
             id="concept-achievements-heading"
             className="text-balance text-xl font-semibold tracking-tight sm:text-2xl"
           >
-            解鎖你的成就
+            {t("concept.achievementsHeading")}
           </h2>
           <p className="mt-1.5 max-w-2xl text-[13px] leading-snug text-foreground/75 sm:mt-2 sm:text-sm sm:leading-relaxed">
-            「零成本人生」是一場通關遊戲，每一步都有明確的里程碑。
+            {t("concept.achievementsIntro")}
           </p>
 
           <div className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-3 md:gap-4">
@@ -147,7 +149,7 @@ export default function ConceptPage() {
                 />
               </div>
               <h3 className="text-[13px] font-semibold leading-tight sm:text-sm">
-                早餐咖啡自由 勳章
+                {t("concept.badge.coffee")}
               </h3>
             </div>
             <div className={achievementCard}>
@@ -159,7 +161,7 @@ export default function ConceptPage() {
                 />
               </div>
               <h3 className="text-[13px] font-semibold leading-tight sm:text-sm">
-                通勤解放者 徽章
+                {t("concept.badge.commute")}
               </h3>
             </div>
             <div className={achievementCard}>
@@ -171,7 +173,7 @@ export default function ConceptPage() {
                 />
               </div>
               <h3 className="text-[13px] font-semibold leading-tight sm:text-sm">
-                網絡呼吸權 徽章
+                {t("concept.badge.wifi")}
               </h3>
             </div>
             <div className={achievementCard}>
@@ -183,14 +185,13 @@ export default function ConceptPage() {
                 />
               </div>
               <h3 className="text-[13px] font-semibold leading-tight sm:text-sm">
-                上蓋結界師 徽章
+                {t("concept.badge.home")}
               </h3>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Section 4: CTA */}
       <section
         className="px-3 py-5 sm:px-6 sm:py-10 md:py-12"
         aria-labelledby="concept-cta-heading"
@@ -200,14 +201,14 @@ export default function ConceptPage() {
             id="concept-cta-heading"
             className="text-balance text-xl font-semibold tracking-tight sm:text-2xl"
           >
-            準備好踏出第一步了嗎？
+            {t("concept.ctaHeading")}
           </h2>
           <div className="mt-5 flex flex-col gap-4 sm:mt-6 sm:flex-row sm:justify-center sm:gap-4">
             <Link href="/events" className={ctaPrimary}>
-              參加我們的線下戰略會議
+              {t("concept.ctaEvents")}
             </Link>
             <Link href="/blog" className={ctaSecondary}>
-              瀏覽我們的實戰文章
+              {t("concept.ctaBlog")}
             </Link>
           </div>
         </div>

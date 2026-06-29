@@ -138,7 +138,12 @@ model MarketPulseCard {
   sourceName        String?
   sourceUrl         String?
   sourceDate        DateTime?
+  newsBody          String?               @db.Text
   summary           String?
+  logoInitials      String?
+  cardImageUrl      String?
+  cardImageAlt      String?
+  userPrompt        String?
   ppaSignal         MarketPulseSignal?
   ppaInsight        String?
   ppaSignalLockedAt DateTime?

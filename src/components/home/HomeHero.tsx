@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { Calendar, Clock, Gamepad2, Mic2, Sparkles } from "lucide-react";
 
 import { getChallengeCountdown } from "@/lib/market-pulse/challenge-cycle";
+import {
+  getMarketPulseLaunchMessages,
+  isBeforePublicLaunch,
+} from "@/lib/market-pulse/launch-config";
 import type { ChallengeCountdown } from "@/lib/market-pulse/types";
 
 export type UpcomingEventHero = {
@@ -75,6 +79,8 @@ function ChallengeCountdown({
 
 export default function HomeHero({ upcomingEvent }: HomeHeroProps) {
   const initialCountdown = getChallengeCountdown();
+  const preLaunch = isBeforePublicLaunch();
+  const launch = getMarketPulseLaunchMessages("en");
 
   return (
     <section
@@ -106,7 +112,7 @@ export default function HomeHero({ upcomingEvent }: HomeHeroProps) {
             <div className="relative space-y-5 sm:space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200">
                 <Gamepad2 className="h-3.5 w-3.5" aria-hidden="true" />
-                Live challenge
+                {preLaunch ? "Opens 1 Jul 2026" : "Live challenge"}
               </div>
 
               <div className="space-y-3">
@@ -121,10 +127,7 @@ export default function HomeHero({ upcomingEvent }: HomeHeroProps) {
                     className="mr-1.5 inline h-4 w-4 -translate-y-px text-amber-300"
                     aria-hidden="true"
                   />
-                  Play now for a chance to win{" "}
-                  <span className="font-semibold text-amber-200">
-                    Ocean Park tickets!
-                  </span>
+                  {launch.prize}
                 </p>
               </div>
 
@@ -135,7 +138,7 @@ export default function HomeHero({ upcomingEvent }: HomeHeroProps) {
                   href="/market-pulse"
                   className={`inline-flex w-full items-center justify-center rounded-full bg-emerald-400 px-6 py-3 text-sm font-bold text-zinc-950 shadow-lg shadow-emerald-900/30 transition-colors hover:bg-emerald-300 active:bg-emerald-500 sm:w-auto sm:px-8 sm:py-3.5 sm:text-base ${focusRing}`}
                 >
-                  Play Now
+                  {preLaunch ? "Explore Market Pulse" : "Play Now"}
                 </Link>
               </div>
             </div>

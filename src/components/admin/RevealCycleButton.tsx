@@ -8,6 +8,7 @@ import {
   revealMarketPulseCycleAction,
   type RevealCycleSummary,
 } from "@/lib/market-pulse/admin-actions";
+import { useTranslations } from "@/components/providers/LocaleProvider";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -81,6 +82,7 @@ export default function RevealCycleButton({
   disabled = false,
   onSuccess,
 }: RevealCycleButtonProps) {
+  const { t } = useTranslations();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<RevealCycleSummary | null>(null);
@@ -132,7 +134,7 @@ export default function RevealCycleButton({
         disabled={busy}
         onClick={handleReveal}
       >
-        {isPending ? "Revealing…" : "Reveal Cycle & Calculate Scores"}
+        {isPending ? t("auth.admin.reveal.pending") : t("auth.admin.reveal.button")}
       </button>
 
       {error ? (

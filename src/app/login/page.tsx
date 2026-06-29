@@ -1,9 +1,16 @@
-import LoginPage from "@/components/auth/LoginPage";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Sign in | Profit Pulse Ally",
-  description: "Sign in to your Profit Pulse Ally membership with Google or email.",
-};
+import LoginPage from "@/components/auth/LoginPage";
+import { getServerSiteLocale } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n/messages";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerSiteLocale();
+  return {
+    title: translate(locale, "auth.meta.login.title"),
+    description: translate(locale, "auth.meta.login.description"),
+  };
+}
 
 export default function LoginRoute() {
   return <LoginPage />;

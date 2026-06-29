@@ -14,11 +14,11 @@ import {
 
 import MarketPulseCountdown from "@/components/market-pulse/MarketPulseCountdown";
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
+import { useTranslations } from "@/components/providers/LocaleProvider";
 import {
   PARTICIPATION_POINTS,
   MATCH_BONUS_POINTS,
   STREAK_BONUS_POINTS,
-  formatSignal,
   getSignalTone,
   type MarketPulseDecision,
 } from "@/lib/market-pulse/constants";
@@ -122,8 +122,11 @@ function RevealCardItem({
   card,
   index,
 }: Readonly<{ card: MarketPulseRevealCardRow; index: number }>) {
+  const { t } = useTranslations();
   const userTone = getSignalTone(card.userDecision as MarketPulseDecision);
   const ppaTone = getSignalTone(card.ppaSignal as MarketPulseDecision);
+  const formatDecision = (decision: MarketPulseDecision) =>
+    t(decision === "BULLISH" ? "signal.bullish" : "signal.cautious");
 
   return (
     <motion.article
@@ -142,7 +145,7 @@ function RevealCardItem({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-xs">
-                Day {card.dayIndex + 1}
+                {t("mp.reveal.card.day").replace("{day}", String(card.dayIndex + 1))}
               </p>
               <div
                 className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs ${
@@ -156,7 +159,7 @@ function RevealCardItem({
                 ) : (
                   <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
                 )}
-                {card.isMatch ? "Match" : "No match"}
+                {card.isMatch ? t("mp.reveal.card.match") : t("mp.reveal.card.noMatch")}
               </div>
             </div>
             <h3 className="mt-1 truncate text-base font-semibold text-white sm:text-lg">
@@ -173,44 +176,53 @@ function RevealCardItem({
         <div className="grid grid-cols-2 gap-2 sm:block sm:space-y-3">
           <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2 sm:border-0 sm:bg-transparent sm:p-0">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
-              Your call
+              {t("mp.reveal.card.yourCall")}
             </p>
             <p className={`mt-0.5 text-sm font-semibold sm:mt-1 ${userTone.textClass}`}>
-              {formatSignal(card.userDecision as MarketPulseDecision)}
+              {formatDecision(card.userDecision as MarketPulseDecision)}
             </p>
           </div>
           <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2 sm:border-0 sm:bg-transparent sm:p-0">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
-              PPA signal
+              {t("mp.reveal.card.ppaSignal")}
             </p>
             <p className={`mt-0.5 text-sm font-semibold sm:mt-1 ${ppaTone.textClass}`}>
-              {formatSignal(card.ppaSignal as MarketPulseDecision)}
+              {formatDecision(card.ppaSignal as MarketPulseDecision)}
             </p>
           </div>
         </div>
 
         <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-2.5 sm:rounded-xl sm:p-4">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
-            Score
+            {t("mp.reveal.card.score")}
           </p>
           <ul className="mt-1.5 space-y-1 sm:mt-2 sm:space-y-1.5">
             <ScoreLine
-              label={`+${PARTICIPATION_POINTS} participation`}
+              label={t("mp.reveal.card.participation").replace(
+                "{points}",
+                String(PARTICIPATION_POINTS),
+              )}
               points={card.participationPoints}
             />
             <ScoreLine
-              label={`+${MATCH_BONUS_POINTS} match bonus`}
+              label={t("mp.reveal.card.matchBonus").replace(
+                "{points}",
+                String(MATCH_BONUS_POINTS),
+              )}
               points={card.matchBonus}
               highlight
             />
             <ScoreLine
-              label={`+${STREAK_BONUS_POINTS} streak bonus`}
+              label={t("mp.reveal.card.streakBonus").replace(
+                "{points}",
+                String(STREAK_BONUS_POINTS),
+              )}
               points={card.streakBonus}
               highlight
             />
           </ul>
           <p className="mt-2 border-t border-zinc-800 pt-2 text-sm font-bold tabular-nums text-emerald-300 sm:mt-3 sm:pt-3">
-            {formatPoints(card.totalPoints)} pts
+            {t("mp.reveal.card.points").replace("{points}", formatPoints(card.totalPoints))}
           </p>
         </div>
       </div>
@@ -220,8 +232,8 @@ function RevealCardItem({
           <summary
             className={`cursor-pointer list-none px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400/80 marker:content-none sm:px-5 sm:py-3 sm:text-[11px] [&::-webkit-details-marker]:hidden ${focusRing}`}
           >
-            <span className="group-open:hidden">Show PPA Insight</span>
-            <span className="hidden group-open:inline">Hide PPA Insight</span>
+            <span className="group-open:hidden">{t("mp.reveal.card.showInsight")}</span>
+            <span className="hidden group-open:inline">{t("mp.reveal.card.hideInsight")}</span>
           </summary>
           <div className="border-t border-emerald-500/10 px-3 pb-3 pt-2 sm:px-5 sm:pb-4 sm:pt-3">
             <p className="text-xs leading-relaxed text-zinc-300 sm:text-sm">
@@ -237,6 +249,8 @@ function RevealCardItem({
 function PendingState({
   data,
 }: Readonly<{ data: MarketPulseRevealPageData }>) {
+  const { t } = useTranslations();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -247,32 +261,30 @@ function PendingState({
         <Sparkles className="h-7 w-7" aria-hidden="true" />
       </div>
       <h2 className="mt-5 text-xl font-semibold text-white sm:text-2xl">
-        PPA Insights have not been revealed yet.
+        {t("mp.reveal.pending.title")}
       </h2>
       <p className="mt-3 text-sm leading-relaxed text-zinc-400">
         {data.pendingCycle
-          ? `The ${data.pendingCycle.name} reveal is still ahead. Check back when the countdown ends.`
-          : "There is no revealed challenge to review right now."}
+          ? t("mp.reveal.pending.withCycle").replace("{name}", data.pendingCycle.name)
+          : t("mp.reveal.pending.noCycle")}
       </p>
       {data.pendingCycle ? (
         <div className="mt-8 text-left">
-          <MarketPulseCountdown
-            targetDate={data.pendingCycle.revealAtIso}
-            label="Reveal in"
-          />
+          <MarketPulseCountdown targetDate={data.pendingCycle.revealAtIso} />
         </div>
       ) : null}
       <Link
         href="/market-pulse/play"
         className={`mt-8 inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-bold text-zinc-950 transition-colors hover:bg-emerald-300 ${focusRing}`}
       >
-        Play Today&apos;s Card
+        {t("mp.hub.cta.playToday")}
       </Link>
     </motion.div>
   );
 }
 
 function GuestRevealedState() {
+  const { t } = useTranslations();
   const loginHref = `/login?callbackUrl=${encodeURIComponent("/market-pulse/reveal")}`;
 
   return (
@@ -282,15 +294,15 @@ function GuestRevealedState() {
       className="rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-zinc-950 px-6 py-10 text-center"
     >
       <Trophy className="mx-auto h-10 w-10 text-amber-400" aria-hidden="true" />
-      <h2 className="mt-4 text-2xl font-bold text-white">Challenge complete</h2>
+      <h2 className="mt-4 text-2xl font-bold text-white">{t("mp.reveal.guest.title")}</h2>
       <p className="mt-3 text-sm text-zinc-400">
-        PPA Insights are live. Sign in to see your personal results ceremony.
+        {t("mp.reveal.guest.body")}
       </p>
       <Link
         href={loginHref}
         className={`mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-8 text-sm font-bold text-zinc-950 ${focusRing}`}
       >
-        Sign in to view your results
+        {t("mp.reveal.guest.signIn")}
       </Link>
     </motion.div>
   );
@@ -299,6 +311,7 @@ function GuestRevealedState() {
 export default function MarketPulseRevealExperience({
   data,
 }: Readonly<{ data: MarketPulseRevealPageData }>) {
+  const { t } = useTranslations();
   const [reportRequested, setReportRequested] = useState(false);
 
   useEffect(() => {
@@ -355,28 +368,28 @@ export default function MarketPulseRevealExperience({
             <StatCard
               index={0}
               compact
-              label="Final score"
+              label={t("mp.reveal.stats.finalScore")}
               value={formatPoints(results.totalPoints)}
             />
             <StatCard
               index={1}
               compact
-              label="Final rank"
+              label={t("mp.reveal.stats.finalRank")}
               value={results.rank != null ? `#${results.rank}` : "—"}
             />
             <StatCard
               index={2}
               compact
-              label="Matches"
+              label={t("mp.reveal.stats.matches")}
               value={`${results.matchesCount}/${results.totalPlayed}`}
-              sub="cards played"
+              sub={t("mp.reveal.stats.cardsPlayed")}
             />
             <StatCard
               index={3}
               compact
-              label="Best streak"
+              label={t("mp.reveal.stats.bestStreak")}
               value={String(results.bestStreak)}
-              sub="consecutive matches"
+              sub={t("mp.reveal.stats.consecutiveMatches")}
             />
           </div>
 
@@ -395,10 +408,10 @@ export default function MarketPulseRevealExperience({
               aria-hidden="true"
             />
             <p className="relative mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300/90 sm:mt-4 sm:text-xs sm:tracking-[0.2em]">
-              Results ceremony
+              {t("mp.reveal.ceremony.label")}
             </p>
             <h1 className="relative mt-1.5 text-2xl font-bold tracking-tight sm:mt-2 sm:text-4xl">
-              Challenge complete
+              {t("mp.reveal.ceremony.title")}
             </h1>
             <p className="relative mt-1.5 text-base text-zinc-300 sm:mt-2 sm:text-lg">
               {results.cycleName}
@@ -417,10 +430,10 @@ export default function MarketPulseRevealExperience({
             id="reveal-cards-heading"
             className="text-lg font-semibold text-white sm:text-2xl"
           >
-            Your challenge breakdown
+            {t("mp.reveal.breakdown.title")}
           </h2>
           <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
-            PPA Insight signals and scoring for every card you played.
+            {t("mp.reveal.breakdown.subtitle")}
           </p>
           <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
             {results.cards.map((card, index) => (
@@ -445,6 +458,7 @@ function CtaBar({
   reportRequested: boolean;
   onReportClick: () => void;
 }>) {
+  const { t } = useTranslations();
   const reduceMotion = useReducedMotion() ?? false;
 
   return (
@@ -458,7 +472,7 @@ function CtaBar({
         href="/market-pulse/leaderboard"
         className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 text-sm font-bold text-zinc-950 transition-colors hover:bg-emerald-300 sm:w-auto ${focusRing}`}
       >
-        View Final Leaderboard
+        {t("mp.reveal.cta.leaderboard")}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>
       <button
@@ -468,13 +482,13 @@ function CtaBar({
         className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-6 text-sm font-semibold text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 sm:w-auto ${focusRing}`}
       >
         <Download className="h-4 w-4" aria-hidden="true" />
-        {reportRequested ? "Report coming soon" : "Download PPA Report"}
+        {reportRequested ? t("mp.reveal.cta.comingSoon") : t("mp.reveal.cta.download")}
       </button>
       <Link
         href="/market-pulse/play"
         className={`inline-flex min-h-11 w-full items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-6 text-sm font-semibold text-emerald-200 transition-colors hover:bg-emerald-500/20 sm:w-auto ${focusRing}`}
       >
-        Join next challenge
+        {t("mp.reveal.cta.nextChallenge")}
       </Link>
     </motion.div>
   );
@@ -484,13 +498,15 @@ function PageShell({
   children,
   cycleId,
 }: Readonly<{ children: React.ReactNode; cycleId?: string }>) {
+  const { t } = useTranslations();
+
   return (
     <div className="relative mx-auto flex w-full max-w-3xl flex-col px-3 py-6 sm:px-6 sm:py-12">
       <Link
         href="/market-pulse"
         className={`mb-4 inline-flex min-h-11 items-center text-sm text-zinc-400 transition-colors hover:text-white sm:mb-6 ${focusRing}`}
       >
-        ← Market Pulse
+        {t("mp.reveal.back")}
       </Link>
       {children}
       <MarketPulseInlineDisclaimer

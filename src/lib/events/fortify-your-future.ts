@@ -1,5 +1,6 @@
 import type { EventDetailData } from "@/lib/events/types";
 
+/** Original June 2026 fireside — archived; registration closed. */
 export const fortifyYourFutureEvent: EventDetailData = {
   pageTitle: "Fortify Your Future | Profit Pulse Ally",
   title: "Fortify Your Future / 守業增值創未來",
@@ -20,7 +21,8 @@ export const fortifyYourFutureEvent: EventDetailData = {
     },
   ],
   registrationLink: "/fortify-survey",
-  registrationText: "Register Now / 立即報名",
+  registrationText: "Registration Closed / 報名已結束",
+  registrationDisabled: true,
   speakersSectionTitle: "Meet the Speakers / 本次活動嘉賓",
   speakers: [
     {

@@ -7,6 +7,8 @@ import { signOut, useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
 
 import MobileNav from "@/components/layout/MobileNav";
+import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
+import { useTranslations } from "@/components/providers/LocaleProvider";
 import SiteFooter from "@/components/SiteFooter";
 import {
   MARKET_PULSE_ANALYTICS_EVENTS,
@@ -31,6 +33,7 @@ export default function LayoutShell({
 }>) {
   const pathname = usePathname();
   const { status } = useSession();
+  const { t } = useTranslations();
   const isAuthenticated = status === "authenticated";
   const isLoadingSession = status === "loading";
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -69,27 +72,27 @@ export default function LayoutShell({
             <Link
               href="/"
               className={`inline-flex min-h-11 min-w-11 shrink-0 items-center gap-2 font-semibold tracking-tight transition-opacity active:opacity-80 ${focusRing}`}
-              aria-label="Profit Pulse Ally home"
+              aria-label={t("common.brandHomeAria")}
             >
               <Image
                 src="/logo.png"
-                alt="Profit Pulse Ally logo"
+                alt={t("common.brandLogoAlt")}
                 width={32}
                 height={32}
                 priority
                 className="h-7 w-7 rounded-sm md:h-8 md:w-8"
               />
               <span className="hidden text-sm sm:inline md:text-base lg:text-lg">
-                Profit Pulse Ally
+                {t("common.brandName")}
               </span>
             </Link>
 
             <nav
-              aria-label="Main"
+              aria-label={t("common.navMainAria")}
               className="hidden min-w-0 flex-wrap items-center gap-0.5 text-[13px] font-medium md:flex md:gap-1 md:text-sm"
             >
               <Link href="/market-pulse" className={navLinkClass}>
-                Market Pulse
+                {t("nav.marketPulse")}
               </Link>
               <Link
                 href="/events"
@@ -103,18 +106,19 @@ export default function LayoutShell({
                   }
                 }}
               >
-                Events
+                {t("nav.events")}
               </Link>
               <Link href="/concept" className={navLinkClass}>
-                Our Philosophy
+                {t("nav.philosophy")}
               </Link>
               <Link href="/blog" className={navLinkClass}>
-                Blog
+                {t("nav.blog")}
               </Link>
             </nav>
           </div>
 
           <div className="flex shrink-0 items-center gap-1 md:gap-2.5">
+            <LanguageSwitcher className="hidden sm:inline-flex" />
             <div
               className="hidden items-center gap-2 md:flex"
               aria-label="Account"
@@ -123,13 +127,13 @@ export default function LayoutShell({
               {isLoadingSession || !isAuthenticated ? (
                 <>
                   <Link href="/login" className={navLinkClass}>
-                    Login
+                    {t("nav.login")}
                   </Link>
                   <Link
                     href="/login"
                     className={`inline-flex min-h-9 items-center justify-center rounded-full bg-foreground px-4 py-1.5 text-[13px] font-semibold text-background transition-colors hover:bg-foreground/90 md:px-5 md:text-sm ${focusRing}`}
                   >
-                    Sign Up
+                    {t("nav.signUp")}
                   </Link>
                 </>
               ) : (
@@ -146,14 +150,14 @@ export default function LayoutShell({
                       }
                     }}
                   >
-                    My Profile
+                    {t("nav.profile")}
                   </Link>
                   <button
                     type="button"
                     onClick={() => void signOut({ callbackUrl: "/" })}
                     className={`inline-flex min-h-9 items-center justify-center rounded-full border border-foreground/20 bg-background px-3.5 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:border-foreground/35 hover:bg-foreground/5 md:px-4 md:text-sm ${focusRing}`}
                   >
-                    Sign Out
+                    {t("nav.signOut")}
                   </button>
                 </>
               )}

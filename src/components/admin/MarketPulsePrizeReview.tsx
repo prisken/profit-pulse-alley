@@ -10,6 +10,8 @@ import {
   updateMarketPulsePrizeClaimStatusAction,
 } from "@/lib/market-pulse/admin-actions";
 import type { PrizeReviewData } from "@/lib/market-pulse/prize-review-data";
+import { useTranslations } from "@/components/providers/LocaleProvider";
+import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 
 const PRIZE_STATUSES: MarketPulsePrizeStatus[] = [
   "PENDING_REVIEW",
@@ -57,6 +59,7 @@ type Props = {
 };
 
 export default function MarketPulsePrizeReview({ data }: Props) {
+  const { t, locale } = useTranslations();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -74,10 +77,10 @@ export default function MarketPulsePrizeReview({ data }: Props) {
     startTransition(async () => {
       const result = await action();
       if (!result.ok) {
-        setError(result.error ?? "Action failed.");
+        setError(result.error ?? t("auth.admin.mp.actionFailed"));
         return;
       }
-      setMessage(result.message ?? "Saved.");
+      setMessage(result.message ?? t("auth.admin.mp.saved"));
       refresh();
     });
   }
@@ -100,7 +103,7 @@ export default function MarketPulsePrizeReview({ data }: Props) {
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div>
           <h2 id="prize-review-heading" className="text-base font-semibold text-foreground sm:text-lg">
-            Prize Review
+            {t("auth.admin.mp.prizeReview")}
           </h2>
           <p className="mt-1 text-xs text-foreground/65 sm:text-sm">
             Review top-10 winners after a cycle is revealed. Admin only — includes email
@@ -150,7 +153,7 @@ export default function MarketPulsePrizeReview({ data }: Props) {
           }`}
           role="status"
         >
-          {error ?? message}
+          {error ? translateAuthMessage(locale, error) : message ? translateAuthMessage(locale, message) : null}
         </p>
       )}
 

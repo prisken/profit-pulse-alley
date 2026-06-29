@@ -98,8 +98,8 @@ function buildActiveCycleWithCards(cards: ReturnType<typeof buildPlayableCard>[]
   };
 }
 
-function setupOpenRuntime() {
-  prismaMocks.userFindUnique.mockResolvedValue({ id: TEST_USER_ID });
+function setupOpenRuntime(role: "USER" | "ADMIN" = "ADMIN") {
+  prismaMocks.userFindUnique.mockResolvedValue({ id: TEST_USER_ID, role });
   prismaMocks.gameSettingFindFirst.mockResolvedValue({
     id: TEST_SETTINGS_ID,
     runtimeStatus: "OPEN",
@@ -127,6 +127,71 @@ describe("submitMarketPulseDecision", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("rejects non-admin users before public launch", async () => {
+    setupOpenRuntime("USER");
+
+    const result = await submitMarketPulseDecision({
+      userId: TEST_USER_ID,
+      cardId: TEST_CARD_ID,
+      decision: "BULLISH",
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("Market Pulse opens on July 1, 2026");
+    }
+    expect(prismaMocks.decisionCreate).not.toHaveBeenCalled();
+  });
+
+  it("allows admin users before public launch", async () => {
+    setupOpenRuntime("ADMIN");
+
+    const result = await submitMarketPulseDecision({
+      userId: TEST_USER_ID,
+      cardId: TEST_CARD_ID,
+      decision: "BULLISH",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(prismaMocks.decisionCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows user submissions on or after public launch", async () => {
+    const julyCycleStart = new Date("2026-06-30T16:00:00.000Z");
+    const julyCycleEnd = new Date("2026-07-10T16:00:00.000Z");
+    const julyReveal = new Date("2026-07-10T16:00:00.000Z");
+    const julyCard = buildPlayableCard({
+      dayIndex: 2,
+      publishedAt: julyCycleStart,
+      cycle: {
+        id: TEST_CYCLE_ID,
+        name: "July Cycle",
+        status: "OPEN",
+        startsAt: julyCycleStart,
+        endsAt: julyCycleEnd,
+        revealAt: julyReveal,
+      },
+    });
+    vi.setSystemTime(new Date("2026-07-02T12:00:00.000Z"));
+    setupOpenRuntime("USER");
+    prismaMocks.cardFindUnique.mockResolvedValue(julyCard);
+    prismaMocks.cycleFindUnique.mockResolvedValue({
+      ...buildActiveCycleWithCards([julyCard]),
+      startsAt: julyCycleStart,
+      endsAt: julyCycleEnd,
+      revealAt: julyReveal,
+    });
+
+    const result = await submitMarketPulseDecision({
+      userId: TEST_USER_ID,
+      cardId: TEST_CARD_ID,
+      decision: "BULLISH",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(prismaMocks.decisionCreate).toHaveBeenCalledTimes(1);
   });
 
   it("creates one MarketPulseDecision for a valid submission", async () => {

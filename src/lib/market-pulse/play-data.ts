@@ -5,10 +5,12 @@ import type { MarketPulseCycleStatus } from "@prisma/client";
 import { auth } from "@/auth";
 import { isDatabaseConfigured } from "@/lib/db-config";
 import type { MarketPulseDecision } from "@/lib/market-pulse/constants";
+import type { CyclePlayabilityIssue } from "@/lib/market-pulse/cycle-playability";
 import {
   describeCyclePlayabilityIssue,
   getCyclePlayabilityIssue,
 } from "@/lib/market-pulse/cycle-playability";
+import type { SiteLocale } from "@/lib/i18n/locales";
 import {
   getActiveMarketPulseCycle,
   getMarketPulseLeaderboard,
@@ -19,12 +21,17 @@ import {
   type MarketPulseCardPublicPayload,
   type MarketPulseLeaderboardRow,
 } from "@/lib/market-pulse/server";
+import {
+  MARKET_PULSE_PUBLIC_LAUNCH_AT,
+  canAccessMarketPulsePlay,
+} from "@/lib/market-pulse/launch-config";
 import { toMarketPulseSwipeCardData } from "@/lib/market-pulse/swipe-card";
 import type { MarketPulseSwipeCardData } from "@/lib/market-pulse/types";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export type MarketPulsePlayPageStatus =
+  | "pre_launch"
   | "no_active_cycle"
   | "cycle_unavailable"
   | "no_card_today"
@@ -36,6 +43,7 @@ export type MarketPulsePlayPageData = {
   status: MarketPulsePlayPageStatus;
   isAuthenticated: boolean;
   unavailableReason?: string | null;
+  unavailableIssue?: CyclePlayabilityIssue | null;
   challengeName: string;
   dayCurrent: number;
   dayTotal: number;
@@ -65,8 +73,9 @@ function getDayProgress(
   return { dayCurrent, dayTotal };
 }
 
-function formatRevealLabel(revealAt: Date): string {
-  return new Intl.DateTimeFormat("en-HK", {
+function formatRevealLabel(revealAt: Date, locale: SiteLocale = "en"): string {
+  const intlLocale = locale === "zh-Hant" ? "zh-HK" : "en-HK";
+  return new Intl.DateTimeFormat(intlLocale, {
     dateStyle: "long",
     timeStyle: "short",
     timeZone: "Asia/Hong_Kong",
@@ -92,6 +101,7 @@ function buildCycleShell(
     status: MarketPulseCycleStatus;
   },
   now: Date,
+  locale: SiteLocale = "en",
 ): Pick<
   MarketPulsePlayPageData,
   | "challengeName"
@@ -115,9 +125,34 @@ function buildCycleShell(
     dayTotal,
     revealAtIso: cycle.revealAt.toISOString(),
     revealRemainingMs: Math.max(0, cycle.revealAt.getTime() - now.getTime()),
-    revealAtLabel: formatRevealLabel(cycle.revealAt),
+    revealAtLabel: formatRevealLabel(cycle.revealAt, locale),
     cycleId: cycle.id,
     leaderboardRevealed: isMarketPulseCycleRevealed(cycle, now),
+  };
+}
+
+function buildPreLaunchPageData(
+  isAuthenticated: boolean,
+  now: Date,
+): MarketPulsePlayPageData {
+  return {
+    status: "pre_launch",
+    isAuthenticated,
+    unavailableReason: null,
+    challengeName: "Market Pulse",
+    dayCurrent: 0,
+    dayTotal: 0,
+    revealAtIso: MARKET_PULSE_PUBLIC_LAUNCH_AT.toISOString(),
+    revealRemainingMs: Math.max(
+      0,
+      MARKET_PULSE_PUBLIC_LAUNCH_AT.getTime() - now.getTime(),
+    ),
+    revealAtLabel: "",
+    cycleId: null,
+    leaderboardEntries: [],
+    leaderboardRevealed: false,
+    card: null,
+    lockedDecision: null,
   };
 }
 
@@ -136,11 +171,18 @@ async function loadLeaderboard(
   }
 }
 
-export async function getMarketPulsePlayPageData(): Promise<MarketPulsePlayPageData> {
+export async function getMarketPulsePlayPageData(
+  locale: SiteLocale = "en",
+): Promise<MarketPulsePlayPageData> {
   const now = new Date();
   const session = await auth();
   const userId = session?.user?.id;
   const isAuthenticated = Boolean(userId);
+  const role = session?.user?.role;
+
+  if (!canAccessMarketPulsePlay(role, now)) {
+    return buildPreLaunchPageData(isAuthenticated, now);
+  }
 
   if (!isDatabaseConfigured()) {
     return {
@@ -170,12 +212,14 @@ export async function getMarketPulsePlayPageData(): Promise<MarketPulsePlayPageD
 
   if (!activeCycle) {
     let unavailableReason: string | null = null;
+    let unavailableIssue: CyclePlayabilityIssue | null = null;
     try {
       const settings = await getMarketPulseSettings();
       const pinned = settings.activeCycle;
       if (pinned) {
         const issue = getCyclePlayabilityIssue(pinned, now);
         if (issue) {
+          unavailableIssue = issue;
           unavailableReason = describeCyclePlayabilityIssue(issue);
         }
       }
@@ -187,6 +231,7 @@ export async function getMarketPulsePlayPageData(): Promise<MarketPulsePlayPageD
       status: unavailableReason ? "cycle_unavailable" : "no_active_cycle",
       isAuthenticated,
       unavailableReason,
+      unavailableIssue,
       challengeName: "Market Pulse",
       dayCurrent: 0,
       dayTotal: 0,
@@ -201,7 +246,7 @@ export async function getMarketPulsePlayPageData(): Promise<MarketPulsePlayPageD
     };
   }
 
-  const cycleShell = buildCycleShell(activeCycle, now);
+  const cycleShell = buildCycleShell(activeCycle, now, locale);
   const leaderboardEntries = await loadLeaderboard(activeCycle.id);
 
   let snapshot = null;

@@ -1,20 +1,27 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ArrowRight, Trophy } from "lucide-react";
 
 import { auth } from "@/auth";
 import { signOutAction } from "@/lib/auth-actions";
+import { getServerSiteLocale, getServerTranslations } from "@/lib/i18n/server";
+import { translate, translateWith } from "@/lib/i18n/messages";
+import type { SiteLocale } from "@/lib/i18n/locales";
 import {
   formatMarketPulseHistoryCycleLabel,
   getUserMarketPulseHistory,
 } from "@/lib/market-pulse/queries";
 import type { MarketPulseHistoryEntry } from "@/lib/market-pulse/types";
 
-export const metadata = {
-  title: "Member Profile | Profit Pulse Ally",
-  description: "View your membership profile and Market Pulse game history.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerSiteLocale();
+  return {
+    title: translate(locale, "auth.meta.profile.title"),
+    description: translate(locale, "auth.meta.profile.description"),
+  };
+}
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -22,20 +29,23 @@ const focusRing =
 const cardClass =
   "rounded-xl border border-foreground/10 bg-background p-4 shadow-sm sm:p-6";
 
-function formatScore(score: number): string {
-  return new Intl.NumberFormat("en-HK").format(score);
+function formatScore(score: number, locale: SiteLocale): string {
+  const intlLocale = locale === "zh-Hant" ? "zh-HK" : "en-HK";
+  return new Intl.NumberFormat(intlLocale).format(score);
 }
 
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
+function formatDate(date: Date, locale: SiteLocale): string {
+  const intlLocale = locale === "zh-Hant" ? "zh-HK" : "en-US";
+  return new Intl.DateTimeFormat(intlLocale, {
     year: "numeric",
     month: "long",
     day: "numeric",
   }).format(date);
 }
 
-function formatShortDate(date: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
+function formatShortDate(date: Date, locale: SiteLocale): string {
+  const intlLocale = locale === "zh-Hant" ? "zh-HK" : "en-US";
+  return new Intl.DateTimeFormat(intlLocale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -46,20 +56,33 @@ function formatRole(role: string): string {
   return role.charAt(0) + role.slice(1).toLowerCase();
 }
 
-function HistoryRow({ entry }: Readonly<{ entry: MarketPulseHistoryEntry }>) {
+function HistoryRow({
+  entry,
+  locale,
+  t,
+}: Readonly<{
+  entry: MarketPulseHistoryEntry;
+  locale: SiteLocale;
+  t: (key: import("@/lib/i18n/messages").MessageKey) => string;
+}>) {
   return (
     <li className="flex items-center justify-between gap-3 rounded-lg border border-foreground/10 bg-foreground/[0.02] px-3 py-2.5 sm:rounded-xl sm:px-4 sm:py-3.5">
       <div className="min-w-0">
         <p className="text-sm font-semibold tabular-nums text-foreground sm:text-base">
-          {formatScore(entry.score)} pts
+          {translateWith(locale, "auth.profile.points", {
+            score: formatScore(entry.score, locale),
+          })}
         </p>
         <p className="mt-0.5 text-xs text-foreground/60 sm:text-sm">
-          <span className="sm:hidden">{formatShortDate(entry.createdAt)}</span>
-          <span className="hidden sm:inline">{formatDate(entry.createdAt)}</span>
+          <span className="sm:hidden">{formatShortDate(entry.createdAt, locale)}</span>
+          <span className="hidden sm:inline">{formatDate(entry.createdAt, locale)}</span>
         </p>
         {entry.cycleId ? (
           <p className="mt-0.5 text-[11px] text-foreground/45 sm:text-xs">
-            Cycle {formatMarketPulseHistoryCycleLabel(entry.cycleId)}
+            {t("auth.profile.cycleLabel").replace(
+              "{id}",
+              formatMarketPulseHistoryCycleLabel(entry.cycleId),
+            )}
           </p>
         ) : null}
       </div>
@@ -78,8 +101,9 @@ export default async function ProfilePage() {
     redirect("/login?callbackUrl=/profile");
   }
 
+  const { t, locale } = await getServerTranslations();
   const { user } = session;
-  const displayName = user.name?.trim() || "Member";
+  const displayName = user.name?.trim() || t("auth.profile.memberFallback");
 
   let gameScores: MarketPulseHistoryEntry[] = [];
 
@@ -90,15 +114,25 @@ export default async function ProfilePage() {
   }
 
   const latestScore = gameScores[0]?.score;
+  const historyCountLabel =
+    gameScores.length === 0
+      ? t("auth.profile.historyEmpty")
+      : gameScores.length === 1
+        ? translateWith(locale, "auth.profile.historyCount", {
+            count: gameScores.length,
+          })
+        : translateWith(locale, "auth.profile.historyCountPlural", {
+            count: gameScores.length,
+          });
 
   return (
     <main className="mx-auto w-full max-w-2xl space-y-4 overflow-x-hidden px-3 py-6 sm:space-y-6 sm:px-6 sm:py-12">
       <header>
         <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-3xl">
-          My Profile
+          {t("auth.profile.title")}
         </h1>
         <p className="mt-1 text-xs text-foreground/65 sm:text-sm">
-          Your Market Pulse history and membership details.
+          {t("auth.profile.subtitle")}
         </p>
       </header>
 
@@ -134,9 +168,9 @@ export default async function ProfilePage() {
           </p>
           {latestScore != null ? (
             <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 sm:text-sm">
-              Latest score:{" "}
+              {t("auth.profile.latestScore")}{" "}
               <span className="font-semibold tabular-nums">
-                {formatScore(latestScore)}
+                {formatScore(latestScore, locale)}
               </span>
             </p>
           ) : null}
@@ -146,7 +180,7 @@ export default async function ProfilePage() {
           href="/market-pulse/play"
           className={`inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full bg-amber-500 px-4 py-2 text-xs font-semibold text-gray-900 transition-colors hover:bg-amber-400 sm:text-sm ${focusRing}`}
         >
-          Play
+          {t("auth.profile.play")}
           <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
       </section>
@@ -158,12 +192,10 @@ export default async function ProfilePage() {
               id="game-history-heading"
               className="text-base font-semibold text-foreground sm:text-lg"
             >
-              Market Pulse History
+              {t("auth.profile.historyTitle")}
             </h2>
             <p className="mt-0.5 text-xs text-foreground/65 sm:text-sm">
-              {gameScores.length === 0
-                ? "No challenge runs saved yet."
-                : `${gameScores.length} run${gameScores.length === 1 ? "" : "s"} recorded`}
+              {historyCountLabel}
             </p>
           </div>
           {gameScores.length > 0 ? (
@@ -171,7 +203,7 @@ export default async function ProfilePage() {
               href="/market-pulse"
               className={`inline-flex min-h-11 items-center text-xs font-medium text-foreground/60 underline-offset-4 hover:text-foreground hover:underline sm:text-sm ${focusRing}`}
             >
-              View hub
+              {t("auth.profile.viewHub")}
             </Link>
           ) : null}
         </div>
@@ -179,19 +211,19 @@ export default async function ProfilePage() {
         {gameScores.length === 0 ? (
           <div className="mt-4 rounded-xl border border-dashed border-foreground/15 bg-foreground/[0.02] px-4 py-8 text-center sm:mt-5 sm:px-5 sm:py-10">
             <p className="text-sm text-foreground/75">
-              Play today&apos;s card to start building your history.
+              {t("auth.profile.historyCta")}
             </p>
             <Link
               href="/market-pulse/play"
               className={`mt-3 inline-flex min-h-10 items-center justify-center rounded-full bg-amber-500 px-5 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-amber-400 sm:mt-4 ${focusRing}`}
             >
-              Play Today&apos;s Card
+              {t("auth.profile.playToday")}
             </Link>
           </div>
         ) : (
           <ul className="mt-4 space-y-2 sm:mt-5 sm:space-y-2.5">
             {gameScores.map((entry) => (
-              <HistoryRow key={entry.id} entry={entry} />
+              <HistoryRow key={entry.id} entry={entry} locale={locale} t={t} />
             ))}
           </ul>
         )}
@@ -202,24 +234,24 @@ export default async function ProfilePage() {
           id="profile-details-heading"
           className="text-sm font-semibold text-foreground/80 sm:text-base"
         >
-          Account details
+          {t("auth.profile.accountDetails")}
         </h2>
         <dl className="mt-3 grid gap-2.5 text-sm sm:grid-cols-2 sm:gap-3">
           <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] px-3 py-2.5">
             <dt className="text-[11px] font-medium uppercase tracking-wide text-foreground/45 sm:text-xs">
-              Name
+              {t("auth.profile.fieldName")}
             </dt>
             <dd className="mt-0.5 text-foreground">{displayName}</dd>
           </div>
           <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] px-3 py-2.5">
             <dt className="text-[11px] font-medium uppercase tracking-wide text-foreground/45 sm:text-xs">
-              Role
+              {t("auth.profile.fieldRole")}
             </dt>
             <dd className="mt-0.5 text-foreground">{formatRole(user.role)}</dd>
           </div>
           <div className="rounded-lg border border-foreground/10 bg-foreground/[0.02] px-3 py-2.5 sm:col-span-2">
             <dt className="text-[11px] font-medium uppercase tracking-wide text-foreground/45 sm:text-xs">
-              Email
+              {t("auth.profile.fieldEmail")}
             </dt>
             <dd className="mt-0.5 break-all text-foreground">{user.email}</dd>
           </div>
@@ -230,7 +262,7 @@ export default async function ProfilePage() {
             type="submit"
             className={`inline-flex min-h-11 items-center px-2 text-sm font-medium text-foreground/55 underline-offset-4 transition-colors hover:text-foreground hover:underline ${focusRing}`}
           >
-            Sign out
+            {t("auth.profile.signOut")}
           </button>
         </form>
       </section>

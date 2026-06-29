@@ -8,7 +8,9 @@ import type { AdminActionResult } from "@/lib/market-pulse/admin-actions";
 import {
   cardFormValuesToPreview,
   DEFAULT_CARD_FORM_VALUES,
+  MARKET_PULSE_CARD_IMAGE_GUIDANCE,
   MARKET_PULSE_CARD_STATUS_OPTIONS,
+  MARKET_PULSE_DEFAULT_USER_PROMPT,
   MARKET_PULSE_SIGNAL_OPTIONS,
   type CardFormFieldErrors,
   type MarketPulseCardFormValues,
@@ -240,7 +242,61 @@ export default function MarketPulseCardForm({
 
           <section className="grid gap-4 sm:grid-cols-2">
             <h3 className="sm:col-span-2 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
-              Company
+              A · News
+            </h3>
+            <label className="block sm:col-span-2">
+              <FieldLabel error={fieldErrors.headline}>News headline</FieldLabel>
+              <input
+                className={`${fieldClass} ${fieldErrors.headline ? fieldErrorClass : ""}`}
+                value={values.headline}
+                onChange={(event) => updateField("headline", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <FieldLabel>News body / content</FieldLabel>
+              <textarea
+                className={`${fieldClass} min-h-[5rem]`}
+                value={values.newsBody}
+                onChange={(event) => updateField("newsBody", event.target.value)}
+                disabled={busy}
+                placeholder="Longer news text shown under the headline."
+              />
+            </label>
+            <label className="block">
+              <FieldLabel>News source name</FieldLabel>
+              <input
+                className={fieldClass}
+                value={values.sourceName}
+                onChange={(event) => updateField("sourceName", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block">
+              <FieldLabel error={fieldErrors.sourceDate}>News published date</FieldLabel>
+              <input
+                type="datetime-local"
+                className={`${fieldClass} ${fieldErrors.sourceDate ? fieldErrorClass : ""}`}
+                value={values.sourceDate}
+                onChange={(event) => updateField("sourceDate", event.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <FieldLabel error={fieldErrors.sourceUrl}>News source URL (optional)</FieldLabel>
+              <input
+                className={`${fieldClass} ${fieldErrors.sourceUrl ? fieldErrorClass : ""}`}
+                value={values.sourceUrl}
+                onChange={(event) => updateField("sourceUrl", event.target.value)}
+                disabled={busy}
+                placeholder="https://"
+              />
+            </label>
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-2">
+            <h3 className="sm:col-span-2 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
+              B · Company / security
             </h3>
             <label className="block sm:col-span-2">
               <FieldLabel error={fieldErrors.companyName}>Company name</FieldLabel>
@@ -278,10 +334,21 @@ export default function MarketPulseCardForm({
                 disabled={busy}
               />
             </label>
-            <label className="block sm:col-span-2">
-              <FieldLabel>Logo URL</FieldLabel>
+            <label className="block">
+              <FieldLabel>Logo initials</FieldLabel>
               <input
                 className={fieldClass}
+                value={values.logoInitials}
+                onChange={(event) => updateField("logoInitials", event.target.value)}
+                disabled={busy}
+                placeholder="e.g. TS"
+                maxLength={4}
+              />
+            </label>
+            <label className="block">
+              <FieldLabel error={fieldErrors.logoUrl}>Company logo URL (optional)</FieldLabel>
+              <input
+                className={`${fieldClass} ${fieldErrors.logoUrl ? fieldErrorClass : ""}`}
                 value={values.logoUrl}
                 onChange={(event) => updateField("logoUrl", event.target.value)}
                 disabled={busy}
@@ -289,83 +356,84 @@ export default function MarketPulseCardForm({
               />
             </label>
             <label className="block">
-              <FieldLabel>Price label</FieldLabel>
+              <FieldLabel>Current price text</FieldLabel>
               <input
                 className={fieldClass}
                 value={values.priceLabel}
                 onChange={(event) => updateField("priceLabel", event.target.value)}
                 disabled={busy}
-                placeholder="$142.50"
+                placeholder="$248.30"
               />
             </label>
             <label className="block">
-              <FieldLabel>Price direction</FieldLabel>
+              <FieldLabel>Price change text</FieldLabel>
               <input
                 className={fieldClass}
                 value={values.priceDirection}
                 onChange={(event) => updateField("priceDirection", event.target.value)}
                 disabled={busy}
-                placeholder="up / down / +2.4%"
+                placeholder="↘ -1.2%"
               />
             </label>
           </section>
 
           <section className="grid gap-4 sm:grid-cols-2">
             <h3 className="sm:col-span-2 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
-              Story
+              C · Card image
             </h3>
+            <p className="sm:col-span-2 text-sm leading-relaxed text-foreground/60">
+              {MARKET_PULSE_CARD_IMAGE_GUIDANCE}
+            </p>
             <label className="block sm:col-span-2">
-              <FieldLabel error={fieldErrors.headline}>Headline</FieldLabel>
+              <FieldLabel error={fieldErrors.cardImageUrl}>Card image URL</FieldLabel>
               <input
-                className={`${fieldClass} ${fieldErrors.headline ? fieldErrorClass : ""}`}
-                value={values.headline}
-                onChange={(event) => updateField("headline", event.target.value)}
+                className={`${fieldClass} ${fieldErrors.cardImageUrl ? fieldErrorClass : ""}`}
+                value={values.cardImageUrl}
+                onChange={(event) => updateField("cardImageUrl", event.target.value)}
                 disabled={busy}
+                placeholder="https://"
               />
             </label>
             <label className="block sm:col-span-2">
-              <FieldLabel>Summary</FieldLabel>
+              <FieldLabel error={fieldErrors.cardImageAlt}>Card image alt text</FieldLabel>
+              <input
+                className={`${fieldClass} ${fieldErrors.cardImageAlt ? fieldErrorClass : ""}`}
+                value={values.cardImageAlt}
+                onChange={(event) => updateField("cardImageAlt", event.target.value)}
+                disabled={busy}
+                placeholder="Describe the image for screen readers"
+              />
+            </label>
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-2">
+            <h3 className="sm:col-span-2 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
+              D · Summary / prompt
+            </h3>
+            <label className="block sm:col-span-2">
+              <FieldLabel error={fieldErrors.summary}>Summary</FieldLabel>
               <textarea
-                className={`${fieldClass} min-h-[5rem]`}
+                className={`${fieldClass} min-h-[5rem] ${fieldErrors.summary ? fieldErrorClass : ""}`}
                 value={values.summary}
                 onChange={(event) => updateField("summary", event.target.value)}
                 disabled={busy}
               />
             </label>
-            <label className="block">
-              <FieldLabel>Source name</FieldLabel>
-              <input
-                className={fieldClass}
-                value={values.sourceName}
-                onChange={(event) => updateField("sourceName", event.target.value)}
-                disabled={busy}
-              />
-            </label>
-            <label className="block">
-              <FieldLabel error={fieldErrors.sourceDate}>Source date</FieldLabel>
-              <input
-                type="datetime-local"
-                className={`${fieldClass} ${fieldErrors.sourceDate ? fieldErrorClass : ""}`}
-                value={values.sourceDate}
-                onChange={(event) => updateField("sourceDate", event.target.value)}
-                disabled={busy}
-              />
-            </label>
             <label className="block sm:col-span-2">
-              <FieldLabel>Source URL</FieldLabel>
+              <FieldLabel>User prompt / question</FieldLabel>
               <input
                 className={fieldClass}
-                value={values.sourceUrl}
-                onChange={(event) => updateField("sourceUrl", event.target.value)}
+                value={values.userPrompt}
+                onChange={(event) => updateField("userPrompt", event.target.value)}
                 disabled={busy}
-                placeholder="https://"
+                placeholder={MARKET_PULSE_DEFAULT_USER_PROMPT}
               />
             </label>
           </section>
 
           <section className="grid gap-4 sm:grid-cols-2">
             <h3 className="sm:col-span-2 text-xs font-semibold uppercase tracking-[0.15em] text-foreground/45">
-              PPA signal
+              E · PPA signal (hidden until reveal)
             </h3>
             <label className="block">
               <FieldLabel error={fieldErrors.ppaSignal}>PPA signal</FieldLabel>

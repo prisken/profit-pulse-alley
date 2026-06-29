@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useState, type ReactNode } from "react";
+import { FormEvent, useMemo, useState, type ReactNode } from "react";
+
+import { useTranslations } from "@/components/providers/LocaleProvider";
+import type { MessageKey } from "@/lib/i18n/messages";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
@@ -68,43 +71,48 @@ function InstagramIcon() {
   );
 }
 
-const PPA_LINKS = [
-  { label: "Market Pulse", href: "/market-pulse" },
-  { label: "Events", href: "/events" },
-  { label: "Our Philosophy", href: "/concept" },
-  { label: "Blog", href: "/blog" },
-] as const;
+const PPA_LINK_KEYS: ReadonlyArray<{ labelKey: MessageKey; href: string }> = [
+  { labelKey: "nav.marketPulse", href: "/market-pulse" },
+  { labelKey: "nav.events", href: "/events" },
+  { labelKey: "nav.philosophy", href: "/concept" },
+  { labelKey: "nav.blog", href: "/blog" },
+];
 
-const COMMUNITY_LINKS = [
-  { label: "Contact Us", href: "/contact" },
-  { label: "FAQs", href: "/faq" },
-  { label: "Careers", href: "/careers" },
-] as const;
+const COMMUNITY_LINK_KEYS: ReadonlyArray<{ labelKey: MessageKey; href: string }> =
+  [
+    { labelKey: "footer.link.contactUs", href: "/contact" },
+    { labelKey: "footer.link.faqs", href: "/faq" },
+    { labelKey: "footer.link.careers", href: "/careers" },
+  ];
 
-const LEGAL_LINKS = [
-  { label: "Terms of Service", href: "/terms" },
-  { label: "Privacy Policy", href: "/privacy" },
+const LEGAL_LINK_KEYS: ReadonlyArray<{
+  labelKey: MessageKey;
+  href: string;
+  emphasized?: boolean;
+}> = [
+  { labelKey: "footer.link.terms", href: "/terms" },
+  { labelKey: "footer.link.privacy", href: "/privacy" },
   {
-    label: "Investment Disclaimer",
+    labelKey: "footer.link.investmentDisclaimer",
     href: "/investment-disclaimer",
     emphasized: true,
   },
-  { label: "Contest Rules", href: "/contest-rules" },
-] as const;
+  { labelKey: "footer.link.contestRules", href: "/contest-rules" },
+];
 
 const SOCIAL_LINKS = [
   {
-    label: "LinkedIn",
+    labelKey: "footer.social.linkedin" as const,
     href: "https://www.linkedin.com/company/profitpulseally",
     icon: LinkedInIcon,
   },
   {
-    label: "Twitter",
+    labelKey: "footer.social.twitter" as const,
     href: "https://twitter.com/profitpulseally",
     icon: TwitterIcon,
   },
   {
-    label: "Instagram",
+    labelKey: "footer.social.instagram" as const,
     href: "https://www.instagram.com/profitpulseally?igsh=MWY5NWV6dHYzemoxaA%3D%3D&utm_source=qr",
     icon: InstagramIcon,
   },
@@ -189,26 +197,27 @@ function StayConnectedBlock({
   onEmailChange: (value: string) => void;
   onSubscribe: (event: FormEvent<HTMLFormElement>) => void;
 }>) {
+  const { t } = useTranslations();
+
   return (
     <div>
       <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
-        Stay Connected
+        {t("footer.column.stayConnected")}
       </h3>
       <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:mt-4">
-        Get Market Pulse updates, event invites, and community highlights in your
-        inbox.
+        {t("footer.newsletter.description")}
       </p>
 
       <form className="mt-3 space-y-3 sm:mt-4" onSubmit={onSubscribe}>
         <label htmlFor="footer-newsletter-email" className="sr-only">
-          Email address
+          {t("footer.newsletter.emailAria")}
         </label>
         <input
           id="footer-newsletter-email"
           type="email"
           name="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t("footer.newsletter.placeholder")}
           value={email}
           onChange={(event) => onEmailChange(event.target.value)}
           className={`w-full rounded-lg border border-white/15 bg-zinc-900 px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 ${focusRing}`}
@@ -217,7 +226,7 @@ function StayConnectedBlock({
           type="submit"
           className={`w-full rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200 active:bg-zinc-300 sm:w-auto sm:px-6 ${focusRing}`}
         >
-          Subscribe
+          {t("footer.newsletter.subscribe")}
         </button>
         {subscribeMessage ? (
           <p className="text-xs text-zinc-400" role="status">
@@ -227,13 +236,13 @@ function StayConnectedBlock({
       </form>
 
       <div className="mt-4 flex items-center gap-2 sm:mt-5">
-        {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
+        {SOCIAL_LINKS.map(({ labelKey, href, icon: Icon }) => (
           <a
-            key={label}
+            key={labelKey}
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={label}
+            aria-label={t(labelKey)}
             className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:bg-white/5 hover:text-white ${focusRing}`}
           >
             <Icon aria-hidden="true" />
@@ -245,16 +254,31 @@ function StayConnectedBlock({
 }
 
 export default function SiteFooter() {
+  const { t } = useTranslations();
   const [email, setEmail] = useState("");
   const [subscribeMessage, setSubscribeMessage] = useState<string | null>(null);
+
+  const ppaLinks = useMemo(
+    () => PPA_LINK_KEYS.map((link) => ({ ...link, label: t(link.labelKey) })),
+    [t],
+  );
+  const communityLinks = useMemo(
+    () =>
+      COMMUNITY_LINK_KEYS.map((link) => ({ ...link, label: t(link.labelKey) })),
+    [t],
+  );
+  const legalLinks = useMemo(
+    () => LEGAL_LINK_KEYS.map((link) => ({ ...link, label: t(link.labelKey) })),
+    [t],
+  );
 
   function handleSubscribe(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!email.trim()) {
-      setSubscribeMessage("Please enter your email address.");
+      setSubscribeMessage(t("footer.newsletter.emailRequired"));
       return;
     }
-    setSubscribeMessage("Thanks for subscribing! Newsletter coming soon.");
+    setSubscribeMessage(t("footer.newsletter.success"));
     setEmail("");
   }
 
@@ -262,9 +286,9 @@ export default function SiteFooter() {
     <footer className="border-t border-white/10 bg-zinc-950 pb-[env(safe-area-inset-bottom,0px)] text-zinc-50">
       <div className="mx-auto w-full max-w-6xl px-[max(0.75rem,env(safe-area-inset-left))] py-8 pr-[max(0.75rem,env(safe-area-inset-right))] sm:px-[max(1.5rem,env(safe-area-inset-left))] sm:py-12 sm:pr-[max(1.5rem,env(safe-area-inset-right))] md:py-14">
         <div className="sm:hidden">
-          <FooterAccordionSection title="PPA" defaultOpen>
+          <FooterAccordionSection title={t("footer.column.ppa")} defaultOpen>
             <ul className="space-y-2.5">
-              {PPA_LINKS.map((link) => (
+              {ppaLinks.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className={footerLinkClass}>
                     {link.label}
@@ -273,9 +297,9 @@ export default function SiteFooter() {
               ))}
             </ul>
           </FooterAccordionSection>
-          <FooterAccordionSection title="Community">
+          <FooterAccordionSection title={t("footer.column.community")}>
             <ul className="space-y-2.5">
-              {COMMUNITY_LINKS.map((link) => (
+              {communityLinks.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className={footerLinkClass}>
                     {link.label}
@@ -284,14 +308,14 @@ export default function SiteFooter() {
               ))}
             </ul>
           </FooterAccordionSection>
-          <FooterAccordionSection title="Legal">
+          <FooterAccordionSection title={t("footer.column.legal")}>
             <ul className="space-y-2.5">
-              {LEGAL_LINKS.map((link) => (
+              {legalLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
                     className={`${footerLinkClass} ${
-                      "emphasized" in link && link.emphasized
+                      link.emphasized
                         ? "font-semibold text-amber-300/90 hover:text-amber-200"
                         : ""
                     }`}
@@ -305,9 +329,12 @@ export default function SiteFooter() {
         </div>
 
         <div className="hidden gap-8 sm:grid sm:grid-cols-2 lg:grid-cols-4">
-          <FooterLinkColumn title="PPA" links={PPA_LINKS} />
-          <FooterLinkColumn title="Community" links={COMMUNITY_LINKS} />
-          <FooterLinkColumn title="Legal" links={LEGAL_LINKS} />
+          <FooterLinkColumn title={t("footer.column.ppa")} links={ppaLinks} />
+          <FooterLinkColumn
+            title={t("footer.column.community")}
+            links={communityLinks}
+          />
+          <FooterLinkColumn title={t("footer.column.legal")} links={legalLinks} />
 
           <div className="sm:col-span-2 lg:col-span-1">
             <StayConnectedBlock
@@ -338,7 +365,7 @@ export default function SiteFooter() {
           <Link
             href="/"
             className={`inline-flex min-h-11 items-center gap-2 transition-opacity hover:opacity-90 ${focusRing}`}
-            aria-label="Profit Pulse Ally home"
+            aria-label={t("common.brandHomeAria")}
           >
             <Image
               src="/logo.png"
@@ -348,11 +375,11 @@ export default function SiteFooter() {
               className="h-8 w-8 rounded-sm"
             />
             <span className="text-sm font-semibold text-white sm:text-base">
-              Profit Pulse Ally
+              {t("common.brandName")}
             </span>
           </Link>
           <p className="text-center text-xs text-zinc-500 sm:text-right sm:text-sm">
-            © 2026 Profit Pulse Ally. All Rights Reserved.
+            {t("common.copyright")}
           </p>
         </div>
       </div>

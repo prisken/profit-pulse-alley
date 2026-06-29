@@ -1,0 +1,307 @@
+import type { Messages } from "@/lib/i18n/messages/en";
+import { marketPulseZhHantMessages } from "@/lib/i18n/messages/market-pulse-messages";
+import { authAppZhHantMessages } from "@/lib/i18n/messages/auth-app-messages";
+
+export const zhHantMessages: Messages = {
+  "nav.marketPulse": "Market Pulse",
+  "nav.events": "活動",
+  "nav.philosophy": "我們的理念",
+  "nav.blog": "網誌",
+  "nav.login": "登入",
+  "nav.signUp": "註冊",
+  "nav.profile": "我的帳戶",
+  "nav.signOut": "登出",
+  "nav.play": "開始挑戰",
+  "nav.leaderboard": "排行榜",
+  "nav.rules": "規則",
+  "nav.reveal": "揭曉",
+  "nav.menu": "選單",
+  "nav.account": "帳戶",
+  "nav.backToPulse": "脈搏",
+  "nav.board": "排行",
+  "announcement.opens": "Market Pulse 將於 2026年7月1日 開放。",
+  "announcement.firstCycle": "第一期挑戰：2026年7月1日至7月10日。",
+  "announcement.prize": "每期冠軍將獲得一張海洋公園門票。",
+  "announcement.comingSoon": "即將推出",
+  "signal.bullish": "看升",
+  "signal.cautious": "謹慎",
+  "lang.switcherLabel": "語言",
+  "lang.checkingSession": "正在確認登入狀態…",
+  "prompt.defaultRead": "你對這則訊號有何看法？",
+
+  "common.brandName": "Profit Pulse Ally",
+  "common.brandHomeAria": "Profit Pulse Ally 首頁",
+  "common.brandLogoAlt": "Profit Pulse Ally 標誌",
+  "common.navMainAria": "主要導覽",
+  "common.navSiteAria": "網站導覽",
+  "common.openMenu": "開啟選單",
+  "common.closeMenu": "關閉選單",
+  "common.copyright": "© 2026 Profit Pulse Ally. 版權所有。",
+
+  "footer.column.ppa": "PPA",
+  "footer.column.community": "社群",
+  "footer.column.legal": "法律",
+  "footer.column.stayConnected": "保持聯繫",
+  "footer.link.contactUs": "聯絡我們",
+  "footer.link.faqs": "常見問題",
+  "footer.link.careers": "加入我們",
+  "footer.link.terms": "服務條款",
+  "footer.link.privacy": "私隱政策",
+  "footer.link.investmentDisclaimer": "投資免責聲明",
+  "footer.link.contestRules": "比賽規則",
+  "footer.newsletter.description":
+    "訂閱以接收 Market Pulse 更新、活動邀請及社群精選資訊。",
+  "footer.newsletter.emailAria": "電郵地址",
+  "footer.newsletter.placeholder": "you@example.com",
+  "footer.newsletter.subscribe": "訂閱",
+  "footer.newsletter.emailRequired": "請輸入你的電郵地址。",
+  "footer.newsletter.success": "感謝訂閱！電子報即將推出。",
+  "footer.social.linkedin": "LinkedIn",
+  "footer.social.twitter": "Twitter",
+  "footer.social.instagram": "Instagram",
+
+  "home.hero.badgePreLaunch": "2026年7月1日開放",
+  "home.hero.badgeLive": "挑戰進行中",
+  "home.hero.tagline": "閱讀今日訊號，作出判斷，登上排行榜。",
+  "home.hero.ctaExplore": "探索 Market Pulse",
+  "home.hero.ctaPlay": "立即挑戰",
+
+  "home.countdown.opensIn": "距離開放",
+  "home.countdown.cycleEndsIn": "本期結束",
+  "home.countdown.days": "日",
+  "home.countdown.hours": "時",
+  "home.countdown.mins": "分",
+  "home.countdown.secs": "秒",
+  "home.countdown.ariaLabel":
+    "Market Pulse 本期尚餘 {days} 日 {hours} 小時 {minutes} 分 {seconds} 秒",
+
+  "home.playLearnWin.heading": "玩樂．學習．贏取獎賞",
+  "home.playLearnWin.daily.heading": "每日挑戰",
+  "home.playLearnWin.daily.text": "每天測試你的市場判斷，挑戰排行榜。",
+  "home.playLearnWin.fireside.heading": "專家爐邊對談",
+  "home.playLearnWin.fireside.text": "與企業主及業界領袖參與即時討論。",
+  "home.playLearnWin.prize.heading": "每期冠軍獎賞",
+  "home.playLearnWin.prize.text": "每期 Market Pulse 冠軍可獲得一張海洋公園門票。",
+
+  "home.events.eyebrow": "活動中心",
+  "home.events.heading": "與實戰經營者面對面交流",
+  "home.events.subtitle": "以專家對談補足你的 Market Pulse 實戰練習。",
+  "home.events.nextLabel": "下一場爐邊對談",
+  "home.events.comingSoonLabel": "敬請期待",
+  "home.events.register": "免費報名",
+  "home.events.viewDetails": "查看詳情",
+  "home.events.pastHeading": "精彩回顧",
+  "home.events.guestTba": "嘉賓待定",
+  "home.events.upcoming.salesMarketing.title":
+    "Fortify Your Future / Sales and Marketing",
+  "home.events.upcoming.salesMarketing.titleZh": "守業增值創未來 / 銷售與市場推廣",
+  "home.events.upcoming.salesMarketing.subtitle":
+    "專為香港創業者而設的銷售與市場推廣策略分享，詳細內容即將公布。",
+  "home.events.upcoming.salesMarketing.date": "2026年7月17日",
+  "home.events.upcoming.salesMarketing.location": "待定",
+  "home.events.past1.title": "《我兩樣都要》線下戰略會議",
+  "home.events.past1.summary":
+    "創業者與 Vicky Huang、Marcy Chan 探討如何在拓展業務的同時累積長遠財富。",
+  "home.events.past1.metric": "150+ 參加者",
+  "home.events.pastFortify.title": "守業增值創未來",
+  "home.events.pastFortify.summary":
+    "與 Vicky Huang 及 Marcy Chan 的爐邊對談，探討守業增值與投資策略——免費專業形象照、高質素交流及創業者洞察。",
+  "home.events.pastFortify.metric": "創業者及投資者",
+  "home.events.past2.title": "零成本人生沙龍",
+  "home.events.past2.summary":
+    "實用晚會：在不犧牲日常現金流的前提下，設計被動收入來源。",
+  "home.events.past2.metric": "120+ 參加者",
+  "home.events.past3.title": "創業者融資圓桌論壇",
+  "home.events.past3.summary":
+    "早期創業者分享真實融資故事：路演、條款及首輪融資的生存之道。",
+  "home.events.past3.metric": "90+ 參加者",
+
+  "events.hub.title": "Profit Pulse Ally 活動",
+  "events.hub.subtitle": "為有抱負的創業者及投資者提供實用洞察與交流機會。",
+  "events.hub.upcomingHeading": "即將舉行",
+  "events.hub.pastHeading": "過往活動",
+  "events.hub.viewDetails": "查看詳情",
+  "events.hub.comingSoon": "敬請期待",
+  "events.hub.archivedClosed": "已存檔 — 報名已結束",
+  "events.hub.upcoming.salesMarketing.blurb":
+    "專為香港創業者而設的銷售與市場推廣策略分享，詳細內容即將公布。",
+
+  "home.philosophy.srHeading": "我們的理念",
+  "home.philosophy.quote":
+    "Profit Pulse Ally 協助有抱負的創業者與投資者以系統思維思考——平衡進攻與防守、現金流與複利——讓每一步都更接近零成本人生。同樣的嚴謹亦體現於 Market Pulse 的 PPA 觀點：在真金白銀投入之前，先測試、打磨並應用專家背書的判斷。",
+  "home.philosophy.mindsHeading": "Market Pulse 背後的智囊",
+  "home.experts.vicky.title": "Zeppelin Hot Dog 聯合創辦人",
+  "home.experts.vicky.bio":
+    "親身經歷融資與品牌從零成長的歷程——同樣的經營者思維，亦是我們爐邊對談的底蘊。",
+  "home.experts.marcy.title": "暢銷作家，《以「輪」擊石》",
+  "home.experts.marcy.bio":
+    "建立新世代被動收入來源的實戰策略——為你在投資模擬中的紀律決策提供參考。",
+
+  "home.finalCta.heading": "儲存分數，每期競逐排名。",
+  "home.finalCta.body":
+    "免費建立 Profit Pulse Ally 帳戶，鎖定你的 Market Pulse 判斷、追蹤排名並接收活動邀請。",
+  "home.finalCta.member": "成為會員",
+  "home.finalCta.playGuest": "免註冊試玩",
+
+  "contact.title": "聯絡我們",
+  "contact.bodyPrefix": "如有任何查詢，請電郵至",
+  "contact.bodySuffix": "。",
+  "meta.contact.title": "聯絡我們 | Profit Pulse Ally",
+  "meta.contact.description": "與 Profit Pulse Ally 團隊取得聯繫。",
+
+  "faq.title": "常見問題",
+  "faq.body":
+    "此頁面正在建設中。請稍後再來，查閱有關 Market Pulse、活動及會籍的常見問題。",
+  "meta.faq.title": "常見問題 | Profit Pulse Ally",
+  "meta.faq.description": "有關 Market Pulse、活動及會籍的常見問題。",
+
+  "careers.title": "加入我們",
+  "careers.bodyPrefix":
+    "我們一直歡迎優秀人才加入。目前雖無空缺，你仍可將履歷寄至",
+  "careers.bodySuffix": "，我們會保留以備日後機會。",
+  "meta.careers.title": "加入我們 | Profit Pulse Ally",
+  "meta.careers.description": "加入 Profit Pulse Ally 團隊。",
+
+  "legal.draftNotice":
+    "草稿提示：本頁文字僅供產品開發參考，並非最終法律意見。正式推出前請諮詢合資格法律顧問。",
+
+  "legal.terms.title": "服務條款",
+  "legal.terms.intro":
+    "此頁面正在建設中。完整的服務條款將於稍後在此公布。",
+  "legal.terms.marketPulseHeading": "Market Pulse",
+  "legal.terms.marketPulseBody1Prefix":
+    "Market Pulse 是 Profit Pulse Ally 提供的教育性遊戲。參與即表示你同意遵守",
+  "legal.terms.marketPulseBody1Mid": "及",
+  "legal.terms.marketPulseBody1Suffix":
+    "以及適用的網站政策。Market Pulse 不構成委託、顧問或信託關係。",
+  "legal.terms.marketPulseBody2":
+    "我們可能不時更新挑戰週期、計分、獎賞及功能供應。在法律允許的範圍內，於變更後繼續使用即視為接受更新後的條款。",
+  "legal.terms.link.rules": "Market Pulse 規則",
+  "legal.terms.link.contest": "比賽規則",
+  "meta.terms.title": "服務條款 | Profit Pulse Ally",
+  "meta.terms.description": "Profit Pulse Ally 服務條款。",
+
+  "legal.privacy.title": "私隱政策",
+  "legal.privacy.intro":
+    "此頁面正在建設中。說明我們如何處理你資料的私隱政策將於稍後在此公布。",
+  "legal.privacy.marketPulseHeading": "Market Pulse",
+  "legal.privacy.marketPulseBody1":
+    "當你參與 Market Pulse，我們可能處理你的帳戶識別碼、顯示名稱、遊戲決策、時間戳、排行榜排名，以及用於完整性審查的技術訊號（例如雜湊後的 IP 或用戶代理值）。我們使用這些資料以營運遊戲、顯示排行榜、管理獎賞及偵測濫用。",
+  "legal.privacy.marketPulseBody2Prefix":
+    "得獎者可能會透過帳戶電郵聯絡以作核實及發獎。有關比賽管理，請參閱",
+  "legal.privacy.marketPulseBody2Suffix": "。",
+  "legal.privacy.link.contest": "比賽規則",
+  "meta.privacy.title": "私隱政策 | Profit Pulse Ally",
+  "meta.privacy.description": "Profit Pulse Ally 如何處理你的個人資料。",
+
+  "legal.disclaimer.title": "投資免責聲明",
+  "legal.disclaimer.noAdviceHeading": "非財務建議",
+  "legal.disclaimer.noAdviceBody":
+    "Profit Pulse Ally 網站所提供的資訊（包括透過 Market Pulse 遊戲、活動及所有相關內容）僅供教育及參考用途。並不構成、亦不應被理解或詮釋為財務建議、投資建議、交易建議，或任何會產生信託關係的建議。",
+  "legal.disclaimer.notFiduciaryHeading": "非受信人",
+  "legal.disclaimer.notFiduciaryBody":
+    "我們並非財務顧問，亦未獲授權提供財務建議。你參與本網站任何活動，並不會在你與 Profit Pulse Ally 或其員工、關聯方之間建立信託關係。",
+  "legal.disclaimer.accuracyHeading": "資訊準確性",
+  "legal.disclaimer.accuracyBody":
+    "雖然我們致力提供準確及最新的資訊，但我們對網站上任何資訊的準確性、充分性、有效性、可靠性、可得性或完整性，不作任何明示或暗示的陳述或保證。",
+  "legal.disclaimer.riskHeading": "自行承擔風險",
+  "legal.disclaimer.riskBody":
+    "你同意自行承擔使用本網站及其資訊的風險。作出任何投資決定前，應諮詢專業財務顧問。在任何情況下，我們對你因使用本網站或依賴所提供資訊而產生的任何損失或損害概不負責。",
+  "legal.disclaimer.marketPulseHeading": "Market Pulse",
+  "legal.disclaimer.inlineMarketPulse":
+    "Market Pulse 為教育性遊戲，不提供投資建議。任何內容均不應被詮釋為買入、賣出或持有任何證券的建議。",
+  "legal.disclaimer.marketPulseBodyPrefix":
+    "Market Pulse 中的新聞式卡片、PPA 訊號、洞察、排行榜及模擬結果僅供教育及娛樂用途。內容可能延遲、簡化或為遊戲而虛構，不得用於實際交易或投資組合決策。比賽獎賞並不代表對任何發行人或證券的認可。請參閱",
+  "legal.disclaimer.marketPulseBodyMid": "及",
+  "legal.disclaimer.marketPulseBodySuffix": "。",
+  "legal.disclaimer.link.contest": "比賽規則",
+  "legal.disclaimer.link.rules": "Market Pulse 規則",
+  "meta.disclaimer.title": "投資免責聲明 | Profit Pulse Ally",
+  "meta.disclaimer.description":
+    "有關 Profit Pulse Ally 財務及投資資訊的重要免責聲明。",
+
+  "legal.contest.title": "Market Pulse 比賽規則",
+  "legal.contest.leadPrefix":
+    "本規則說明 Profit Pulse Ally（「PPA」）如何管理 Market Pulse 排行榜挑戰及獎賞。本規則補充",
+  "legal.contest.leadMid": "及",
+  "legal.contest.leadSuffix": "。",
+  "legal.contest.eligibilityHeading": "參加資格",
+  "legal.contest.eligibility1":
+    "參加者須持有有效且狀態良好的 Profit Pulse Ally 會員帳戶，並符合我們就特定週期公布的資格（例如年齡或地區）。",
+  "legal.contest.eligibility2Prefix": "每位參加者限一個帳戶。",
+  "legal.contest.eligibility2Suffix": "不得共用、重複或具誤導性的帳戶。",
+  "legal.contest.eligibility3":
+    "PPA 可在頒發獎賞前要求合理的身份或資格核實。",
+  "legal.contest.howHeading": "如何參加",
+  "legal.contest.howBodyPrefix":
+    "Market Pulse 是註冊會員可免費參與的教育性遊戲。",
+  "legal.contest.howBodyBold": "無需購買",
+  "legal.contest.howBodySuffix":
+    "即可參加或遊玩。建立帳戶並於有效挑戰週期內提交決策，即構成該期排行榜的參賽，並受本規則及任何週期特定公告約束。",
+  "legal.contest.prizesHeading": "獎賞",
+  "legal.contest.prizesVerificationPrefix": "所有獎賞須經核實",
+  "legal.contest.prizesVerificationSuffix":
+    "，並視供應情況而定；在法律允許下可替換為同等或更高價值的獎品。",
+  "legal.contest.prizesNoGuarantee": "參加並不保證獲獎。",
+  "legal.contest.prizesWinners":
+    "得獎者可能須於指定期限內確認聯絡資料並完成合理的領獎步驟。",
+  "legal.contest.fairPlayHeading": "公平競賽及取消資格",
+  "legal.contest.fairPlayIntro":
+    "分數及排名必須反映透過官方 Market Pulse 體驗的個人真實參與。PPA 可審查活動完整性。在不限制前述原則下，若我們懷疑以下情況，可取消參加者資格或作廢分數：",
+  "legal.contest.fairPlay1": "欺詐或虛假陳述；",
+  "legal.contest.fairPlay2": "重複或共用帳戶；",
+  "legal.contest.fairPlay3": "自動化、機械人或腳本操作；",
+  "legal.contest.fairPlay4": "濫用 API、篡改客戶端或其他規避遊戲規則的行為。",
+  "legal.contest.fairPlayOutro":
+    "被取消資格的參加者將喪失該期獎賞。PPA 就比賽管理的決定為最終決定，惟受適用法律規限。",
+  "legal.contest.changesHeading": "變更及取消",
+  "legal.contest.changesBody":
+    "PPA 保留在法律要求或基於營運、保安或公平理由下，修改、暫停或取消 Market Pulse、任何週期、計分方式或獎賞的權利。重大變更將在切實可行時透過合理渠道公布。",
+  "legal.contest.educationalHeading": "教育目的",
+  "legal.contest.educationalBodyPrefix":
+    "Market Pulse 為教育性模擬。不提供投資建議，比賽結果亦不構成對任何證券或策略的認可。詳情請參閱",
+  "legal.contest.educationalBodySuffix": "。",
+  "legal.contest.privacyHeading": "私隱",
+  "legal.contest.privacyBodyPrefix":
+    "我們按",
+  "legal.contest.privacyBodySuffix":
+    "處理帳戶、遊戲及防濫用資料，包括用於排行榜顯示及獎賞核實的資訊。",
+  "legal.contest.footerPrefix": "有關遊戲機制，請參閱",
+  "legal.contest.footerSuffix": "。",
+  "legal.contest.link.terms": "服務條款",
+  "legal.contest.link.disclaimer": "投資免責聲明",
+  "legal.contest.link.privacy": "私隱政策",
+  "legal.contest.link.rules": "Market Pulse 規則",
+  "meta.contest.title": "Market Pulse 比賽規則 | Profit Pulse Ally",
+  "meta.contest.description": "Market Pulse 挑戰的參加資格、公平競賽、獎賞及管理規則。",
+
+  "concept.hookHeading": "什麼是「零成本人生」?",
+  "concept.hookBody":
+    "一個簡單而強大的目標：當你的被動收入，足以覆蓋你的必要支出。這不是遙不可及的夢想，而是一個可以透過清晰策略達成的里程碑。",
+  "concept.pillarsSrHeading": "三大支柱",
+  "concept.pillar1.title": "目標清晰",
+  "concept.pillar1.body":
+    "先定義你想要的結果，再倒推最小可行的行動，避免被雜訊牽著走。",
+  "concept.pillar2.title": "趨勢節奏",
+  "concept.pillar2.body":
+    "掌握市場與內容的節奏：何時觀望、何時出手、何時加速，保持穩定增長。",
+  "concept.pillar3.title": "成就導向",
+  "concept.pillar3.body":
+    "以里程碑衡量進度，把努力變成可累積的成果，逐步解鎖更高層級的回報。",
+  "concept.achievementsHeading": "解鎖你的成就",
+  "concept.achievementsIntro":
+    "「零成本人生」是一場通關遊戲，每一步都有明確的里程碑。",
+  "concept.badge.coffee": "早餐咖啡自由 勳章",
+  "concept.badge.commute": "通勤解放者 徽章",
+  "concept.badge.wifi": "網絡呼吸權 徽章",
+  "concept.badge.home": "上蓋結界師 徽章",
+  "concept.ctaHeading": "準備好踏出第一步了嗎？",
+  "concept.ctaEvents": "參加我們的線下戰略會議",
+  "concept.ctaBlog": "瀏覽我們的實戰文章",
+  "meta.concept.title": "我們的理念 — 零成本人生 | Profit Pulse Ally",
+  "meta.concept.description":
+    "當被動收入覆蓋必要支出：目標清晰、趨勢節奏、成就導向，通往零成本人生的路徑。",
+
+  ...marketPulseZhHantMessages,
+  ...authAppZhHantMessages,
+};

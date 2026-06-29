@@ -27,6 +27,10 @@ import {
   type MarketPulseCardPublicPayload,
 } from "@/lib/market-pulse/reveal-access";
 import type { MarketPulseLeaderboardEntryRow } from "@/lib/market-pulse/types";
+import {
+  MARKET_PULSE_PUBLIC_LAUNCH_SUBMIT_ERROR,
+  canSubmitMarketPulseDecision,
+} from "@/lib/market-pulse/launch-config";
 import { prisma } from "@/lib/prisma";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -335,7 +339,7 @@ export async function submitMarketPulseDecision(
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true },
+    select: { id: true, role: true },
   });
   if (!user) {
     return { ok: false, error: "Invalid user." };
@@ -362,6 +366,10 @@ export async function submitMarketPulseDecision(
         decidedAt: existing.decidedAt,
       },
     };
+  }
+
+  if (!canSubmitMarketPulseDecision(user.role, currentTime())) {
+    return { ok: false, error: MARKET_PULSE_PUBLIC_LAUNCH_SUBMIT_ERROR };
   }
 
   const settings = await getMarketPulseSettings();

@@ -21,17 +21,19 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
+  ImageIcon,
   Loader2,
   Minus,
 } from "lucide-react";
 
 import DecisionLockedCard from "@/components/market-pulse/DecisionLockedCard";
+import { useLocale, useTranslations } from "@/components/providers/LocaleProvider";
+import { translateMarketPulseError } from "@/lib/i18n/market-pulse-ui";
 import {
   MARKET_PULSE_ANALYTICS_EVENTS,
   trackMarketPulseEvent,
 } from "@/lib/market-pulse/analytics";
 import {
-  SIGNAL_LABELS,
   type MarketPulseDecision,
 } from "@/lib/market-pulse/constants";
 import type {
@@ -44,7 +46,7 @@ const EXIT_DISTANCE = 720;
 const DRAG_BIAS_THRESHOLD = 36;
 
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black";
 
 const springSnap = { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.85 };
 const springExit = { type: "spring" as const, stiffness: 220, damping: 26, mass: 0.9 };
@@ -80,7 +82,10 @@ function companyInitials(name: string): string {
   return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
 }
 
-function formatSourceDate(value: string | Date | null | undefined): string | null {
+function formatSourceDate(
+  value: string | Date | null | undefined,
+  locale: "en-HK" | "zh-HK",
+): string | null {
   if (!value) {
     return null;
   }
@@ -88,7 +93,7 @@ function formatSourceDate(value: string | Date | null | undefined): string | nul
   if (Number.isNaN(date.getTime())) {
     return null;
   }
-  return new Intl.DateTimeFormat("en-HK", {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
   }).format(date);
 }
@@ -106,7 +111,7 @@ function priceDirectionTone(direction: string | null | undefined): {
   ) {
     return {
       icon: ArrowUpRight,
-      pillClass: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+      pillClass: "border-emerald-500/50 bg-emerald-500/15 text-emerald-300",
       iconClass: "text-emerald-400",
     };
   }
@@ -117,15 +122,41 @@ function priceDirectionTone(direction: string | null | undefined): {
   ) {
     return {
       icon: ArrowDownRight,
-      pillClass: "border-rose-500/30 bg-rose-500/10 text-rose-200",
-      iconClass: "text-rose-400",
+      pillClass: "border-amber-500/50 bg-amber-500/15 text-amber-300",
+      iconClass: "text-amber-400",
     };
   }
   return {
     icon: Minus,
-    pillClass: "border-zinc-600/40 bg-zinc-800/60 text-zinc-300",
+    pillClass: "border-zinc-500/40 bg-zinc-800/80 text-zinc-300",
     iconClass: "text-zinc-400",
   };
+}
+
+function TriangleLeft({ className }: Readonly<{ className?: string }>) {
+  return (
+    <svg
+      viewBox="0 0 12 14"
+      className={className}
+      aria-hidden="true"
+      fill="currentColor"
+    >
+      <path d="M11 1.5v11L2 7z" />
+    </svg>
+  );
+}
+
+function TriangleRight({ className }: Readonly<{ className?: string }>) {
+  return (
+    <svg
+      viewBox="0 0 12 14"
+      className={className}
+      aria-hidden="true"
+      fill="currentColor"
+    >
+      <path d="M1 1.5v11l9-5.5z" />
+    </svg>
+  );
 }
 
 function SwipeStamp({
@@ -145,10 +176,10 @@ function SwipeStamp({
     <motion.div
       aria-hidden="true"
       style={{ opacity, rotate }}
-      className={`pointer-events-none absolute bottom-32 z-30 rounded-lg border-2 px-3 py-1.5 shadow-lg backdrop-blur-sm sm:bottom-36 ${
+      className={`pointer-events-none absolute bottom-36 z-30 rounded-lg border-2 px-3 py-1.5 shadow-lg backdrop-blur-sm sm:bottom-40 ${
         isBullish
-          ? "right-3 border-emerald-400/70 bg-emerald-500/20 text-emerald-200 shadow-emerald-950/30 sm:right-4"
-          : "left-3 border-amber-400/70 bg-amber-500/20 text-amber-200 shadow-amber-950/30 sm:left-4"
+          ? "right-3 border-emerald-400/80 bg-emerald-500/20 text-emerald-100 sm:right-4"
+          : "left-3 border-amber-400/80 bg-amber-500/20 text-amber-100 sm:left-4"
       }`}
     >
       <span className="text-sm font-black uppercase tracking-[0.14em] sm:text-base">
@@ -158,78 +189,70 @@ function SwipeStamp({
   );
 }
 
-function CardContent({
-  card,
-}: Readonly<{ card: MarketPulseSwipeCardData }>) {
-  const sourceDateLabel = formatSourceDate(card.sourceDate);
-  const priceTone = priceDirectionTone(card.priceDirection);
-  const PriceIcon = priceTone.icon;
+function CardImage({
+  imageUrl,
+  imageAlt,
+}: Readonly<{ imageUrl?: string | null; imageAlt?: string | null }>) {
+  const { t } = useTranslations();
+
+  if (imageUrl) {
+    return (
+      <div className="overflow-hidden rounded-xl border border-white/15 bg-black">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageUrl}
+          alt={imageAlt?.trim() || t("mp.card.imageAlt")}
+          className="aspect-video w-full max-w-full object-cover"
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0">
-        <div className="flex items-start gap-3">
-          {card.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={card.logoUrl}
-              alt=""
-              className="h-10 w-10 shrink-0 rounded-xl border border-white/10 bg-white/5 object-cover shadow-inner ring-1 ring-white/5 sm:h-12 sm:w-12"
-            />
-          ) : (
-            <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/25 via-zinc-900 to-zinc-950 text-sm font-bold text-emerald-100 shadow-inner sm:h-12 sm:w-12"
-              aria-hidden="true"
-            >
-              {companyInitials(card.companyName)}
-            </div>
-          )}
+    <div
+      className="flex aspect-video w-full items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black"
+      aria-hidden="true"
+    >
+      <div className="flex flex-col items-center gap-2 text-zinc-600">
+        <ImageIcon className="h-8 w-8 opacity-40" />
+        <span className="text-[11px] font-medium uppercase tracking-wider opacity-60">
+          {t("mp.card.noImage")}
+        </span>
+      </div>
+    </div>
+  );
+}
 
-          <div className="min-w-0 flex-1 pt-0.5">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <h2 className="text-base font-bold tracking-tight text-white sm:text-lg">
-                {card.companyName}
-              </h2>
-              <span className="inline-flex items-center rounded-full border border-zinc-700/80 bg-zinc-900/80 px-2 py-0.5 font-mono text-[10px] font-semibold tracking-wide text-emerald-300/90 sm:text-[11px]">
-                {card.ticker}
-                {card.exchange ? (
-                  <span className="ml-1 text-zinc-500">· {card.exchange}</span>
-                ) : null}
-              </span>
-            </div>
-            {card.companyNameZh ? (
-              <p className="mt-0.5 text-[11px] text-zinc-500 sm:text-xs">
-                {card.companyNameZh}
-              </p>
-            ) : null}
-          </div>
-        </div>
+function CardBody({
+  card,
+}: Readonly<{ card: MarketPulseSwipeCardData }>) {
+  const { t, locale } = useLocale();
+  const intlLocale = locale === "zh-Hant" ? "zh-HK" : "en-HK";
+  const sourceDateLabel = formatSourceDate(card.sourceDate, intlLocale);
+  const priceTone = priceDirectionTone(card.priceDirection);
+  const PriceIcon = priceTone.icon;
+  const initials =
+    card.logoInitials?.trim() || companyInitials(card.companyName);
 
-        {card.priceLabel ? (
-          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 sm:mt-3">
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-zinc-950/70 px-2.5 py-1 text-xs font-semibold tabular-nums text-white sm:text-sm">
-              {card.priceLabel}
-            </span>
-            {card.priceDirection ? (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold sm:text-xs ${priceTone.pillClass}`}
-              >
-                <PriceIcon className={`h-3 w-3 ${priceTone.iconClass}`} aria-hidden="true" />
-                {card.priceDirection}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-
+  return (
+    <>
+      <section className="shrink-0">
+        <p className="text-xs font-bold uppercase tracking-wide text-red-500">
+          {t("mp.card.label.headline")}
+        </p>
         <h3
           id={`card-headline-${card.id}`}
-          className="mt-2.5 text-balance text-lg font-bold leading-snug tracking-tight text-white sm:mt-3 sm:text-xl"
+          className="mt-1 break-words text-balance text-base font-bold leading-snug text-white sm:text-lg"
         >
           {card.headline}
         </h3>
-
+        {card.newsBody ? (
+          <p className="mt-2 break-words text-pretty text-sm leading-relaxed text-zinc-300">
+            {card.newsBody}
+          </p>
+        ) : null}
         {(card.sourceName || sourceDateLabel) && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-zinc-500 sm:text-xs">
+          <div className="mt-3 flex flex-wrap justify-end gap-x-1.5 gap-y-0.5 text-right text-[11px] text-zinc-500 sm:text-xs">
             {card.sourceName ? (
               <span className="font-medium text-zinc-400">{card.sourceName}</span>
             ) : null}
@@ -251,23 +274,97 @@ function CardContent({
             ) : null}
           </div>
         )}
-      </div>
+      </section>
+
+      <section className="shrink-0">
+        <div className="flex items-center gap-3">
+          {card.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={card.logoUrl}
+              alt=""
+              className="h-11 w-11 shrink-0 rounded-full border border-white/20 bg-white/5 object-cover"
+            />
+          ) : (
+            <div
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/25 bg-zinc-900 text-sm font-bold text-white"
+              aria-hidden="true"
+            >
+              {initials}
+            </div>
+          )}
+
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-white sm:text-base">
+              {card.companyName}
+            </p>
+            {card.companyNameZh ? (
+              <p className="truncate text-[11px] text-zinc-500">{card.companyNameZh}</p>
+            ) : null}
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex rounded-full border border-white/20 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-semibold text-white sm:text-[11px]">
+                {card.ticker}
+              </span>
+              {card.exchange ? (
+                <span className="text-[10px] text-zinc-500 sm:text-[11px]">
+                  {card.exchange}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        {(card.priceLabel || card.priceDirection) && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            {card.priceLabel ? (
+              <span className="inline-flex rounded-full border border-white/20 bg-black px-2.5 py-1 text-xs font-semibold tabular-nums text-white sm:text-sm">
+                {card.priceLabel}
+              </span>
+            ) : null}
+            {card.priceDirection ? (
+              <span
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold sm:text-xs ${priceTone.pillClass}`}
+              >
+                <PriceIcon className={`h-3 w-3 ${priceTone.iconClass}`} aria-hidden="true" />
+                {card.priceDirection}
+              </span>
+            ) : null}
+          </div>
+        )}
+      </section>
+
+      <CardImage imageUrl={card.cardImageUrl} imageAlt={card.cardImageAlt} />
 
       {card.summary ? (
-        <div className="mt-2.5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/40 sm:mt-3">
-          <p className="shrink-0 px-3 pt-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:px-3.5">
-            Summary
+        <section className="shrink-0 rounded-xl border border-white/10 bg-zinc-950/60 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+            {t("mp.card.label.summary")}
           </p>
-          <p className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-2.5 text-pretty text-sm leading-relaxed text-zinc-300 sm:px-3.5 sm:pb-3 sm:text-[15px]">
+          <p className="mt-1.5 break-words text-pretty text-sm leading-relaxed text-zinc-200">
             {card.summary}
           </p>
-        </div>
+        </section>
       ) : null}
-    </div>
+    </>
+  );
+}
+
+function CardPrompt({
+  card,
+}: Readonly<{ card: MarketPulseSwipeCardData }>) {
+  const { t } = useTranslations();
+  const promptText = card.userPrompt?.trim() || t("prompt.defaultRead");
+
+  return (
+    <p className="text-center text-sm font-medium leading-snug text-zinc-300">
+      {promptText}
+    </p>
   );
 }
 
 function SwipeHint({ reduceMotion }: Readonly<{ reduceMotion: boolean }>) {
+  const { t } = useTranslations();
+
   return (
     <motion.div
       initial={reduceMotion ? false : { opacity: 0, y: 4 }}
@@ -279,18 +376,18 @@ function SwipeHint({ reduceMotion }: Readonly<{ reduceMotion: boolean }>) {
       <motion.span
         animate={reduceMotion ? undefined : { x: [-2, -5, -2] }}
         transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-        className="inline-flex items-center gap-0.5 text-amber-400/80"
+        className="inline-flex items-center gap-0.5 text-amber-400/90"
       >
         <ArrowLeft className="h-3 w-3" />
-        Cautious
+        {t("signal.cautious")}
       </motion.span>
-      <span className="text-zinc-600">Swipe</span>
+      <span className="text-zinc-600">{t("mp.card.swipe.orTap")}</span>
       <motion.span
         animate={reduceMotion ? undefined : { x: [2, 5, 2] }}
         transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-        className="inline-flex items-center gap-0.5 text-emerald-400/80"
+        className="inline-flex items-center gap-0.5 text-emerald-400/90"
       >
-        Bullish
+        {t("signal.bullish")}
         <ArrowRight className="h-3 w-3" />
       </motion.span>
     </motion.div>
@@ -310,40 +407,43 @@ function DecisionButton({
   reduceMotion: boolean;
   onClick: () => void;
 }>) {
+  const { t } = useTranslations();
   const isBullish = decision === "BULLISH";
+  const label = t(isBullish ? "signal.bullish" : "signal.cautious");
 
   return (
     <motion.button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      aria-label={`Choose ${SIGNAL_LABELS[decision]}`}
-      whileHover={reduceMotion || disabled ? undefined : { scale: 1.02, y: -1 }}
-      whileTap={reduceMotion || disabled ? undefined : { scale: 0.96 }}
+      aria-label={t("mp.card.aria.choose").replace("{label}", label)}
+      whileHover={reduceMotion || disabled ? undefined : { scale: 1.02 }}
+      whileTap={reduceMotion || disabled ? undefined : { scale: 0.97 }}
       animate={
         reduceMotion
           ? undefined
           : {
-              scale: active ? 1.03 : 1,
-              boxShadow: active
-                ? isBullish
-                  ? "0 0 24px rgba(16,185,129,0.35)"
-                  : "0 0 24px rgba(245,158,11,0.3)"
-                : "0 0 0 rgba(0,0,0,0)",
+              scale: active ? 1.02 : 1,
             }
       }
       transition={springSnap}
-      className={`inline-flex min-h-[3.25rem] items-center justify-center rounded-2xl border px-3 py-2.5 text-base font-bold shadow-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-12 sm:px-4 ${focusRing} ${
+      className={`inline-flex min-h-[3.5rem] flex-1 items-center justify-center gap-2 rounded-xl border-2 bg-black px-3 py-3 text-base font-bold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-14 sm:text-lg ${focusRing} ${
         isBullish
-          ? `border-emerald-500/35 bg-gradient-to-br from-emerald-500/25 to-zinc-900 text-emerald-100 shadow-emerald-950/25 hover:border-emerald-400/55 hover:from-emerald-500/35 ${
-              active ? "border-emerald-400/70 ring-2 ring-emerald-400/40" : ""
+          ? `border-emerald-500 hover:bg-emerald-500/10 ${
+              active ? "bg-emerald-500/15 ring-2 ring-emerald-500/40" : ""
             }`
-          : `border-amber-500/35 bg-gradient-to-br from-amber-500/25 to-zinc-900 text-amber-100 shadow-amber-950/25 hover:border-amber-400/55 hover:from-amber-500/35 ${
-              active ? "border-amber-400/70 ring-2 ring-amber-400/40" : ""
+          : `border-amber-500 hover:bg-amber-500/10 ${
+              active ? "bg-amber-500/15 ring-2 ring-amber-500/40" : ""
             }`
       }`}
     >
-      {SIGNAL_LABELS[decision]}
+      {!isBullish ? (
+        <TriangleLeft className="h-3.5 w-3.5 shrink-0 text-amber-400 sm:h-4 sm:w-4" />
+      ) : null}
+      <span>{label}</span>
+      {isBullish ? (
+        <TriangleRight className="h-3.5 w-3.5 shrink-0 text-emerald-400 sm:h-4 sm:w-4" />
+      ) : null}
     </motion.button>
   );
 }
@@ -354,10 +454,11 @@ export default function MarketPulseSwipeCard({
   initialDecision = null,
   disabled = false,
   analyticsContext,
-  revealMessage = "PPA Insight reveals at the end of this challenge.",
+  revealMessage,
   lockedFooterMessage,
   className = "",
 }: MarketPulseSwipeCardProps) {
+  const { t, locale } = useLocale();
   const reduceMotion = useReducedMotion() ?? false;
   const submittingRef = useRef(false);
 
@@ -372,17 +473,17 @@ export default function MarketPulseSwipeCard({
   const [dragBias, setDragBias] = useState<DragBias>("neutral");
 
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-280, 0, 280], reduceMotion ? [0, 0, 0] : [-16, 0, 16]);
-  const scale = useTransform(x, [-180, 0, 180], reduceMotion ? [1, 1, 1] : [1.03, 1, 1.03]);
-  const cardOpacity = useTransform(x, [-280, -120, 0, 120, 280], [0.92, 1, 1, 1, 0.92]);
+  const rotate = useTransform(x, [-280, 0, 280], reduceMotion ? [0, 0, 0] : [-10, 0, 10]);
+  const scale = useTransform(x, [-180, 0, 180], reduceMotion ? [1, 1, 1] : [1.02, 1, 1.02]);
+  const cardOpacity = useTransform(x, [-280, -120, 0, 120, 280], [0.94, 1, 1, 1, 0.94]);
 
   const bullishStampOpacity = useTransform(x, [0, 50, SWIPE_THRESHOLD], [0, 0.55, 1]);
   const cautiousStampOpacity = useTransform(x, [-SWIPE_THRESHOLD, -50, 0], [1, 0.55, 0]);
   const bullishStampRotate = useTransform(x, [0, SWIPE_THRESHOLD], [8, -6]);
   const cautiousStampRotate = useTransform(x, [-SWIPE_THRESHOLD, 0], [6, -8]);
 
-  const bullishGlow = useTransform(x, [0, 40, 140], [0, 0.25, 0.55]);
-  const cautiousGlow = useTransform(x, [-140, -40, 0], [0.55, 0.25, 0]);
+  const bullishGlow = useTransform(x, [0, 40, 140], [0, 0.15, 0.35]);
+  const cautiousGlow = useTransform(x, [-140, -40, 0], [0.35, 0.15, 0]);
 
   useMotionValueEvent(x, "change", (latest) => {
     if (phase !== "idle") {
@@ -399,10 +500,10 @@ export default function MarketPulseSwipeCard({
 
   const interactionsDisabled =
     disabled || phase === "submitting" || phase === "locked";
-  const allowVerticalScroll = disabled || reduceMotion;
+  const swipeEnabled = !interactionsDisabled && !reduceMotion;
   const cardRegionLabel = disabled
-    ? `Market Pulse preview for ${card.companyName}. Sign in to submit your read.`
-    : `Market Pulse card for ${card.companyName}. Swipe or use buttons to choose Bullish or Cautious.`;
+    ? t("mp.card.aria.preview").replace("{company}", card.companyName)
+    : t("mp.card.aria.playable").replace("{company}", card.companyName);
 
   const submitDecision = useCallback(
     async (decision: MarketPulseDecision) => {
@@ -424,7 +525,9 @@ export default function MarketPulseSwipeCard({
           setExitX(0);
           setPhase("idle");
           setDragBias("neutral");
-          setErrorMessage(result.error);
+          setErrorMessage(
+            translateMarketPulseError(locale, result.error ?? t("mp.error.generic")),
+          );
           x.set(0);
           return;
         }
@@ -456,7 +559,7 @@ export default function MarketPulseSwipeCard({
         setExitX(0);
         setPhase("idle");
         setDragBias("neutral");
-        setErrorMessage("Something went wrong. Please try again.");
+        setErrorMessage(t("mp.error.generic"));
         x.set(0);
       }
     },
@@ -467,6 +570,8 @@ export default function MarketPulseSwipeCard({
       onSubmit,
       reduceMotion,
       x,
+      locale,
+      t,
     ],
   );
 
@@ -494,7 +599,7 @@ export default function MarketPulseSwipeCard({
     [interactionsDisabled, submitDecision, x],
   );
 
-  const exitRotate = exitX > 0 ? 18 : -18;
+  const exitRotate = exitX > 0 ? 12 : -12;
 
   const cardAnimate = useMemo(() => {
     if (phase === "submitting") {
@@ -502,7 +607,7 @@ export default function MarketPulseSwipeCard({
         x: exitX,
         opacity: 0,
         rotate: reduceMotion ? 0 : exitRotate,
-        scale: reduceMotion ? 1 : 0.88,
+        scale: reduceMotion ? 1 : 0.92,
       };
     }
     if (phase === "locked") {
@@ -513,11 +618,11 @@ export default function MarketPulseSwipeCard({
 
   if (phase === "locked" && lockedDecision) {
     return (
-      <div className={`mx-auto w-full max-w-md overflow-y-auto ${className}`}>
+      <div className={`mx-auto w-full max-w-md overflow-x-hidden overflow-y-auto ${className}`}>
         <DecisionLockedCard
           decision={lockedDecision}
-          revealMessage={revealMessage}
-          footerMessage={lockedFooterMessage ?? "Come back tomorrow"}
+          revealMessage={revealMessage ?? t("mp.play.reveal.default")}
+          footerMessage={lockedFooterMessage ?? t("mp.play.locked.footerShort")}
         />
       </div>
     );
@@ -525,10 +630,16 @@ export default function MarketPulseSwipeCard({
 
   return (
     <div
-      className={`mx-auto flex w-full max-w-md min-h-0 flex-col ${className}`}
+      className={`mx-auto flex w-full min-h-0 max-w-md flex-col overflow-x-hidden ${className}`}
     >
       {!interactionsDisabled && !reduceMotion ? (
         <SwipeHint reduceMotion={reduceMotion} />
+      ) : null}
+
+      {reduceMotion && !interactionsDisabled ? (
+        <p className="mb-1.5 shrink-0 text-center text-[11px] text-zinc-500 sm:mb-2 sm:text-xs">
+          {t("mp.card.reducedMotionHint")}
+        </p>
       ) : null}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -536,85 +647,111 @@ export default function MarketPulseSwipeCard({
           <motion.div
             aria-hidden="true"
             style={{ opacity: bullishGlow }}
-            className="pointer-events-none absolute -inset-3 rounded-[1.75rem] bg-emerald-500/25 blur-2xl"
+            className="pointer-events-none absolute -inset-2 rounded-[1.25rem] bg-emerald-500/20 blur-xl"
           />
           <motion.div
             aria-hidden="true"
             style={{ opacity: cautiousGlow }}
-            className="pointer-events-none absolute -inset-3 rounded-[1.75rem] bg-amber-500/20 blur-2xl"
+            className="pointer-events-none absolute -inset-2 rounded-[1.25rem] bg-amber-500/15 blur-xl"
           />
 
           <AnimatePresence mode="wait">
             {phase !== "locked" ? (
               <motion.div
                 key={card.id}
-                style={
-                  phase === "idle"
-                    ? {
-                        x,
-                        rotate,
-                        scale,
-                        opacity: cardOpacity,
-                        touchAction: allowVerticalScroll ? "pan-y" : "none",
-                      }
-                    : { touchAction: allowVerticalScroll ? "pan-y" : "none" }
-                }
-                drag={interactionsDisabled || reduceMotion ? false : "x"}
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.72}
-                dragMomentum={false}
-                dragPropagation={false}
-                onDragEnd={handleDragEnd}
                 initial={
                   reduceMotion
                     ? { opacity: 1 }
-                    : { opacity: 0, y: 24, scale: 0.96, rotate: -2 }
+                    : { opacity: 0, y: 20, scale: 0.98 }
                 }
                 animate={cardAnimate}
                 transition={phase === "submitting" ? springExit : springEntrance}
-                className={`relative z-20 flex min-h-0 flex-1 cursor-grab flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-zinc-900/95 via-zinc-900 to-zinc-950 p-3 shadow-2xl shadow-black/60 ring-1 ring-white/5 backdrop-blur-md active:cursor-grabbing sm:rounded-3xl sm:p-4 ${
-                  interactionsDisabled ? "pointer-events-none opacity-80" : ""
-                }`}
+                className={`relative z-20 flex min-h-0 max-h-[min(82dvh,44rem)] flex-1 flex-col overflow-hidden rounded-2xl border-2 border-white/85 bg-black p-3 shadow-xl shadow-black/50 sm:rounded-2xl sm:p-4 ${
+                  disabled ? "opacity-90" : ""
+                } ${phase === "submitting" ? "pointer-events-none" : ""}`}
                 role="region"
                 aria-labelledby={`card-headline-${card.id}`}
                 aria-label={cardRegionLabel}
               >
-                <div
-                  className="pointer-events-none absolute inset-x-0 top-0 h-12 rounded-t-2xl bg-gradient-to-b from-emerald-500/10 via-emerald-500/5 to-transparent sm:rounded-t-3xl"
-                  aria-hidden="true"
-                />
+                <motion.div
+                  style={
+                    swipeEnabled
+                      ? {
+                          x,
+                          rotate,
+                          scale,
+                          opacity: cardOpacity,
+                          touchAction: "pan-y",
+                        }
+                      : undefined
+                  }
+                  drag={swipeEnabled ? "x" : false}
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.72}
+                  dragMomentum={false}
+                  dragPropagation={false}
+                  onDragEnd={handleDragEnd}
+                  className={`relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${
+                    swipeEnabled ? "cursor-grab active:cursor-grabbing" : ""
+                  }`}
+                >
+                  {!reduceMotion ? (
+                    <>
+                      <SwipeStamp
+                        label={t("signal.bullish")}
+                        opacity={bullishStampOpacity}
+                        rotate={bullishStampRotate}
+                        tone="bullish"
+                      />
+                      <SwipeStamp
+                        label={t("signal.cautious")}
+                        opacity={cautiousStampOpacity}
+                        rotate={cautiousStampRotate}
+                        tone="cautious"
+                      />
+                    </>
+                  ) : null}
 
-                {!reduceMotion ? (
-                  <>
-                    <SwipeStamp
-                      label={SIGNAL_LABELS.BULLISH}
-                      opacity={bullishStampOpacity}
-                      rotate={bullishStampRotate}
-                      tone="bullish"
-                    />
-                    <SwipeStamp
-                      label={SIGNAL_LABELS.CAUTIOUS}
-                      opacity={cautiousStampOpacity}
-                      rotate={cautiousStampRotate}
-                      tone="cautious"
-                    />
-                  </>
+                  <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden overscroll-contain pr-0.5 [-webkit-overflow-scrolling:touch]">
+                    <CardBody card={card} />
+                    {disabled ? <CardPrompt card={card} /> : null}
+                  </div>
+                </motion.div>
+
+                {!disabled ? (
+                  <div className="mt-3 shrink-0 space-y-2.5 border-t border-white/15 pt-3">
+                    <CardPrompt card={card} />
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                      <DecisionButton
+                        decision="CAUTIOUS"
+                        active={dragBias === "cautious"}
+                        disabled={interactionsDisabled}
+                        reduceMotion={reduceMotion}
+                        onClick={() => void submitDecision("CAUTIOUS")}
+                      />
+                      <DecisionButton
+                        decision="BULLISH"
+                        active={dragBias === "bullish"}
+                        disabled={interactionsDisabled}
+                        reduceMotion={reduceMotion}
+                        onClick={() => void submitDecision("BULLISH")}
+                      />
+                    </div>
+                  </div>
                 ) : null}
-
-                <CardContent card={card} />
 
                 {phase === "submitting" ? (
                   <div
-                    className="absolute inset-0 z-30 flex items-center justify-center rounded-2xl bg-zinc-950/65 backdrop-blur-[3px] sm:rounded-3xl"
+                    className="absolute inset-0 z-30 flex items-center justify-center rounded-2xl bg-black/75 backdrop-blur-[2px]"
                     role="status"
                     aria-live="polite"
                   >
-                    <div className="flex items-center gap-2 text-sm font-medium text-zinc-200">
+                    <div className="flex items-center gap-2 text-sm font-medium text-white">
                       <Loader2
                         className={`h-5 w-5 ${reduceMotion ? "" : "animate-spin"}`}
                         aria-hidden="true"
                       />
-                      Locking your decision…
+                      {t("mp.card.submitting")}
                     </div>
                   </div>
                 ) : null}
@@ -628,45 +765,15 @@ export default function MarketPulseSwipeCard({
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             role="alert"
-            className="mt-2 shrink-0 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2.5 text-center text-sm text-rose-200"
+            className="mt-2 shrink-0 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2.5 text-center text-sm text-rose-200"
           >
-            {errorMessage}
+            {translateMarketPulseError(locale, errorMessage)}
           </motion.p>
-        ) : null}
-
-        {!disabled ? (
-          <div className="mt-2 shrink-0 border-t border-zinc-800/80 bg-zinc-950/95 pt-2.5 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:mt-3 sm:pt-3">
-            {reduceMotion ? (
-              <p className="mb-2 text-center text-xs text-zinc-500">
-                Use the buttons below to choose your read.
-              </p>
-            ) : (
-              <p className="mb-2 text-center text-xs font-medium text-zinc-500">
-                What is your read on this signal?
-              </p>
-            )}
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-              <DecisionButton
-                decision="CAUTIOUS"
-                active={dragBias === "cautious"}
-                disabled={interactionsDisabled}
-                reduceMotion={reduceMotion}
-                onClick={() => void submitDecision("CAUTIOUS")}
-              />
-              <DecisionButton
-                decision="BULLISH"
-                active={dragBias === "bullish"}
-                disabled={interactionsDisabled}
-                reduceMotion={reduceMotion}
-                onClick={() => void submitDecision("BULLISH")}
-              />
-            </div>
-          </div>
         ) : null}
       </div>
 
       <p className="sr-only">
-        Keyboard users: use Tab to focus the Cautious or Bullish buttons and press Enter to submit.
+        {t("mp.card.aria.keyboard")}
       </p>
     </div>
   );

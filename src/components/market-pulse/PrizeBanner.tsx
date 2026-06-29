@@ -1,27 +1,26 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { Gift, Plane } from "lucide-react";
+import { Gift } from "lucide-react";
 
+import { useTranslations } from "@/components/providers/LocaleProvider";
 import { MARKET_PULSE_EASE } from "@/lib/market-pulse/motion";
 
 export type PrizeBannerProps = {
-  /** Primary cycle prize line, e.g. "#1 wins 2 Ocean Park tickets". */
-  primaryPrize: string;
-  /** Optional monthly leaderboard prize. */
-  monthlyPrize?: string | null;
+  prizeMessage?: string;
   variant?: "default" | "compact";
   className?: string;
 };
 
 export default function PrizeBanner({
-  primaryPrize,
-  monthlyPrize,
+  prizeMessage,
   variant = "default",
   className = "",
 }: PrizeBannerProps) {
+  const { t } = useTranslations();
   const isCompact = variant === "compact";
   const reduceMotion = useReducedMotion() ?? false;
+  const message = prizeMessage ?? t("announcement.prize");
 
   return (
     <motion.div
@@ -49,37 +48,15 @@ export default function PrizeBanner({
               isCompact ? "text-[10px]" : "text-xs tracking-[0.16em]"
             }`}
           >
-            Prizes
+            {t("mp.prize.heading")}
           </p>
           <p
             className={`font-semibold leading-snug text-amber-50 ${
-              isCompact ? "text-sm sm:text-lg" : "text-base sm:text-lg"
+              isCompact ? "text-sm sm:text-base" : "text-base sm:text-lg"
             }`}
           >
-            {primaryPrize}
+            {message}
           </p>
-          {monthlyPrize ? (
-            <div
-              className={`flex items-start gap-2 rounded-lg border border-zinc-800/80 bg-zinc-950/40 sm:rounded-xl ${
-                isCompact ? "px-2.5 py-2" : "px-3 py-2.5"
-              }`}
-            >
-              <Plane
-                className={`shrink-0 text-zinc-400 ${isCompact ? "mt-0.5 h-3.5 w-3.5" : "mt-0.5 h-4 w-4"}`}
-                aria-hidden="true"
-              />
-              <p
-                className={`leading-relaxed text-zinc-400 ${
-                  isCompact ? "text-xs sm:text-sm" : "text-sm"
-                }`}
-              >
-                <span className="font-medium text-zinc-300">
-                  Monthly winner:{" "}
-                </span>
-                {monthlyPrize}
-              </p>
-            </div>
-          ) : null}
         </div>
       </div>
     </motion.div>

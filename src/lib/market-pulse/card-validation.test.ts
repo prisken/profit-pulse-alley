@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isValidOptionalHttpUrl,
   validateCardPublishable,
   validateMarketPulseCardForm,
 } from "@/lib/market-pulse/card-validation";
@@ -13,6 +14,7 @@ const baseValues = {
   companyName: "Acme Corp",
   ticker: "ACME",
   headline: "Earnings beat expectations",
+  summary: "Revenue grew faster than expected in the demo quarter.",
 };
 
 describe("validateMarketPulseCardForm", () => {
@@ -45,6 +47,31 @@ describe("validateMarketPulseCardForm", () => {
     expect(result.errors.ppaSignal).toBeTruthy();
     expect(result.errors.ppaInsight).toBeTruthy();
   });
+
+  it("requires summary", () => {
+    const result = validateMarketPulseCardForm({
+      ...baseValues,
+      summary: "",
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.summary).toMatch(/summary/i);
+  });
+
+  it("validates optional http(s) URLs", () => {
+    expect(isValidOptionalHttpUrl("")).toBe(true);
+    expect(isValidOptionalHttpUrl("https://example.com/a.jpg")).toBe(true);
+    expect(isValidOptionalHttpUrl("not-a-url")).toBe(false);
+  });
+
+  it("requires image alt when image URL is set", () => {
+    const result = validateMarketPulseCardForm({
+      ...baseValues,
+      cardImageUrl: "https://example.com/hero.jpg",
+      cardImageAlt: "",
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.cardImageAlt).toBeTruthy();
+  });
 });
 
 describe("validateCardPublishable", () => {
@@ -53,6 +80,7 @@ describe("validateCardPublishable", () => {
       headline: "News",
       companyName: "Acme",
       ticker: "ACME",
+      summary: "Summary text",
       ppaSignal: "BULLISH",
       ppaInsight: "Strong outlook",
       ppaSignalLockedAt: null,

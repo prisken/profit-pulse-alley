@@ -107,12 +107,18 @@ export type MarketPulseSwipeCardData = {
   ticker: string;
   exchange?: string | null;
   logoUrl?: string | null;
+  logoInitials?: string | null;
   priceLabel?: string | null;
   priceDirection?: string | null;
   headline: string;
+  newsBody?: string | null;
   sourceName?: string | null;
+  sourceUrl?: string | null;
   sourceDate?: string | Date | null;
+  cardImageUrl?: string | null;
+  cardImageAlt?: string | null;
   summary?: string | null;
+  userPrompt?: string | null;
 };
 
 export type MarketPulseSwipeSubmitResult =

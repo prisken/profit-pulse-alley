@@ -1,30 +1,55 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Calendar, Users } from "lucide-react";
+import { Calendar, MapPin, Users } from "lucide-react";
 
 import type { PastEventShowcase } from "@/lib/events/home-events-hub";
+import { getServerTranslations } from "@/lib/i18n/server";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900";
 
-export type LiveUpcomingEvent = {
-  speakerName: string;
-  speakerRole: string;
-  speakerHeadshotSrc: string;
-  topic: string;
-  date: string;
-  registerHref: string;
-};
+export type LiveUpcomingEvent =
+  | {
+      kind: "speaker";
+      speakerName: string;
+      speakerRole: string;
+      speakerHeadshotSrc: string;
+      topic: string;
+      date: string;
+      registerHref: string;
+    }
+  | {
+      kind: "event";
+      eventTitle: string;
+      topic: string;
+      date: string;
+      location: string;
+      posterSrc: string;
+      registerHref: string;
+      comingSoon?: boolean;
+    };
 
 type LiveEventsHubSectionProps = Readonly<{
   upcomingEvent: LiveUpcomingEvent;
   pastEvents: PastEventShowcase[];
 }>;
 
-export default function LiveEventsHubSection({
+export default async function LiveEventsHubSection({
   upcomingEvent,
   pastEvents,
 }: LiveEventsHubSectionProps) {
+  const { t } = await getServerTranslations();
+
+  const sectionLabel =
+    upcomingEvent.kind === "event" && upcomingEvent.comingSoon
+      ? t("home.events.comingSoonLabel")
+      : t("home.events.nextLabel");
+
+  const ctaLabel =
+    upcomingEvent.kind === "event" && upcomingEvent.comingSoon
+      ? t("home.events.viewDetails")
+      : t("home.events.register");
+
   return (
     <section
       id="live-events-hub"
@@ -34,16 +59,16 @@ export default function LiveEventsHubSection({
       <div className="mx-auto w-full max-w-6xl">
         <header className="max-w-2xl">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-400/80 sm:text-sm sm:tracking-[0.2em] sm:text-amber-400/90">
-            Live Events Hub
+            {t("home.events.eyebrow")}
           </p>
           <h2
             id="live-events-heading"
             className="mt-1.5 text-lg font-bold tracking-tight text-white sm:mt-2 sm:text-3xl"
           >
-            Fireside chats with real operators
+            {t("home.events.heading")}
           </h2>
           <p className="mt-1 text-xs text-zinc-500 sm:mt-2 sm:text-sm sm:text-zinc-400">
-            Complement your Market Pulse play with live expert conversations.
+            {t("home.events.subtitle")}
           </p>
         </header>
 
@@ -54,8 +79,16 @@ export default function LiveEventsHubSection({
           <div className="grid gap-0 md:grid-cols-2 md:gap-0">
             <div className="relative aspect-[16/10] min-h-[12rem] w-full sm:aspect-[4/5] sm:min-h-[280px] md:aspect-auto md:min-h-[420px]">
               <Image
-                src={upcomingEvent.speakerHeadshotSrc}
-                alt={upcomingEvent.speakerName}
+                src={
+                  upcomingEvent.kind === "event"
+                    ? upcomingEvent.posterSrc
+                    : upcomingEvent.speakerHeadshotSrc
+                }
+                alt={
+                  upcomingEvent.kind === "event"
+                    ? upcomingEvent.eventTitle
+                    : upcomingEvent.speakerName
+                }
                 fill
                 className="object-cover object-center"
                 sizes="(max-width: 768px) 100vw, 50vw"
@@ -68,17 +101,21 @@ export default function LiveEventsHubSection({
 
             <div className="flex flex-col justify-center p-4 sm:p-8 md:p-10 lg:p-12">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-200/90 sm:text-xs sm:tracking-[0.18em]">
-                Next Fireside Chat
+                {sectionLabel}
               </p>
               <h3
                 id="upcoming-fireside-heading"
                 className="mt-2 text-xl font-bold text-white sm:mt-3 sm:text-3xl"
               >
-                {upcomingEvent.speakerName}
+                {upcomingEvent.kind === "event"
+                  ? upcomingEvent.eventTitle
+                  : upcomingEvent.speakerName}
               </h3>
-              <p className="mt-0.5 text-xs font-medium text-amber-300/90 sm:mt-1 sm:text-base">
-                {upcomingEvent.speakerRole}
-              </p>
+              {upcomingEvent.kind === "speaker" ? (
+                <p className="mt-0.5 text-xs font-medium text-amber-300/90 sm:mt-1 sm:text-base">
+                  {upcomingEvent.speakerRole}
+                </p>
+              ) : null}
               <p className="mt-2 line-clamp-3 text-pretty text-xs leading-relaxed text-zinc-300 sm:mt-4 sm:text-base">
                 {upcomingEvent.topic}
               </p>
@@ -89,11 +126,24 @@ export default function LiveEventsHubSection({
                 />
                 {upcomingEvent.date}
               </p>
+              {upcomingEvent.kind === "event" ? (
+                <p className="mt-1.5 inline-flex items-center gap-2 text-xs font-medium text-zinc-300 sm:text-base">
+                  <MapPin
+                    className="h-3.5 w-3.5 shrink-0 text-amber-300 sm:h-4 sm:w-4"
+                    aria-hidden="true"
+                  />
+                  {upcomingEvent.location}
+                </p>
+              ) : null}
               <Link
-                href={upcomingEvent.registerHref}
+                href={
+                  upcomingEvent.kind === "event"
+                    ? upcomingEvent.registerHref
+                    : upcomingEvent.registerHref
+                }
                 className={`mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-white/20 bg-white/95 px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200 sm:mt-6 sm:w-auto sm:border-0 sm:bg-white sm:px-8 sm:py-3.5 ${focusRing}`}
               >
-                Register for Free
+                {ctaLabel}
               </Link>
             </div>
           </div>
@@ -101,11 +151,11 @@ export default function LiveEventsHubSection({
 
         <div className="mt-8 sm:mt-14">
           <h3 className="text-base font-semibold text-white sm:text-xl">
-            What You&apos;ve Missed
+            {t("home.events.pastHeading")}
           </h3>
           <ul className="mt-3 grid gap-2.5 sm:mt-5 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5">
             {pastEvents.map((event) => (
-              <li key={event.title}>
+              <li key={event.archiveHref}>
                 <Link
                   href={event.archiveHref}
                   className={`group flex h-full flex-col rounded-xl border border-white/10 bg-zinc-950/60 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/30 hover:bg-zinc-950 hover:shadow-lg hover:shadow-amber-950/20 sm:rounded-2xl sm:p-6 ${focusRing}`}

@@ -7,6 +7,7 @@ import type {
 } from "@prisma/client";
 
 import MarketPulsePrizeReview from "@/components/admin/MarketPulsePrizeReview";
+import FirstCycleGuidancePanel from "@/components/admin/FirstCycleGuidancePanel";
 import {
   CreateCardSection,
   MarketPulseCardPanel,
@@ -20,10 +21,16 @@ import {
   updateMarketPulseRuntimeStatusAction,
 } from "@/lib/market-pulse/admin-actions";
 import RevealCycleButton from "@/components/admin/RevealCycleButton";
+import { useTranslations } from "@/components/providers/LocaleProvider";
+import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 import type {
   MarketPulseAdminDashboardData,
 } from "@/lib/market-pulse/admin-data";
 import type { PrizeReviewData } from "@/lib/market-pulse/prize-review-data";
+import {
+  getFirstPublicCycleFormPrefill,
+} from "@/lib/market-pulse/first-cycle-admin-guidance";
+import type { MarketPulseCycleFormValues } from "@/lib/market-pulse/cycle-validation";
 import { toDatetimeLocalValue } from "@/lib/market-pulse/cycle-validation";
 
 const focusRing =
@@ -87,6 +94,7 @@ export default function MarketPulseAdminDashboard({
   initialData,
   prizeReview,
 }: Props) {
+  const { t, locale } = useTranslations();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -98,6 +106,17 @@ export default function MarketPulseAdminDashboard({
   const [selectedCycleId, setSelectedCycleId] = useState(
     initialData.activeCycleId ?? initialData.cycles[0]?.id ?? "",
   );
+  const [cyclePrefill, setCyclePrefill] = useState<
+    Partial<MarketPulseCycleFormValues> | null
+  >(null);
+  const [cyclePrefillNonce, setCyclePrefillNonce] = useState(0);
+  const [createCycleOpen, setCreateCycleOpen] = useState(false);
+
+  function handlePrefillFirstCycle() {
+    setCyclePrefill(getFirstPublicCycleFormPrefill());
+    setCyclePrefillNonce((value) => value + 1);
+    setCreateCycleOpen(true);
+  }
 
   const activeCycle = useMemo(
     () => initialData.cycles.find((cycle) => cycle.isActive) ?? null,
@@ -143,13 +162,13 @@ export default function MarketPulseAdminDashboard({
     startTransition(async () => {
       const result = await action();
       if (!result.ok) {
-        setError(result.error ?? "Action failed.");
+        setError(result.error ?? t("auth.admin.mp.actionFailed"));
         return;
       }
       if (result.csv && result.filename) {
         downloadCsv(result.csv, result.filename);
       }
-      setMessage(result.message ?? "Done.");
+      setMessage(result.message ?? t("auth.admin.mp.done"));
       router.refresh();
     });
   }
@@ -167,7 +186,7 @@ export default function MarketPulseAdminDashboard({
           }`}
           role="status"
         >
-          {error ?? message}
+          {error ? translateAuthMessage(locale, error) : message ? translateAuthMessage(locale, message) : null}
         </div>
       )}
 
@@ -183,6 +202,13 @@ export default function MarketPulseAdminDashboard({
           </p>
         </div>
       ) : null}
+
+      <FirstCycleGuidancePanel
+        runtimeStatus={initialData.runtimeStatus}
+        activeCycle={activeCycle}
+        cards={initialData.cards}
+        onPrefillCreateCycle={handlePrefillFirstCycle}
+      />
 
       <details className="rounded-lg border border-foreground/10 lg:hidden" open>
         <summary className="cursor-pointer list-none px-4 py-3 text-base font-semibold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
@@ -232,6 +258,10 @@ export default function MarketPulseAdminDashboard({
             cycles={initialData.cycles}
             selectedCycleId={selectedCycleId}
             isPending={isPending}
+            cyclePrefill={cyclePrefill}
+            cyclePrefillNonce={cyclePrefillNonce}
+            createCycleOpen={createCycleOpen}
+            setCreateCycleOpen={setCreateCycleOpen}
             onSelectCycle={setSelectedCycleId}
             onRefresh={() => router.refresh()}
             onClose={(cycleId) => runAction(() => closeMarketPulseCycleAction(cycleId))}
@@ -247,6 +277,10 @@ export default function MarketPulseAdminDashboard({
           cycles={initialData.cycles}
           selectedCycleId={selectedCycleId}
           isPending={isPending}
+          cyclePrefill={cyclePrefill}
+          cyclePrefillNonce={cyclePrefillNonce}
+          createCycleOpen={createCycleOpen}
+          setCreateCycleOpen={setCreateCycleOpen}
           onSelectCycle={setSelectedCycleId}
           onRefresh={() => router.refresh()}
           onClose={(cycleId) => runAction(() => closeMarketPulseCycleAction(cycleId))}
@@ -289,10 +323,10 @@ export default function MarketPulseAdminDashboard({
 
       <section aria-labelledby="activity-heading" className="rounded-lg border border-foreground/10 p-4 sm:p-5">
         <h2 id="activity-heading" className="text-lg font-semibold text-foreground">
-          Recent activity
+          {t("auth.admin.mp.activity")}
         </h2>
         {initialData.recentActivity.length === 0 ? (
-          <p className="mt-2 text-sm text-foreground/65">No recent activity.</p>
+          <p className="mt-2 text-sm text-foreground/65">{t("auth.admin.mp.noActivity")}</p>
         ) : (
           <ul className="mt-3 divide-y divide-foreground/10 rounded-lg border border-foreground/10">
             {initialData.recentActivity.map((item) => (
@@ -330,25 +364,27 @@ function OverviewSection({
     prizeLabel: string | null;
   } | null;
 }) {
+  const { t } = useTranslations();
+
   return (
     <section aria-labelledby="overview-heading">
       <h2 id="overview-heading" className="text-base font-semibold text-foreground sm:text-lg">
-        Overview
+        {t("auth.admin.mp.overview")}
       </h2>
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
-        <StatCard label="Runtime" value={initialData.runtimeStatus} />
-        <StatCard label="Active cycle" value={activeCycle?.name ?? "None"} />
-        <StatCard label="Cycle status" value={activeCycle?.status ?? "—"} />
-        <StatCard label="Cards" value={totals ? String(totals.cards) : "—"} />
-        <StatCard label="Decisions" value={totals ? String(totals.decisions) : "—"} />
-        <StatCard label="Users played" value={totals ? String(totals.usersPlayed) : "—"} />
+        <StatCard label={t("auth.admin.mp.statRuntime")} value={initialData.runtimeStatus} />
+        <StatCard label={t("auth.admin.mp.statActiveCycle")} value={activeCycle?.name ?? t("auth.admin.mp.none")} />
+        <StatCard label={t("auth.admin.mp.statCycleStatus")} value={activeCycle?.status ?? "—"} />
+        <StatCard label={t("auth.admin.mp.statCards")} value={totals ? String(totals.cards) : "—"} />
+        <StatCard label={t("auth.admin.mp.statDecisions")} value={totals ? String(totals.decisions) : "—"} />
+        <StatCard label={t("auth.admin.mp.statUsersPlayed")} value={totals ? String(totals.usersPlayed) : "—"} />
         <StatCard
-          label="Reveal date"
+          label={t("auth.admin.mp.statRevealDate")}
           value={totals ? formatDateTime(totals.revealAt) : "—"}
         />
-        <StatCard label="Prize" value={totals?.prizeLabel?.trim() || "—"} />
+        <StatCard label={t("auth.admin.mp.statPrize")} value={totals?.prizeLabel?.trim() || "—"} />
         <StatCard
-          label="PPA gaps"
+          label={t("auth.admin.mp.statPpaGaps")}
           value={
             totals
               ? `${totals.missingSignal} missing · ${totals.unlocked} unlocked`
@@ -373,16 +409,18 @@ function RuntimeSection({
   isPending: boolean;
   onSave: () => void;
 }) {
+  const { t } = useTranslations();
+
   return (
     <section
       aria-labelledby="runtime-heading"
       className="rounded-lg border border-foreground/10 p-4 sm:p-5"
     >
       <h2 id="runtime-heading" className="text-base font-semibold text-foreground sm:text-lg">
-        Runtime status
+        {t("auth.admin.mp.runtime")}
       </h2>
       <p className="mt-1 text-xs text-foreground/65 sm:text-sm">
-        Controls whether players can access Market Pulse (OPEN, CLOSED, MAINTENANCE).
+        {t("auth.admin.mp.runtimeHelp")}
       </p>
       <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
         <select
@@ -404,7 +442,7 @@ function RuntimeSection({
           disabled={isPending || runtimeStatus === initialRuntimeStatus}
           onClick={onSave}
         >
-          Save runtime
+          {t("auth.admin.mp.saveRuntime")}
         </button>
       </div>
     </section>
@@ -415,6 +453,10 @@ function CyclesSection({
   cycles,
   selectedCycleId,
   isPending,
+  cyclePrefill,
+  cyclePrefillNonce,
+  createCycleOpen,
+  setCreateCycleOpen,
   onSelectCycle,
   onRefresh,
   onClose,
@@ -423,20 +465,33 @@ function CyclesSection({
   cycles: MarketPulseAdminDashboardData["cycles"];
   selectedCycleId: string;
   isPending: boolean;
+  cyclePrefill: Partial<MarketPulseCycleFormValues> | null;
+  cyclePrefillNonce: number;
+  createCycleOpen: boolean;
+  setCreateCycleOpen: (open: boolean) => void;
   onSelectCycle: (id: string) => void;
   onRefresh: () => void;
   onClose: (cycleId: string) => void;
   onExport: (cycleId: string) => void;
 }) {
+  const { t } = useTranslations();
+
   return (
     <section aria-labelledby="cycles-heading">
       <h2 id="cycles-heading" className="text-base font-semibold text-foreground sm:text-lg">
-        Cycles
+        {t("auth.admin.mp.cycles")}
       </h2>
-      <CreateCycleSection disabled={isPending} onRefresh={onRefresh} />
+      <CreateCycleSection
+        disabled={isPending}
+        onRefresh={onRefresh}
+        prefillValues={cyclePrefill}
+        prefillNonce={cyclePrefillNonce}
+        open={createCycleOpen}
+        setOpen={setCreateCycleOpen}
+      />
       <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
         {cycles.length === 0 ? (
-          <p className="text-sm text-foreground/65">No cycles yet.</p>
+          <p className="text-sm text-foreground/65">{t("auth.admin.mp.noCycles")}</p>
         ) : (
           cycles.map((cycle) => (
             <CyclePanel
@@ -469,10 +524,12 @@ function CardsSection({
   isPending: boolean;
   onRefresh: () => void;
 }) {
+  const { t } = useTranslations();
+
   return (
     <section aria-labelledby="cards-heading">
       <h2 id="cards-heading" className="text-base font-semibold text-foreground sm:text-lg">
-        Cards · {selectedCycle.name}
+        {t("auth.admin.mp.cards").replace("{name}", selectedCycle.name)}
       </h2>
       <CreateCardSection
         cycleId={selectedCycle.id}
@@ -484,7 +541,7 @@ function CardsSection({
       />
       <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
         {cycleCards.length === 0 ? (
-          <p className="text-sm text-foreground/65">No cards for this cycle.</p>
+          <p className="text-sm text-foreground/65">{t("auth.admin.mp.noCards")}</p>
         ) : (
           cycleCards.map((card) => (
             <MarketPulseCardPanel
@@ -533,11 +590,19 @@ function StatCard({
 function CreateCycleSection({
   disabled,
   onRefresh,
+  prefillValues,
+  prefillNonce,
+  open,
+  setOpen,
 }: {
   disabled: boolean;
   onRefresh: () => void;
+  prefillValues: Partial<MarketPulseCycleFormValues> | null;
+  prefillNonce: number;
+  open: boolean;
+  setOpen: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const { t } = useTranslations();
 
   if (!open) {
     return (
@@ -546,7 +611,7 @@ function CreateCycleSection({
         className={`${buttonClass} mt-3`}
         onClick={() => setOpen(true)}
       >
-        + Create cycle
+        {t("auth.admin.mp.createCycle")}
       </button>
     );
   }
@@ -554,8 +619,10 @@ function CreateCycleSection({
   return (
     <div className="mt-4">
       <MarketPulseCycleForm
+        key={prefillNonce > 0 ? `create-prefill-${prefillNonce}` : "create-default"}
         mode="create"
         disabled={disabled}
+        initialValues={prefillValues ?? undefined}
         onCancel={() => setOpen(false)}
         onSuccess={() => {
           onRefresh();
@@ -594,6 +661,7 @@ function CyclePanel({
   onClose: () => void;
   onExport: () => void;
 }) {
+  const { t } = useTranslations();
   const [editing, setEditing] = useState(false);
 
   return (
@@ -609,12 +677,12 @@ function CyclePanel({
             </span>
             {cycle.isActive ? (
               <span className="rounded bg-sky-500/15 px-2 py-0.5 text-xs font-medium text-sky-800 dark:text-sky-200">
-                Active
+                {t("auth.admin.mp.active")}
               </span>
             ) : null}
             {cycle.isActive && !cycle.isPlayableNow ? (
               <span className="rounded bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-900 dark:text-amber-200">
-                Not playable
+                {t("auth.admin.mp.notPlayable")}
               </span>
             ) : null}
           </div>
@@ -630,29 +698,29 @@ function CyclePanel({
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <button type="button" className={buttonClass} onClick={onSelect}>
-            {selected ? "Viewing cards" : "Manage cards"}
+            {selected ? t("auth.admin.mp.viewingCards") : t("auth.admin.mp.manageCards")}
           </button>
           <button type="button" className={buttonClass} disabled={disabled} onClick={onExport}>
-            Export leaderboard
+            {t("auth.admin.mp.exportLeaderboard")}
           </button>
           <button
             type="button"
             className={buttonClass}
             onClick={() => setEditing((value) => !value)}
           >
-            {editing ? "Hide edit" : "Edit"}
+            {editing ? t("auth.admin.mp.hideEdit") : t("auth.admin.mp.edit")}
           </button>
         </div>
       </div>
 
       <div className="mt-4 space-y-2 border-t border-foreground/10 pt-4">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/45">
-          Cycle actions
+          {t("auth.admin.mp.cycleActions")}
         </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {cycle.status !== "CLOSED" && cycle.status !== "REVEALED" ? (
             <button type="button" className={buttonClass} disabled={disabled} onClick={onClose}>
-              Close cycle
+              {t("auth.admin.mp.closeCycle")}
             </button>
           ) : null}
           <RevealCycleButton

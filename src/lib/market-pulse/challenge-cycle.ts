@@ -1,3 +1,4 @@
+import { MARKET_PULSE_PUBLIC_LAUNCH_AT_MS } from "@/lib/market-pulse/launch-config";
 import type {
   ChallengeCountdown,
   MarketPulseChallengeCycle,
@@ -9,8 +10,8 @@ export const CHALLENGE_CYCLE_DAYS = 10;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export const CHALLENGE_CYCLE_MS = CHALLENGE_CYCLE_DAYS * MS_PER_DAY;
 
-/** First cycle start: 1 Jan 2026, 00:00 Hong Kong (UTC+8). */
-export const CHALLENGE_CYCLE_EPOCH_MS = Date.UTC(2025, 11, 31, 16, 0, 0, 0);
+/** First cycle start: 1 Jul 2026, 00:00 Hong Kong (UTC+8). */
+export const CHALLENGE_CYCLE_EPOCH_MS = MARKET_PULSE_PUBLIC_LAUNCH_AT_MS;
 
 const HKT_DATE_FORMAT = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Hong_Kong",
