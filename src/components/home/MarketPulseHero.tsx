@@ -5,6 +5,7 @@ import { ArrowRight, TrendingUp } from "lucide-react";
 
 import ChallengeCountdown from "@/components/home/ChallengeCountdown";
 import MarketPulseLaunchAnnouncement from "@/components/market-pulse/MarketPulseLaunchAnnouncement";
+import MarketPulseLogo from "@/components/market-pulse/MarketPulseLogo";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { siteLocaleToMarketPulseLocale } from "@/lib/i18n/locales";
 import { getChallengeCountdown } from "@/lib/market-pulse/challenge-cycle";
@@ -61,9 +62,9 @@ export default function MarketPulseHero() {
             <div className="space-y-2 sm:space-y-4">
               <h1
                 id="market-pulse-heading"
-                className="text-balance text-3xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl"
+                className="flex justify-center md:justify-start"
               >
-                {t("nav.marketPulse")}
+                <MarketPulseLogo variant="hero" priority />
               </h1>
               <p className="mx-auto max-w-xl text-pretty text-sm leading-snug text-zinc-200 sm:text-lg md:mx-0 md:text-xl md:leading-relaxed">
                 {t("home.hero.tagline")}

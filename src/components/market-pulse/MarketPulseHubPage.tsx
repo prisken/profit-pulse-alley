@@ -14,6 +14,7 @@ import {
 import MarketPulseCountdown from "@/components/market-pulse/MarketPulseCountdown";
 import CycleProgress from "@/components/market-pulse/CycleProgress";
 import MarketPulseLaunchAnnouncement from "@/components/market-pulse/MarketPulseLaunchAnnouncement";
+import MarketPulseLogo from "@/components/market-pulse/MarketPulseLogo";
 import PrizeBanner from "@/components/market-pulse/PrizeBanner";
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
 import { useTranslations } from "@/components/providers/LocaleProvider";
@@ -227,11 +228,8 @@ export default function MarketPulseHubPage({
             </motion.div>
 
             <motion.div {...fadeUpMotionProps(reduceMotion, 0.05)}>
-              <h1
-                id="market-pulse-title"
-                className="text-balance text-3xl font-bold tracking-tight sm:text-5xl md:text-6xl"
-              >
-                {t("nav.marketPulse")}
+              <h1 id="market-pulse-title">
+                <MarketPulseLogo variant="hero" priority />
               </h1>
               <p className="mt-2 text-sm text-zinc-400 sm:hidden">
                 {t("mp.hub.taglineShort")}

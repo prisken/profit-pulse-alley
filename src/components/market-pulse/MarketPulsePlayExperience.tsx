@@ -14,6 +14,7 @@ import MarketPulseCountdown from "@/components/market-pulse/MarketPulseCountdown
 import CycleProgress from "@/components/market-pulse/CycleProgress";
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
 import MarketPulseLaunchAnnouncement from "@/components/market-pulse/MarketPulseLaunchAnnouncement";
+import MarketPulseLogo from "@/components/market-pulse/MarketPulseLogo";
 import MarketPulseSwipeCard from "@/components/market-pulse/MarketPulseSwipeCard";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useTranslations } from "@/components/providers/LocaleProvider";
@@ -213,44 +214,44 @@ function PlayChromeHeader({
   showCycleChrome,
   dayCurrent,
   dayTotal,
-  challengeName,
   revealAtIso,
 }: Readonly<{
   showCycleChrome: boolean;
   dayCurrent: number;
   dayTotal: number;
-  challengeName: string;
   revealAtIso: string;
 }>) {
   const { t } = useTranslations();
 
   return (
     <header className="shrink-0 border-b border-zinc-800/80 bg-zinc-950/95">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+      <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <Link
           href="/market-pulse"
-          className={`inline-flex min-h-10 min-w-10 items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-white ${focusRing}`}
+          className={`inline-flex min-h-10 items-center gap-1 justify-self-start text-sm text-zinc-400 transition-colors hover:text-white ${focusRing}`}
         >
           <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="hidden sm:inline">{t("nav.backToPulse")}</span>
         </Link>
 
-        {showCycleChrome ? (
-          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-1 px-1">
-            <span className="max-w-[9rem] truncate rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-0.5 text-[11px] text-zinc-400 sm:max-w-none sm:text-xs">
-              {challengeName}
-            </span>
+        <div className="flex items-center justify-center gap-2">
+          <Link
+            href="/market-pulse"
+            className={`inline-flex shrink-0 items-center ${focusRing}`}
+            aria-label={t("nav.marketPulse")}
+          >
+            <MarketPulseLogo variant="header" />
+          </Link>
+          {showCycleChrome ? (
             <span className="shrink-0 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-200 sm:text-xs">
               {t("mp.play.chrome.day")
                 .replace("{current}", String(dayCurrent))
                 .replace("{total}", String(dayTotal))}
             </span>
-          </div>
-        ) : (
-          <span className="flex-1" />
-        )}
+          ) : null}
+        </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 items-center justify-end gap-1.5 justify-self-end">
           <LanguageSwitcher variant="dark" className="shrink-0" />
           <Link
             href="/market-pulse/leaderboard"
@@ -360,7 +361,6 @@ export default function MarketPulsePlayExperience({
         showCycleChrome={showCycleChrome}
         dayCurrent={data.dayCurrent}
         dayTotal={data.dayTotal}
-        challengeName={data.challengeName}
         revealAtIso={data.revealAtIso}
       />
 
