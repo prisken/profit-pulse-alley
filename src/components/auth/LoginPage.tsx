@@ -8,8 +8,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 import { signUpWithPassword } from "@/lib/auth-actions";
+import MarketPulseAuthPanel from "@/components/auth/MarketPulseAuthPanel";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useTranslations } from "@/components/providers/LocaleProvider";
+import { isMarketPulseAuthCallback } from "@/lib/auth/market-pulse-auth-context";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 
 const focusRing =
@@ -50,6 +52,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const { status, data: session } = useSession();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  const fromMarketPulse = isMarketPulseAuthCallback(callbackUrl);
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user?.needsOnboarding) {
@@ -216,7 +219,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm">
+    <div className="w-full min-w-0 max-w-sm">
       <div className="text-center">
         <Link
           href="/"
@@ -233,16 +236,29 @@ function LoginForm() {
           />
         </Link>
         <h1 className="mt-4 text-xl font-semibold tracking-tight text-white sm:mt-5 sm:text-2xl">
-          {activeTab === "sign-in"
-            ? t("auth.login.welcomeBack")
-            : t("auth.login.joinCommunity")}
+          {fromMarketPulse
+            ? activeTab === "sign-in"
+              ? t("auth.marketPulse.signIn.title")
+              : t("auth.marketPulse.create.title")
+            : activeTab === "sign-in"
+              ? t("auth.login.welcomeBack")
+              : t("auth.login.joinCommunity")}
         </h1>
-        <p className="mt-1.5 text-xs text-gray-400 sm:mt-2 sm:text-sm">
-          {activeTab === "sign-in"
-            ? t("auth.login.subtitleSignIn")
-            : t("auth.login.subtitleCreate")}
-        </p>
+        {!fromMarketPulse ? (
+          <p className="mt-1.5 text-xs text-gray-400 sm:mt-2 sm:text-sm">
+            {activeTab === "sign-in"
+              ? t("auth.login.subtitleSignIn")
+              : t("auth.login.subtitleCreate")}
+          </p>
+        ) : null}
       </div>
+
+      {fromMarketPulse ? (
+        <MarketPulseAuthPanel
+          variant={activeTab === "create-account" ? "create-account" : "sign-in"}
+          className="mt-5 sm:mt-6"
+        />
+      ) : null}
 
       <div
         className="mt-5 flex rounded-xl border border-gray-700 bg-gray-900/50 p-1 sm:mt-6"
@@ -256,7 +272,7 @@ function LoginForm() {
           aria-selected={activeTab === "sign-in"}
           aria-controls="panel-sign-in"
           onClick={() => switchTab("sign-in")}
-          className={`min-h-11 flex-1 rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-colors sm:px-3 sm:py-2.5 sm:text-sm ${focusRing} ${
+          className={`min-h-11 flex-1 rounded-lg px-2 py-2 text-xs font-semibold leading-tight text-balance transition-colors sm:px-3 sm:py-2.5 sm:text-sm ${focusRing} ${
             activeTab === "sign-in"
               ? "bg-gray-800 text-white shadow-sm"
               : "text-gray-400 hover:text-gray-200"
@@ -271,7 +287,7 @@ function LoginForm() {
           aria-selected={activeTab === "create-account"}
           aria-controls="panel-create-account"
           onClick={() => switchTab("create-account")}
-          className={`min-h-11 flex-1 rounded-lg px-2 py-2 text-xs font-semibold leading-tight transition-colors sm:px-3 sm:py-2.5 sm:text-sm ${focusRing} ${
+          className={`min-h-11 flex-1 rounded-lg px-2 py-2 text-xs font-semibold leading-tight text-balance transition-colors sm:px-3 sm:py-2.5 sm:text-sm ${focusRing} ${
             activeTab === "create-account"
               ? "bg-gray-800 text-white shadow-sm"
               : "text-gray-400 hover:text-gray-200"
@@ -504,18 +520,18 @@ function LoginForm() {
 
 function LoginFormFallback() {
   return (
-    <div className="w-full max-w-sm text-center">
-      <div className="mx-auto h-9 w-9 animate-pulse rounded-sm bg-gray-800 sm:h-10 sm:w-10" />
-      <div className="mx-auto mt-4 h-8 w-48 animate-pulse rounded bg-gray-800" />
-      <div className="mx-auto mt-2 h-4 w-64 animate-pulse rounded bg-gray-800" />
+    <div className="w-full min-w-0 max-w-sm text-center">
+      <div className="mx-auto h-9 w-9 motion-reduce:animate-none animate-pulse rounded-sm bg-gray-800 sm:h-10 sm:w-10" />
+      <div className="mx-auto mt-4 h-8 w-48 motion-reduce:animate-none animate-pulse rounded bg-gray-800" />
+      <div className="mx-auto mt-2 h-4 w-64 motion-reduce:animate-none animate-pulse rounded bg-gray-800" />
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <main className="relative flex min-h-dvh items-center justify-center overflow-x-hidden overflow-y-auto bg-gray-950 px-3 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-gray-200 sm:px-4 sm:py-12">
-      <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 sm:right-4">
+    <main className="relative flex min-h-dvh items-start justify-center overflow-x-hidden overflow-y-auto bg-gray-950 px-[max(0.75rem,env(safe-area-inset-left))] py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[max(1.5rem,env(safe-area-inset-top))] text-gray-200 sm:items-center sm:px-[max(1rem,env(safe-area-inset-left))] sm:py-12 sm:pr-[max(1rem,env(safe-area-inset-right))]">
+      <div className="absolute right-[max(0.75rem,env(safe-area-inset-right))] top-[max(0.75rem,env(safe-area-inset-top))] z-10 sm:right-[max(1rem,env(safe-area-inset-right))]">
         <LanguageSwitcher variant="dark" />
       </div>
       <Suspense fallback={<LoginFormFallback />}>

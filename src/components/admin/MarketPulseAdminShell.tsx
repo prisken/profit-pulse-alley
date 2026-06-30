@@ -140,23 +140,23 @@ export function MarketPulseAdminStatusHeader({ snapshot }: Readonly<StatusHeader
 }
 
 type QuickActionsProps = {
-  onCreateCycle: () => void;
-  onCreateCard: () => void;
-  createCardDisabled?: boolean;
+  onQuickCreateNextCycle?: () => void;
+  quickCreateDisabled?: boolean;
 };
 
 export function MarketPulseAdminQuickActions({
-  onCreateCycle,
-  onCreateCard,
-  createCardDisabled = false,
-}: Readonly<QuickActionsProps>) {
+  onQuickCreateNextCycle,
+  quickCreateDisabled = false,
+}: Readonly<QuickActionsProps> = {}) {
   const { t } = useTranslations();
 
   const linkClass = `inline-flex min-h-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-800 ${focusRing}`;
-  const primaryClass = `inline-flex min-h-10 items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 ${focusRing}`;
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      <p className="w-full text-xs text-zinc-500 sm:mr-auto sm:w-auto">
+        {t("auth.admin.mp.nav.playerLinksHint")}
+      </p>
       <Link href="/market-pulse" className={linkClass}>
         {t("auth.admin.quickActions.hub")}
       </Link>
@@ -166,17 +166,19 @@ export function MarketPulseAdminQuickActions({
       <Link href="/market-pulse/leaderboard" className={linkClass}>
         {t("auth.admin.quickActions.leaderboard")}
       </Link>
-      <button type="button" className={primaryClass} onClick={onCreateCycle}>
-        {t("auth.admin.mp.shell.createCycle")}
-      </button>
-      <button
-        type="button"
-        className={primaryClass}
-        disabled={createCardDisabled}
-        onClick={onCreateCard}
-      >
-        {t("auth.admin.mp.shell.createCard")}
-      </button>
+      <Link href="/market-pulse/reveal" className={linkClass}>
+        {t("auth.admin.mp.nav.publicReveal")}
+      </Link>
+      {onQuickCreateNextCycle ? (
+        <button
+          type="button"
+          className={`${linkClass} border-emerald-600/40 text-emerald-200 hover:bg-emerald-500/10 sm:ml-auto`}
+          disabled={quickCreateDisabled}
+          onClick={onQuickCreateNextCycle}
+        >
+          {t("auth.admin.mp.quickCreate.button")}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -312,11 +314,12 @@ export type MarketPulseAdminNavSection = {
 };
 
 const NAV_SECTIONS: MarketPulseAdminNavSection[] = [
+  { id: "cycles-hub", labelKey: "auth.admin.mp.nav.cyclesHub" },
   { id: "overview", labelKey: "auth.admin.mp.overview" },
   { id: "setup", labelKey: "auth.admin.mp.shell.setup" },
   { id: "runtime", labelKey: "auth.admin.mp.runtime" },
-  { id: "cycles", labelKey: "auth.admin.mp.cycles" },
-  { id: "cards", labelKey: "auth.admin.mp.shell.cardsNav" },
+  { id: "cycles", labelKey: "auth.admin.mp.nav.advancedCycles" },
+  { id: "cards", labelKey: "auth.admin.mp.nav.legacyCards" },
   { id: "reveal-scoring", labelKey: "auth.admin.mp.reveal.nav" },
   { id: "prize-claims", labelKey: "auth.admin.mp.shell.prizeNav" },
   { id: "audit", labelKey: "auth.admin.mp.shell.auditNav" },

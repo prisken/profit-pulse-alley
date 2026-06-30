@@ -175,7 +175,7 @@ export default function LayoutShell({
       </header>
 
       <div
-        className="flex min-w-0 flex-1 flex-col"
+        className={`flex min-w-0 flex-1 flex-col${marketPulseRoute ? " overflow-x-hidden" : ""}`}
         {...(mobileNavOpen ? { inert: true } : {})}
       >
         {children}

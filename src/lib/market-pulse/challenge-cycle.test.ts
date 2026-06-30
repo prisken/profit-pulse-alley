@@ -7,8 +7,12 @@ import {
   formatMarketPulseCycleId,
   getChallengeCycleEnd,
   getChallengeCycleStart,
+  getChallengeCountdown,
   getCurrentMarketPulseCycle,
+  getHomeHeroCountdown,
+  getHomeHeroCountdownRemainingMs,
 } from "@/lib/market-pulse/challenge-cycle";
+import { MARKET_PULSE_PUBLIC_LAUNCH_AT_MS } from "@/lib/market-pulse/launch-config";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -69,5 +73,21 @@ describe("challenge-cycle", () => {
     expect(cycle.cycleIndex).toBe(0);
     expect(cycle.cycleId).toBe("2026-07-01_2026-07-10");
     expect(cycle.remainingMs).toBeGreaterThan(0);
+  });
+
+  it("counts down to public launch before Jul 1 2026 on the homepage hero", () => {
+    const twoDaysBeforeLaunch = MARKET_PULSE_PUBLIC_LAUNCH_AT_MS - 2 * MS_PER_DAY;
+
+    expect(getHomeHeroCountdownRemainingMs(twoDaysBeforeLaunch)).toBe(2 * MS_PER_DAY);
+    expect(getHomeHeroCountdown(twoDaysBeforeLaunch).days).toBe(2);
+    expect(getChallengeCountdown(twoDaysBeforeLaunch).days).toBeGreaterThan(2);
+  });
+
+  it("uses cycle end countdown after public launch on the homepage hero", () => {
+    const midCycle = MARKET_PULSE_PUBLIC_LAUNCH_AT_MS + 3 * MS_PER_DAY;
+
+    expect(getHomeHeroCountdownRemainingMs(midCycle)).toBe(
+      getChallengeCountdown(midCycle).totalMs,
+    );
   });
 });

@@ -1,8 +1,70 @@
 import Image from "next/image";
-import { Quote } from "lucide-react";
+import { Layers, Shield, TrendingUp, type LucideIcon } from "lucide-react";
 
 import { getExpertsShowcase } from "@/lib/home/proof-of-concept";
 import { getServerTranslations } from "@/lib/i18n/server";
+import { mergeMpClasses } from "@/lib/market-pulse/visual-primitives";
+
+const PILLARS = [
+  {
+    id: "offense",
+    icon: TrendingUp,
+    titleKey: "home.philosophy.pillar.offense.title" as const,
+    bodyKey: "home.philosophy.pillar.offense.body" as const,
+    accent: "emerald",
+  },
+  {
+    id: "defense",
+    icon: Shield,
+    titleKey: "home.philosophy.pillar.defense.title" as const,
+    bodyKey: "home.philosophy.pillar.defense.body" as const,
+    accent: "amber",
+  },
+  {
+    id: "compounding",
+    icon: Layers,
+    titleKey: "home.philosophy.pillar.compounding.title" as const,
+    bodyKey: "home.philosophy.pillar.compounding.body" as const,
+    accent: "sky",
+  },
+] as const;
+
+const accentStyles = {
+  emerald: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
+  amber: "border-amber-500/25 bg-amber-500/10 text-amber-300",
+  sky: "border-sky-500/25 bg-sky-500/10 text-sky-300",
+} as const;
+
+function PhilosophyPillar({
+  icon: Icon,
+  title,
+  body,
+  accent,
+}: Readonly<{
+  icon: LucideIcon;
+  title: string;
+  body: string;
+  accent: keyof typeof accentStyles;
+}>) {
+  return (
+    <li>
+      <article className="flex h-full flex-col rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:rounded-2xl sm:p-5">
+        <div
+          className={mergeMpClasses(
+            "flex h-10 w-10 items-center justify-center rounded-lg border sm:h-11 sm:w-11 sm:rounded-xl",
+            accentStyles[accent],
+          )}
+        >
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
+        </div>
+        <h3 className="mt-3 text-base font-semibold text-white sm:mt-4 sm:text-lg">
+          {title}
+        </h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{body}</p>
+      </article>
+    </li>
+  );
+}
 
 export default async function PhilosophySection() {
   const { t, locale } = await getServerTranslations();
@@ -11,34 +73,42 @@ export default async function PhilosophySection() {
   return (
     <section
       id="philosophy"
-      className="border-t border-white/10 bg-zinc-950 px-3 py-6 sm:px-6 sm:py-14 md:py-16"
+      className="border-t border-white/10 bg-zinc-950 px-3 py-8 sm:px-6 sm:py-12 md:py-14"
       aria-labelledby="philosophy-heading"
     >
       <div className="mx-auto w-full max-w-6xl">
-        <h2 id="philosophy-heading" className="sr-only">
-          {t("home.philosophy.srHeading")}
-        </h2>
+        <header className="mx-auto max-w-3xl text-center">
+          <h2
+            id="philosophy-heading"
+            className="text-xl font-bold tracking-tight text-white sm:text-3xl"
+          >
+            {t("home.philosophy.heading")}
+          </h2>
+          <p className="mt-3 text-pretty text-sm leading-relaxed text-zinc-400 sm:text-base">
+            {t("home.philosophy.intro")}
+          </p>
+        </header>
 
-        <figure className="relative mx-auto max-w-4xl rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-6 sm:rounded-3xl sm:px-10 sm:py-12 md:px-14 md:py-14">
-          <Quote
-            className="absolute left-3 top-3 h-7 w-7 text-amber-400/40 sm:left-8 sm:top-8 sm:h-12 sm:w-12"
-            aria-hidden="true"
-          />
-          <blockquote className="relative text-center">
-            <p className="text-pretty text-sm font-medium leading-relaxed text-zinc-100 sm:text-xl sm:leading-relaxed md:text-2xl md:leading-relaxed">
-              &ldquo;{t("home.philosophy.quote")}&rdquo;
-            </p>
-          </blockquote>
-        </figure>
+        <ul className="mt-6 grid gap-3 sm:mt-8 sm:grid-cols-3 sm:gap-4">
+          {PILLARS.map(({ id, icon, titleKey, bodyKey, accent }) => (
+            <PhilosophyPillar
+              key={id}
+              icon={icon}
+              title={t(titleKey)}
+              body={t(bodyKey)}
+              accent={accent}
+            />
+          ))}
+        </ul>
 
-        <div className="mt-8 sm:mt-14">
-          <h3 className="text-center text-base font-semibold tracking-tight text-white sm:text-2xl">
+        <div className="mt-8 border-t border-white/10 pt-8 sm:mt-10 sm:pt-10">
+          <h3 className="text-center text-base font-semibold tracking-tight text-white sm:text-xl">
             {t("home.philosophy.mindsHeading")}
           </h3>
-          <ul className="mt-5 flex flex-wrap justify-center gap-6 sm:mt-10 sm:gap-12 md:gap-16">
+          <ul className="mt-5 flex flex-wrap justify-center gap-6 sm:mt-8 sm:gap-12 md:gap-16">
             {experts.map((expert) => (
               <li key={expert.name} className="flex flex-col items-center text-center">
-                <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-amber-400/40 ring-2 ring-amber-500/10 sm:h-28 sm:w-28 sm:ring-4 md:h-32 md:w-32">
+                <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-amber-400/40 ring-2 ring-amber-500/10 sm:h-24 sm:w-24 sm:ring-4 md:h-28 md:w-28">
                   <Image
                     src={expert.headshotSrc}
                     alt={expert.name}
@@ -48,13 +118,13 @@ export default async function PhilosophySection() {
                         ? "object-top"
                         : "object-center"
                     }`}
-                    sizes="128px"
+                    sizes="112px"
                   />
                 </div>
-                <p className="mt-3 text-sm font-semibold text-white sm:mt-4 sm:text-lg">
+                <p className="mt-3 text-sm font-semibold text-white sm:text-base">
                   {expert.name}
                 </p>
-                <p className="mt-0.5 max-w-[12rem] text-[11px] leading-snug text-zinc-400 sm:mt-1 sm:max-w-[14rem] sm:text-sm">
+                <p className="mt-0.5 max-w-[12rem] text-[11px] leading-snug text-zinc-400 sm:max-w-[14rem] sm:text-sm">
                   {expert.title}
                 </p>
               </li>

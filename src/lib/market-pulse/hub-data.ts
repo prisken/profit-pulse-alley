@@ -21,6 +21,8 @@ export type MarketPulseHubPageData = {
   dayCurrent: number;
   dayTotal: number;
   prizeLabel: string;
+  startsAtIso: string;
+  endsAtIso: string;
   revealAtIso: string;
   revealRemainingMs: number;
   cycleId: string | null;
@@ -94,6 +96,8 @@ export async function getMarketPulseHubPageData(): Promise<MarketPulseHubPageDat
     dayCurrent,
     dayTotal,
     prizeLabel: prismaCycle?.prizeLabel?.trim() || DEFAULT_PRIZE_LABEL,
+    startsAtIso: startsAt.toISOString(),
+    endsAtIso: endsAt.toISOString(),
     revealAtIso: revealAt.toISOString(),
     revealRemainingMs: Math.max(0, revealAt.getTime() - now.getTime()),
     cycleId,
@@ -120,6 +124,8 @@ function buildFallbackHubData(
     dayCurrent,
     dayTotal,
     prizeLabel: DEFAULT_PRIZE_LABEL,
+    startsAtIso: synthetic.startAt.toISOString(),
+    endsAtIso: synthetic.endAt.toISOString(),
     revealAtIso: synthetic.endAt.toISOString(),
     revealRemainingMs: Math.max(0, synthetic.endAt.getTime() - now.getTime()),
     cycleId: synthetic.cycleId,

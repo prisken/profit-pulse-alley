@@ -2,8 +2,12 @@ import "server-only";
 
 import { auth } from "@/auth";
 import { isDatabaseConfigured } from "@/lib/db-config";
+import { isCyclePlayable } from "@/lib/market-pulse/cycle-playability";
+import { isMarketPulseCycleRevealed } from "@/lib/market-pulse/reveal-access";
 import {
+  getActiveMarketPulseCycle,
   getMarketPulseRevealForUser,
+  getMarketPulseSettings,
   getRevealedMarketPulseCycleForPage,
   getUserMarketPulseProgress,
 } from "@/lib/market-pulse/server";
@@ -26,18 +30,57 @@ function computeBestStreakFromCards(cards: MarketPulseRevealCardRow[]): number {
   return best;
 }
 
+async function resolvePlayNextAvailable(): Promise<boolean> {
+  try {
+    const [settings, active] = await Promise.all([
+      getMarketPulseSettings(),
+      getActiveMarketPulseCycle(),
+    ]);
+
+    if (settings.runtimeStatus !== "OPEN" || !active) {
+      return false;
+    }
+
+    const now = new Date();
+    return (
+      isCyclePlayable(active, now) && !isMarketPulseCycleRevealed(active, now)
+    );
+  } catch (error) {
+    console.error(
+      "[market-pulse/reveal-data] Failed to resolve play-next availability:",
+      error,
+    );
+    return false;
+  }
+}
+
+function toRevealedCycleSummary(
+  cycle: { id: string; name: string } | null,
+): MarketPulseRevealPageData["revealedCycle"] {
+  return cycle ? { id: cycle.id, name: cycle.name } : null;
+}
+
+const pendingBase = (
+  isAuthenticated: boolean,
+  playNextAvailable: boolean,
+  pendingCycle: MarketPulseRevealPageData["pendingCycle"],
+): MarketPulseRevealPageData => ({
+  status: "pending",
+  isAuthenticated,
+  pendingCycle,
+  revealedCycle: null,
+  playNextAvailable,
+  results: null,
+});
+
 export async function getMarketPulseRevealPageData(): Promise<MarketPulseRevealPageData> {
   const session = await auth();
   const userId = session?.user?.id;
   const isAuthenticated = Boolean(userId);
+  const playNextAvailable = await resolvePlayNextAvailable();
 
   if (!isDatabaseConfigured()) {
-    return {
-      status: "pending",
-      isAuthenticated,
-      pendingCycle: null,
-      results: null,
-    };
+    return pendingBase(isAuthenticated, playNextAvailable, null);
   }
 
   let revealedCycle: Awaited<
@@ -55,33 +98,31 @@ export async function getMarketPulseRevealPageData(): Promise<MarketPulseRevealP
       "[market-pulse/reveal-data] Failed to load reveal cycle:",
       error,
     );
-    return {
-      status: "pending",
-      isAuthenticated,
-      pendingCycle: null,
-      results: null,
-    };
+    return pendingBase(isAuthenticated, playNextAvailable, null);
   }
 
   if (!revealedCycle) {
-    return {
-      status: "pending",
+    return pendingBase(
       isAuthenticated,
-      pendingCycle: pendingActiveCycle
+      playNextAvailable,
+      pendingActiveCycle
         ? {
             name: pendingActiveCycle.name,
             revealAtIso: pendingActiveCycle.revealAt.toISOString(),
           }
         : null,
-      results: null,
-    };
+    );
   }
+
+  const revealedCycleSummary = toRevealedCycleSummary(revealedCycle);
 
   if (!isAuthenticated || !userId) {
     return {
       status: "revealed",
       isAuthenticated: false,
       pendingCycle: null,
+      revealedCycle: revealedCycleSummary,
+      playNextAvailable,
       results: null,
     };
   }
@@ -94,22 +135,17 @@ export async function getMarketPulseRevealPageData(): Promise<MarketPulseRevealP
       "[market-pulse/reveal-data] Failed to load user reveal:",
       error,
     );
-    return {
-      status: "pending",
-      isAuthenticated,
-      pendingCycle: {
-        name: revealedCycle.name,
-        revealAtIso: revealedCycle.revealAt.toISOString(),
-      },
-      results: null,
-    };
+    return pendingBase(isAuthenticated, playNextAvailable, {
+      name: revealedCycle.name,
+      revealAtIso: revealedCycle.revealAt.toISOString(),
+    });
   }
 
   if (!reveal?.isRevealed) {
-    return {
-      status: "pending",
+    return pendingBase(
       isAuthenticated,
-      pendingCycle: pendingActiveCycle
+      playNextAvailable,
+      pendingActiveCycle
         ? {
             name: pendingActiveCycle.name,
             revealAtIso: pendingActiveCycle.revealAt.toISOString(),
@@ -118,8 +154,7 @@ export async function getMarketPulseRevealPageData(): Promise<MarketPulseRevealP
             name: revealedCycle.name,
             revealAtIso: revealedCycle.revealAt.toISOString(),
           },
-      results: null,
-    };
+    );
   }
 
   let progress;
@@ -130,15 +165,10 @@ export async function getMarketPulseRevealPageData(): Promise<MarketPulseRevealP
       "[market-pulse/reveal-data] Failed to load user progress:",
       error,
     );
-    return {
-      status: "pending",
-      isAuthenticated,
-      pendingCycle: {
-        name: revealedCycle.name,
-        revealAtIso: revealedCycle.revealAt.toISOString(),
-      },
-      results: null,
-    };
+    return pendingBase(isAuthenticated, playNextAvailable, {
+      name: revealedCycle.name,
+      revealAtIso: revealedCycle.revealAt.toISOString(),
+    });
   }
 
   const cards: MarketPulseRevealCardRow[] = reveal.cards.map((card) => ({
@@ -166,6 +196,8 @@ export async function getMarketPulseRevealPageData(): Promise<MarketPulseRevealP
     status: "revealed",
     isAuthenticated: true,
     pendingCycle: null,
+    revealedCycle: revealedCycleSummary,
+    playNextAvailable,
     results: {
       cycleId: reveal.cycleId,
       cycleName: reveal.cycleName,

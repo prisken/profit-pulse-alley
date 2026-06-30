@@ -6,7 +6,12 @@
 
 export const MARKET_PULSE_ANALYTICS_EVENTS = {
   market_pulse_viewed: "market_pulse_viewed",
+  hero_cta_clicked: "hero_cta_clicked",
+  how_it_works_cta_clicked: "how_it_works_cta_clicked",
+  hub_cta_clicked: "hub_cta_clicked",
   card_viewed: "card_viewed",
+  decision_selected: "decision_selected",
+  decision_confirmation_opened: "decision_confirmation_opened",
   decision_submitted: "decision_submitted",
   decision_locked: "decision_locked",
   leaderboard_viewed: "leaderboard_viewed",
@@ -30,6 +35,7 @@ export type MarketPulseAnalyticsPayload = {
   cta?: string;
   rank?: number;
   surface?: string;
+  route?: string;
 };
 
 const BLOCKED_PAYLOAD_KEYS = new Set([
@@ -52,6 +58,7 @@ const ALLOWED_PAYLOAD_KEYS = new Set([
   "cta",
   "rank",
   "surface",
+  "route",
 ]);
 
 declare global {

@@ -11,7 +11,6 @@ import {
   CalendarDays,
   ChevronDown,
   Medal,
-  Sparkles,
   Trophy,
 } from "lucide-react";
 
@@ -25,15 +24,23 @@ import {
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
 import MarketPulseLaunchAnnouncement from "@/components/market-pulse/MarketPulseLaunchAnnouncement";
 import MarketPulseLeaderboardMyScore from "@/components/market-pulse/MarketPulseLeaderboardMyScore";
-import { useTranslations } from "@/components/providers/LocaleProvider";
+import LeaderboardStatePanel, {
+  LeaderboardLockedPreview,
+} from "@/components/market-pulse/LeaderboardStatePanel";
+import {
+  MarketPulseGlowBackground,
+  MarketPulseStatusChip,
+  MP_FOCUS_RING,
+  mergeMpClasses,
+} from "@/components/market-pulse/MarketPulseVisualPrimitives";
 import type { SiteLocale } from "@/lib/i18n/locales";
 import {
   canAccessMarketPulsePlay,
   isBeforePublicLaunch,
 } from "@/lib/market-pulse/launch-config";
+import { useTranslations } from "@/components/providers/LocaleProvider";
 
-const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
+const focusRing = MP_FOCUS_RING;
 
 function formatPoints(score: number): string {
   return new Intl.NumberFormat("en-HK").format(score);
@@ -58,13 +65,13 @@ function formatRevealDate(value: string, locale: SiteLocale): string {
 
 function rankStyles(rank: number): string {
   if (rank === 1) {
-    return "bg-amber-500/20 text-amber-300 ring-amber-500/30";
+    return "bg-amber-500/25 text-amber-200 ring-amber-400/40 shadow-sm shadow-amber-900/30";
   }
   if (rank === 2) {
-    return "bg-zinc-400/15 text-zinc-200 ring-zinc-400/25";
+    return "bg-zinc-400/20 text-zinc-100 ring-zinc-300/30";
   }
   if (rank === 3) {
-    return "bg-orange-500/15 text-orange-300 ring-orange-500/25";
+    return "bg-orange-500/20 text-orange-200 ring-orange-400/30";
   }
   return "bg-zinc-800/80 text-zinc-400 ring-zinc-700/50";
 }
@@ -113,7 +120,9 @@ function LeaderboardRow({
       }
       whileHover={reduceMotion ? undefined : { scale: 1.01, x: 3 }}
       className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 sm:gap-4 sm:rounded-2xl sm:px-4 sm:py-3.5 ${
-        isTopThree
+        entry.rank === 1
+          ? "border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-emerald-500/5 to-zinc-900/40 shadow-lg shadow-amber-950/15"
+          : isTopThree
           ? "border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 to-zinc-900/40 shadow-lg shadow-emerald-950/10"
           : "border-zinc-800/80 bg-zinc-900/50"
       }`}
@@ -183,23 +192,31 @@ function LeaderboardRow({
   );
 }
 
-function CycleStatusBadge({
+function CycleStatusChips({
   cycle,
 }: Readonly<{ cycle: LeaderboardCycleOption }>) {
   const { t } = useTranslations();
 
-  if (cycle.labelKind === "current") {
-    return (
-      <span className="inline-flex rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300 ring-1 ring-emerald-500/30">
-        {t("mp.leaderboard.status.current")}
-      </span>
-    );
-  }
-
   return (
-    <span className="inline-flex rounded-full bg-zinc-800/80 px-2.5 py-0.5 text-[11px] font-semibold text-zinc-300 ring-1 ring-zinc-700/60">
-      {t("mp.leaderboard.status.archived")}
-    </span>
+    <div className="flex flex-wrap items-center gap-2">
+      <MarketPulseStatusChip
+        variant={cycle.labelKind === "current" ? "live" : "archived"}
+        label={
+          cycle.labelKind === "current"
+            ? t("mp.leaderboard.status.current")
+            : t("mp.leaderboard.status.archived")
+        }
+        showPulse={cycle.labelKind === "current" && !cycle.isRevealed}
+      />
+      <MarketPulseStatusChip
+        variant={cycle.isRevealed ? "revealed" : "locked"}
+        label={
+          cycle.isRevealed
+            ? t("mp.leaderboard.status.revealed")
+            : t("mp.leaderboard.status.locked")
+        }
+      />
+    </div>
   );
 }
 
@@ -209,49 +226,85 @@ function CycleMeta({
   const { t, locale } = useTranslations();
 
   return (
-    <div className="space-y-2 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 px-4 py-3 sm:px-5 sm:py-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-base font-semibold text-white sm:text-lg">{cycle.name}</h2>
-        <CycleStatusBadge cycle={cycle} />
-        <span
-          className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ${
-            cycle.isRevealed
-              ? "bg-sky-500/10 text-sky-300 ring-sky-500/25"
-              : "bg-amber-500/10 text-amber-200 ring-amber-500/25"
-          }`}
-        >
-          {cycle.isRevealed
-            ? t("mp.leaderboard.status.revealed")
-            : t("mp.leaderboard.status.locked")}
-        </span>
+    <section className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4 shadow-xl shadow-black/20 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-xl font-bold text-white sm:text-2xl">{cycle.name}</h2>
+          <CycleStatusChips cycle={cycle} />
+        </div>
       </div>
-      <div className="flex flex-col gap-1 text-xs text-zinc-400 sm:text-sm">
-        <p className="inline-flex items-center gap-1.5">
-          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-zinc-500" aria-hidden="true" />
-          {t("mp.leaderboard.cycleDateRange")
-            .replace("{start}", formatCycleDate(cycle.startsAtIso, locale))
-            .replace("{end}", formatCycleDate(cycle.endsAtIso, locale))}
-        </p>
-        <p>
-          {t("mp.leaderboard.revealDate").replace(
-            "{date}",
-            formatRevealDate(cycle.revealAtIso, locale),
-          )}
-        </p>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            {t("mp.play.chrome.cycleName")}
+          </p>
+          <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-zinc-200">
+            <CalendarDays className="h-3.5 w-3.5 shrink-0 text-zinc-500" aria-hidden="true" />
+            {t("mp.leaderboard.cycleDateRange")
+              .replace("{start}", formatCycleDate(cycle.startsAtIso, locale))
+              .replace("{end}", formatCycleDate(cycle.endsAtIso, locale))}
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            {t("mp.play.stage.reveal")}
+          </p>
+          <p className="mt-1 text-sm text-zinc-200">
+            {formatRevealDate(cycle.revealAtIso, locale)}
+          </p>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-function StateMessage({
-  message,
-}: Readonly<{ message: string }>) {
-  return (
-    <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/40 px-4 py-12 text-center sm:px-6 sm:py-14">
-      <Sparkles className="mx-auto h-8 w-8 text-zinc-600" aria-hidden="true" />
-      <p className="mt-3 text-sm font-medium text-zinc-300">{message}</p>
-    </div>
-  );
+function LeaderboardStandings({
+  viewState,
+  entries,
+  stateMessage,
+  lockedTitle,
+  lockedBody,
+}: Readonly<{
+  viewState: MarketPulseLeaderboardPageData["viewState"];
+  entries: MarketPulseLeaderboardEntryRow[];
+  stateMessage: string | null;
+  lockedTitle: string;
+  lockedBody: string;
+}>) {
+  if (viewState === "locked") {
+    return (
+      <div>
+        <LeaderboardStatePanel
+          variant="locked"
+          title={lockedTitle}
+          body={lockedBody}
+        />
+        <LeaderboardLockedPreview />
+      </div>
+    );
+  }
+
+  if (stateMessage) {
+    const variant =
+      viewState === "no_scores"
+        ? "no_scores"
+        : viewState === "no_cycles"
+          ? "no_cycles"
+          : "unavailable";
+    return (
+      <LeaderboardStatePanel
+        variant={variant}
+        title={stateMessage}
+        body=""
+      />
+    );
+  }
+
+  if (viewState === "ready") {
+    return <LeaderboardPanel entries={entries} />;
+  }
+
+  return null;
 }
 
 function LeaderboardPanel({
@@ -292,6 +345,7 @@ export default function MarketPulseLeaderboard({
       cycleId: selectedCycle?.id,
       status: viewState,
       surface: "leaderboard",
+      route: "/market-pulse/leaderboard",
     });
   }, [selectedCycle?.id, viewState]);
 
@@ -302,28 +356,27 @@ export default function MarketPulseLeaderboard({
   }
 
   const stateMessage =
-    viewState === "locked"
-      ? t("mp.leaderboard.state.locked")
-      : viewState === "no_scores"
-        ? t("mp.leaderboard.state.noScores")
-        : viewState === "no_cycles"
-          ? t("mp.leaderboard.state.noCycles")
-          : viewState === "unavailable"
-            ? t("mp.leaderboard.state.unavailable")
-            : null;
+    viewState === "no_scores"
+      ? t("mp.leaderboard.state.noScores")
+      : viewState === "no_cycles"
+        ? t("mp.leaderboard.state.noCycles")
+        : viewState === "unavailable"
+          ? t("mp.leaderboard.state.unavailable")
+          : null;
+
+  const lockedTitle = t("mp.leaderboard.state.lockedTitle");
+  const lockedBody = t("mp.leaderboard.state.lockedBody");
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
-      <div
-        className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(16,185,129,0.12),transparent_55%)]"
-        aria-hidden="true"
-      />
-
-      <div className="relative mx-auto w-full max-w-3xl px-3 py-6 sm:px-6 sm:py-12">
+    <MarketPulseGlowBackground accent="emerald" showGrid className="min-h-screen">
+      <div className="relative mx-auto w-full max-w-5xl px-3 py-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-10">
         <header className="mb-5 space-y-4 sm:mb-6">
           <Link
             href="/market-pulse"
-            className={`inline-flex min-h-11 items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-white ${focusRing}`}
+            className={mergeMpClasses(
+              "inline-flex min-h-11 items-center gap-1 text-sm text-zinc-400 transition-colors hover:text-white",
+              focusRing,
+            )}
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             {t("nav.marketPulse")}
@@ -335,11 +388,13 @@ export default function MarketPulseLeaderboard({
             </h1>
             <Link
               href="/market-pulse/play"
-              className={`inline-flex min-h-11 w-full items-center justify-center rounded-full px-5 text-sm font-bold transition-colors sm:w-auto ${focusRing} ${
+              className={mergeMpClasses(
+                "inline-flex min-h-11 w-full items-center justify-center rounded-full px-5 text-sm font-bold transition-colors sm:w-auto",
+                focusRing,
                 playBlocked
                   ? "cursor-not-allowed bg-emerald-400/50 text-zinc-950/70"
-                  : "bg-emerald-400 text-zinc-950 hover:bg-emerald-300"
-              }`}
+                  : "bg-emerald-400 text-zinc-950 hover:bg-emerald-300",
+              )}
               aria-disabled={playBlocked}
               onClick={playBlocked ? (event) => event.preventDefault() : undefined}
             >
@@ -352,56 +407,83 @@ export default function MarketPulseLeaderboard({
           <MarketPulseLaunchAnnouncement className="mb-5 sm:mb-6" variant="compact" />
         ) : null}
 
-        <p className="mb-4 text-xs text-zinc-400 sm:mb-5 sm:text-sm">
-          {t("mp.leaderboard.cycleResetNotice")}
-        </p>
+        <div className="mb-4 space-y-1 rounded-xl border border-white/10 bg-zinc-950/50 px-4 py-3 sm:mb-5">
+          <p className="text-sm font-medium text-zinc-200">
+            {t("mp.leaderboard.header.freshRace")}
+          </p>
+          <p className="text-xs leading-relaxed text-zinc-500 sm:text-sm">
+            {t("mp.leaderboard.header.archiveNote")}
+          </p>
+        </div>
 
         {cycles.length > 0 ? (
-          <div className="mb-4 sm:mb-5">
+          <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 sm:mb-5">
             <label
               htmlFor="leaderboard-cycle-select"
-              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-zinc-500"
+              className="block text-sm font-semibold text-white"
             >
               {t("mp.leaderboard.cycleSelector.label")}
             </label>
-            <div className="relative">
+            <p className="mt-1 text-xs text-zinc-500">
+              {t("mp.leaderboard.cycleSelector.hint")}
+            </p>
+            <div className="relative mt-3">
               <select
                 id="leaderboard-cycle-select"
                 value={selectedCycle?.id ?? ""}
                 onChange={(event) => handleCycleChange(event.target.value)}
                 aria-label={t("mp.leaderboard.cycleSelector.aria")}
-                className={`w-full appearance-none rounded-xl border border-zinc-800 bg-zinc-900/80 py-3 pl-4 pr-10 text-sm font-medium text-white ${focusRing}`}
+                className={mergeMpClasses(
+                  "w-full appearance-none rounded-xl border border-emerald-500/25 bg-zinc-950/90 py-3.5 pl-4 pr-10 text-sm font-semibold text-white shadow-inner",
+                  focusRing,
+                )}
               >
                 {cycles.map((cycle) => (
                   <option key={cycle.id} value={cycle.id}>
                     {cycle.name}
                     {cycle.labelKind === "current"
-                      ? ` (${t("mp.leaderboard.status.current")})`
-                      : ` (${t("mp.leaderboard.status.archived")})`}
+                      ? ` · ${t("mp.leaderboard.cycleSelector.currentBadge")}`
+                      : ` · ${t("mp.leaderboard.cycleSelector.archivedBadge")}`}
+                    {cycle.isRevealed
+                      ? ` · ${t("mp.leaderboard.status.revealed")}`
+                      : ` · ${t("mp.leaderboard.status.locked")}`}
                   </option>
                 ))}
               </select>
               <ChevronDown
-                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+                className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-400/80"
                 aria-hidden="true"
               />
             </div>
           </div>
         ) : null}
 
-        {selectedCycle ? <CycleMeta cycle={selectedCycle} /> : null}
+        {selectedCycle ? (
+          <div className="mb-5 sm:mb-6">
+            <CycleMeta cycle={selectedCycle} />
+          </div>
+        ) : null}
 
-        <div className="mt-5 sm:mt-6">
-          <MarketPulseLeaderboardMyScore
-            panel={viewerScore}
-            cycleId={selectedCycle?.id}
-          />
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-6">
+          <div className="order-2 min-w-0 lg:order-1">
+            <section aria-live="polite" aria-label={t("nav.leaderboard")}>
+              <LeaderboardStandings
+                viewState={viewState}
+                entries={entries}
+                stateMessage={stateMessage}
+                lockedTitle={lockedTitle}
+                lockedBody={lockedBody}
+              />
+            </section>
+          </div>
+
+          <aside className="order-1 lg:order-2 lg:sticky lg:top-[calc(3.75rem+env(safe-area-inset-top,0px)+0.75rem)] lg:max-h-[calc(100dvh-5rem-env(safe-area-inset-top,0px))] lg:overflow-y-auto">
+            <MarketPulseLeaderboardMyScore
+              panel={viewerScore}
+              cycleId={selectedCycle?.id}
+            />
+          </aside>
         </div>
-
-        <section className="mt-5 space-y-3 sm:mt-6 sm:space-y-4" aria-live="polite">
-          {stateMessage ? <StateMessage message={stateMessage} /> : null}
-          {viewState === "ready" ? <LeaderboardPanel entries={entries} /> : null}
-        </section>
 
         <MarketPulseInlineDisclaimer
           className="mt-6 sm:mt-8"
@@ -409,6 +491,6 @@ export default function MarketPulseLeaderboard({
           cycleId={selectedCycle?.id}
         />
       </div>
-    </div>
+    </MarketPulseGlowBackground>
   );
 }

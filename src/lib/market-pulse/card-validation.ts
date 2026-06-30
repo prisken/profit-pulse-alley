@@ -165,6 +165,65 @@ export function validateMarketPulseCardForm(
   return { valid: Object.keys(errors).length === 0, errors };
 }
 
+/** Relaxed validation for builder draft saves — publish rules enforced separately. */
+export function validateMarketPulseCardDraftSave(
+  values: MarketPulseCardFormValues,
+  options?: {
+    existingDayIndexes?: number[];
+    excludeDayIndex?: number;
+  },
+): { valid: boolean; errors: CardFormFieldErrors } {
+  const errors: CardFormFieldErrors = {};
+
+  if (!values.cycleId.trim()) {
+    errors.cycleId = "Cycle is required.";
+  }
+
+  if (!Number.isInteger(values.dayIndex) || values.dayIndex < 1) {
+    errors.dayIndex = "Day index must be a positive integer.";
+  } else if (
+    options?.existingDayIndexes?.includes(values.dayIndex) &&
+    values.dayIndex !== options.excludeDayIndex
+  ) {
+    errors.dayIndex = "Day index must be unique within the cycle.";
+  }
+
+  if (!values.companyName.trim()) {
+    errors.companyName = "Company name is required.";
+  }
+  if (!values.ticker.trim()) {
+    errors.ticker = "Ticker is required.";
+  }
+  if (!values.headline.trim()) {
+    errors.headline = "News headline is required.";
+  }
+
+  if (values.logoUrl.trim() && !isValidOptionalHttpUrl(values.logoUrl)) {
+    errors.logoUrl = "Company logo URL must be a valid http(s) URL.";
+  }
+  if (values.sourceUrl.trim() && !isValidOptionalHttpUrl(values.sourceUrl)) {
+    errors.sourceUrl = "News source URL must be a valid http(s) URL.";
+  }
+  if (values.cardImageUrl.trim() && !isValidOptionalHttpUrl(values.cardImageUrl)) {
+    errors.cardImageUrl = "Card image URL must be a valid http(s) URL.";
+  }
+  if (values.cardImageUrl.trim() && !values.cardImageAlt.trim()) {
+    errors.cardImageAlt = "Card image alt text is required when an image URL is set.";
+  }
+
+  if (values.publishedAt.trim() && !parseCardDate(values.publishedAt)) {
+    errors.publishedAt = "Invalid published date.";
+  }
+  if (values.revealAt.trim() && !parseCardDate(values.revealAt)) {
+    errors.revealAt = "Invalid reveal date.";
+  }
+  if (values.sourceDate.trim() && !parseCardDate(values.sourceDate)) {
+    errors.sourceDate = "Invalid news published date.";
+  }
+
+  return { valid: Object.keys(errors).length === 0, errors };
+}
+
 export function validateCardPublishable(card: {
   headline: string;
   companyName: string;

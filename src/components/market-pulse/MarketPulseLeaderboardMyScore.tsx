@@ -12,8 +12,9 @@ import {
 } from "@/lib/market-pulse/constants";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 
-const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
+import { MP_FOCUS_RING } from "@/components/market-pulse/MarketPulseVisualPrimitives";
+
+const focusRing = MP_FOCUS_RING;
 
 function formatPoints(score: number): string {
   return new Intl.NumberFormat("en-HK").format(score);
@@ -27,8 +28,8 @@ function StatItem({
   value: string;
 }>) {
   return (
-    <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5 sm:px-4 sm:py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+    <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/50 px-3 py-2.5 sm:px-4 sm:py-3">
+      <p className="text-[10px] font-semibold normal-case tracking-wide text-zinc-500">
         {label}
       </p>
       <p className="mt-1 text-lg font-bold tabular-nums text-white sm:text-xl">
@@ -45,12 +46,12 @@ function PanelShell({
 
   return (
     <section
-      className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-zinc-900/60 to-zinc-900/40 p-4 sm:p-5"
+      className="rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/12 via-zinc-900/80 to-zinc-950 p-4 shadow-xl shadow-emerald-950/10 sm:p-5"
       aria-labelledby="leaderboard-my-score-heading"
     >
       <h2
         id="leaderboard-my-score-heading"
-        className="mb-3 flex items-center gap-2 text-base font-semibold text-white sm:text-lg"
+        className="mb-4 flex items-center gap-2 text-base font-bold text-white sm:text-lg"
       >
         <UserRound className="h-5 w-5 text-emerald-400" aria-hidden="true" />
         {t("mp.leaderboard.myScore.title")}
@@ -92,7 +93,7 @@ function ScoreBreakdown({
   }
 
   return (
-    <details className="group mt-4 rounded-xl border border-zinc-800/80 bg-zinc-950/40">
+    <details className="group mt-4 rounded-xl border border-emerald-500/15 bg-zinc-950/60">
       <summary
         className={`flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-3 text-sm font-semibold text-zinc-200 marker:content-none sm:px-4 [&::-webkit-details-marker]:hidden ${focusRing}`}
       >
@@ -106,7 +107,7 @@ function ScoreBreakdown({
         {cards.map((card) => (
           <li
             key={card.cardId}
-            className="rounded-lg border border-zinc-800/80 bg-zinc-900/50 p-3"
+            className="rounded-lg border border-zinc-800/80 bg-zinc-900/60 p-3"
           >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
@@ -282,14 +283,10 @@ export default function MarketPulseLeaderboardMyScore({
       <p className="mb-3 text-xs font-medium text-zinc-400 sm:text-sm">
         {panel.cycleName}
       </p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <StatItem
           label={t("mp.leaderboard.myScore.total")}
           value={formatPoints(panel.totalScore)}
-        />
-        <StatItem
-          label={t("mp.leaderboard.myScore.rank")}
-          value={panel.rank != null ? `#${panel.rank}` : "—"}
         />
         <StatItem
           label={t("mp.leaderboard.myScore.participation")}
@@ -298,6 +295,10 @@ export default function MarketPulseLeaderboardMyScore({
               ? formatPoints(panel.participationScore)
               : t("mp.leaderboard.myScore.notAvailable")
           }
+        />
+        <StatItem
+          label={t("mp.leaderboard.myScore.rank")}
+          value={panel.rank != null ? `#${panel.rank}` : "—"}
         />
         <StatItem
           label={t("mp.leaderboard.myScore.decisions")}

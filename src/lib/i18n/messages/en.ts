@@ -63,10 +63,106 @@ export const enMessages = {
 
   "home.hero.badgePreLaunch": "Opens 1 Jul 2026",
   "home.hero.badgeLive": "Live challenge",
+  "home.hero.headline": "Can you read the market before the crowd?",
+  "home.hero.subheadline":
+    "Read one daily market signal, choose Bullish or Cautious, and see how your instinct compares with PPA Insight after the cycle reveal.",
   "home.hero.tagline":
     "Read today's signal. Make your call. Climb the leaderboard.",
+  "home.hero.ctaEnter": "Enter Market Pulse",
+  "home.hero.ctaEnterAria": "Enter Market Pulse hub",
+  "home.hero.ctaPlayToday": "Play Today's Signal",
+  "home.hero.ctaPlayTodayAria": "Play today's Market Pulse signal",
+  "home.hero.ctaSecondary": "View Rules",
+  "home.hero.ctaSecondaryAria": "View Market Pulse rules and scoring",
   "home.hero.ctaExplore": "Explore Market Pulse",
   "home.hero.ctaPlay": "Play Now",
+  "home.hero.proof.dailySignals": "Daily signals",
+  "home.hero.proof.leaderboard": "Fresh leaderboard every cycle",
+  "home.hero.proof.ppaReveal": "PPA Insight reveal",
+  "home.hero.proof.prize": "Ocean Park ticket prize",
+  "home.hero.preview.ariaLabel":
+    "Decorative preview of the Market Pulse daily signal card, decision buttons, sample leaderboard, and countdown",
+  "home.hero.preview.signalLabel": "Today's Signal",
+  "home.hero.preview.headline": "AI demand lifts chip-sector momentum",
+  "home.hero.preview.yourCall": "Your call",
+  "home.hero.preview.cycle": "Cycle 01",
+  "home.hero.preview.prize": "Prize: Ocean Park ticket",
+  "home.hero.preview.leaderboard": "Leaderboard preview",
+  "home.hero.preview.statusLabel": "Status",
+
+  "home.howItWorks.title": "How Market Pulse works",
+  "home.howItWorks.stepLabel": "Step {step}",
+  "home.howItWorks.step1.title": "Read the signal",
+  "home.howItWorks.step1.body":
+    "Each day, review a market card with the context you need to make a call.",
+  "home.howItWorks.step2.title": "Choose Bullish or Cautious",
+  "home.howItWorks.step2.body":
+    "Lock one decision before the reveal window. Your call cannot be changed.",
+  "home.howItWorks.step3.title": "Learn at reveal",
+  "home.howItWorks.step3.body":
+    "After the cycle ends, compare your instinct with PPA Insight and see your score.",
+  "home.howItWorks.ctaTry": "Try the challenge",
+  "home.howItWorks.ctaTryAria": "Try the Market Pulse challenge",
+  "home.howItWorks.ctaPlayToday": "Play today's signal",
+  "home.howItWorks.ctaPlayTodayAria": "Play today's Market Pulse signal",
+
+  "home.cycleLoop.badge": "Cycle leaderboard",
+  "home.cycleLoop.title": "Every cycle is a fresh race",
+  "home.cycleLoop.subtitle":
+    "Scores reset for every new Market Pulse cycle. Your previous results stay archived, and each cycle gives you another shot at the top.",
+  "home.cycleLoop.pillar1.title": "Fresh leaderboard",
+  "home.cycleLoop.pillar1.body": "Compete against the field in the current cycle.",
+  "home.cycleLoop.pillar2.title": "Participation score",
+  "home.cycleLoop.pillar2.body": "Show up, lock your calls, and track your progress.",
+  "home.cycleLoop.pillar3.title": "Cycle winner prize",
+  "home.cycleLoop.pillar3.body":
+    "One Ocean Park ticket goes to the winner of each cycle.",
+  "home.cycleLoop.scoring.heading": "How points add up",
+  "home.cycleLoop.scoring.participation": "+{points} participation",
+  "home.cycleLoop.scoring.match": "+{points} match bonus",
+  "home.cycleLoop.scoring.streak": "+{points} streak bonus",
+  "home.cycleLoop.scoring.note":
+    "Match and streak bonuses unlock after PPA Insight is revealed.",
+  "home.cycleLoop.preview.heading": "Leaderboard",
+  "home.cycleLoop.preview.label": "Preview",
+  "home.cycleLoop.preview.subtitle": "Sample standings — not live scores.",
+  "home.cycleLoop.preview.ariaLabel":
+    "Decorative preview of a cycle leaderboard with hidden scores",
+  "home.cycleLoop.preview.player1": "Preview · Alex",
+  "home.cycleLoop.preview.player2": "Preview · Jordan",
+  "home.cycleLoop.preview.player3": "Preview · Sam",
+  "home.cycleLoop.preview.scoreHidden": "—",
+  "home.cycleLoop.prize.heading": "Cycle winner prize",
+  "home.cycleLoop.prize.body":
+    "One Ocean Park ticket will be awarded to the winner of each cycle.",
+  "home.cycleLoop.link.leaderboard": "View leaderboard",
+  "home.cycleLoop.link.leaderboardAria": "View the Market Pulse leaderboard",
+  "home.cycleLoop.link.rules": "Read contest rules",
+  "home.cycleLoop.link.rulesAria": "Read Market Pulse contest rules",
+
+  "home.ppaInsight.badge": "PPA Insight",
+  "home.ppaInsight.title": "Not just a guess. A feedback loop.",
+  "home.ppaInsight.body":
+    "After each cycle, PPA Insight reveals the reasoning behind the market call. Compare your instinct with expert-backed judgment and sharpen your next decision.",
+  "home.ppaInsight.cta.explore": "Explore Market Pulse",
+  "home.ppaInsight.cta.exploreAria": "Explore Market Pulse hub",
+  "home.ppaInsight.cta.rules": "View rules",
+  "home.ppaInsight.cta.rulesAria": "View Market Pulse rules and scoring",
+  "home.ppaInsight.comparison.ariaLabel":
+    "Decorative example comparing a sample Bullish call with locked PPA Insight until reveal",
+  "home.ppaInsight.comparison.label": "Sample comparison",
+  "home.ppaInsight.comparison.yourCallLabel": "Your call",
+  "home.ppaInsight.comparison.yourCallValue": "Bullish",
+  "home.ppaInsight.comparison.ppaLabel": "PPA Insight",
+  "home.ppaInsight.comparison.ppaLocked": "Unlocks after reveal",
+  "home.ppaInsight.comparison.lockedBadge": "Locked",
+  "home.ppaInsight.comparison.learnLabel": "What you learn",
+  "home.ppaInsight.comparison.topic1": "Momentum",
+  "home.ppaInsight.comparison.topic2": "Risk",
+  "home.ppaInsight.comparison.topic3": "Valuation",
+  "home.ppaInsight.comparison.topic4": "Timing",
+  "home.ppaInsight.comparison.srNote":
+    "This is a decorative preview only. Real PPA Insight is not shown before the cycle reveal.",
 
   "home.countdown.opensIn": "Opens in",
   "home.countdown.cycleEndsIn": "Cycle ends in",
@@ -75,6 +171,10 @@ export const enMessages = {
   "home.countdown.mins": "Mins",
   "home.countdown.secs": "Secs",
   "home.countdown.ariaLabel":
+    "{days} days, {hours} hours, {minutes} minutes, and {seconds} seconds remaining in this Market Pulse cycle",
+  "home.countdown.ariaOpensIn":
+    "Market Pulse opens in {days} days, {hours} hours, {minutes} minutes, and {seconds} seconds",
+  "home.countdown.ariaCycleEndsIn":
     "{days} days, {hours} hours, {minutes} minutes, and {seconds} seconds remaining in this Market Pulse cycle",
 
   "home.playLearnWin.heading": "Play. Learn. Win.",
@@ -88,10 +188,10 @@ export const enMessages = {
   "home.playLearnWin.prize.text":
     "Each Market Pulse cycle awards one Ocean Park ticket to the winner.",
 
-  "home.events.eyebrow": "Live Events Hub",
-  "home.events.heading": "Fireside chats with real operators",
+  "home.events.eyebrow": "Community & events",
+  "home.events.heading": "Learn beyond the leaderboard",
   "home.events.subtitle":
-    "Complement your Market Pulse play with live expert conversations.",
+    "Fireside chats and live sessions that complement your Market Pulse practice — optional, but valuable.",
   "home.events.nextLabel": "Next Fireside Chat",
   "home.events.comingSoonLabel": "Coming Soon",
   "home.events.register": "Register for Free",
@@ -135,6 +235,18 @@ export const enMessages = {
     "Sales and marketing strategies for Hong Kong founders. Full programme details to be announced.",
 
   "home.philosophy.srHeading": "Our Philosophy",
+  "home.philosophy.heading": "Think in systems",
+  "home.philosophy.intro":
+    "Profit Pulse Ally helps founders and investors balance growth, protection, and long-term compounding — the same rigor behind PPA Insight in Market Pulse.",
+  "home.philosophy.pillar.offense.title": "Offense",
+  "home.philosophy.pillar.offense.body":
+    "Spot momentum and growth opportunities with disciplined judgment.",
+  "home.philosophy.pillar.defense.title": "Defense",
+  "home.philosophy.pillar.defense.body":
+    "Protect cash flow and manage risk before capital is on the line.",
+  "home.philosophy.pillar.compounding.title": "Compounding",
+  "home.philosophy.pillar.compounding.body":
+    "Build decisions that stack over time toward a zero-cost life.",
   "home.philosophy.quote":
     "Profit Pulse Ally helps ambitious founders and investors think in systems — balancing offense and defense, cash flow and compounding — so every move moves you closer to a zero-cost life. That same rigor powers the PPA Take in Market Pulse: expert-backed judgment you can test, refine, and apply before real capital is on the line.",
   "home.philosophy.mindsHeading": "The Minds Behind the Market Pulse",
@@ -145,11 +257,13 @@ export const enMessages = {
   "home.experts.marcy.bio":
     "Practical strategies for building new-generation passive income streams — expertise that informs the disciplined decisions you practice in our investment simulations.",
 
-  "home.finalCta.heading": "Save your scores. Compete every cycle.",
+  "home.finalCta.heading": "Ready for the next signal?",
   "home.finalCta.body":
-    "Create a free Profit Pulse Ally account to lock in your Market Pulse reads, track your rank, and get event invites.",
-  "home.finalCta.member": "Become a Member",
+    "Create a free account to save your calls, track your score, and compete every cycle.",
+  "home.finalCta.member": "Create free account",
+  "home.finalCta.memberAria": "Create a free Profit Pulse Ally account",
   "home.finalCta.playGuest": "Play without signing up",
+  "home.finalCta.playGuestAria": "Play Market Pulse without signing up",
 
   "contact.title": "Contact Us",
   "contact.bodyPrefix": "For all inquiries, please email us at",

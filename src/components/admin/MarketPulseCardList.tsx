@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import type {
@@ -11,6 +12,7 @@ import {
   filterAdminCards,
   type AdminCardFilterState,
 } from "@/lib/market-pulse/admin-card-filter";
+import { marketPulseCycleBuilderPath } from "@/lib/market-pulse/admin-mp-navigation";
 import { isRevealWithinPpaWarningWindow } from "@/lib/market-pulse/admin-ppa-reveal-warning";
 import MarketPulseCardFilters from "@/components/admin/MarketPulseCardFilters";
 import {
@@ -19,13 +21,16 @@ import {
 } from "@/components/admin/MarketPulseCardPanel";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
+
+const primaryButtonClass = `inline-flex min-h-10 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 ${focusRing}`;
+
 type Props = {
   cycles: MarketPulseAdminCycleRow[];
   cards: MarketPulseAdminCardRow[];
   selectedCycleId: string;
   disabled: boolean;
-  createCardOpen: boolean;
-  onCreateCardOpenChange: (open: boolean) => void;
   onRefresh: () => void;
 };
 
@@ -44,11 +49,10 @@ export default function MarketPulseCardList({
   cards,
   selectedCycleId,
   disabled,
-  createCardOpen,
-  onCreateCardOpenChange,
   onRefresh,
 }: Readonly<Props>) {
   const { t } = useTranslations();
+  const [legacyCreateOpen, setLegacyCreateOpen] = useState(false);
   const selectedCycle = cycles.find((cycle) => cycle.id === selectedCycleId) ?? null;
 
   const [filters, setFilters] = useState<AdminCardFilterState>(() => ({
@@ -101,19 +105,42 @@ export default function MarketPulseCardList({
   const createCycleName =
     cycleNameById.get(createCycleId) ?? selectedCycle.name;
   const createDayIndexes = dayIndexesForCycle(cards, createCycleId);
+  const builderHref = marketPulseCycleBuilderPath(selectedCycle.id);
 
   return (
     <div className="space-y-4">
-      <CreateCardSection
-        cycleId={createCycleId}
-        cycleName={createCycleName}
-        nextDayIndex={(createDayIndexes.at(-1) ?? 0) + 1}
-        existingDayIndexes={createDayIndexes}
-        disabled={disabled}
-        open={createCardOpen}
-        onOpenChange={onCreateCardOpenChange}
-        onRefresh={onRefresh}
-      />
+      <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3">
+        <p className="text-sm font-medium text-amber-100">
+          {t("auth.admin.mp.nav.legacyCardsBanner")}
+        </p>
+        <p className="mt-1 text-sm text-amber-100/80">
+          {t("auth.admin.mp.nav.legacyCardsBannerBody")}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link href={builderHref} className={primaryButtonClass}>
+            {t("auth.admin.mp.openBuilder")}
+          </Link>
+        </div>
+      </div>
+
+      <details className="rounded-lg border border-zinc-800 bg-zinc-950/40">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-zinc-300 marker:content-none [&::-webkit-details-marker]:hidden">
+          {t("auth.admin.mp.nav.legacyCreateCard")}
+        </summary>
+        <div className="border-t border-zinc-800 px-4 pb-4 pt-3">
+          <CreateCardSection
+            cycleId={createCycleId}
+            cycleName={createCycleName}
+            nextDayIndex={(createDayIndexes.at(-1) ?? 0) + 1}
+            existingDayIndexes={createDayIndexes}
+            disabled={disabled}
+            open={legacyCreateOpen}
+            onOpenChange={setLegacyCreateOpen}
+            builderHref={builderHref}
+            onRefresh={onRefresh}
+          />
+        </div>
+      </details>
 
       <MarketPulseCardFilters
         cycles={cycles}
@@ -140,6 +167,7 @@ export default function MarketPulseCardList({
                 existingDayIndexes={dayIndexesForCycle(cards, card.cycleId)}
                 disabled={disabled}
                 revealUrgent={revealUrgentByCycleId.get(card.cycleId) ?? false}
+                builderHref={marketPulseCycleBuilderPath(card.cycleId)}
                 onRefresh={onRefresh}
               />
             </li>

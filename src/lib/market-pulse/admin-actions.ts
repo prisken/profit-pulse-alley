@@ -24,12 +24,41 @@ import {
   validateCardPublishable,
   validateCardStatusPpa,
   validateMarketPulseCardForm,
+  validateMarketPulseCardDraftSave,
   type MarketPulseCardFormValues,
 } from "@/lib/market-pulse/card-validation";
 import {
   parseCycleDate,
   validateMarketPulseCycleDates,
 } from "@/lib/market-pulse/cycle-validation";
+import { marketPulseCycleBuilderPath } from "@/lib/market-pulse/admin-builder-paths";
+import {
+  buildQuickCreateCycleDefaults,
+  type QuickCreateCycleReference,
+} from "@/lib/market-pulse/quick-create-cycle-defaults";
+import {
+  buildQuickDraftCardDefaults,
+} from "@/lib/market-pulse/cycle-card-defaults";
+import { buildDuplicateCardCreateData } from "@/lib/market-pulse/duplicate-card-data";
+import {
+  buildFillMissingSourceDatesPreview,
+  canReorderMarketPulseCards,
+  getAdjacentCardInOrder,
+  getCardSchedulingPublishBlockReason,
+  temporaryDayIndexForSwap,
+} from "@/lib/market-pulse/admin-card-scheduling";
+import {
+  formatBulkPublishMessage,
+  formatBulkUnpublishMessage,
+  getCardPublishBlockReason,
+  getCardUnpublishBlockReason,
+  getReadyToPublishCards,
+  planBulkPublish,
+  planBulkUnpublish,
+  type BulkPublishCardsResult,
+  type BulkUnpublishCardsResult,
+} from "@/lib/market-pulse/admin-bulk-card-actions";
+import type { MarketPulseAdminCardRow } from "@/lib/market-pulse/admin-data";
 import {
   calculateAndPersistCycleScores,
   getMarketPulseLeaderboard,
@@ -377,6 +406,86 @@ export async function createMarketPulseCycleAction(
   );
 }
 
+export type QuickCreateMarketPulseCycleResult = {
+  cycleId: string;
+  redirectPath: string;
+};
+
+export async function quickCreateMarketPulseCycleAction(): Promise<
+  AdminActionResult<QuickCreateMarketPulseCycleResult>
+> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const existingCycles = await prisma.marketPulseCycle.findMany({
+    orderBy: { endsAt: "desc" },
+    select: { name: true, startsAt: true, endsAt: true, revealAt: true },
+  });
+
+  const defaults = buildQuickCreateCycleDefaults(
+    existingCycles as QuickCreateCycleReference[],
+  );
+
+  const validationError = validateMarketPulseCycleDates({
+    name: defaults.name,
+    startsAt: defaults.startsAt,
+    endsAt: defaults.endsAt,
+    revealAt: defaults.revealAt,
+  });
+  if (validationError) {
+    return adminFail(validationError);
+  }
+
+  let cycle;
+  try {
+    cycle = await prisma.marketPulseCycle.create({
+      data: {
+        name: defaults.name,
+        startsAt: defaults.startsAt,
+        endsAt: defaults.endsAt,
+        revealAt: defaults.revealAt,
+        prizeLabel: defaults.prizeLabel,
+        status: defaults.status,
+      },
+    });
+  } catch (error) {
+    console.error("[admin] quickCreateMarketPulseCycleAction failed:", error);
+    return adminFail("Could not create cycle. Please try again.");
+  }
+
+  const redirectPath = marketPulseCycleBuilderPath(cycle.id);
+
+  return finishAdminMutation(
+    "Draft cycle created.",
+    [
+      {
+        label: "audit log",
+        run: () =>
+          writeCycleAuditLog({
+            adminUserId: admin.userId,
+            cycleId: cycle.id,
+            action: "CREATE",
+            newValue: defaults.status,
+            reason: `Quick-created draft cycle "${defaults.name}"`,
+          }),
+      },
+      revalidateAdminEffect(),
+      {
+        label: "builder cache refresh",
+        run: () => {
+          revalidatePath(redirectPath);
+        },
+      },
+    ],
+    {
+      data: {
+        cycleId: cycle.id,
+        redirectPath,
+      },
+    },
+  );
+}
+
 export type UpdateMarketPulseCycleInput = {
   cycleId: string;
   name: string;
@@ -680,6 +789,177 @@ export async function createMarketPulseCardAction(
   return finishAdminMutation("Card saved.", [revalidateAdminEffect()]);
 }
 
+export type QuickCreateMarketPulseCardDraftResult = {
+  cardId: string;
+};
+
+export async function quickCreateMarketPulseCardDraftAction(
+  cycleId: string,
+  options?: { promptOverride?: string },
+): Promise<AdminActionResult<QuickCreateMarketPulseCardDraftResult>> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const cycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: cycleId },
+    select: {
+      id: true,
+      startsAt: true,
+      endsAt: true,
+      revealAt: true,
+      prizeLabel: true,
+      cards: {
+        select: {
+          id: true,
+          dayIndex: true,
+          sourceDate: true,
+          userPrompt: true,
+          exchange: true,
+          sourceName: true,
+          sourceUrl: true,
+          headline: true,
+          companyName: true,
+          ticker: true,
+        },
+      },
+    },
+  });
+  if (!cycle) {
+    return adminFail("Cycle not found.");
+  }
+
+  const defaults = buildQuickDraftCardDefaults({
+    cycle: {
+      startsAt: cycle.startsAt,
+      endsAt: cycle.endsAt,
+      revealAt: cycle.revealAt,
+      prizeLabel: cycle.prizeLabel,
+    },
+    cards: cycle.cards,
+  });
+
+  const promptOverride = options?.promptOverride?.trim();
+  const userPrompt = promptOverride || defaults.userPrompt;
+
+  let card;
+  try {
+    card = await prisma.marketPulseCard.create({
+      data: {
+        cycleId: cycle.id,
+        dayIndex: defaults.dayIndex,
+        companyName: defaults.companyName,
+        ticker: defaults.ticker,
+        headline: defaults.headline,
+        userPrompt,
+        exchange: defaults.exchange,
+        sourceName: defaults.sourceName,
+        sourceUrl: defaults.sourceUrl,
+        status: defaults.status,
+        sourceDate: defaults.sourceDate,
+        ppaSignal: null,
+        ppaInsight: null,
+        publishedAt: null,
+      },
+    });
+  } catch (error) {
+    console.error("[admin] quickCreateMarketPulseCardDraftAction failed:", error);
+    return adminFail("Could not create card. Please try again.");
+  }
+
+  const builderPath = marketPulseCycleBuilderPath(cycle.id);
+
+  return finishAdminMutation(
+    "Draft card created.",
+    [
+      revalidateAdminEffect(),
+      {
+        label: "builder cache refresh",
+        run: () => {
+          revalidatePath(builderPath);
+        },
+      },
+    ],
+    {
+      data: {
+        cardId: card.id,
+      },
+      extraWarning: defaults.schedulingWarning ?? undefined,
+    },
+  );
+}
+
+export type DuplicateMarketPulseCardInput = {
+  sourceCardId: string;
+  targetCycleId?: string;
+};
+
+export async function duplicateMarketPulseCardAction(
+  input: DuplicateMarketPulseCardInput,
+): Promise<AdminActionResult<QuickCreateMarketPulseCardDraftResult>> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const source = await prisma.marketPulseCard.findUnique({
+    where: { id: input.sourceCardId },
+  });
+  if (!source) {
+    return adminFail("Card not found.");
+  }
+
+  const targetCycleId = input.targetCycleId?.trim() || source.cycleId;
+
+  const targetCycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: targetCycleId },
+    select: {
+      id: true,
+      startsAt: true,
+      endsAt: true,
+      cards: { select: { dayIndex: true, sourceDate: true } },
+    },
+  });
+  if (!targetCycle) {
+    return adminFail("Cycle not found.");
+  }
+
+  const duplicateData = buildDuplicateCardCreateData({
+    source,
+    targetCycleId: targetCycle.id,
+    targetCycleStartsAt: targetCycle.startsAt,
+    targetCycleEndsAt: targetCycle.endsAt,
+    existingCards: targetCycle.cards,
+  });
+
+  let card;
+  try {
+    card = await prisma.marketPulseCard.create({
+      data: duplicateData,
+    });
+  } catch (error) {
+    console.error("[admin] duplicateMarketPulseCardAction failed:", error);
+    return adminFail("Could not duplicate card. Please try again.");
+  }
+
+  const builderPath = marketPulseCycleBuilderPath(targetCycle.id);
+
+  return finishAdminMutation(
+    "Card duplicated.",
+    [
+      revalidateAdminEffect(),
+      {
+        label: "builder cache refresh",
+        run: () => {
+          revalidatePath(builderPath);
+        },
+      },
+    ],
+    {
+      data: {
+        cardId: card.id,
+      },
+    },
+  );
+}
+
 export type UpdateMarketPulseCardInput = CreateMarketPulseCardInput & {
   cardId: string;
   changeReason?: string;
@@ -833,6 +1113,291 @@ export async function updateMarketPulseCardAction(
   return finishAdminMutation("Card saved.", sideEffects);
 }
 
+export async function updateMarketPulseCardDraftAction(
+  input: UpdateMarketPulseCardInput,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const card = await prisma.marketPulseCard.findUnique({
+    where: { id: input.cardId },
+  });
+  if (!card) {
+    return adminFail("Card not found.");
+  }
+
+  const draftInput: UpdateMarketPulseCardInput = {
+    ...input,
+    status: "DRAFT",
+    publishedAt: "",
+  };
+
+  const formValues: MarketPulseCardFormValues = {
+    ...DEFAULT_CARD_FORM_VALUES,
+    ...draftInput,
+    ppaSignal: draftInput.ppaSignal ?? "",
+    changeReason: draftInput.changeReason ?? "",
+  };
+
+  const validation = validateMarketPulseCardDraftSave(formValues, {
+    existingDayIndexes: (
+      await prisma.marketPulseCard.findMany({
+        where: { cycleId: draftInput.cycleId, id: { not: input.cardId } },
+        select: { dayIndex: true },
+      })
+    ).map((row) => row.dayIndex),
+  });
+  if (!validation.valid) {
+    const firstError =
+      validation.errors.cycleId ??
+      validation.errors.dayIndex ??
+      validation.errors.companyName ??
+      validation.errors.ticker ??
+      validation.errors.headline ??
+      validation.errors.cardImageUrl ??
+      validation.errors.cardImageAlt ??
+      "Invalid card data.";
+    return adminFail(firstError, fieldErrorsFromRecord(validation.errors));
+  }
+
+  const uniqueError = await assertUniqueDayIndex({
+    cycleId: draftInput.cycleId,
+    dayIndex: draftInput.dayIndex,
+    excludeCardId: input.cardId,
+  });
+  if (uniqueError) {
+    return adminFail(uniqueError);
+  }
+
+  const nextSignal = draftInput.ppaSignal ?? null;
+  const nextInsight = trimOrNull(draftInput.ppaInsight);
+  const locked = Boolean(card.ppaSignalLockedAt);
+  const signalChanged = locked && nextSignal !== card.ppaSignal;
+  const insightChanged =
+    locked && nextInsight !== (card.ppaInsight?.trim() || null);
+
+  if (signalChanged || insightChanged) {
+    const reason = draftInput.changeReason?.trim();
+    if (!reason) {
+      return adminFail(
+        "A reason is required when changing locked PPA fields.",
+      );
+    }
+  }
+
+  try {
+    await prisma.marketPulseCard.update({
+      where: { id: input.cardId },
+      data: cardPayloadFromInput(
+        {
+          cycleId: draftInput.cycleId,
+          dayIndex: draftInput.dayIndex,
+          companyName: draftInput.companyName,
+          companyNameZh: draftInput.companyNameZh,
+          ticker: draftInput.ticker,
+          exchange: draftInput.exchange,
+          logoUrl: draftInput.logoUrl,
+          logoInitials: draftInput.logoInitials,
+          priceLabel: draftInput.priceLabel,
+          priceDirection: draftInput.priceDirection,
+          headline: draftInput.headline,
+          newsBody: draftInput.newsBody,
+          sourceName: draftInput.sourceName,
+          sourceUrl: draftInput.sourceUrl,
+          sourceDate: draftInput.sourceDate,
+          cardImageUrl: draftInput.cardImageUrl,
+          cardImageAlt: draftInput.cardImageAlt,
+          summary: draftInput.summary,
+          userPrompt: draftInput.userPrompt,
+          ppaSignal: nextSignal,
+          ppaInsight: draftInput.ppaInsight,
+          status: "DRAFT",
+          publishedAt: "",
+          revealAt: draftInput.revealAt,
+        },
+        { existingPublishedAt: card.publishedAt },
+      ),
+    });
+  } catch (error) {
+    console.error("[admin] updateMarketPulseCardDraftAction failed:", error);
+    return adminFail("Could not save card. Please try again.");
+  }
+
+  const sideEffects = [revalidateAdminEffect()];
+
+  if (signalChanged || insightChanged) {
+    const reason = draftInput.changeReason!.trim();
+    if (signalChanged) {
+      sideEffects.unshift({
+        label: "PPA audit log",
+        run: () =>
+          writePpaAuditLog({
+            adminUserId: admin.userId,
+            cardId: card.id,
+            fieldName: "ppaSignal",
+            oldValue: card.ppaSignal,
+            newValue: nextSignal,
+            reason,
+          }),
+      });
+    }
+    if (insightChanged) {
+      sideEffects.unshift({
+        label: "PPA audit log",
+        run: () =>
+          writePpaAuditLog({
+            adminUserId: admin.userId,
+            cardId: card.id,
+            fieldName: "ppaInsight",
+            oldValue: card.ppaInsight,
+            newValue: nextInsight,
+            reason,
+          }),
+      });
+    }
+  }
+
+  return finishAdminMutation("Draft saved.", sideEffects);
+}
+
+export type ReorderMarketPulseCardInput = {
+  cardId: string;
+  direction: "up" | "down";
+};
+
+export async function reorderMarketPulseCardAction(
+  input: ReorderMarketPulseCardInput,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const card = await prisma.marketPulseCard.findUnique({
+    where: { id: input.cardId },
+    select: { id: true, cycleId: true, dayIndex: true, status: true },
+  });
+  if (!card) {
+    return adminFail("Card not found.");
+  }
+
+  const cycleCards = await prisma.marketPulseCard.findMany({
+    where: { cycleId: card.cycleId },
+    select: { id: true, dayIndex: true, status: true },
+    orderBy: { dayIndex: "asc" },
+  });
+
+  const neighbor = getAdjacentCardInOrder(cycleCards, card.id, input.direction);
+  if (!neighbor) {
+    return adminFail("Card is already at the edge of the list.");
+  }
+
+  const reorderBlock = canReorderMarketPulseCards(card, neighbor);
+  if (reorderBlock) {
+    return adminFail(reorderBlock);
+  }
+
+  try {
+    await prisma.$transaction([
+      prisma.marketPulseCard.update({
+        where: { id: card.id },
+        data: { dayIndex: temporaryDayIndexForSwap(card.dayIndex) },
+      }),
+      prisma.marketPulseCard.update({
+        where: { id: neighbor.id },
+        data: { dayIndex: card.dayIndex },
+      }),
+      prisma.marketPulseCard.update({
+        where: { id: card.id },
+        data: { dayIndex: neighbor.dayIndex },
+      }),
+    ]);
+  } catch (error) {
+    console.error("[admin] reorderMarketPulseCardAction failed:", error);
+    return adminFail("Could not reorder cards. Please try again.");
+  }
+
+  return finishAdminMutation("Card order updated.", [revalidateAdminEffect()]);
+}
+
+export type FillMissingCardSourceDatesInput = {
+  cycleId: string;
+  apply?: boolean;
+};
+
+export type FillMissingCardSourceDatesResult = {
+  preview: ReturnType<typeof buildFillMissingSourceDatesPreview>;
+  updatedCount: number;
+};
+
+export async function fillMissingCardSourceDatesAction(
+  input: FillMissingCardSourceDatesInput,
+): Promise<AdminActionResult<FillMissingCardSourceDatesResult>> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const cycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: input.cycleId },
+    select: {
+      id: true,
+      startsAt: true,
+      cards: {
+        select: {
+          id: true,
+          dayIndex: true,
+          headline: true,
+          status: true,
+          sourceDate: true,
+        },
+        orderBy: { dayIndex: "asc" },
+      },
+    },
+  });
+  if (!cycle) {
+    return adminFail("Cycle not found.");
+  }
+
+  const preview = buildFillMissingSourceDatesPreview({
+    cycleStartsAt: cycle.startsAt,
+    cards: cycle.cards,
+  });
+
+  if (!input.apply) {
+    return adminOk("Preview ready.", {
+      data: { preview, updatedCount: 0 },
+    });
+  }
+
+  if (preview.updates.length === 0) {
+    return adminOk("No draft cards are missing source dates.", {
+      data: { preview, updatedCount: 0 },
+    });
+  }
+
+  try {
+    await prisma.$transaction(
+      preview.updates.map((row) =>
+        prisma.marketPulseCard.update({
+          where: { id: row.cardId },
+          data: { sourceDate: row.nextSourceDate },
+        }),
+      ),
+    );
+  } catch (error) {
+    console.error("[admin] fillMissingCardSourceDatesAction failed:", error);
+    return adminFail("Could not fill missing source dates. Please try again.");
+  }
+
+  return finishAdminMutation(
+    `Filled source dates for ${preview.updates.length} draft card(s).`,
+    [revalidateAdminEffect()],
+    {
+      data: {
+        preview,
+        updatedCount: preview.updates.length,
+      },
+    },
+  );
+}
+
 export async function publishMarketPulseCardAction(
   cardId: string,
 ): Promise<AdminActionResult> {
@@ -849,6 +1414,32 @@ export async function publishMarketPulseCardAction(
   const publishError = validateCardPublishable(card);
   if (publishError) {
     return adminFail(publishError);
+  }
+
+  const cycleCards = await prisma.marketPulseCard.findMany({
+    where: { cycleId: card.cycleId },
+    select: {
+      id: true,
+      dayIndex: true,
+      sourceDate: true,
+      status: true,
+    },
+  });
+  const cycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: card.cycleId },
+    select: { startsAt: true, endsAt: true },
+  });
+  if (!cycle) {
+    return adminFail("Cycle not found.");
+  }
+
+  const schedulingError = getCardSchedulingPublishBlockReason(
+    card,
+    cycle,
+    cycleCards,
+  );
+  if (schedulingError) {
+    return adminFail(schedulingError);
   }
 
   try {
@@ -877,6 +1468,392 @@ export async function publishMarketPulseCardAction(
             fieldName: "status",
             oldValue: card.status,
             newValue: "PUBLISHED",
+          },
+        }),
+    },
+    revalidateAdminEffect(),
+  ]);
+}
+
+function mapCardRowForBulkActions(card: {
+  id: string;
+  cycleId: string;
+  dayIndex: number;
+  companyName: string;
+  companyNameZh: string | null;
+  ticker: string;
+  exchange: string | null;
+  logoUrl: string | null;
+  logoInitials: string | null;
+  priceLabel: string | null;
+  priceDirection: string | null;
+  headline: string;
+  newsBody: string | null;
+  sourceName: string | null;
+  sourceUrl: string | null;
+  sourceDate: Date | null;
+  cardImageUrl: string | null;
+  cardImageAlt: string | null;
+  summary: string | null;
+  userPrompt: string | null;
+  status: MarketPulseAdminCardRow["status"];
+  ppaSignal: MarketPulseSignal | null;
+  ppaInsight: string | null;
+  ppaSignalLockedAt: Date | null;
+  publishedAt: Date | null;
+  revealAt: Date | null;
+  _count: { decisions: number };
+}): MarketPulseAdminCardRow {
+  return {
+    id: card.id,
+    cycleId: card.cycleId,
+    dayIndex: card.dayIndex,
+    companyName: card.companyName,
+    companyNameZh: card.companyNameZh,
+    ticker: card.ticker,
+    exchange: card.exchange,
+    logoUrl: card.logoUrl,
+    logoInitials: card.logoInitials,
+    priceLabel: card.priceLabel,
+    priceDirection: card.priceDirection,
+    headline: card.headline,
+    newsBody: card.newsBody,
+    sourceName: card.sourceName,
+    sourceUrl: card.sourceUrl,
+    sourceDate: card.sourceDate?.toISOString() ?? null,
+    cardImageUrl: card.cardImageUrl,
+    cardImageAlt: card.cardImageAlt,
+    summary: card.summary,
+    userPrompt: card.userPrompt,
+    status: card.status,
+    ppaSignal: card.ppaSignal,
+    ppaInsight: card.ppaInsight,
+    ppaSignalLockedAt: card.ppaSignalLockedAt?.toISOString() ?? null,
+    publishedAt: card.publishedAt?.toISOString() ?? null,
+    revealAt: card.revealAt?.toISOString() ?? null,
+    decisionCount: card._count.decisions,
+  };
+}
+
+const bulkCardSelect = {
+  id: true,
+  cycleId: true,
+  dayIndex: true,
+  companyName: true,
+  companyNameZh: true,
+  ticker: true,
+  exchange: true,
+  logoUrl: true,
+  logoInitials: true,
+  priceLabel: true,
+  priceDirection: true,
+  headline: true,
+  newsBody: true,
+  sourceName: true,
+  sourceUrl: true,
+  sourceDate: true,
+  cardImageUrl: true,
+  cardImageAlt: true,
+  summary: true,
+  userPrompt: true,
+  status: true,
+  ppaSignal: true,
+  ppaInsight: true,
+  ppaSignalLockedAt: true,
+  publishedAt: true,
+  revealAt: true,
+  _count: { select: { decisions: true } },
+} as const;
+
+async function loadCycleCardsForBulkActions(
+  cycleId: string,
+  cardIds?: string[],
+): Promise<MarketPulseAdminCardRow[] | null> {
+  const cycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: cycleId },
+    select: { id: true },
+  });
+  if (!cycle) {
+    return null;
+  }
+
+  const cards = await prisma.marketPulseCard.findMany({
+    where: {
+      cycleId,
+      ...(cardIds ? { id: { in: cardIds } } : {}),
+    },
+    select: bulkCardSelect,
+    orderBy: { dayIndex: "asc" },
+  });
+
+  return cards.map(mapCardRowForBulkActions);
+}
+
+export type BulkPublishMarketPulseCardsInput = {
+  cycleId: string;
+  cardIds: string[];
+};
+
+export async function bulkPublishMarketPulseCardsAction(
+  input: BulkPublishMarketPulseCardsInput,
+): Promise<AdminActionResult<BulkPublishCardsResult>> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const uniqueIds = [...new Set(input.cardIds.map((id) => id.trim()).filter(Boolean))];
+  if (uniqueIds.length === 0) {
+    return adminFail("Select at least one card.");
+  }
+
+  const cards = await loadCycleCardsForBulkActions(input.cycleId, uniqueIds);
+  if (!cards) {
+    return adminFail("Cycle not found.");
+  }
+
+  const cycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: input.cycleId },
+    select: { startsAt: true, endsAt: true },
+  });
+  if (!cycle) {
+    return adminFail("Cycle not found.");
+  }
+
+  const allCards = await loadCycleCardsForBulkActions(input.cycleId);
+  const plan = planBulkPublish(allCards ?? cards, uniqueIds, cycle);
+  const publishedCardIds: string[] = [];
+
+  try {
+    for (const target of plan.publishable) {
+      const card = cards.find((row) => row.id === target.cardId);
+      if (!card) {
+        continue;
+      }
+
+      const publishError = getCardPublishBlockReason(card, {
+        cycle,
+        allCards: allCards ?? cards,
+      });
+      if (publishError) {
+        continue;
+      }
+
+      await prisma.marketPulseCard.update({
+        where: { id: target.cardId },
+        data: {
+          status: "PUBLISHED",
+          publishedAt: card.publishedAt ? new Date(card.publishedAt) : new Date(),
+        },
+      });
+
+      await prisma.marketPulseAuditLog.create({
+        data: {
+          adminUserId: admin.userId,
+          entityType: "MarketPulseCard",
+          entityId: target.cardId,
+          action: "PUBLISH",
+          fieldName: "status",
+          oldValue: card.status,
+          newValue: "PUBLISHED",
+        },
+      });
+
+      publishedCardIds.push(target.cardId);
+    }
+  } catch (error) {
+    console.error("[admin] bulkPublishMarketPulseCardsAction failed:", error);
+    return adminFail("Could not publish selected cards. Please try again.");
+  }
+
+  const result: BulkPublishCardsResult = {
+    publishedCount: publishedCardIds.length,
+    skippedCount: plan.skipped.length,
+    publishedCardIds,
+    skipped: plan.skipped,
+  };
+
+  const builderPath = marketPulseCycleBuilderPath(input.cycleId);
+
+  return finishAdminMutation(
+    formatBulkPublishMessage(result),
+    [
+      revalidateAdminEffect(),
+      {
+        label: "builder cache refresh",
+        run: () => {
+          revalidatePath(builderPath);
+        },
+      },
+    ],
+    {
+      data: result,
+      extraWarning:
+        result.skippedCount > 0
+          ? `${result.skippedCount} card(s) were skipped because they did not pass validation.`
+          : undefined,
+    },
+  );
+}
+
+export async function bulkPublishAllReadyMarketPulseCardsAction(
+  cycleId: string,
+): Promise<AdminActionResult<BulkPublishCardsResult>> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const cards = await loadCycleCardsForBulkActions(cycleId);
+  if (!cards) {
+    return adminFail("Cycle not found.");
+  }
+
+  const readyIds = getReadyToPublishCards(cards).map((card) => card.id);
+  return bulkPublishMarketPulseCardsAction({
+    cycleId,
+    cardIds: readyIds,
+  });
+}
+
+export type BulkUnpublishMarketPulseCardsInput = {
+  cycleId: string;
+  cardIds: string[];
+};
+
+export async function bulkUnpublishMarketPulseCardsAction(
+  input: BulkUnpublishMarketPulseCardsInput,
+): Promise<AdminActionResult<BulkUnpublishCardsResult>> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const uniqueIds = [...new Set(input.cardIds.map((id) => id.trim()).filter(Boolean))];
+  if (uniqueIds.length === 0) {
+    return adminFail("Select at least one card.");
+  }
+
+  const cards = await loadCycleCardsForBulkActions(input.cycleId, uniqueIds);
+  if (!cards) {
+    return adminFail("Cycle not found.");
+  }
+
+  const plan = planBulkUnpublish(cards, uniqueIds);
+  const unpublishedCardIds: string[] = [];
+
+  try {
+    for (const target of plan.unpublishable) {
+      const card = cards.find((row) => row.id === target.cardId);
+      if (!card) {
+        continue;
+      }
+
+      const unpublishError = getCardUnpublishBlockReason(card);
+      if (unpublishError) {
+        continue;
+      }
+
+      await prisma.marketPulseCard.update({
+        where: { id: target.cardId },
+        data: {
+          status: "DRAFT",
+          publishedAt: null,
+        },
+      });
+
+      await prisma.marketPulseAuditLog.create({
+        data: {
+          adminUserId: admin.userId,
+          entityType: "MarketPulseCard",
+          entityId: target.cardId,
+          action: "UNPUBLISH",
+          fieldName: "status",
+          oldValue: card.status,
+          newValue: "DRAFT",
+        },
+      });
+
+      unpublishedCardIds.push(target.cardId);
+    }
+  } catch (error) {
+    console.error("[admin] bulkUnpublishMarketPulseCardsAction failed:", error);
+    return adminFail("Could not unpublish selected cards. Please try again.");
+  }
+
+  const result: BulkUnpublishCardsResult = {
+    unpublishedCount: unpublishedCardIds.length,
+    skippedCount: plan.skipped.length,
+    unpublishedCardIds,
+    skipped: plan.skipped,
+  };
+
+  const builderPath = marketPulseCycleBuilderPath(input.cycleId);
+
+  return finishAdminMutation(
+    formatBulkUnpublishMessage(result),
+    [
+      revalidateAdminEffect(),
+      {
+        label: "builder cache refresh",
+        run: () => {
+          revalidatePath(builderPath);
+        },
+      },
+    ],
+    {
+      data: result,
+      extraWarning:
+        result.skippedCount > 0
+          ? `${result.skippedCount} card(s) were skipped because they could not be unpublished.`
+          : undefined,
+    },
+  );
+}
+
+export async function unpublishMarketPulseCardAction(
+  cardId: string,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const card = await prisma.marketPulseCard.findUnique({
+    where: { id: cardId },
+    select: {
+      ...bulkCardSelect,
+      cycleId: true,
+    },
+  });
+  if (!card) {
+    return adminFail("Card not found.");
+  }
+
+  const row = mapCardRowForBulkActions(card);
+  const unpublishError = getCardUnpublishBlockReason(row);
+  if (unpublishError) {
+    return adminFail(unpublishError);
+  }
+
+  try {
+    await prisma.marketPulseCard.update({
+      where: { id: cardId },
+      data: {
+        status: "DRAFT",
+        publishedAt: null,
+      },
+    });
+  } catch (error) {
+    console.error("[admin] unpublishMarketPulseCardAction failed:", error);
+    return adminFail("Could not unpublish card. Please try again.");
+  }
+
+  return finishAdminMutation("Card unpublished.", [
+    {
+      label: "audit log",
+      run: () =>
+        prisma.marketPulseAuditLog.create({
+          data: {
+            adminUserId: admin.userId,
+            entityType: "MarketPulseCard",
+            entityId: cardId,
+            action: "UNPUBLISH",
+            fieldName: "status",
+            oldValue: row.status,
+            newValue: "DRAFT",
           },
         }),
     },

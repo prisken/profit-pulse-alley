@@ -1,8 +1,10 @@
 import FinalCtaSection from "@/components/home/FinalCtaSection";
 import LiveEventsHubSection from "@/components/home/LiveEventsHubSection";
 import MarketPulseHero from "@/components/home/MarketPulseHero";
+import MarketPulseCycleLoopSection from "@/components/home/MarketPulseCycleLoopSection";
+import MarketPulseHowItWorksSection from "@/components/home/MarketPulseHowItWorksSection";
+import MarketPulsePpaInsightSection from "@/components/home/MarketPulsePpaInsightSection";
 import PhilosophySection from "@/components/home/PhilosophySection";
-import PlayLearnWinSection from "@/components/home/PlayLearnWinSection";
 import { getPastEventsShowcase } from "@/lib/events/home-events-hub";
 import { getServerTranslations } from "@/lib/i18n/server";
 
@@ -17,7 +19,9 @@ export default async function Home() {
   return (
     <main className="flex min-w-0 flex-col overflow-x-hidden bg-zinc-950 text-zinc-50">
       <MarketPulseHero />
-      <PlayLearnWinSection />
+      <MarketPulseHowItWorksSection />
+      <MarketPulseCycleLoopSection />
+      <MarketPulsePpaInsightSection />
       <LiveEventsHubSection
         upcomingEvent={{
           kind: "event",

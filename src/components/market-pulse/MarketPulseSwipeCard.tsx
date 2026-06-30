@@ -2,6 +2,8 @@
 
 import {
   useCallback,
+  useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -23,10 +25,14 @@ import {
   ArrowUpRight,
   ImageIcon,
   Loader2,
+  Lock,
   Minus,
 } from "lucide-react";
 
-import DecisionLockedCard from "@/components/market-pulse/DecisionLockedCard";
+import DecisionLockedCard, {
+  type DecisionLockedCardContext,
+} from "@/components/market-pulse/DecisionLockedCard";
+import { MP_FOCUS_RING } from "@/components/market-pulse/MarketPulseVisualPrimitives";
 import { useLocale, useTranslations } from "@/components/providers/LocaleProvider";
 import { translateMarketPulseError } from "@/lib/i18n/market-pulse-ui";
 import {
@@ -36,24 +42,28 @@ import {
 import {
   type MarketPulseDecision,
 } from "@/lib/market-pulse/constants";
+import {
+  decisionToDragBias,
+  resolveDragBias,
+  resolveSwipeDecision,
+  SWIPE_THRESHOLD,
+  type DragBias,
+} from "@/lib/market-pulse/decision-interaction";
+import type { MarketPulseMessageKey } from "@/lib/i18n/messages/market-pulse-messages";
 import type {
   MarketPulseSwipeCardData,
   MarketPulseSwipeSubmitResult,
 } from "@/lib/market-pulse/types";
 
-const SWIPE_THRESHOLD = 110;
 const EXIT_DISTANCE = 720;
-const DRAG_BIAS_THRESHOLD = 36;
 
-const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black";
+const focusRing = MP_FOCUS_RING;
 
 const springSnap = { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.85 };
 const springExit = { type: "spring" as const, stiffness: 220, damping: 26, mass: 0.9 };
 const springEntrance = { type: "spring" as const, stiffness: 300, damping: 28 };
 
-type CardPhase = "idle" | "submitting" | "locked";
-type DragBias = "neutral" | "bullish" | "cautious";
+type CardPhase = "idle" | "confirm" | "submitting" | "locked";
 
 export type MarketPulseSwipeCardAnalyticsContext = {
   cycleId?: string;
@@ -65,9 +75,11 @@ export type MarketPulseSwipeCardProps = {
   onSubmit: (decision: MarketPulseDecision) => Promise<MarketPulseSwipeSubmitResult>;
   initialDecision?: MarketPulseDecision | null;
   disabled?: boolean;
+  /** When true with `disabled`, shows Bullish/Cautious buttons in a non-interactive state. */
+  showDecisionControls?: boolean;
   analyticsContext?: MarketPulseSwipeCardAnalyticsContext;
   revealMessage?: string;
-  lockedFooterMessage?: string;
+  lockedCycleContext?: DecisionLockedCardContext;
   className?: string;
 };
 
@@ -192,17 +204,26 @@ function SwipeStamp({
 function CardImage({
   imageUrl,
   imageAlt,
-}: Readonly<{ imageUrl?: string | null; imageAlt?: string | null }>) {
+  companyInitialsLabel,
+}: Readonly<{
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  companyInitialsLabel?: string;
+}>) {
   const { t } = useTranslations();
 
   if (imageUrl) {
     return (
-      <div className="overflow-hidden rounded-xl border border-white/15 bg-black">
+      <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-zinc-900 to-black shadow-inner shadow-black/40 ring-1 ring-emerald-500/10">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imageUrl}
           alt={imageAlt?.trim() || t("mp.card.imageAlt")}
-          className="aspect-video w-full max-w-full object-cover"
+          className="aspect-[16/10] w-full max-w-full object-cover sm:aspect-video"
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/70 to-transparent"
+          aria-hidden="true"
         />
       </div>
     );
@@ -210,14 +231,98 @@ function CardImage({
 
   return (
     <div
-      className="flex aspect-video w-full items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black"
-      aria-hidden="true"
+      className="relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-2xl border border-dashed border-white/15 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black sm:aspect-video"
+      role="img"
+      aria-label={t("mp.card.noImage")}
     >
-      <div className="flex flex-col items-center gap-2 text-zinc-600">
-        <ImageIcon className="h-8 w-8 opacity-40" />
-        <span className="text-[11px] font-medium uppercase tracking-wider opacity-60">
+      {companyInitialsLabel ? (
+        <span
+          className="pointer-events-none select-none text-4xl font-black tracking-tight text-white/[0.07] sm:text-5xl"
+          aria-hidden="true"
+        >
+          {companyInitialsLabel}
+        </span>
+      ) : null}
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-zinc-600">
+        <ImageIcon className="h-9 w-9 opacity-35" aria-hidden="true" />
+        <span className="text-[11px] font-medium uppercase tracking-wider opacity-70">
           {t("mp.card.noImage")}
         </span>
+      </div>
+    </div>
+  );
+}
+
+function PpaLockedNote() {
+  const { t } = useTranslations();
+
+  return (
+    <p className="flex items-center justify-center gap-1.5 text-center text-[11px] leading-snug text-zinc-500 sm:text-xs">
+      <Lock className="h-3 w-3 shrink-0 text-amber-400/80" aria-hidden="true" />
+      {t("mp.play.stage.ppaNote")}
+    </p>
+  );
+}
+
+function CompanyIdentity({
+  card,
+  initials,
+}: Readonly<{ card: MarketPulseSwipeCardData; initials: string }>) {
+  const priceTone = priceDirectionTone(card.priceDirection);
+  const PriceIcon = priceTone.icon;
+
+  return (
+    <div className="flex items-start gap-3">
+      {card.logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={card.logoUrl}
+          alt=""
+          className="h-12 w-12 shrink-0 rounded-xl border border-white/20 bg-white/5 object-cover shadow-sm sm:h-14 sm:w-14"
+        />
+      ) : (
+        <div
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-sm font-bold text-emerald-100 shadow-sm sm:h-14 sm:w-14 sm:text-base"
+          aria-hidden="true"
+        >
+          {initials}
+        </div>
+      )}
+
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[11px] font-bold text-emerald-200 sm:text-xs">
+            {card.ticker}
+          </span>
+          {card.exchange ? (
+            <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-500 sm:text-[11px]">
+              {card.exchange}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-1 line-clamp-2 break-words text-base font-bold text-white sm:text-lg">
+          {card.companyName}
+        </p>
+        {card.companyNameZh ? (
+          <p className="line-clamp-2 break-words text-xs text-zinc-500">{card.companyNameZh}</p>
+        ) : null}
+        {(card.priceLabel || card.priceDirection) && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {card.priceLabel ? (
+              <span className="inline-flex rounded-full border border-white/15 bg-black/60 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-white">
+                {card.priceLabel}
+              </span>
+            ) : null}
+            {card.priceDirection ? (
+              <span
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${priceTone.pillClass}`}
+              >
+                <PriceIcon className={`h-3 w-3 ${priceTone.iconClass}`} aria-hidden="true" />
+                {card.priceDirection}
+              </span>
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -229,114 +334,40 @@ function CardBody({
   const { t, locale } = useLocale();
   const intlLocale = locale === "zh-Hant" ? "zh-HK" : "en-HK";
   const sourceDateLabel = formatSourceDate(card.sourceDate, intlLocale);
-  const priceTone = priceDirectionTone(card.priceDirection);
-  const PriceIcon = priceTone.icon;
   const initials =
     card.logoInitials?.trim() || companyInitials(card.companyName);
 
   return (
     <>
-      <section className="shrink-0">
-        <p className="text-xs font-bold uppercase tracking-wide text-red-500">
-          {t("mp.card.label.headline")}
+      <header className="shrink-0 space-y-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-400/90 sm:text-[11px]">
+          {t("mp.play.stage.todaySignal")}
         </p>
+        <CompanyIdentity card={card} initials={initials} />
+      </header>
+
+      <CardImage
+        imageUrl={card.cardImageUrl}
+        imageAlt={card.cardImageAlt}
+        companyInitialsLabel={initials}
+      />
+
+      <section className="shrink-0 space-y-2">
         <h3
           id={`card-headline-${card.id}`}
-          className="mt-1 break-words text-balance text-base font-bold leading-snug text-white sm:text-lg"
+          className="break-words text-balance text-lg font-bold leading-snug text-white sm:text-xl"
         >
           {card.headline}
         </h3>
         {card.newsBody ? (
-          <p className="mt-2 break-words text-pretty text-sm leading-relaxed text-zinc-300">
+          <p className="break-words text-pretty text-sm leading-relaxed text-zinc-300 sm:text-[15px]">
             {card.newsBody}
           </p>
         ) : null}
-        {(card.sourceName || sourceDateLabel) && (
-          <div className="mt-3 flex flex-wrap justify-end gap-x-1.5 gap-y-0.5 text-right text-[11px] text-zinc-500 sm:text-xs">
-            {card.sourceName ? (
-              <span className="font-medium text-zinc-400">{card.sourceName}</span>
-            ) : null}
-            {card.sourceName && sourceDateLabel ? (
-              <span className="text-zinc-600" aria-hidden="true">
-                ·
-              </span>
-            ) : null}
-            {sourceDateLabel ? (
-              <time
-                dateTime={
-                  card.sourceDate instanceof Date
-                    ? card.sourceDate.toISOString()
-                    : card.sourceDate ?? undefined
-                }
-              >
-                {sourceDateLabel}
-              </time>
-            ) : null}
-          </div>
-        )}
       </section>
-
-      <section className="shrink-0">
-        <div className="flex items-center gap-3">
-          {card.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={card.logoUrl}
-              alt=""
-              className="h-11 w-11 shrink-0 rounded-full border border-white/20 bg-white/5 object-cover"
-            />
-          ) : (
-            <div
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/25 bg-zinc-900 text-sm font-bold text-white"
-              aria-hidden="true"
-            >
-              {initials}
-            </div>
-          )}
-
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-white sm:text-base">
-              {card.companyName}
-            </p>
-            {card.companyNameZh ? (
-              <p className="truncate text-[11px] text-zinc-500">{card.companyNameZh}</p>
-            ) : null}
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex rounded-full border border-white/20 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-semibold text-white sm:text-[11px]">
-                {card.ticker}
-              </span>
-              {card.exchange ? (
-                <span className="text-[10px] text-zinc-500 sm:text-[11px]">
-                  {card.exchange}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        {(card.priceLabel || card.priceDirection) && (
-          <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            {card.priceLabel ? (
-              <span className="inline-flex rounded-full border border-white/20 bg-black px-2.5 py-1 text-xs font-semibold tabular-nums text-white sm:text-sm">
-                {card.priceLabel}
-              </span>
-            ) : null}
-            {card.priceDirection ? (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold sm:text-xs ${priceTone.pillClass}`}
-              >
-                <PriceIcon className={`h-3 w-3 ${priceTone.iconClass}`} aria-hidden="true" />
-                {card.priceDirection}
-              </span>
-            ) : null}
-          </div>
-        )}
-      </section>
-
-      <CardImage imageUrl={card.cardImageUrl} imageAlt={card.cardImageAlt} />
 
       {card.summary ? (
-        <section className="shrink-0 rounded-xl border border-white/10 bg-zinc-950/60 p-3">
+        <section className="shrink-0 rounded-xl border border-white/10 bg-zinc-950/70 p-3 sm:p-3.5">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
             {t("mp.card.label.summary")}
           </p>
@@ -345,6 +376,32 @@ function CardBody({
           </p>
         </section>
       ) : null}
+
+      {(card.sourceName || sourceDateLabel) && (
+        <div className="shrink-0 flex flex-wrap justify-end gap-x-1.5 gap-y-0.5 text-right text-[11px] text-zinc-500 sm:text-xs">
+          {card.sourceName ? (
+            <span className="font-medium text-zinc-400">{card.sourceName}</span>
+          ) : null}
+          {card.sourceName && sourceDateLabel ? (
+            <span className="text-zinc-600" aria-hidden="true">
+              ·
+            </span>
+          ) : null}
+          {sourceDateLabel ? (
+            <time
+              dateTime={
+                card.sourceDate instanceof Date
+                  ? card.sourceDate.toISOString()
+                  : card.sourceDate ?? undefined
+              }
+            >
+              {sourceDateLabel}
+            </time>
+          ) : null}
+        </div>
+      )}
+
+      <PpaLockedNote />
     </>
   );
 }
@@ -356,7 +413,7 @@ function CardPrompt({
   const promptText = card.userPrompt?.trim() || t("prompt.defaultRead");
 
   return (
-    <p className="text-center text-sm font-medium leading-snug text-zinc-300">
+    <p className="rounded-xl border border-white/10 bg-zinc-950/80 px-3 py-2.5 text-center text-sm font-semibold leading-snug text-zinc-100 sm:text-[15px]">
       {promptText}
     </p>
   );
@@ -394,15 +451,159 @@ function SwipeHint({ reduceMotion }: Readonly<{ reduceMotion: boolean }>) {
   );
 }
 
+function confirmTitleKey(decision: MarketPulseDecision): MarketPulseMessageKey {
+  return decision === "BULLISH"
+    ? "mp.decision.confirm.bullish"
+    : "mp.decision.confirm.cautious";
+}
+
+function confirmSubmitAriaKey(decision: MarketPulseDecision): MarketPulseMessageKey {
+  return decision === "BULLISH"
+    ? "mp.decision.aria.confirmBullish"
+    : "mp.decision.aria.confirmCautious";
+}
+
+function chooseAriaKey(decision: MarketPulseDecision): MarketPulseMessageKey {
+  return decision === "BULLISH"
+    ? "mp.decision.aria.chooseBullish"
+    : "mp.decision.aria.chooseCautious";
+}
+
+function DecisionConfirmPanel({
+  decision,
+  onConfirm,
+  onCancel,
+  isSubmitting,
+}: Readonly<{
+  decision: MarketPulseDecision;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isSubmitting: boolean;
+}>) {
+  const { t } = useTranslations();
+  const reduceMotion = useReducedMotion() ?? false;
+  const titleId = useId();
+  const warningId = useId();
+  const confirmButtonRef = useRef<HTMLButtonElement>(null);
+  const isBullish = decision === "BULLISH";
+  const label = t(isBullish ? "signal.bullish" : "signal.cautious");
+
+  useEffect(() => {
+    confirmButtonRef.current?.focus();
+  }, [decision]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isSubmitting) {
+        event.preventDefault();
+        onCancel();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isSubmitting, onCancel]);
+
+  return (
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={reduceMotion ? undefined : { opacity: 0, y: 6 }}
+      transition={reduceMotion ? { duration: 0.12 } : springSnap}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      aria-describedby={warningId}
+      aria-label={t("mp.decision.aria.confirmDialog")}
+      className={`rounded-xl border-2 p-3.5 sm:p-4 ${
+        isBullish
+          ? "border-emerald-500/50 bg-emerald-500/10"
+          : "border-amber-500/50 bg-amber-500/10"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 ${
+            isBullish
+              ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-200"
+              : "border-amber-400/70 bg-amber-500/15 text-amber-200"
+          }`}
+          aria-hidden="true"
+        >
+          {isBullish ? (
+            <TriangleRight className="h-4 w-4" />
+          ) : (
+            <TriangleLeft className="h-4 w-4" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h4
+            id={titleId}
+            className={`text-base font-bold sm:text-lg ${
+              isBullish ? "text-emerald-100" : "text-amber-100"
+            }`}
+          >
+            {t(confirmTitleKey(decision))}
+          </h4>
+          <p className="mt-1 text-sm font-semibold text-white">{label}</p>
+          <p id={warningId} className="mt-2 text-xs leading-relaxed text-zinc-400 sm:text-sm">
+            {t("mp.decision.confirm.warning")}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-3">
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={onCancel}
+          className={`inline-flex min-h-12 items-center justify-center rounded-xl border border-white/20 bg-zinc-950/80 px-3 text-sm font-semibold text-zinc-200 transition-colors hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
+        >
+          {t("mp.decision.confirm.cancel")}
+        </button>
+        <button
+          ref={confirmButtonRef}
+          type="button"
+          disabled={isSubmitting}
+          onClick={onConfirm}
+          aria-label={t(confirmSubmitAriaKey(decision))}
+          className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-3 text-sm font-bold text-zinc-950 transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${focusRing} ${
+            isBullish
+              ? "border-emerald-300 bg-emerald-400 hover:bg-emerald-300"
+              : "border-amber-300 bg-amber-400 hover:bg-amber-300"
+          }`}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2
+                className={`h-4 w-4 ${reduceMotion ? "" : "animate-spin"}`}
+                aria-hidden="true"
+              />
+              {t("mp.decision.confirm.submitting")}
+            </>
+          ) : (
+            <>
+              <Lock className="h-4 w-4" aria-hidden="true" />
+              {t("mp.decision.confirm.submit")}
+            </>
+          )}
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 function DecisionButton({
   decision,
-  active,
+  highlighted,
+  pending,
   disabled,
   reduceMotion,
   onClick,
 }: Readonly<{
   decision: MarketPulseDecision;
-  active: boolean;
+  highlighted: boolean;
+  pending: boolean;
   disabled: boolean;
   reduceMotion: boolean;
   onClick: () => void;
@@ -410,40 +611,48 @@ function DecisionButton({
   const { t } = useTranslations();
   const isBullish = decision === "BULLISH";
   const label = t(isBullish ? "signal.bullish" : "signal.cautious");
+  const isActive = highlighted || pending;
 
   return (
     <motion.button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      aria-label={t("mp.card.aria.choose").replace("{label}", label)}
+      aria-label={t(chooseAriaKey(decision))}
+      aria-pressed={isActive}
       whileHover={reduceMotion || disabled ? undefined : { scale: 1.02 }}
       whileTap={reduceMotion || disabled ? undefined : { scale: 0.97 }}
       animate={
         reduceMotion
           ? undefined
           : {
-              scale: active ? 1.02 : 1,
+              scale: isActive ? 1.02 : 1,
             }
       }
       transition={springSnap}
-      className={`inline-flex min-h-[3.5rem] flex-1 items-center justify-center gap-2 rounded-xl border-2 bg-black px-3 py-3 text-base font-bold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-14 sm:text-lg ${focusRing} ${
+      className={`inline-flex min-h-[3.75rem] flex-1 flex-col items-center justify-center gap-1 rounded-xl border-2 px-3 py-3 text-base font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.875rem] sm:text-lg ${focusRing} ${
         isBullish
-          ? `border-emerald-500 hover:bg-emerald-500/10 ${
-              active ? "bg-emerald-500/15 ring-2 ring-emerald-500/40" : ""
-            }`
-          : `border-amber-500 hover:bg-amber-500/10 ${
-              active ? "bg-amber-500/15 ring-2 ring-amber-500/40" : ""
-            }`
+          ? pending
+            ? "border-emerald-300 bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-900/30"
+            : isActive
+              ? "border-emerald-400 bg-emerald-500/20 text-emerald-50 ring-2 ring-emerald-400/50"
+              : "border-emerald-500/80 bg-emerald-500/5 text-emerald-100 hover:border-emerald-400 hover:bg-emerald-500/15"
+          : pending
+            ? "border-amber-300 bg-amber-400 text-zinc-950 shadow-lg shadow-amber-900/30"
+            : isActive
+              ? "border-amber-400 bg-amber-500/20 text-amber-50 ring-2 ring-amber-400/50"
+              : "border-amber-500/80 bg-amber-500/5 text-amber-100 hover:border-amber-400 hover:bg-amber-500/15"
       }`}
     >
-      {!isBullish ? (
-        <TriangleLeft className="h-3.5 w-3.5 shrink-0 text-amber-400 sm:h-4 sm:w-4" />
-      ) : null}
-      <span>{label}</span>
-      {isBullish ? (
-        <TriangleRight className="h-3.5 w-3.5 shrink-0 text-emerald-400 sm:h-4 sm:w-4" />
-      ) : null}
+      <span className="inline-flex items-center gap-2">
+        {!isBullish ? (
+          <TriangleLeft className="h-4 w-4 shrink-0 sm:h-[18px] sm:w-[18px]" aria-hidden="true" />
+        ) : null}
+        <span>{label}</span>
+        {isBullish ? (
+          <TriangleRight className="h-4 w-4 shrink-0 sm:h-[18px] sm:w-[18px]" aria-hidden="true" />
+        ) : null}
+      </span>
     </motion.button>
   );
 }
@@ -453,9 +662,10 @@ export default function MarketPulseSwipeCard({
   onSubmit,
   initialDecision = null,
   disabled = false,
+  showDecisionControls = false,
   analyticsContext,
   revealMessage,
-  lockedFooterMessage,
+  lockedCycleContext,
   className = "",
 }: MarketPulseSwipeCardProps) {
   const { t, locale } = useLocale();
@@ -467,6 +677,9 @@ export default function MarketPulseSwipeCard({
   );
   const [lockedDecision, setLockedDecision] = useState<MarketPulseDecision | null>(
     initialDecision,
+  );
+  const [pendingDecision, setPendingDecision] = useState<MarketPulseDecision | null>(
+    null,
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [exitX, setExitX] = useState(0);
@@ -489,21 +702,60 @@ export default function MarketPulseSwipeCard({
     if (phase !== "idle") {
       return;
     }
-    if (latest > DRAG_BIAS_THRESHOLD) {
-      setDragBias("bullish");
-    } else if (latest < -DRAG_BIAS_THRESHOLD) {
-      setDragBias("cautious");
-    } else {
-      setDragBias("neutral");
-    }
+    setDragBias(resolveDragBias(latest));
   });
 
   const interactionsDisabled =
     disabled || phase === "submitting" || phase === "locked";
-  const swipeEnabled = !interactionsDisabled && !reduceMotion;
+  const swipeEnabled = !interactionsDisabled && !reduceMotion && phase === "idle";
   const cardRegionLabel = disabled
     ? t("mp.card.aria.preview").replace("{company}", card.companyName)
     : t("mp.card.aria.playable").replace("{company}", card.companyName);
+
+  const cancelConfirm = useCallback(() => {
+    if (submittingRef.current) {
+      return;
+    }
+    setPendingDecision(null);
+    setPhase("idle");
+    setDragBias("neutral");
+    x.set(0);
+  }, [x]);
+
+  const requestConfirm = useCallback(
+    (decision: MarketPulseDecision) => {
+      if (interactionsDisabled || submittingRef.current || phase === "confirm") {
+        return;
+      }
+
+      setErrorMessage(null);
+      setPendingDecision(decision);
+      setPhase("confirm");
+      setDragBias(decisionToDragBias(decision));
+      x.set(0);
+
+      trackMarketPulseEvent(MARKET_PULSE_ANALYTICS_EVENTS.decision_selected, {
+        cardId: card.id,
+        cycleId: analyticsContext?.cycleId,
+        dayIndex: analyticsContext?.dayIndex,
+        decision,
+        surface: "play",
+        route: "/market-pulse/play",
+      });
+      trackMarketPulseEvent(
+        MARKET_PULSE_ANALYTICS_EVENTS.decision_confirmation_opened,
+        {
+          cardId: card.id,
+          cycleId: analyticsContext?.cycleId,
+          dayIndex: analyticsContext?.dayIndex,
+          decision,
+          surface: "play",
+          route: "/market-pulse/play",
+        },
+      );
+    },
+    [analyticsContext, card.id, interactionsDisabled, phase, x],
+  );
 
   const submitDecision = useCallback(
     async (decision: MarketPulseDecision) => {
@@ -515,7 +767,7 @@ export default function MarketPulseSwipeCard({
       setErrorMessage(null);
       setPhase("submitting");
       setExitX(decision === "BULLISH" ? EXIT_DISTANCE : -EXIT_DISTANCE);
-      setDragBias(decision === "BULLISH" ? "bullish" : "cautious");
+      setDragBias(decisionToDragBias(decision));
 
       try {
         const result = await onSubmit(decision);
@@ -523,8 +775,8 @@ export default function MarketPulseSwipeCard({
         if (!result.ok) {
           submittingRef.current = false;
           setExitX(0);
-          setPhase("idle");
-          setDragBias("neutral");
+          setPhase("confirm");
+          setDragBias(decisionToDragBias(decision));
           setErrorMessage(
             translateMarketPulseError(locale, result.error ?? t("mp.error.generic")),
           );
@@ -540,10 +792,12 @@ export default function MarketPulseSwipeCard({
             dayIndex: analyticsContext?.dayIndex,
             decision,
             surface: "play",
+            route: "/market-pulse/play",
           },
         );
 
         await new Promise((resolve) => window.setTimeout(resolve, reduceMotion ? 120 : 340));
+        setPendingDecision(null);
         setLockedDecision(decision);
         setPhase("locked");
 
@@ -557,8 +811,8 @@ export default function MarketPulseSwipeCard({
       } catch {
         submittingRef.current = false;
         setExitX(0);
-        setPhase("idle");
-        setDragBias("neutral");
+        setPhase("confirm");
+        setDragBias(decisionToDragBias(decision));
         setErrorMessage(t("mp.error.generic"));
         x.set(0);
       }
@@ -575,6 +829,13 @@ export default function MarketPulseSwipeCard({
     ],
   );
 
+  const handleConfirmSubmit = useCallback(() => {
+    if (!pendingDecision) {
+      return;
+    }
+    void submitDecision(pendingDecision);
+  }, [pendingDecision, submitDecision]);
+
   const handleDragEnd = useCallback(
     (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       if (interactionsDisabled || submittingRef.current) {
@@ -584,19 +845,16 @@ export default function MarketPulseSwipeCard({
 
       const offset = info.offset.x;
       const velocity = info.velocity.x;
+      const swipedDecision = resolveSwipeDecision(offset, velocity);
 
-      if (offset > SWIPE_THRESHOLD || velocity > 520) {
-        void submitDecision("BULLISH");
-        return;
-      }
-      if (offset < -SWIPE_THRESHOLD || velocity < -520) {
-        void submitDecision("CAUTIOUS");
+      if (swipedDecision) {
+        requestConfirm(swipedDecision);
         return;
       }
 
       setDragBias("neutral");
     },
-    [interactionsDisabled, submitDecision, x],
+    [interactionsDisabled, requestConfirm, x],
   );
 
   const exitRotate = exitX > 0 ? 12 : -12;
@@ -619,10 +877,13 @@ export default function MarketPulseSwipeCard({
   if (phase === "locked" && lockedDecision) {
     return (
       <div className={`mx-auto w-full max-w-md overflow-x-hidden overflow-y-auto ${className}`}>
+        <p className="sr-only" role="status" aria-live="polite">
+          {t("mp.decision.success.locked")}
+        </p>
         <DecisionLockedCard
           decision={lockedDecision}
           revealMessage={revealMessage ?? t("mp.play.reveal.default")}
-          footerMessage={lockedFooterMessage ?? t("mp.play.locked.footerShort")}
+          cycleContext={lockedCycleContext}
         />
       </div>
     );
@@ -666,7 +927,7 @@ export default function MarketPulseSwipeCard({
                 }
                 animate={cardAnimate}
                 transition={phase === "submitting" ? springExit : springEntrance}
-                className={`relative z-20 flex min-h-0 max-h-[min(82dvh,44rem)] flex-1 flex-col overflow-hidden rounded-2xl border-2 border-white/85 bg-black p-3 shadow-xl shadow-black/50 sm:rounded-2xl sm:p-4 ${
+                className={`relative z-20 flex min-h-0 max-h-[min(72dvh,calc(100dvh-11rem))] flex-1 flex-col overflow-hidden rounded-2xl border border-emerald-500/25 bg-gradient-to-b from-zinc-950 via-black to-black p-3 shadow-2xl shadow-black/60 ring-1 ring-white/10 sm:max-h-[min(82dvh,44rem)] sm:rounded-2xl sm:p-4 ${
                   disabled ? "opacity-90" : ""
                 } ${phase === "submitting" ? "pointer-events-none" : ""}`}
                 role="region"
@@ -712,46 +973,108 @@ export default function MarketPulseSwipeCard({
                     </>
                   ) : null}
 
-                  <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden overscroll-contain pr-0.5 [-webkit-overflow-scrolling:touch]">
+                  <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3.5 overflow-y-auto overflow-x-hidden overscroll-contain pr-0.5 [-webkit-overflow-scrolling:touch] sm:gap-4">
                     <CardBody card={card} />
-                    {disabled ? <CardPrompt card={card} /> : null}
                   </div>
                 </motion.div>
 
-                {!disabled ? (
+                {disabled && !showDecisionControls ? (
+                  <div className="mt-3 shrink-0 border-t border-white/10 pt-3">
+                    <CardPrompt card={card} />
+                  </div>
+                ) : null}
+
+                {!disabled || showDecisionControls ? (
                   <div className="mt-3 shrink-0 space-y-2.5 border-t border-white/15 pt-3">
                     <CardPrompt card={card} />
-                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                      <DecisionButton
-                        decision="CAUTIOUS"
-                        active={dragBias === "cautious"}
-                        disabled={interactionsDisabled}
-                        reduceMotion={reduceMotion}
-                        onClick={() => void submitDecision("CAUTIOUS")}
-                      />
-                      <DecisionButton
-                        decision="BULLISH"
-                        active={dragBias === "bullish"}
-                        disabled={interactionsDisabled}
-                        reduceMotion={reduceMotion}
-                        onClick={() => void submitDecision("BULLISH")}
-                      />
-                    </div>
+                    {!disabled ? (
+                      <AnimatePresence mode="wait">
+                        {phase === "confirm" && pendingDecision ? (
+                          <DecisionConfirmPanel
+                            key="confirm"
+                            decision={pendingDecision}
+                            onConfirm={handleConfirmSubmit}
+                            onCancel={cancelConfirm}
+                            isSubmitting={false}
+                          />
+                        ) : (
+                          <fieldset
+                            key="choices"
+                            className="grid grid-cols-2 gap-2.5 border-0 p-0 sm:gap-3"
+                          >
+                            <legend className="sr-only">
+                              {t("mp.decision.section.label")}
+                            </legend>
+                            <DecisionButton
+                              decision="CAUTIOUS"
+                              highlighted={dragBias === "cautious"}
+                              pending={pendingDecision === "CAUTIOUS"}
+                              disabled={interactionsDisabled}
+                              reduceMotion={reduceMotion}
+                              onClick={() => requestConfirm("CAUTIOUS")}
+                            />
+                            <DecisionButton
+                              decision="BULLISH"
+                              highlighted={dragBias === "bullish"}
+                              pending={pendingDecision === "BULLISH"}
+                              disabled={interactionsDisabled}
+                              reduceMotion={reduceMotion}
+                              onClick={() => requestConfirm("BULLISH")}
+                            />
+                          </fieldset>
+                        )}
+                      </AnimatePresence>
+                    ) : (
+                      <fieldset
+                        disabled
+                        aria-disabled="true"
+                        className="grid grid-cols-2 gap-2.5 border-0 p-0 sm:gap-3"
+                      >
+                        <legend className="sr-only">
+                          {t("mp.decision.section.label")}
+                        </legend>
+                        <DecisionButton
+                          decision="CAUTIOUS"
+                          highlighted={false}
+                          pending={false}
+                          disabled
+                          reduceMotion={reduceMotion}
+                          onClick={() => undefined}
+                        />
+                        <DecisionButton
+                          decision="BULLISH"
+                          highlighted={false}
+                          pending={false}
+                          disabled
+                          reduceMotion={reduceMotion}
+                          onClick={() => undefined}
+                        />
+                      </fieldset>
+                    )}
                   </div>
                 ) : null}
 
                 {phase === "submitting" ? (
                   <div
-                    className="absolute inset-0 z-30 flex items-center justify-center rounded-2xl bg-black/75 backdrop-blur-[2px]"
+                    className="absolute inset-0 z-30 flex items-center justify-center rounded-2xl bg-black/80 backdrop-blur-[2px]"
                     role="status"
                     aria-live="polite"
+                    aria-busy="true"
                   >
-                    <div className="flex items-center gap-2 text-sm font-medium text-white">
+                    <div
+                      className={`flex flex-col items-center gap-2 rounded-xl border px-5 py-4 text-center ${
+                        dragBias === "bullish"
+                          ? "border-emerald-500/40 bg-emerald-500/10"
+                          : "border-amber-500/40 bg-amber-500/10"
+                      }`}
+                    >
                       <Loader2
-                        className={`h-5 w-5 ${reduceMotion ? "" : "animate-spin"}`}
+                        className={`h-6 w-6 text-white ${reduceMotion ? "" : "animate-spin"}`}
                         aria-hidden="true"
                       />
-                      {t("mp.card.submitting")}
+                      <p className="text-sm font-semibold text-white">
+                        {t("mp.card.submitting")}
+                      </p>
                     </div>
                   </div>
                 ) : null}

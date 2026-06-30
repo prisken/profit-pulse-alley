@@ -148,6 +148,11 @@ export type MarketPulseRevealPageData = {
     name: string;
     revealAtIso: string;
   } | null;
+  revealedCycle: {
+    id: string;
+    name: string;
+  } | null;
+  playNextAvailable: boolean;
   results: {
     cycleId: string;
     cycleName: string;

@@ -4,6 +4,7 @@ const prismaMocks = vi.hoisted(() => ({
   cycleFindUnique: vi.fn(),
   cardFindFirst: vi.fn(),
   cardFindUnique: vi.fn(),
+  cardFindMany: vi.fn(),
   cardCreate: vi.fn(),
   cardUpdate: vi.fn(),
   auditCreate: vi.fn(),
@@ -37,6 +38,7 @@ vi.mock("@/lib/prisma", () => ({
     marketPulseCard: {
       findFirst: prismaMocks.cardFindFirst,
       findUnique: prismaMocks.cardFindUnique,
+      findMany: prismaMocks.cardFindMany,
       create: prismaMocks.cardCreate,
       update: prismaMocks.cardUpdate,
     },
@@ -109,6 +111,7 @@ describe("market-pulse admin-actions reliability", () => {
   it("returns ok true when publish succeeds even if audit log fails", async () => {
     prismaMocks.cardFindUnique.mockResolvedValue({
       id: "card-1",
+      cycleId: "cycle-1",
       status: "READY",
       publishedAt: null,
       headline: "Headline",
@@ -118,6 +121,18 @@ describe("market-pulse admin-actions reliability", () => {
       ppaSignal: "BUY",
       ppaInsight: "Strong outlook",
       ppaSignalLockedAt: new Date(),
+    });
+    prismaMocks.cardFindMany.mockResolvedValue([
+      {
+        id: "card-1",
+        dayIndex: 1,
+        sourceDate: null,
+        status: "READY",
+      },
+    ]);
+    prismaMocks.cycleFindUnique.mockResolvedValue({
+      startsAt: new Date("2026-03-01T00:00:00+08:00"),
+      endsAt: new Date("2026-03-10T00:00:00+08:00"),
     });
     prismaMocks.auditCreate.mockRejectedValue(new Error("audit failed"));
 

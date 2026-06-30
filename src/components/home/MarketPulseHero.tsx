@@ -3,98 +3,130 @@
 import Link from "next/link";
 import { ArrowRight, TrendingUp } from "lucide-react";
 
-import ChallengeCountdown from "@/components/home/ChallengeCountdown";
-import MarketPulseLaunchAnnouncement from "@/components/market-pulse/MarketPulseLaunchAnnouncement";
+import HomeHeroSignalPreview from "@/components/home/HomeHeroSignalPreview";
 import MarketPulseLogo from "@/components/market-pulse/MarketPulseLogo";
-import { useTranslations } from "@/components/providers/LocaleProvider";
-import { siteLocaleToMarketPulseLocale } from "@/lib/i18n/locales";
-import { getChallengeCountdown } from "@/lib/market-pulse/challenge-cycle";
+import MarketPulseTrackedLink from "@/components/market-pulse/MarketPulseTrackedLink";
 import {
-  getMarketPulseLaunchMessages,
-  isBeforePublicLaunch,
-} from "@/lib/market-pulse/launch-config";
+  MarketPulseGlowBackground,
+  MarketPulseProofChip,
+  MarketPulseStatusChip,
+  MP_FOCUS_RING,
+  mergeMpClasses,
+} from "@/components/market-pulse/MarketPulseVisualPrimitives";
+import { useTranslations } from "@/components/providers/LocaleProvider";
+import { getHomeHeroCountdown } from "@/lib/market-pulse/challenge-cycle";
+import { MARKET_PULSE_ANALYTICS_EVENTS } from "@/lib/market-pulse/analytics";
+import { isBeforePublicLaunch } from "@/lib/market-pulse/launch-config";
 
-const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
+const PROOF_CHIP_KEYS = [
+  "home.hero.proof.dailySignals",
+  "home.hero.proof.leaderboard",
+  "home.hero.proof.ppaReveal",
+  "home.hero.proof.prize",
+] as const;
+
+const PROOF_VARIANTS = [
+  "dailySignal",
+  "participation",
+  "ppaInsight",
+  "prize",
+] as const;
 
 export default function MarketPulseHero() {
-  const { t, locale } = useTranslations();
-  const initialCountdown = getChallengeCountdown();
+  const { t } = useTranslations();
+  const initialCountdown = getHomeHeroCountdown();
   const preLaunch = isBeforePublicLaunch();
-  const messages = getMarketPulseLaunchMessages(
-    siteLocaleToMarketPulseLocale(locale),
-  );
+
+  const primaryHref = preLaunch ? "/market-pulse" : "/market-pulse/play";
+  const primaryLabel = preLaunch
+    ? t("home.hero.ctaEnter")
+    : t("home.hero.ctaPlayToday");
+  const primaryAria = preLaunch
+    ? t("home.hero.ctaEnterAria")
+    : t("home.hero.ctaPlayTodayAria");
+  const heroCtaName = preLaunch ? "enter_hub" : "play_today";
+  const heroStatus = preLaunch ? "pre_launch" : "live";
 
   return (
-    <section
-      className="relative overflow-hidden bg-zinc-950 px-3 py-6 sm:px-6 sm:py-14 md:py-16 lg:py-20"
-      aria-labelledby="market-pulse-heading"
+    <MarketPulseGlowBackground
+      accent="dual"
+      showGrid
+      className="px-3 py-8 sm:px-6 sm:py-14 lg:py-16"
+      innerClassName="mx-auto w-full max-w-6xl"
     >
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(16,185,129,0.18),transparent_60%)]"
-        aria-hidden="true"
-      />
+      <section aria-labelledby="market-pulse-heading">
+        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-12">
+          <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+            <MarketPulseStatusChip
+              variant={preLaunch ? "preLaunch" : "live"}
+              label={preLaunch ? t("home.hero.badgePreLaunch") : t("home.hero.badgeLive")}
+              icon={<TrendingUp aria-hidden="true" />}
+              showPulse={!preLaunch}
+              className="motion-reduce:[&_span]:animate-none"
+            />
 
-      <div className="relative mx-auto w-full max-w-5xl">
-        <article className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/15 via-zinc-900/95 to-zinc-950 p-4 shadow-2xl shadow-black/40 sm:rounded-3xl sm:p-8 md:p-10 lg:p-12">
-          <div
-            className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl"
-            aria-hidden="true"
-          />
-          <div
-            className="pointer-events-none absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-amber-400/8 blur-3xl"
-            aria-hidden="true"
-          />
-
-          <div className="relative flex flex-col items-center gap-3 text-center sm:gap-6 md:items-start md:gap-8 md:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-200 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]">
-              <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
-              {preLaunch ? t("home.hero.badgePreLaunch") : t("home.hero.badgeLive")}
-            </div>
-
-            {preLaunch ? (
-              <MarketPulseLaunchAnnouncement
-                variant="hero"
-                className="w-full text-left"
+            <div className="mt-4 sm:mt-5">
+              <MarketPulseLogo
+                variant="header"
+                priority
+                className="mx-auto h-8 w-auto sm:h-9 lg:mx-0"
               />
-            ) : null}
-
-            <div className="space-y-2 sm:space-y-4">
               <h1
                 id="market-pulse-heading"
-                className="flex justify-center md:justify-start"
+                className="mt-3 text-balance text-2xl font-bold leading-tight tracking-tight text-white sm:mt-4 sm:text-3xl md:text-4xl lg:text-[2.5rem] lg:leading-[1.15]"
               >
-                <MarketPulseLogo variant="hero" priority />
+                {t("home.hero.headline")}
               </h1>
-              <p className="mx-auto max-w-xl text-pretty text-sm leading-snug text-zinc-200 sm:text-lg md:mx-0 md:text-xl md:leading-relaxed">
-                {t("home.hero.tagline")}
+              <p className="mx-auto mt-3 max-w-xl text-pretty text-sm leading-relaxed text-zinc-300 sm:text-base md:text-lg lg:mx-0">
+                {t("home.hero.subheadline")}
               </p>
-              {!preLaunch ? (
-                <p className="mx-auto max-w-xl text-pretty text-xs text-amber-200/90 sm:text-sm md:mx-0 md:text-base">
-                  {messages.prize}
-                </p>
-              ) : null}
             </div>
 
-            <Link
-              href="/market-pulse"
-              className={`inline-flex w-full min-h-12 items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 py-3 text-base font-bold text-zinc-950 shadow-lg shadow-emerald-900/40 transition-colors hover:bg-emerald-300 active:bg-emerald-500 sm:w-auto sm:min-w-[12rem] sm:px-8 sm:py-3.5 sm:text-lg ${focusRing}`}
-            >
-              {preLaunch ? t("home.hero.ctaExplore") : t("home.hero.ctaPlay")}
-              <ArrowRight className="h-5 w-5 sm:hidden" aria-hidden="true" />
-            </Link>
-
-            <div className="w-full md:max-w-md">
-              <ChallengeCountdown initial={initialCountdown} className="md:hidden" />
-              <ChallengeCountdown
-                initial={initialCountdown}
-                large
-                className="hidden md:block"
-              />
+            <div className="mt-5 flex w-full flex-col gap-2.5 sm:mt-6 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start">
+              <MarketPulseTrackedLink
+                href={primaryHref}
+                aria-label={primaryAria}
+                event={MARKET_PULSE_ANALYTICS_EVENTS.hero_cta_clicked}
+                payload={{
+                  surface: "home",
+                  cta: heroCtaName,
+                  status: heroStatus,
+                }}
+                className={mergeMpClasses(
+                  "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 py-3 text-base font-bold text-zinc-950 shadow-lg shadow-emerald-900/40 transition-colors hover:bg-emerald-300 active:bg-emerald-500 sm:w-auto sm:min-w-[12rem] sm:px-8",
+                  MP_FOCUS_RING,
+                )}
+              >
+                {primaryLabel}
+                <ArrowRight className="h-5 w-5" aria-hidden="true" />
+              </MarketPulseTrackedLink>
+              <Link
+                href="/market-pulse/rules"
+                aria-label={t("home.hero.ctaSecondaryAria")}
+                className={mergeMpClasses(
+                  "inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/20 bg-white/5 px-6 py-3 text-base font-semibold text-zinc-100 transition-colors hover:border-white/30 hover:bg-white/10 sm:w-auto sm:px-8",
+                  MP_FOCUS_RING,
+                )}
+              >
+                {t("home.hero.ctaSecondary")}
+              </Link>
             </div>
+
+            <ul className="mt-5 flex max-w-xl flex-wrap justify-center gap-2 sm:mt-6 lg:justify-start">
+              {PROOF_CHIP_KEYS.map((key, index) => (
+                <li key={key} className="max-w-full">
+                  <MarketPulseProofChip
+                    label={t(key)}
+                    variant={PROOF_VARIANTS[index]}
+                  />
+                </li>
+              ))}
+            </ul>
           </div>
-        </article>
-      </div>
-    </section>
+
+          <HomeHeroSignalPreview initialCountdown={initialCountdown} />
+        </div>
+      </section>
+    </MarketPulseGlowBackground>
   );
 }

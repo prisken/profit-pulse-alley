@@ -13,11 +13,13 @@ import {
 } from "react";
 
 import OnboardingRecoveryPanel from "@/components/auth/OnboardingRecoveryPanel";
+import MarketPulseAuthPanel from "@/components/auth/MarketPulseAuthPanel";
 import { updateContactNumber } from "@/lib/auth-actions";
 import {
   ONBOARDING_PENDING_GRACE_MS,
   ONBOARDING_SESSION_LOAD_MS,
 } from "@/lib/auth/onboarding-routes";
+import { isMarketPulseAuthCallback } from "@/lib/auth/market-pulse-auth-context";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
@@ -40,6 +42,7 @@ function OnboardingForm({
   callbackUrl,
 }: Readonly<{ userName: string | null; callbackUrl: string }>) {
   const { t, locale } = useTranslations();
+  const fromMarketPulse = isMarketPulseAuthCallback(callbackUrl);
 
   const [contactNumber, setContactNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -67,7 +70,7 @@ function OnboardingForm({
   }
 
   return (
-    <div className="w-full max-w-sm">
+    <div className="w-full min-w-0 max-w-sm">
       <div className="text-center">
         <Link
           href="/"
@@ -90,9 +93,13 @@ function OnboardingForm({
           {userName ? (
             <>{t("auth.onboarding.welcome").replace("{name}", userName)} </>
           ) : null}
-          {t("auth.onboarding.body")}
+          {!fromMarketPulse ? t("auth.onboarding.body") : null}
         </p>
       </div>
+
+      {fromMarketPulse ? (
+        <MarketPulseAuthPanel variant="onboarding" className="mt-5 sm:mt-6" />
+      ) : null}
 
       <form
         onSubmit={(e) => void handleSubmit(e)}
@@ -309,8 +316,8 @@ export default function OnboardingPageClient({
   serverAlreadyOnboarded: boolean;
 }>) {
   return (
-    <main className="relative flex min-h-screen min-h-dvh flex-col items-center justify-center overflow-x-hidden overflow-y-auto bg-gray-950 px-3 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-gray-200 sm:px-4 sm:py-12">
-      <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 sm:right-4">
+    <main className="relative flex min-h-screen min-h-dvh flex-col items-start justify-center overflow-x-hidden overflow-y-auto bg-gray-950 px-[max(0.75rem,env(safe-area-inset-left))] py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[max(1.5rem,env(safe-area-inset-top))] text-gray-200 sm:items-center sm:px-[max(1rem,env(safe-area-inset-left))] sm:py-12 sm:pr-[max(1rem,env(safe-area-inset-right))]">
+      <div className="absolute right-[max(0.75rem,env(safe-area-inset-right))] top-[max(0.75rem,env(safe-area-inset-top))] z-10 sm:right-[max(1rem,env(safe-area-inset-right))]">
         <LanguageSwitcher variant="dark" />
       </div>
       <OnboardingErrorBoundary callbackUrl={callbackUrl}>

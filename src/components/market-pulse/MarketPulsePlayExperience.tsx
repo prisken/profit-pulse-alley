@@ -6,16 +6,26 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   CalendarClock,
   ChevronLeft,
+  Lock,
+  LogIn,
+  PauseCircle,
   Sparkles,
   Trophy,
+  Wrench,
 } from "lucide-react";
 
 import MarketPulseCountdown from "@/components/market-pulse/MarketPulseCountdown";
 import CycleProgress from "@/components/market-pulse/CycleProgress";
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
-import MarketPulseLaunchAnnouncement from "@/components/market-pulse/MarketPulseLaunchAnnouncement";
 import MarketPulseLogo from "@/components/market-pulse/MarketPulseLogo";
 import MarketPulseSwipeCard from "@/components/market-pulse/MarketPulseSwipeCard";
+import PlayStatusCard from "@/components/market-pulse/PlayStatusCard";
+import type { DecisionLockedCardContext } from "@/components/market-pulse/DecisionLockedCard";
+import {
+  MarketPulseGlowBackground,
+  MP_FOCUS_RING,
+  mergeMpClasses,
+} from "@/components/market-pulse/MarketPulseVisualPrimitives";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import {
@@ -32,11 +42,11 @@ import type { MarketPulsePlayPageData } from "@/lib/market-pulse/play-data";
 import { MARKET_PULSE_EASE } from "@/lib/market-pulse/motion";
 import { submitMarketPulseDecisionAction } from "@/lib/market-pulse/player-actions";
 import type { MarketPulseSwipeSubmitResult } from "@/lib/market-pulse/types";
+import type { SiteLocale } from "@/lib/i18n/locales";
 
 type PlayLeaderboardEntry = MarketPulsePlayPageData["leaderboardEntries"][number];
 
-const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
+const focusRing = MP_FOCUS_RING;
 
 const pageEnter = {
   hidden: { opacity: 0, y: 16 },
@@ -49,6 +59,15 @@ const pageEnter = {
 
 function formatScore(score: number): string {
   return new Intl.NumberFormat("en-HK").format(score);
+}
+
+function formatHubDate(iso: string, locale: SiteLocale, withTime = false): string {
+  const intlLocale = locale === "zh-Hant" ? "zh-HK" : "en-HK";
+  return new Intl.DateTimeFormat(intlLocale, {
+    dateStyle: "medium",
+    ...(withTime ? { timeStyle: "short" as const } : {}),
+    timeZone: "Asia/Hong_Kong",
+  }).format(new Date(iso));
 }
 
 function PlayLeaderboard({
@@ -82,7 +101,7 @@ function PlayLeaderboard({
       <p className="mt-1 text-xs text-zinc-500">
         {revealed
           ? t("mp.play.leaderboard.subtitleRevealed")
-          : t("mp.play.leaderboard.subtitlePreReveal")}
+          : t("mp.play.leaderboard.subtitleLocked")}
       </p>
 
       {entries.length === 0 ? (
@@ -115,9 +134,16 @@ function PlayLeaderboard({
               <span className="min-w-0 flex-1 truncate text-sm text-zinc-200">
                 {entry.playerName}
               </span>
-              <span className="shrink-0 text-sm font-semibold tabular-nums text-emerald-300">
-                {formatScore(entry.score)}
-              </span>
+              {revealed ? (
+                <span className="shrink-0 text-sm font-semibold tabular-nums text-emerald-300">
+                  {formatScore(entry.score)}
+                </span>
+              ) : (
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-amber-300/90">
+                  <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                  {t("mp.play.leaderboard.scoreLocked")}
+                </span>
+              )}
             </motion.li>
           ))}
         </ol>
@@ -126,128 +152,349 @@ function PlayLeaderboard({
   );
 }
 
-function PreLaunchState({
-  isAuthenticated,
+function PlayNonPlayableState({
+  data,
   loginHref,
+  locale,
 }: Readonly<{
-  isAuthenticated: boolean;
+  data: MarketPulsePlayPageData;
   loginHref: string;
+  locale: SiteLocale;
 }>) {
   const { t } = useTranslations();
 
-  return (
-    <div className="space-y-5">
-      <MarketPulseLaunchAnnouncement variant="compact" className="text-left" />
-
-      {!isAuthenticated ? (
-        <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
-          <Link
-            href={loginHref}
-            className={`inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-bold text-zinc-950 transition-colors hover:bg-emerald-300 ${focusRing}`}
-          >
-            {t("mp.play.preLaunch.signIn")}
-          </Link>
-          <Link
-            href="/market-pulse"
-            className={`inline-flex min-h-11 items-center justify-center rounded-full border border-zinc-600 px-5 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-900 ${focusRing}`}
-          >
-            {t("mp.play.preLaunch.hub")}
-          </Link>
-        </div>
-      ) : (
-        <p className="text-center text-sm text-zinc-400">
-          {t("mp.play.preLaunch.signedIn")}
-        </p>
-      )}
-
-      <div className="text-center">
-        <Link
-          href="/market-pulse"
-          className={`inline-flex min-h-11 items-center text-sm font-medium text-emerald-300 underline-offset-4 hover:underline ${focusRing}`}
-        >
-          {t("mp.play.backToHub")}
-        </Link>
+  if (data.status === "pre_launch") {
+    return (
+      <div className="space-y-4">
+        <PlayStatusCard
+          icon={CalendarClock}
+          accent="emerald"
+          showSignalPreview
+          title={t("mp.play.state.preLaunch.title")}
+          body={t("mp.play.state.preLaunch.body")}
+          detail={
+            data.isAuthenticated ? t("mp.play.state.preLaunch.signedIn") : undefined
+          }
+          ctas={
+            data.isAuthenticated
+              ? [
+                  {
+                    label: t("mp.play.state.preLaunch.cta.hub"),
+                    href: "/market-pulse",
+                    variant: "primary",
+                  },
+                ]
+              : [
+                  {
+                    label: t("mp.play.state.preLaunch.cta.hub"),
+                    href: "/market-pulse",
+                    variant: "secondary",
+                  },
+                  {
+                    label: t("mp.play.state.preLaunch.cta.account"),
+                    href: loginHref,
+                    variant: "primary",
+                  },
+                ]
+          }
+        />
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (data.status === "sign_in_required" && data.card) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+        <PlayStatusCard
+          icon={LogIn}
+          accent="emerald"
+          showSignalPreview
+          title={t("mp.play.state.signIn.title")}
+          body={t("mp.play.state.signIn.body")}
+          ctas={[
+            {
+              label: t("mp.play.state.signIn.cta.signIn"),
+              href: loginHref,
+              variant: "primary",
+            },
+            {
+              label: t("mp.play.state.signIn.cta.hub"),
+              href: "/market-pulse",
+              variant: "secondary",
+            },
+          ]}
+        />
+        <MarketPulseSwipeCard
+          card={data.card}
+          disabled
+          className="min-h-0 shrink-0"
+          analyticsContext={{
+            cycleId: data.cycleId ?? undefined,
+            dayIndex: data.dayCurrent,
+          }}
+          onSubmit={async () => ({
+            ok: false,
+            error: t("mp.error.signInRequired"),
+          })}
+          revealMessage={formatRevealMessage(locale, data.revealAtLabel || null)}
+        />
+      </div>
+    );
+  }
+
+  if (data.status === "no_active_cycle") {
+    return (
+      <PlayStatusCard
+        icon={CalendarClock}
+        accent="zinc"
+        title={t("mp.play.state.noCycle.title")}
+        body={t("mp.play.state.noCycle.body")}
+        ctas={[
+          {
+            label: t("mp.play.state.noCycle.cta.leaderboard"),
+            href: "/market-pulse/leaderboard",
+            variant: "primary",
+          },
+          {
+            label: t("mp.play.state.noCycle.cta.hub"),
+            href: "/market-pulse",
+            variant: "secondary",
+          },
+        ]}
+      />
+    );
+  }
+
+  if (data.status === "cycle_unavailable") {
+    const detail = data.unavailableIssue
+      ? translateCyclePlayabilityIssue(locale, data.unavailableIssue)
+      : data.unavailableReason
+        ? translateMarketPulseError(locale, data.unavailableReason)
+        : undefined;
+
+    return (
+      <PlayStatusCard
+        icon={PauseCircle}
+        accent="amber"
+        title={t("mp.play.state.cycleUnavailable.title")}
+        body={t("mp.play.state.cycleUnavailable.body")}
+        detail={detail}
+        ctas={[
+          {
+            label: t("mp.play.state.cycleUnavailable.cta.leaderboard"),
+            href: "/market-pulse/leaderboard",
+            variant: "primary",
+          },
+          {
+            label: t("mp.play.state.cycleUnavailable.cta.hub"),
+            href: "/market-pulse",
+            variant: "secondary",
+          },
+        ]}
+      />
+    );
+  }
+
+  if (data.status === "runtime_closed") {
+    return (
+      <PlayStatusCard
+        icon={Wrench}
+        accent="zinc"
+        title={t("mp.play.state.runtimeClosed.title")}
+        body={t("mp.play.state.runtimeClosed.body")}
+        ctas={[
+          {
+            label: t("mp.play.state.runtimeClosed.cta.leaderboard"),
+            href: "/market-pulse/leaderboard",
+            variant: "primary",
+          },
+          {
+            label: t("mp.play.state.runtimeClosed.cta.hub"),
+            href: "/market-pulse",
+            variant: "secondary",
+          },
+        ]}
+      />
+    );
+  }
+
+  if (data.status === "no_card_today") {
+    return (
+      <PlayStatusCard
+        icon={Sparkles}
+        accent="emerald"
+        showSignalPreview
+        title={t("mp.play.state.noCard.title")}
+        body={t("mp.play.state.noCard.body")}
+        ctas={[
+          {
+            label: t("mp.play.state.noCard.cta.leaderboard"),
+            href: "/market-pulse/leaderboard",
+            variant: "primary",
+          },
+          {
+            label: t("mp.play.state.noCard.cta.hub"),
+            href: "/market-pulse",
+            variant: "secondary",
+          },
+        ]}
+      />
+    );
+  }
+
+  return null;
 }
 
-function EmptyState({
-  title,
-  description,
-  icon: Icon,
+function PlayStatusPanel({
+  data,
+  locale,
+  compact = false,
 }: Readonly<{
-  title: string;
-  description: string;
-  icon: typeof Sparkles;
+  data: Pick<
+    MarketPulsePlayPageData,
+    | "challengeName"
+    | "prizeLabel"
+    | "dayCurrent"
+    | "dayTotal"
+    | "revealAtIso"
+    | "revealAtLabel"
+    | "leaderboardRevealed"
+  >;
+  locale: SiteLocale;
+  compact?: boolean;
 }>) {
   const { t } = useTranslations();
-  const reduceMotion = useReducedMotion() ?? false;
 
   return (
-    <motion.div
-      initial={reduceMotion ? false : { opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={reduceMotion ? { duration: 0 } : { duration: 0.4 }}
-      className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-700 bg-zinc-900/40 px-5 py-10 text-center sm:px-6 sm:py-12"
+    <section
+      className={mergeMpClasses(
+        "rounded-2xl border border-white/10 bg-zinc-950/70 shadow-xl shadow-black/20",
+        compact ? "p-3" : "p-4 sm:p-5",
+      )}
+      aria-labelledby={compact ? "play-status-mobile-heading" : "play-status-heading"}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-400 sm:h-14 sm:w-14">
-        <Icon className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" />
-      </div>
-      <h2 className="mt-4 text-lg font-semibold text-white sm:mt-5 sm:text-xl">
-        {title}
-      </h2>
-      <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-400">
-        {description}
-      </p>
-      <Link
-        href="/market-pulse"
-        className={`mt-5 inline-flex min-h-11 items-center text-sm font-medium text-emerald-300 underline-offset-4 hover:underline ${focusRing}`}
+      <h2
+        id={compact ? "play-status-mobile-heading" : "play-status-heading"}
+        className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:text-xs"
       >
-        {t("mp.play.backToHub")}
-      </Link>
-    </motion.div>
+        {t("mp.play.stage.statusHeading")}
+      </h2>
+
+      <div className="mt-3 space-y-3">
+        <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            {t("mp.play.chrome.cycleName")}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-zinc-100">{data.challengeName}</p>
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3">
+          <CycleProgress
+            variant="compact"
+            dayCurrent={data.dayCurrent}
+            dayTotal={data.dayTotal}
+          />
+        </div>
+
+        {data.prizeLabel ? (
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-200/80">
+              {t("mp.play.stage.prize")}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-amber-50">{data.prizeLabel}</p>
+          </div>
+        ) : null}
+
+        <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            {t("mp.play.stage.reveal")}
+          </p>
+          <MarketPulseCountdown variant="compact" targetDate={data.revealAtIso} />
+          {data.revealAtLabel ? (
+            <p className="mt-2 text-xs text-zinc-500">
+              {t("mp.play.reveal.scheduled").replace("{date}", data.revealAtLabel)}
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-zinc-500">
+              {formatHubDate(data.revealAtIso, locale, true)}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900/50 p-3">
+          <Trophy className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
+          <p className="text-sm text-zinc-300">
+            {data.leaderboardRevealed
+              ? t("mp.play.stage.leaderboardLive")
+              : t("mp.play.stage.leaderboardLocked")}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 
 function PlayChromeHeader({
   showCycleChrome,
+  challengeName,
   dayCurrent,
   dayTotal,
-  revealAtIso,
+  statusPanelData,
+  locale,
 }: Readonly<{
   showCycleChrome: boolean;
+  challengeName: string;
   dayCurrent: number;
   dayTotal: number;
-  revealAtIso: string;
+  statusPanelData: Pick<
+    MarketPulsePlayPageData,
+    | "challengeName"
+    | "prizeLabel"
+    | "dayCurrent"
+    | "dayTotal"
+    | "revealAtIso"
+    | "revealAtLabel"
+    | "leaderboardRevealed"
+  >;
+  locale: SiteLocale;
 }>) {
   const { t } = useTranslations();
 
   return (
-    <header className="shrink-0 border-b border-zinc-800/80 bg-zinc-950/95">
+    <header className="shrink-0 border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur-sm">
       <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <Link
           href="/market-pulse"
-          className={`inline-flex min-h-10 items-center gap-1 justify-self-start text-sm text-zinc-400 transition-colors hover:text-white ${focusRing}`}
+          className={mergeMpClasses(
+            "inline-flex min-h-10 items-center gap-1 justify-self-start text-sm text-zinc-400 transition-colors hover:text-white",
+            focusRing,
+          )}
         >
           <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="hidden sm:inline">{t("nav.backToPulse")}</span>
         </Link>
 
-        <div className="flex items-center justify-center gap-2">
-          <Link
-            href="/market-pulse"
-            className={`inline-flex shrink-0 items-center ${focusRing}`}
-            aria-label={t("nav.marketPulse")}
-          >
-            <MarketPulseLogo variant="header" />
-          </Link>
+        <div className="flex min-w-0 flex-col items-center justify-center gap-1">
+          <div className="flex items-center justify-center gap-2">
+            <Link
+              href="/market-pulse"
+              className={mergeMpClasses("inline-flex shrink-0 items-center", focusRing)}
+              aria-label={t("nav.marketPulse")}
+            >
+              <MarketPulseLogo variant="header" />
+            </Link>
+            {showCycleChrome ? (
+              <span className="shrink-0 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-200 sm:text-xs">
+                {t("mp.play.chrome.day")
+                  .replace("{current}", String(dayCurrent))
+                  .replace("{total}", String(dayTotal))}
+              </span>
+            ) : null}
+          </div>
           {showCycleChrome ? (
-            <span className="shrink-0 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-200 sm:text-xs">
-              {t("mp.play.chrome.day")
-                .replace("{current}", String(dayCurrent))
-                .replace("{total}", String(dayTotal))}
-            </span>
+            <p className="max-w-[14rem] line-clamp-2 text-balance text-center text-[11px] font-medium leading-snug text-zinc-400 sm:max-w-xs sm:text-xs">
+              {challengeName}
+            </p>
           ) : null}
         </div>
 
@@ -255,7 +502,10 @@ function PlayChromeHeader({
           <LanguageSwitcher variant="dark" className="shrink-0" />
           <Link
             href="/market-pulse/leaderboard"
-            className={`inline-flex min-h-10 min-w-10 items-center justify-center gap-1 rounded-lg text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white sm:px-2 ${focusRing}`}
+            className={mergeMpClasses(
+              "inline-flex min-h-10 min-w-10 items-center justify-center gap-1 rounded-lg text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white sm:px-2",
+              focusRing,
+            )}
           >
             <Trophy className="h-4 w-4 shrink-0 text-amber-400" aria-hidden="true" />
             <span className="hidden sm:inline">{t("nav.board")}</span>
@@ -266,21 +516,16 @@ function PlayChromeHeader({
       {showCycleChrome ? (
         <details className="group mx-auto max-w-6xl px-3 pb-2 lg:hidden">
           <summary
-            className={`cursor-pointer list-none text-xs text-zinc-500 marker:content-none [&::-webkit-details-marker]:hidden ${focusRing}`}
+            className={mergeMpClasses(
+              "cursor-pointer list-none text-xs text-zinc-500 marker:content-none [&::-webkit-details-marker]:hidden",
+              focusRing,
+            )}
           >
             <span className="group-open:hidden">{t("mp.play.chrome.showCycle")}</span>
             <span className="hidden group-open:inline">{t("mp.play.chrome.hideCycle")}</span>
           </summary>
-          <div className="mt-2 grid gap-3 rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-3">
-            <CycleProgress
-              variant="compact"
-              dayCurrent={dayCurrent}
-              dayTotal={dayTotal}
-            />
-            <MarketPulseCountdown
-              variant="compact"
-              targetDate={revealAtIso}
-            />
+          <div className="mt-2 space-y-3">
+            <PlayStatusPanel data={statusPanelData} locale={locale} compact />
           </div>
         </details>
       ) : null}
@@ -319,12 +564,26 @@ export default function MarketPulsePlayExperience({
   );
 
   const revealMessage = formatRevealMessage(locale, data.revealAtLabel || null);
-  const lockedFooterMessage = t("mp.play.locked.footer");
+
+  const lockedCycleContext: DecisionLockedCardContext = {
+    dayCurrent: data.dayCurrent,
+    dayTotal: data.dayTotal,
+    challengeName: data.challengeName,
+  };
 
   const showCycleChrome =
     data.status !== "pre_launch" &&
     data.status !== "no_active_cycle" &&
+    data.status !== "cycle_unavailable" &&
     data.dayTotal > 0;
+
+  const isNonPlayableStatus =
+    data.status === "pre_launch" ||
+    data.status === "no_active_cycle" ||
+    data.status === "cycle_unavailable" ||
+    data.status === "runtime_closed" ||
+    data.status === "no_card_today" ||
+    data.status === "sign_in_required";
 
   const hasCard =
     Boolean(data.card) &&
@@ -351,41 +610,39 @@ export default function MarketPulsePlayExperience({
   }, [data.card, data.cycleId, data.dayCurrent]);
 
   return (
-    <div className="flex min-h-dvh flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain bg-zinc-950 text-white">
-      <div
-        className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(16,185,129,0.12),transparent_55%)]"
-        aria-hidden="true"
-      />
-
+    <MarketPulseGlowBackground
+      accent="emerald"
+      showGrid
+      className="flex min-h-dvh flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain"
+    >
       <PlayChromeHeader
         showCycleChrome={showCycleChrome}
+        challengeName={data.challengeName}
         dayCurrent={data.dayCurrent}
         dayTotal={data.dayTotal}
-        revealAtIso={data.revealAtIso}
+        statusPanelData={{
+          challengeName: data.challengeName,
+          prizeLabel: data.prizeLabel,
+          dayCurrent: data.dayCurrent,
+          dayTotal: data.dayTotal,
+          revealAtIso: data.revealAtIso,
+          revealAtLabel: data.revealAtLabel,
+          leaderboardRevealed: data.leaderboardRevealed,
+        }}
+        locale={locale}
       />
 
       <motion.div
-        className="relative mx-auto flex w-full min-h-0 max-w-6xl flex-1 flex-col px-3 py-2 sm:px-6 sm:py-4"
+        className="relative mx-auto flex w-full min-h-0 max-w-6xl flex-1 flex-col px-3 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4"
         initial={reduceMotion ? false : "hidden"}
         animate="visible"
         variants={pageEnter}
       >
-        {showCycleChrome ? (
-          <div className="mb-4 hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 lg:block">
-            <div className="flex items-center justify-between gap-6">
-              <CycleProgress
-                className="max-w-md flex-1"
-                dayCurrent={data.dayCurrent}
-                dayTotal={data.dayTotal}
-              />
-              <MarketPulseCountdown targetDate={data.revealAtIso} />
-            </div>
-          </div>
-        ) : null}
-
         <div
           className={`flex min-h-0 flex-1 flex-col ${
-            hasCard ? "lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-6" : ""
+            hasCard
+              ? "lg:grid lg:grid-cols-[minmax(0,1fr)_17.5rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_19rem]"
+              : ""
           }`}
         >
           <div
@@ -395,68 +652,12 @@ export default function MarketPulsePlayExperience({
                 : "overflow-y-auto"
             }`}
           >
-            {data.status === "pre_launch" ? (
-              <PreLaunchState
-                isAuthenticated={data.isAuthenticated}
+            {isNonPlayableStatus ? (
+              <PlayNonPlayableState
+                data={data}
                 loginHref={loginHref}
+                locale={locale}
               />
-            ) : null}
-
-            {data.status === "no_active_cycle" ||
-            data.status === "cycle_unavailable" ? (
-              <EmptyState
-                icon={CalendarClock}
-                title={
-                  data.status === "cycle_unavailable"
-                    ? t("mp.play.status.cycleClosed")
-                    : t("mp.play.status.noCycle")
-                }
-                description={
-                  data.unavailableIssue
-                    ? translateCyclePlayabilityIssue(locale, data.unavailableIssue)
-                    : data.unavailableReason
-                      ? translateMarketPulseError(locale, data.unavailableReason)
-                      : t("mp.play.status.checkBack")
-                }
-              />
-            ) : null}
-
-            {data.status === "no_card_today" ? (
-              <EmptyState
-                icon={Sparkles}
-                title={t("mp.play.status.noCardTitle")}
-                description={t("mp.play.status.noCardBody")}
-              />
-            ) : null}
-
-            {data.status === "sign_in_required" && data.card ? (
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <div className="mb-2 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2.5">
-                  <p className="text-xs leading-snug text-emerald-100 sm:text-sm">
-                    {t("mp.play.signInBanner")}
-                  </p>
-                  <Link
-                    href={loginHref}
-                    className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-emerald-400 px-4 py-2 text-xs font-bold text-zinc-950 transition-colors hover:bg-emerald-300 sm:text-sm ${focusRing}`}
-                  >
-                    {t("mp.play.preLaunch.signIn")}
-                  </Link>
-                </div>
-                <MarketPulseSwipeCard
-                  card={data.card}
-                  disabled
-                  className="min-h-0 flex-1"
-                  analyticsContext={{
-                    cycleId: data.cycleId ?? undefined,
-                    dayIndex: data.dayCurrent,
-                  }}
-                  onSubmit={async () => ({
-                    ok: false,
-                    error: t("mp.error.signInRequired"),
-                  })}
-                  revealMessage={revealMessage}
-                />
-              </div>
             ) : null}
 
             {(data.status === "locked" || data.status === "playable") &&
@@ -482,14 +683,27 @@ export default function MarketPulsePlayExperience({
                   }}
                   onSubmit={handleSubmit}
                   revealMessage={revealMessage}
-                  lockedFooterMessage={lockedFooterMessage}
+                  lockedCycleContext={lockedCycleContext}
                 />
               </motion.div>
             ) : null}
           </div>
 
-          {data.status !== "pre_launch" && data.status !== "no_active_cycle" ? (
-            <aside className="mt-3 hidden shrink-0 lg:sticky lg:top-3 lg:mt-0 lg:block lg:self-start">
+          {data.status !== "pre_launch" &&
+          data.status !== "no_active_cycle" &&
+          data.status !== "cycle_unavailable" ? (
+            <aside className="mt-3 hidden min-w-0 shrink-0 space-y-4 lg:sticky lg:top-3 lg:mt-0 lg:block lg:self-start">
+              {showCycleChrome ? (
+                <PlayStatusPanel data={{
+                  challengeName: data.challengeName,
+                  prizeLabel: data.prizeLabel,
+                  dayCurrent: data.dayCurrent,
+                  dayTotal: data.dayTotal,
+                  revealAtIso: data.revealAtIso,
+                  revealAtLabel: data.revealAtLabel,
+                  leaderboardRevealed: data.leaderboardRevealed,
+                }} locale={locale} />
+              ) : null}
               <PlayLeaderboard
                 entries={data.leaderboardEntries}
                 revealed={data.leaderboardRevealed}
@@ -500,6 +714,7 @@ export default function MarketPulsePlayExperience({
 
         {data.status !== "pre_launch" &&
         data.status !== "no_active_cycle" &&
+        data.status !== "cycle_unavailable" &&
         !isCardFocusState ? (
           <details className="mt-3 shrink-0 lg:hidden">
             <summary
@@ -540,7 +755,7 @@ export default function MarketPulsePlayExperience({
           </details>
         ) : (
           <MarketPulseInlineDisclaimer
-            className="mt-3 shrink-0 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden sm:mt-4"
+            className="mt-3 shrink-0 lg:hidden sm:mt-4"
             surface="play"
             cycleId={data.cycleId ?? undefined}
           />
@@ -552,6 +767,6 @@ export default function MarketPulsePlayExperience({
           cycleId={data.cycleId ?? undefined}
         />
       </motion.div>
-    </div>
+    </MarketPulseGlowBackground>
   );
 }

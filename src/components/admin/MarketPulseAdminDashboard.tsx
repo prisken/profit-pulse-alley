@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type {
@@ -17,12 +18,14 @@ import {
   MarketPulsePpaCompleteBadge,
   MarketPulsePpaRevealWarningBanner,
 } from "@/components/admin/MarketPulseAdminShell";
+import MarketPulseCyclesHub from "@/components/admin/MarketPulseCyclesHub";
 import MarketPulseCardList from "@/components/admin/MarketPulseCardList";
 import MarketPulseCycleForm from "@/components/admin/MarketPulseCycleForm";
 import {
   closeMarketPulseCycleAction,
   createMarketPulseCycleAction,
   exportMarketPulseLeaderboardAction,
+  quickCreateMarketPulseCycleAction,
   updateMarketPulseCycleAction,
   updateMarketPulseRuntimeStatusAction,
   type AdminActionResult,
@@ -48,6 +51,7 @@ import {
 import type { RevealPpaMissingField } from "@/lib/market-pulse/reveal-ppa-validation";
 import type { RevealSectionData } from "@/lib/market-pulse/admin-reveal-data";
 import { evaluateRevealReadiness } from "@/lib/market-pulse/admin-reveal-status";
+import { marketPulseCycleBuilderPath } from "@/lib/market-pulse/admin-builder-paths";
 import type { PrizeReviewData } from "@/lib/market-pulse/prize-review-data";
 import {
   getFirstPublicCycleFormPrefill,
@@ -136,7 +140,6 @@ export default function MarketPulseAdminDashboard({
   >(null);
   const [cyclePrefillNonce, setCyclePrefillNonce] = useState(0);
   const [createCycleOpen, setCreateCycleOpen] = useState(false);
-  const [createCardOpen, setCreateCardOpen] = useState(false);
 
   function scrollToSection(sectionId: string) {
     document.getElementById(sectionId)?.scrollIntoView({
@@ -145,14 +148,60 @@ export default function MarketPulseAdminDashboard({
     });
   }
 
-  function handleQuickCreateCycle() {
-    setCreateCycleOpen(true);
-    scrollToSection("cycles");
+  function handleQuickCreateNextCycle() {
+    setMessage(null);
+    setWarning(null);
+    setError(null);
+    startTransition(async () => {
+      try {
+        const result = await quickCreateMarketPulseCycleAction();
+        if (!result.ok) {
+          setError(result.error ?? t("auth.admin.mp.actionFailed"));
+          return;
+        }
+
+        if (result.data?.redirectPath) {
+          router.push(result.data.redirectPath);
+          return;
+        }
+
+        setMessage(result.message ?? t("auth.admin.mp.done"));
+        setWarning(result.warning ?? null);
+        router.refresh();
+      } catch (actionError) {
+        console.error("[admin] quick create cycle failed:", actionError);
+        router.refresh();
+        setError(t("auth.admin.mp.actionFailed"));
+      }
+    });
   }
 
-  function handleQuickCreateCard() {
-    setCreateCardOpen(true);
+  function handleOpenLegacyCards(cycleId: string) {
+    setSelectedCycleId(cycleId);
     scrollToSection("cards");
+  }
+
+  function handleEditCycleAdvanced(cycleId: string) {
+    setSelectedCycleId(cycleId);
+    setCreateCycleOpen(false);
+    scrollToSection("cycles");
+    window.setTimeout(() => {
+      document.getElementById(`cycle-advanced-${cycleId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 150);
+  }
+
+  function handleScrollToReveal() {
+    scrollToSection("reveal-scoring");
+  }
+
+  function handleEditCard(cardId: string) {
+    const card = initialData.cards.find((item) => item.id === cardId);
+    if (card) {
+      router.push(marketPulseCycleBuilderPath(card.cycleId));
+    }
   }
 
   function handlePrefillFirstCycle() {
@@ -203,20 +252,6 @@ export default function MarketPulseAdminDashboard({
       }),
     [initialData.runtimeStatus, activeCycle, activeCycleCards],
   );
-
-  function handleEditCard(cardId: string) {
-    const card = initialData.cards.find((item) => item.id === cardId);
-    if (card && card.cycleId !== selectedCycleId) {
-      setSelectedCycleId(card.cycleId);
-    }
-    scrollToSection("cards");
-    window.setTimeout(() => {
-      document.getElementById(`mp-card-${cardId}`)?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 150);
-  }
 
   const ppaRevealWarning = useMemo(
     () =>
@@ -293,11 +328,7 @@ export default function MarketPulseAdminDashboard({
       <MarketPulseAdminStatusHeader snapshot={statusSnapshot} />
 
       <div className="space-y-4">
-        <MarketPulseAdminQuickActions
-          onCreateCycle={handleQuickCreateCycle}
-          onCreateCard={handleQuickCreateCard}
-          createCardDisabled={!selectedCycle}
-        />
+        <MarketPulseAdminQuickActions quickCreateDisabled={isPending} />
         {ppaRevealWarning.severity === "urgent" && ppaRevealWarning.revealAtIso ? (
           <MarketPulsePpaRevealWarningBanner
             revealAtLabel={formatDateTime(ppaRevealWarning.revealAtIso)}
@@ -309,6 +340,15 @@ export default function MarketPulseAdminDashboard({
         <MarketPulseAdminAlerts alerts={playabilityAlerts} />
         <MarketPulseAdminSectionNav />
       </div>
+
+      <MarketPulseCyclesHub
+        cycles={initialData.cycles}
+        cards={initialData.cards}
+        disabled={isPending}
+        onQuickCreateNextCycle={handleQuickCreateNextCycle}
+        onEditCycle={handleEditCycleAdvanced}
+        onScrollToReveal={handleScrollToReveal}
+      />
 
       <MarketPulseAdminSection
         id="overview"
@@ -361,8 +401,8 @@ export default function MarketPulseAdminDashboard({
 
       <MarketPulseAdminSection
         id="cycles"
-        title={t("auth.admin.mp.cycles")}
-        description={t("auth.admin.mp.shell.revealHelp")}
+        title={t("auth.admin.mp.nav.advancedCycles")}
+        description={t("auth.admin.mp.nav.advancedCyclesHelp")}
       >
         <CyclesSection
           cycles={initialData.cycles}
@@ -373,7 +413,7 @@ export default function MarketPulseAdminDashboard({
           cyclePrefillNonce={cyclePrefillNonce}
           createCycleOpen={createCycleOpen}
           setCreateCycleOpen={setCreateCycleOpen}
-          onSelectCycle={setSelectedCycleId}
+          onOpenLegacyCards={handleOpenLegacyCards}
           onRefresh={() => router.refresh()}
           onClose={(cycleId) => runAction(() => closeMarketPulseCycleAction(cycleId))}
           onExport={(cycleId) =>
@@ -385,22 +425,21 @@ export default function MarketPulseAdminDashboard({
       {selectedCycle ? (
         <MarketPulseAdminSection
           id="cards"
-          title={t("auth.admin.mp.cards").replace("{name}", selectedCycle.name)}
+          title={t("auth.admin.mp.nav.legacyCards")}
+          description={t("auth.admin.mp.nav.legacyCardsHelp")}
         >
           <CardsSection
             cycles={initialData.cycles}
             selectedCycleId={selectedCycleId}
             allCards={initialData.cards}
             isPending={isPending}
-            createCardOpen={createCardOpen}
-            onCreateCardOpenChange={setCreateCardOpen}
             onRefresh={() => router.refresh()}
           />
         </MarketPulseAdminSection>
       ) : (
         <MarketPulseAdminSection
           id="cards"
-          title={t("auth.admin.mp.shell.cardsNav")}
+          title={t("auth.admin.mp.nav.legacyCards")}
           description={t("auth.admin.mp.noCycles")}
         >
           <p className="text-sm text-zinc-400">{t("auth.admin.mp.manageCards")}</p>
@@ -574,7 +613,7 @@ function CyclesSection({
   cyclePrefillNonce,
   createCycleOpen,
   setCreateCycleOpen,
-  onSelectCycle,
+  onOpenLegacyCards,
   onRefresh,
   onClose,
   onExport,
@@ -587,7 +626,7 @@ function CyclesSection({
   cyclePrefillNonce: number;
   createCycleOpen: boolean;
   setCreateCycleOpen: (open: boolean) => void;
-  onSelectCycle: (id: string) => void;
+  onOpenLegacyCards: (cycleId: string) => void;
   onRefresh: () => void;
   onClose: (cycleId: string) => void;
   onExport: (cycleId: string) => void;
@@ -596,14 +635,21 @@ function CyclesSection({
 
   return (
     <div>
-      <CreateCycleSection
-        disabled={isPending}
-        onRefresh={onRefresh}
-        prefillValues={cyclePrefill}
-        prefillNonce={cyclePrefillNonce}
-        open={createCycleOpen}
-        setOpen={setCreateCycleOpen}
-      />
+      <details className="rounded-lg border border-zinc-800 bg-zinc-950/40">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-zinc-200 marker:content-none [&::-webkit-details-marker]:hidden">
+          {t("auth.admin.mp.nav.manualCreateCycle")}
+        </summary>
+        <div className="border-t border-zinc-800 px-4 pb-4 pt-3">
+          <CreateCycleSection
+            disabled={isPending}
+            onRefresh={onRefresh}
+            prefillValues={cyclePrefill}
+            prefillNonce={cyclePrefillNonce}
+            open={createCycleOpen}
+            setOpen={setCreateCycleOpen}
+          />
+        </div>
+      </details>
       <div className="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
         {cycles.length === 0 ? (
           <p className="text-sm text-foreground/65">{t("auth.admin.mp.noCycles")}</p>
@@ -615,7 +661,7 @@ function CyclesSection({
               cards={cards}
               disabled={isPending}
               selected={cycle.id === selectedCycleId}
-              onSelect={() => onSelectCycle(cycle.id)}
+              onSelect={() => onOpenLegacyCards(cycle.id)}
               onRefresh={onRefresh}
               onClose={() => onClose(cycle.id)}
               onExport={() => onExport(cycle.id)}
@@ -632,16 +678,12 @@ function CardsSection({
   selectedCycleId,
   allCards,
   isPending,
-  createCardOpen,
-  onCreateCardOpenChange,
   onRefresh,
 }: {
   cycles: MarketPulseAdminDashboardData["cycles"];
   selectedCycleId: string;
   allCards: MarketPulseAdminDashboardData["cards"];
   isPending: boolean;
-  createCardOpen: boolean;
-  onCreateCardOpenChange: (open: boolean) => void;
   onRefresh: () => void;
 }) {
   return (
@@ -650,8 +692,6 @@ function CardsSection({
       cards={allCards}
       selectedCycleId={selectedCycleId}
       disabled={isPending}
-      createCardOpen={createCardOpen}
-      onCreateCardOpenChange={onCreateCardOpenChange}
       onRefresh={onRefresh}
     />
   );
@@ -836,7 +876,8 @@ function CyclePanel({
 
   return (
     <article
-      className={`rounded-lg border p-4 ${selected ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800 bg-zinc-950/40"}`}
+      id={`cycle-advanced-${cycle.id}`}
+      className={`scroll-mt-44 rounded-lg border p-4 ${selected ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800 bg-zinc-950/40"}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -867,8 +908,14 @@ function CyclePanel({
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Link
+            href={marketPulseCycleBuilderPath(cycle.id)}
+            className={`${primaryButtonClass} text-center`}
+          >
+            {t("auth.admin.mp.openBuilder")}
+          </Link>
           <button type="button" className={buttonClass} onClick={onSelect}>
-            {selected ? t("auth.admin.mp.viewingCards") : t("auth.admin.mp.manageCards")}
+            {t("auth.admin.mp.nav.legacyCardsShort")}
           </button>
           <button type="button" className={buttonClass} disabled={disabled} onClick={onExport}>
             {t("auth.admin.mp.exportLeaderboard")}

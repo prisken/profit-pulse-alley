@@ -53,27 +53,27 @@ export default async function LiveEventsHubSection({
   return (
     <section
       id="live-events-hub"
-      className="border-t border-white/10 bg-zinc-900/50 px-3 py-6 sm:px-6 sm:py-14 md:py-16"
+      className="border-t border-white/10 bg-zinc-950 px-3 py-8 sm:px-6 sm:py-12 md:py-14"
       aria-labelledby="live-events-heading"
     >
       <div className="mx-auto w-full max-w-6xl">
         <header className="max-w-2xl">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-400/80 sm:text-sm sm:tracking-[0.2em] sm:text-amber-400/90">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500 sm:text-xs sm:tracking-[0.18em]">
             {t("home.events.eyebrow")}
           </p>
           <h2
             id="live-events-heading"
-            className="mt-1.5 text-lg font-bold tracking-tight text-white sm:mt-2 sm:text-3xl"
+            className="mt-1.5 text-lg font-bold tracking-tight text-zinc-100 sm:mt-2 sm:text-2xl"
           >
             {t("home.events.heading")}
           </h2>
-          <p className="mt-1 text-xs text-zinc-500 sm:mt-2 sm:text-sm sm:text-zinc-400">
+          <p className="mt-1.5 text-xs leading-relaxed text-zinc-500 sm:mt-2 sm:text-sm">
             {t("home.events.subtitle")}
           </p>
         </header>
 
         <article
-          className="mt-5 overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/8 via-zinc-900 to-zinc-950 shadow-lg sm:mt-10 sm:rounded-3xl sm:border-amber-500/20 sm:from-amber-500/10 sm:shadow-xl"
+          className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/60 shadow-md sm:mt-8 sm:rounded-2xl sm:shadow-lg"
           aria-labelledby="upcoming-fireside-heading"
         >
           <div className="grid gap-0 md:grid-cols-2 md:gap-0">

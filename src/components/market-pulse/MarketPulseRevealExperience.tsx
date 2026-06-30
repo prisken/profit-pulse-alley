@@ -4,16 +4,29 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
+  ArrowLeft,
   ArrowRight,
   CheckCircle2,
   Download,
   Sparkles,
   Trophy,
+  Unlock,
   XCircle,
 } from "lucide-react";
 
 import MarketPulseCountdown from "@/components/market-pulse/MarketPulseCountdown";
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
+import RevealStatePanel, {
+  RevealLockedPreview,
+} from "@/components/market-pulse/RevealStatePanel";
+import {
+  MarketPulseGlowBackground,
+  MarketPulseProofChip,
+  MarketPulseStatusChip,
+  MarketPulseSurface,
+  MP_FOCUS_RING,
+  mergeMpClasses,
+} from "@/components/market-pulse/MarketPulseVisualPrimitives";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import {
   PARTICIPATION_POINTS,
@@ -32,8 +45,7 @@ import {
   trackMarketPulseEvent,
 } from "@/lib/market-pulse/analytics";
 
-const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
+const focusRing = MP_FOCUS_RING;
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -48,48 +60,51 @@ function formatPoints(value: number): string {
   return new Intl.NumberFormat("en-HK").format(value);
 }
 
-function StatCard({
+function ScoreStat({
   label,
   value,
-  sub,
   index,
-  compact = false,
+  highlight = false,
 }: Readonly<{
   label: string;
   value: string;
-  sub?: string;
   index: number;
-  compact?: boolean;
+  highlight?: boolean;
 }>) {
+  const reduceMotion = useReducedMotion() ?? false;
+  const className = mergeMpClasses(
+    "rounded-xl border bg-zinc-950/50 px-3 py-3 text-center sm:rounded-2xl sm:px-4 sm:py-4",
+    highlight ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800/80",
+  );
+  const content = (
+    <>
+      <p className="text-[10px] font-semibold normal-case tracking-wide text-zinc-500 sm:text-xs">
+        {label}
+      </p>
+      <p
+        className={mergeMpClasses(
+          "mt-1.5 text-xl font-bold tabular-nums sm:mt-2 sm:text-2xl",
+          highlight ? "text-emerald-300" : "text-white",
+        )}
+      >
+        {value}
+      </p>
+    </>
+  );
+
+  if (reduceMotion) {
+    return <div className={className}>{content}</div>;
+  }
+
   return (
     <motion.div
       custom={index}
       initial="hidden"
       animate="visible"
       variants={fadeUp}
-      className={`rounded-xl border border-zinc-800 bg-zinc-900/60 text-center shadow-lg shadow-black/20 sm:rounded-2xl ${
-        compact ? "p-3 sm:p-5" : "p-4 sm:p-5"
-      }`}
+      className={className}
     >
-      <p
-        className={`font-semibold uppercase tracking-[0.14em] text-zinc-500 ${
-          compact ? "text-[10px]" : "text-xs tracking-[0.16em]"
-        }`}
-      >
-        {label}
-      </p>
-      <p
-        className={`mt-1.5 font-bold tabular-nums text-white sm:mt-2 ${
-          compact ? "text-xl sm:text-3xl" : "text-2xl sm:text-3xl"
-        }`}
-      >
-        {value}
-      </p>
-      {sub ? (
-        <p className={`mt-0.5 text-zinc-500 ${compact ? "text-[10px]" : "text-xs"}`}>
-          {sub}
-        </p>
-      ) : null}
+      {content}
     </motion.div>
   );
 }
@@ -123,23 +138,18 @@ function RevealCardItem({
   index,
 }: Readonly<{ card: MarketPulseRevealCardRow; index: number }>) {
   const { t } = useTranslations();
+  const reduceMotion = useReducedMotion() ?? false;
   const userTone = getSignalTone(card.userDecision as MarketPulseDecision);
   const ppaTone = getSignalTone(card.ppaSignal as MarketPulseDecision);
   const formatDecision = (decision: MarketPulseDecision) =>
     t(decision === "BULLISH" ? "signal.bullish" : "signal.cautious");
 
-  return (
-    <motion.article
-      custom={index}
-      initial="hidden"
-      animate="visible"
-      variants={fadeUp}
-      className={`overflow-hidden rounded-xl border bg-gradient-to-br from-zinc-900/90 to-zinc-950 shadow-xl shadow-black/25 sm:rounded-2xl ${
-        card.isMatch
-          ? "border-emerald-500/25"
-          : "border-zinc-800"
-      }`}
-    >
+  const articleClassName = `overflow-hidden rounded-xl border bg-gradient-to-br from-zinc-900/90 to-zinc-950 shadow-xl shadow-black/25 sm:rounded-2xl ${
+    card.isMatch ? "border-emerald-500/25" : "border-zinc-800"
+  }`;
+
+  const articleBody = (
+    <>
       <div className="border-b border-zinc-800/80 px-3 py-2.5 sm:px-5 sm:py-3">
         <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className="min-w-0 flex-1">
@@ -147,22 +157,23 @@ function RevealCardItem({
               <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-xs">
                 {t("mp.reveal.card.day").replace("{day}", String(card.dayIndex + 1))}
               </p>
-              <div
-                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs ${
+              <MarketPulseProofChip
+                label={
                   card.isMatch
-                    ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30"
-                    : "bg-zinc-800 text-zinc-400 ring-1 ring-zinc-700"
-                }`}
-              >
-                {card.isMatch ? (
-                  <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
-                ) : (
-                  <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
-                )}
-                {card.isMatch ? t("mp.reveal.card.match") : t("mp.reveal.card.noMatch")}
-              </div>
+                    ? t("mp.reveal.card.match")
+                    : t("mp.reveal.card.noMatch")
+                }
+                variant={card.isMatch ? "participation" : "lockedUntilReveal"}
+                icon={
+                  card.isMatch ? (
+                    <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+                  ) : (
+                    <XCircle className="h-3 w-3" aria-hidden="true" />
+                  )
+                }
+              />
             </div>
-            <h3 className="mt-1 truncate text-base font-semibold text-white sm:text-lg">
+            <h3 className="mt-1 line-clamp-2 break-words text-base font-semibold text-white sm:text-lg">
               {card.companyName}
             </h3>
             <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-zinc-400 sm:mt-1 sm:text-sm">
@@ -182,7 +193,7 @@ function RevealCardItem({
               {formatDecision(card.userDecision as MarketPulseDecision)}
             </p>
           </div>
-          <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2 sm:border-0 sm:bg-transparent sm:p-0">
+          <div className="rounded-lg border border-sky-500/15 bg-sky-500/5 px-2.5 py-2 sm:border-0 sm:bg-transparent sm:p-0">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
               {t("mp.reveal.card.ppaSignal")}
             </p>
@@ -192,7 +203,7 @@ function RevealCardItem({
           </div>
         </div>
 
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-2.5 sm:rounded-xl sm:p-4">
+        <div className="rounded-lg border border-emerald-500/15 bg-zinc-950/60 p-2.5 sm:rounded-xl sm:p-4">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
             {t("mp.reveal.card.score")}
           </p>
@@ -228,12 +239,15 @@ function RevealCardItem({
       </div>
 
       {card.ppaInsight ? (
-        <details className="group border-t border-zinc-800/80 bg-emerald-500/5">
+        <details className="group border-t border-emerald-500/15 bg-emerald-500/5">
           <summary
             className={`cursor-pointer list-none px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400/80 marker:content-none sm:px-5 sm:py-3 sm:text-[11px] [&::-webkit-details-marker]:hidden ${focusRing}`}
           >
-            <span className="group-open:hidden">{t("mp.reveal.card.showInsight")}</span>
-            <span className="hidden group-open:inline">{t("mp.reveal.card.hideInsight")}</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Unlock className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="group-open:hidden">{t("mp.reveal.card.showInsight")}</span>
+              <span className="hidden group-open:inline">{t("mp.reveal.card.hideInsight")}</span>
+            </span>
           </summary>
           <div className="border-t border-emerald-500/10 px-3 pb-3 pt-2 sm:px-5 sm:pb-4 sm:pt-3">
             <p className="text-xs leading-relaxed text-zinc-300 sm:text-sm">
@@ -242,7 +256,139 @@ function RevealCardItem({
           </div>
         </details>
       ) : null}
+    </>
+  );
+
+  if (reduceMotion) {
+    return <article className={articleClassName}>{articleBody}</article>;
+  }
+
+  return (
+    <motion.article
+      custom={index}
+      initial="hidden"
+      animate="visible"
+      variants={fadeUp}
+      className={articleClassName}
+    >
+      {articleBody}
     </motion.article>
+  );
+}
+
+function RevealLiveHeader({
+  cycleName,
+}: Readonly<{ cycleName: string }>) {
+  const { t } = useTranslations();
+  const reduceMotion = useReducedMotion() ?? false;
+
+  const headerClassName =
+    "relative overflow-hidden rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/15 via-zinc-900 to-zinc-950 px-4 py-6 text-center shadow-2xl shadow-emerald-950/20 sm:rounded-3xl sm:px-10 sm:py-10";
+
+  const headerContent = (
+    <>
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(251,191,36,0.12),transparent_50%)]"
+        aria-hidden="true"
+      />
+      <div className="relative flex flex-col items-center gap-3">
+        <MarketPulseStatusChip
+          variant="live"
+          label={t("mp.reveal.live.title")}
+          icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
+          showPulse
+          className="motion-reduce:[&_span]:animate-none"
+        />
+        <Trophy
+          className="h-10 w-10 text-amber-400 sm:h-12 sm:w-12"
+          aria-hidden="true"
+        />
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-4xl">
+            {t("mp.reveal.ceremony.title")}
+          </h1>
+          <p className="mt-1.5 text-balance text-base text-zinc-300 sm:mt-2 sm:text-lg">
+            {cycleName}
+          </p>
+          <p className="mt-2 text-pretty text-sm text-zinc-400">
+            {t("mp.reveal.live.subtitle")}
+          </p>
+        </div>
+      </div>
+    </>
+  );
+
+  if (reduceMotion) {
+    return <header className={headerClassName}>{headerContent}</header>;
+  }
+
+  return (
+    <motion.header
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55 }}
+      className={headerClassName}
+    >
+      {headerContent}
+    </motion.header>
+  );
+}
+
+function LearningFraming() {
+  const { t } = useTranslations();
+
+  return (
+    <p className="mt-4 rounded-xl border border-sky-500/15 bg-sky-500/5 px-4 py-3 text-center text-sm leading-relaxed text-sky-100/90 sm:mt-6 sm:text-[15px]">
+      {t("mp.reveal.learning.framing")}
+    </p>
+  );
+}
+
+function PersonalScoreSummary({
+  results,
+}: Readonly<{ results: NonNullable<MarketPulseRevealPageData["results"]> }>) {
+  const { t } = useTranslations();
+
+  return (
+    <section
+      className="mt-6 sm:mt-8"
+      aria-labelledby="reveal-score-summary-heading"
+    >
+      <h2
+        id="reveal-score-summary-heading"
+        className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-zinc-500 sm:text-xs"
+      >
+        {t("mp.reveal.ceremony.label")}
+      </h2>
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-5">
+        <ScoreStat
+          index={0}
+          highlight
+          label={t("mp.reveal.stats.totalScore")}
+          value={formatPoints(results.totalPoints)}
+        />
+        <ScoreStat
+          index={1}
+          label={t("mp.reveal.stats.participation")}
+          value={formatPoints(results.totals.participationPoints)}
+        />
+        <ScoreStat
+          index={2}
+          label={t("mp.reveal.stats.matchPoints")}
+          value={formatPoints(results.totals.matchBonus)}
+        />
+        <ScoreStat
+          index={3}
+          label={t("mp.reveal.stats.streakPoints")}
+          value={formatPoints(results.totals.streakBonus)}
+        />
+        <ScoreStat
+          index={4}
+          label={t("mp.reveal.stats.finalRank")}
+          value={results.rank != null ? `#${results.rank}` : "—"}
+        />
+      </div>
+    </section>
   );
 }
 
@@ -252,59 +398,87 @@ function PendingState({
   const { t } = useTranslations();
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mx-auto max-w-lg rounded-3xl border border-zinc-800 bg-zinc-900/50 px-6 py-12 text-center shadow-2xl shadow-black/30"
-    >
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-400">
-        <Sparkles className="h-7 w-7" aria-hidden="true" />
-      </div>
-      <h2 className="mt-5 text-xl font-semibold text-white sm:text-2xl">
-        {t("mp.reveal.pending.title")}
-      </h2>
-      <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-        {data.pendingCycle
-          ? t("mp.reveal.pending.withCycle").replace("{name}", data.pendingCycle.name)
-          : t("mp.reveal.pending.noCycle")}
-      </p>
+    <div>
+      <RevealStatePanel
+        variant="locked"
+        title={t("mp.reveal.pending.title")}
+        body={
+          data.pendingCycle
+            ? t("mp.reveal.pending.withCycle").replace("{name}", data.pendingCycle.name)
+            : t("mp.reveal.pending.noCycle")
+        }
+      />
       {data.pendingCycle ? (
-        <div className="mt-8 text-left">
+        <MarketPulseSurface
+          variant="glass"
+          density="compact"
+          className="mx-auto mt-6 max-w-md"
+        >
+          <p className="mb-3 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            {t("mp.reveal.pending.countdownLabel")}
+          </p>
           <MarketPulseCountdown targetDate={data.pendingCycle.revealAtIso} />
-        </div>
+        </MarketPulseSurface>
       ) : null}
-      <Link
-        href="/market-pulse/play"
-        className={`mt-8 inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-6 text-sm font-bold text-zinc-950 transition-colors hover:bg-emerald-300 ${focusRing}`}
-      >
-        {t("mp.hub.cta.playToday")}
-      </Link>
-    </motion.div>
+      <RevealLockedPreview />
+      <RevealCtaBar
+        playNextAvailable={data.playNextAvailable}
+        reportRequested={false}
+        onReportClick={() => undefined}
+        showReport={false}
+      />
+    </div>
   );
 }
 
-function GuestRevealedState() {
+function GuestRevealedState({
+  data,
+}: Readonly<{ data: MarketPulseRevealPageData }>) {
   const { t } = useTranslations();
   const loginHref = `/login?callbackUrl=${encodeURIComponent("/market-pulse/reveal")}`;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-zinc-950 px-6 py-10 text-center"
-    >
-      <Trophy className="mx-auto h-10 w-10 text-amber-400" aria-hidden="true" />
-      <h2 className="mt-4 text-2xl font-bold text-white">{t("mp.reveal.guest.title")}</h2>
-      <p className="mt-3 text-sm text-zinc-400">
-        {t("mp.reveal.guest.body")}
-      </p>
-      <Link
-        href={loginHref}
-        className={`mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-8 text-sm font-bold text-zinc-950 ${focusRing}`}
-      >
-        {t("mp.reveal.guest.signIn")}
-      </Link>
-    </motion.div>
+    <div>
+      {data.revealedCycle ? (
+        <RevealLiveHeader cycleName={data.revealedCycle.name} />
+      ) : null}
+      <LearningFraming />
+      <RevealStatePanel
+        variant="guest"
+        className="mt-6"
+        title={t("mp.reveal.guest.title")}
+        body={t("mp.reveal.guest.body")}
+      />
+      <div className="mt-6 flex justify-center">
+        <Link
+          href={loginHref}
+          className={`inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-400 px-8 text-sm font-bold text-zinc-950 transition-colors hover:bg-emerald-300 ${focusRing}`}
+        >
+          {t("mp.reveal.guest.signIn")}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function NoParticipationState({
+  data,
+}: Readonly<{ data: MarketPulseRevealPageData }>) {
+  const { t } = useTranslations();
+  const cycleName =
+    data.results?.cycleName ?? data.revealedCycle?.name ?? "";
+
+  return (
+    <div>
+      {cycleName ? <RevealLiveHeader cycleName={cycleName} /> : null}
+      <LearningFraming />
+      <RevealStatePanel
+        variant="no_participation"
+        className="mt-6"
+        title={t("mp.reveal.noParticipation.title")}
+        body={t("mp.reveal.noParticipation.body")}
+      />
+    </div>
   );
 }
 
@@ -317,10 +491,11 @@ export default function MarketPulseRevealExperience({
   useEffect(() => {
     trackMarketPulseEvent(MARKET_PULSE_ANALYTICS_EVENTS.reveal_viewed, {
       status: data.status,
-      cycleId: data.results?.cycleId,
+      cycleId: data.results?.cycleId ?? data.revealedCycle?.id,
       surface: "reveal",
+      route: "/market-pulse/reveal",
     });
-  }, [data.results?.cycleId, data.status]);
+  }, [data.results?.cycleId, data.revealedCycle?.id, data.status]);
 
   const handleReportClick = () => {
     setReportRequested(true);
@@ -330,100 +505,64 @@ export default function MarketPulseRevealExperience({
     });
   };
 
+  const cycleId = data.results?.cycleId ?? data.revealedCycle?.id;
+
   if (data.status === "pending") {
     return (
-      <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
-        <PageShell cycleId={data.results?.cycleId}>
+      <MarketPulseGlowBackground accent="amber" innerClassName="min-h-screen">
+        <PageShell cycleId={cycleId}>
           <PendingState data={data} />
         </PageShell>
-      </div>
+      </MarketPulseGlowBackground>
     );
   }
 
   if (!data.isAuthenticated || !data.results) {
     return (
-      <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
-        <PageShell cycleId={data.results?.cycleId}>
-          <GuestRevealedState />
-          <CtaBar
+      <MarketPulseGlowBackground accent="dual" innerClassName="min-h-screen">
+        <PageShell cycleId={cycleId}>
+          <GuestRevealedState data={data} />
+          <RevealCtaBar
+            playNextAvailable={data.playNextAvailable}
             reportRequested={reportRequested}
             onReportClick={handleReportClick}
+            showReport={false}
           />
         </PageShell>
-      </div>
+      </MarketPulseGlowBackground>
     );
   }
 
   const { results } = data;
 
-  return (
-    <div className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
-      <div
-        className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-5%,rgba(16,185,129,0.16),transparent_55%)]"
-        aria-hidden="true"
-      />
-      <PageShell cycleId={results.cycleId}>
-        <div className="flex flex-col">
-          <div className="order-1 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-4 lg:order-2">
-            <StatCard
-              index={0}
-              compact
-              label={t("mp.reveal.stats.finalScore")}
-              value={formatPoints(results.totalPoints)}
-            />
-            <StatCard
-              index={1}
-              compact
-              label={t("mp.reveal.stats.finalRank")}
-              value={results.rank != null ? `#${results.rank}` : "—"}
-            />
-            <StatCard
-              index={2}
-              compact
-              label={t("mp.reveal.stats.matches")}
-              value={`${results.matchesCount}/${results.totalPlayed}`}
-              sub={t("mp.reveal.stats.cardsPlayed")}
-            />
-            <StatCard
-              index={3}
-              compact
-              label={t("mp.reveal.stats.bestStreak")}
-              value={String(results.bestStreak)}
-              sub={t("mp.reveal.stats.consecutiveMatches")}
-            />
-          </div>
+  if (results.cards.length === 0) {
+    return (
+      <MarketPulseGlowBackground accent="dual" innerClassName="min-h-screen">
+        <PageShell cycleId={cycleId}>
+          <NoParticipationState data={data} />
+          <RevealCtaBar
+            playNextAvailable={data.playNextAvailable}
+            reportRequested={reportRequested}
+            onReportClick={handleReportClick}
+            showReport={false}
+          />
+        </PageShell>
+      </MarketPulseGlowBackground>
+    );
+  }
 
-          <motion.header
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55 }}
-            className="relative order-2 mt-4 overflow-hidden rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/15 via-zinc-900 to-zinc-950 px-4 py-6 text-center shadow-2xl shadow-emerald-950/20 sm:mt-8 sm:rounded-3xl sm:px-10 sm:py-12 lg:order-1 lg:mt-0"
-          >
-            <motion.div
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(251,191,36,0.12),transparent_50%)]"
-              aria-hidden="true"
-            />
-            <Trophy
-              className="relative mx-auto h-10 w-10 text-amber-400 sm:h-12 sm:w-12"
-              aria-hidden="true"
-            />
-            <p className="relative mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300/90 sm:mt-4 sm:text-xs sm:tracking-[0.2em]">
-              {t("mp.reveal.ceremony.label")}
-            </p>
-            <h1 className="relative mt-1.5 text-2xl font-bold tracking-tight sm:mt-2 sm:text-4xl">
-              {t("mp.reveal.ceremony.title")}
-            </h1>
-            <p className="relative mt-1.5 text-base text-zinc-300 sm:mt-2 sm:text-lg">
-              {results.cycleName}
-            </p>
-          </motion.header>
-        </div>
+  return (
+    <MarketPulseGlowBackground accent="dual" innerClassName="min-h-screen">
+      <PageShell cycleId={cycleId}>
+        <RevealLiveHeader cycleName={results.cycleName} />
+        <LearningFraming />
+        <PersonalScoreSummary results={results} />
 
         <motion.section
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.35 }}
-          className="mt-6 sm:mt-10"
+          className="mt-8 sm:mt-10"
           aria-labelledby="reveal-cards-heading"
         >
           <h2
@@ -442,21 +581,27 @@ export default function MarketPulseRevealExperience({
           </div>
         </motion.section>
 
-        <CtaBar
+        <RevealCtaBar
+          playNextAvailable={data.playNextAvailable}
           reportRequested={reportRequested}
           onReportClick={handleReportClick}
+          showReport
         />
       </PageShell>
-    </div>
+    </MarketPulseGlowBackground>
   );
 }
 
-function CtaBar({
+function RevealCtaBar({
+  playNextAvailable,
   reportRequested,
   onReportClick,
+  showReport,
 }: Readonly<{
+  playNextAvailable: boolean;
   reportRequested: boolean;
   onReportClick: () => void;
+  showReport: boolean;
 }>) {
   const { t } = useTranslations();
   const reduceMotion = useReducedMotion() ?? false;
@@ -475,21 +620,32 @@ function CtaBar({
         {t("mp.reveal.cta.leaderboard")}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>
-      <button
-        type="button"
-        onClick={onReportClick}
-        aria-live="polite"
+      <Link
+        href="/market-pulse"
         className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-6 text-sm font-semibold text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 sm:w-auto ${focusRing}`}
       >
-        <Download className="h-4 w-4" aria-hidden="true" />
-        {reportRequested ? t("mp.reveal.cta.comingSoon") : t("mp.reveal.cta.download")}
-      </button>
-      <Link
-        href="/market-pulse/play"
-        className={`inline-flex min-h-11 w-full items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-6 text-sm font-semibold text-emerald-200 transition-colors hover:bg-emerald-500/20 sm:w-auto ${focusRing}`}
-      >
-        {t("mp.reveal.cta.nextChallenge")}
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        {t("mp.reveal.cta.hub")}
       </Link>
+      {playNextAvailable ? (
+        <Link
+          href="/market-pulse/play"
+          className={`inline-flex min-h-11 w-full items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-6 text-sm font-semibold text-emerald-200 transition-colors hover:bg-emerald-500/20 sm:w-auto ${focusRing}`}
+        >
+          {t("mp.reveal.cta.nextChallenge")}
+        </Link>
+      ) : null}
+      {showReport ? (
+        <button
+          type="button"
+          onClick={onReportClick}
+          aria-live="polite"
+          className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-zinc-700/80 bg-zinc-950/60 px-6 text-sm font-semibold text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-200 sm:w-auto ${focusRing}`}
+        >
+          <Download className="h-4 w-4" aria-hidden="true" />
+          {reportRequested ? t("mp.reveal.cta.comingSoon") : t("mp.reveal.cta.download")}
+        </button>
+      ) : null}
     </motion.div>
   );
 }
@@ -501,7 +657,7 @@ function PageShell({
   const { t } = useTranslations();
 
   return (
-    <div className="relative mx-auto flex w-full max-w-3xl flex-col px-3 py-6 sm:px-6 sm:py-12">
+    <div className="relative mx-auto flex w-full min-w-0 max-w-3xl flex-col overflow-x-hidden px-3 py-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-12">
       <Link
         href="/market-pulse"
         className={`mb-4 inline-flex min-h-11 items-center text-sm text-zinc-400 transition-colors hover:text-white sm:mb-6 ${focusRing}`}

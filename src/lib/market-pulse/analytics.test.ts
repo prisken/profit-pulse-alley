@@ -18,6 +18,7 @@ describe("sanitizeMarketPulseAnalyticsPayload", () => {
         cta: "profile",
         rank: 2,
         surface: "hub",
+        route: "/market-pulse/play",
       }),
     ).toEqual({
       cardId: "card-1",
@@ -29,6 +30,7 @@ describe("sanitizeMarketPulseAnalyticsPayload", () => {
       cta: "profile",
       rank: 2,
       surface: "hub",
+      route: "/market-pulse/play",
     });
   });
 
@@ -59,7 +61,12 @@ describe("MARKET_PULSE_ANALYTICS_EVENTS", () => {
     expect(Object.values(MARKET_PULSE_ANALYTICS_EVENTS)).toEqual(
       expect.arrayContaining([
         "market_pulse_viewed",
+        "hero_cta_clicked",
+        "how_it_works_cta_clicked",
+        "hub_cta_clicked",
         "card_viewed",
+        "decision_selected",
+        "decision_confirmation_opened",
         "decision_submitted",
         "decision_locked",
         "leaderboard_viewed",

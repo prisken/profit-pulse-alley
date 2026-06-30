@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   isValidOptionalHttpUrl,
   validateCardPublishable,
+  validateMarketPulseCardDraftSave,
   validateMarketPulseCardForm,
 } from "@/lib/market-pulse/card-validation";
 import { DEFAULT_CARD_FORM_VALUES } from "@/lib/market-pulse/card-validation";
@@ -71,6 +72,25 @@ describe("validateMarketPulseCardForm", () => {
     });
     expect(result.valid).toBe(false);
     expect(result.errors.cardImageAlt).toBeTruthy();
+  });
+});
+
+describe("validateMarketPulseCardDraftSave", () => {
+  it("allows missing summary for draft saves", () => {
+    const result = validateMarketPulseCardDraftSave({
+      ...baseValues,
+      summary: "",
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it("still requires core database fields", () => {
+    const result = validateMarketPulseCardDraftSave({
+      ...baseValues,
+      headline: "",
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.headline).toBeTruthy();
   });
 });
 

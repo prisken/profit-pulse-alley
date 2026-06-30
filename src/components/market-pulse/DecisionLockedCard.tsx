@@ -2,153 +2,198 @@
 
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { BookOpen, CheckCircle2, ChevronRight, Lock, Trophy } from "lucide-react";
 
+import CycleProgress from "@/components/market-pulse/CycleProgress";
+import {
+  MP_FOCUS_RING,
+  mergeMpClasses,
+} from "@/components/market-pulse/MarketPulseVisualPrimitives";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import {
   PARTICIPATION_POINTS,
-  getSignalTone,
   type MarketPulseDecision,
 } from "@/lib/market-pulse/constants";
-
-const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black";
+import { shouldShowLockedCycleProgress } from "@/lib/market-pulse/locked-state-display";
 
 const springIn = { type: "spring" as const, stiffness: 320, damping: 28 };
+
+export type DecisionLockedCardContext = {
+  dayCurrent?: number;
+  dayTotal?: number;
+  challengeName?: string;
+};
 
 export type DecisionLockedCardProps = {
   decision: MarketPulseDecision;
   revealMessage?: string;
-  footerMessage?: string;
-  leaderboardHref?: string;
-  tomorrowHref?: string;
+  cycleContext?: DecisionLockedCardContext;
   className?: string;
 };
 
 export default function DecisionLockedCard({
   decision,
   revealMessage,
-  footerMessage,
-  leaderboardHref = "/market-pulse/leaderboard",
-  tomorrowHref = "/market-pulse/play",
+  cycleContext,
   className = "",
 }: DecisionLockedCardProps) {
   const { t } = useTranslations();
   const reduceMotion = useReducedMotion() ?? false;
-  const tone = getSignalTone(decision);
   const isBullish = decision === "BULLISH";
-  const accentBorder = isBullish ? "border-emerald-500" : "border-amber-500";
+  const choiceLabel = t(isBullish ? "signal.bullish" : "signal.cautious");
+  const accentBorder = isBullish ? "border-emerald-500/50" : "border-amber-500/50";
   const accentBg = isBullish ? "bg-emerald-500/10" : "bg-amber-500/10";
   const accentText = isBullish ? "text-emerald-300" : "text-amber-300";
+  const accentGlow = isBullish ? "shadow-emerald-900/20" : "shadow-amber-900/20";
   const resolvedRevealMessage =
     revealMessage ?? t("mp.play.reveal.default");
-  const resolvedFooterMessage =
-    footerMessage ?? t("mp.play.locked.footerShort");
+  const showCycleProgress = shouldShowLockedCycleProgress(
+    cycleContext?.dayCurrent ?? 0,
+    cycleContext?.dayTotal ?? 0,
+  );
 
   return (
-    <motion.div
-      initial={reduceMotion ? false : { opacity: 0, scale: 0.98, y: 16 }}
+    <motion.article
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.98, y: 12 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={reduceMotion ? { duration: 0.15 } : springIn}
-      className={`relative flex flex-col items-center overflow-hidden rounded-2xl border-2 border-white/85 bg-black px-5 py-8 text-center shadow-xl shadow-black/40 sm:px-6 sm:py-9 ${className}`}
+      className={mergeMpClasses(
+        "relative overflow-hidden rounded-2xl border bg-gradient-to-b from-zinc-950 via-black to-black px-4 py-5 text-center shadow-xl sm:px-5 sm:py-6",
+        accentBorder,
+        accentGlow,
+        className,
+      )}
+      aria-labelledby="locked-call-heading"
     >
-      <motion.div
-        initial={reduceMotion ? false : { scale: 0.5, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={reduceMotion ? { duration: 0.15 } : { ...springIn, delay: 0.06 }}
-        className="relative flex h-16 w-16 items-center justify-center"
-      >
-        {!reduceMotion ? (
-          <motion.span
-            className={`absolute inset-0 rounded-2xl ${accentBg}`}
-            initial={{ scale: 0.8, opacity: 0.7 }}
-            animate={{ scale: 1.35, opacity: 0 }}
-            transition={{ duration: 1.1, repeat: 2, repeatDelay: 0.2 }}
-            aria-hidden="true"
-          />
-        ) : null}
-        <div
-          className={`relative flex h-14 w-14 items-center justify-center rounded-2xl border-2 ${accentBorder} ${accentBg} ${accentText}`}
-        >
-          <CheckCircle2 className="h-8 w-8" aria-hidden="true" />
-        </div>
-      </motion.div>
+      <div
+        className={mergeMpClasses(
+          "pointer-events-none absolute inset-x-8 top-0 h-24 rounded-full blur-3xl",
+          isBullish ? "bg-emerald-500/15" : "bg-amber-500/10",
+        )}
+        aria-hidden="true"
+      />
 
-      <motion.div
-        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={reduceMotion ? { duration: 0.15 } : { delay: 0.12, ...springIn }}
-      >
-        <div
-          className={`mt-5 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${accentBorder} ${accentBg} ${accentText}`}
+      <div className="relative">
+        <motion.div
+          initial={reduceMotion ? false : { scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={reduceMotion ? { duration: 0.15 } : { ...springIn, delay: 0.05 }}
+          className="mx-auto flex h-14 w-14 items-center justify-center"
         >
-          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+          {!reduceMotion ? (
+            <motion.span
+              className={mergeMpClasses("absolute inset-0 rounded-2xl", accentBg)}
+              initial={{ scale: 0.8, opacity: 0.7 }}
+              animate={{ scale: 1.35, opacity: 0 }}
+              transition={{ duration: 1.1, repeat: 2, repeatDelay: 0.2 }}
+              aria-hidden="true"
+            />
+          ) : null}
+          <div
+            className={mergeMpClasses(
+              "relative flex h-12 w-12 items-center justify-center rounded-2xl border-2 sm:h-14 sm:w-14",
+              accentBorder,
+              accentBg,
+              accentText,
+            )}
+          >
+            <CheckCircle2 className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden="true" />
+          </div>
+        </motion.div>
+
+        <div
+          className={mergeMpClasses(
+            "mx-auto mt-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] sm:text-xs",
+            accentBorder,
+            accentBg,
+            accentText,
+          )}
+        >
+          <Lock className="h-3.5 w-3.5" aria-hidden="true" />
           {t("mp.locked.badge")}
         </div>
-        <p className="mt-3 text-lg font-semibold text-white sm:mt-4 sm:text-xl">
-          {t("mp.locked.title")}
-        </p>
-        <p className="mt-1.5 text-sm text-zinc-300 sm:text-base">
-          {t("mp.locked.chosePrefix")}{" "}
-          <span className={`font-bold ${tone.textClass}`}>
-            {t(decision === "BULLISH" ? "signal.bullish" : "signal.cautious")}
-          </span>
-        </p>
-        <motion.p
-          initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={
-            reduceMotion
-              ? { duration: 0.15 }
-              : { delay: 0.22, type: "spring", stiffness: 400, damping: 22 }
-          }
-          className={`mt-4 text-sm font-semibold ${accentText}`}
+
+        <h2
+          id="locked-call-heading"
+          className="mt-3 text-base font-semibold text-white sm:text-lg"
         >
-          {t("mp.locked.participationPoints").replace(
+          {t("mp.locked.chosePrefix")}{" "}
+          <span className={accentText}>{choiceLabel}</span>
+        </h2>
+
+        <p className="mt-2 text-sm leading-relaxed text-zinc-300 sm:text-[15px]">
+          {t("mp.locked.participationSaved")}
+        </p>
+
+        <p className={mergeMpClasses("mt-2 text-xs font-semibold sm:text-sm", accentText)}>
+          {t("mp.locked.participationCredit").replace(
             "{points}",
             String(PARTICIPATION_POINTS),
           )}
-        </motion.p>
-        <p className="mt-3 max-w-xs text-sm leading-relaxed text-zinc-500">
+        </p>
+
+        {showCycleProgress ? (
+          <div className="mx-auto mt-4 max-w-xs rounded-xl border border-white/10 bg-zinc-950/70 p-3 text-left">
+            {cycleContext?.challengeName ? (
+              <p className="mb-2 truncate text-xs font-medium text-zinc-400">
+                {cycleContext.challengeName}
+              </p>
+            ) : null}
+            <CycleProgress
+              variant="compact"
+              dayCurrent={cycleContext!.dayCurrent!}
+              dayTotal={cycleContext!.dayTotal!}
+            />
+          </div>
+        ) : null}
+
+        <p className="mx-auto mt-4 max-w-sm text-xs leading-relaxed text-zinc-500 sm:text-sm">
           {resolvedRevealMessage}
         </p>
-      </motion.div>
 
-      <motion.div
-        initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={reduceMotion ? { duration: 0.15 } : { delay: 0.28, ...springIn }}
-        className="relative mt-6 flex w-full max-w-sm flex-col gap-2.5 sm:mt-7 sm:flex-row sm:justify-center sm:gap-3"
+        <p className="mt-3 text-sm font-medium text-zinc-300">
+          {t("mp.locked.nextSignal")}
+        </p>
+      </div>
+
+      <nav
+        className="relative mt-5 flex w-full flex-col gap-2 sm:mt-6"
+        aria-label={t("mp.locked.cta.groupLabel")}
       >
-        <motion.div
-          whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-          whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-          className="flex-1"
+        <Link
+          href="/market-pulse/leaderboard"
+          className={mergeMpClasses(
+            "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 text-sm font-semibold text-white transition-colors hover:bg-white/10",
+            MP_FOCUS_RING,
+          )}
         >
-          <Link
-            href={leaderboardHref}
-            className={`inline-flex min-h-11 w-full items-center justify-center rounded-full border border-white/25 bg-black px-5 text-sm font-semibold text-white transition-colors hover:bg-zinc-900 ${focusRing}`}
-          >
-            {t("mp.locked.cta.leaderboard")}
-          </Link>
-        </motion.div>
-        <motion.div
-          whileHover={reduceMotion ? undefined : { scale: 1.02 }}
-          whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-          className="flex-1"
+          <Trophy className="h-4 w-4 shrink-0 text-amber-400" aria-hidden="true" />
+          {t("mp.locked.cta.leaderboard")}
+          <ChevronRight className="h-4 w-4 shrink-0 opacity-60" aria-hidden="true" />
+        </Link>
+        <Link
+          href="/market-pulse"
+          className={mergeMpClasses(
+            "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border-2 px-4 text-sm font-semibold transition-colors",
+            MP_FOCUS_RING,
+            isBullish
+              ? "border-emerald-500/70 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/15"
+              : "border-amber-500/70 bg-amber-500/10 text-amber-100 hover:bg-amber-500/15",
+          )}
         >
-          <Link
-            href={tomorrowHref}
-            className={`inline-flex min-h-11 w-full items-center justify-center rounded-full border-2 bg-black px-5 text-sm font-semibold transition-colors ${focusRing} ${
-              isBullish
-                ? "border-emerald-500 text-emerald-300 hover:bg-emerald-500/10"
-                : "border-amber-500 text-amber-300 hover:bg-amber-500/10"
-            }`}
-          >
-            {resolvedFooterMessage}
-          </Link>
-        </motion.div>
-      </motion.div>
-    </motion.div>
+          {t("mp.locked.cta.hub")}
+        </Link>
+        <Link
+          href="/market-pulse/rules"
+          className={mergeMpClasses(
+            "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-white/15 px-4 text-sm font-medium text-zinc-300 transition-colors hover:border-white/25 hover:text-white",
+            MP_FOCUS_RING,
+          )}
+        >
+          <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
+          {t("mp.locked.cta.rules")}
+        </Link>
+      </nav>
+    </motion.article>
   );
 }

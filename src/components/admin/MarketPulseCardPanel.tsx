@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { CardStatusBadge, IndicatorBadge, PpaStatusBadge, getPpaStatusMessageKey, ppaStatusBadgeTone } from "@/components/admin/AdminCardStatusBadge";
@@ -72,7 +73,7 @@ export function cardToPreview(card: MarketPulseAdminCardRow): MarketPulseAdminCa
   };
 }
 
-function cardToFormValues(card: MarketPulseAdminCardRow): Partial<MarketPulseCardFormValues> {
+export function cardToFormValues(card: MarketPulseAdminCardRow): Partial<MarketPulseCardFormValues> {
   return {
     cycleId: card.cycleId,
     dayIndex: card.dayIndex,
@@ -141,6 +142,8 @@ export function CreateCardSection({
   onRefresh,
   open: controlledOpen,
   onOpenChange,
+  createPrefill,
+  builderHref,
 }: {
   cycleId: string;
   cycleName: string;
@@ -150,37 +153,75 @@ export function CreateCardSection({
   onRefresh: () => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  builderHref?: string;
+  createPrefill?: Partial<
+    Pick<
+      MarketPulseCardFormValues,
+      "dayIndex" | "userPrompt" | "exchange" | "sourceName" | "sourceUrl" | "sourceDate"
+    >
+  >;
 }) {
   const { t } = useTranslations();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
+  const [showBuilderLink, setShowBuilderLink] = useState(false);
 
   if (!open) {
     return (
-      <button
-        type="button"
-        className={`${buttonClass} mt-1`}
-        onClick={() => setOpen(true)}
-      >
-        {t("auth.admin.mp.createCard")}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        {builderHref ? (
+          <Link href={builderHref} className={`${primaryButtonClass} mt-1`}>
+            {t("auth.admin.mp.openBuilder")}
+          </Link>
+        ) : null}
+        <button
+          type="button"
+          className={`${buttonClass} mt-1`}
+          onClick={() => setOpen(true)}
+        >
+          {t("auth.admin.mp.nav.legacyCreateCardButton")}
+        </button>
+      </div>
     );
   }
 
   return (
-    <div className="mt-2">
+    <div className="mt-2 space-y-3">
+      {showBuilderLink && builderHref ? (
+        <p className="text-sm">
+          <Link
+            href={builderHref}
+            className="font-medium text-emerald-400 underline-offset-4 hover:text-emerald-300 hover:underline"
+          >
+            {t("auth.admin.mp.nav.returnToBuilder")}
+          </Link>
+        </p>
+      ) : null}
       <MarketPulseCardForm
         mode="create"
+        autoFocusFirstField
         cycleId={cycleId}
         cycleName={cycleName}
         existingDayIndexes={existingDayIndexes}
         disabled={disabled}
-        initialValues={{ dayIndex: nextDayIndex }}
+        initialValues={{
+          dayIndex: createPrefill?.dayIndex ?? nextDayIndex,
+          userPrompt: createPrefill?.userPrompt,
+          exchange: createPrefill?.exchange,
+          sourceName: createPrefill?.sourceName,
+          sourceUrl: createPrefill?.sourceUrl,
+          sourceDate: createPrefill?.sourceDate,
+        }}
         onCancel={() => setOpen(false)}
-        onSuccess={() => {
+        onSuccess={(intent) => {
           onRefresh();
-          setOpen(false);
+          if (intent !== "add_another") {
+            setOpen(false);
+            if (builderHref) {
+              setShowBuilderLink(true);
+            }
+          }
         }}
         onSubmit={(values) => createMarketPulseCardAction(buildCardPayload(values))}
       />
@@ -194,6 +235,7 @@ export function MarketPulseCardPanel({
   existingDayIndexes,
   disabled,
   revealUrgent = false,
+  builderHref,
   onRefresh,
 }: {
   card: MarketPulseAdminCardRow;
@@ -201,6 +243,7 @@ export function MarketPulseCardPanel({
   existingDayIndexes: number[];
   disabled: boolean;
   revealUrgent?: boolean;
+  builderHref?: string;
   onRefresh: () => void;
 }) {
   const { t, locale } = useTranslations();
@@ -323,6 +366,11 @@ export function MarketPulseCardPanel({
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {builderHref ? (
+            <Link href={builderHref} className={primaryButtonClass}>
+              {t("auth.admin.mp.openBuilder")}
+            </Link>
+          ) : null}
           {ppaStatus.needsPpa ? (
             <button
               type="button"
@@ -393,10 +441,25 @@ export function MarketPulseCardPanel({
           {actionWarning}
         </p>
       ) : null}
+      {builderHref && actionMessage && !actionIsError ? (
+        <p className="mt-2 text-sm">
+          <Link
+            href={builderHref}
+            className="font-medium text-emerald-400 underline-offset-4 hover:text-emerald-300 hover:underline"
+          >
+            {t("auth.admin.mp.nav.returnToBuilder")}
+          </Link>
+        </p>
+      ) : null}
 
       {expandedMode === "preview" ? (
         <div className="mt-4 rounded-2xl bg-zinc-950 p-3 sm:p-4">
-          <MarketPulseAdminCardPreview card={preview} />
+          <MarketPulseAdminCardPreview
+            card={preview}
+            cardId={card.id}
+            published={published}
+            playerLive={playerLive}
+          />
         </div>
       ) : null}
 

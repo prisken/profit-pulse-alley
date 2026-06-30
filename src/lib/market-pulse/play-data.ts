@@ -22,9 +22,11 @@ import {
   type MarketPulseLeaderboardRow,
 } from "@/lib/market-pulse/server";
 import {
+  MARKET_PULSE_CYCLE_PRIZE_SHORT,
   MARKET_PULSE_PUBLIC_LAUNCH_AT,
   canAccessMarketPulsePlay,
 } from "@/lib/market-pulse/launch-config";
+import { gateRuntimeClosedPageData } from "@/lib/market-pulse/play-page-state";
 import { toMarketPulseSwipeCardData } from "@/lib/market-pulse/swipe-card";
 import type { MarketPulseSwipeCardData } from "@/lib/market-pulse/types";
 
@@ -34,6 +36,7 @@ export type MarketPulsePlayPageStatus =
   | "pre_launch"
   | "no_active_cycle"
   | "cycle_unavailable"
+  | "runtime_closed"
   | "no_card_today"
   | "sign_in_required"
   | "locked"
@@ -42,9 +45,11 @@ export type MarketPulsePlayPageStatus =
 export type MarketPulsePlayPageData = {
   status: MarketPulsePlayPageStatus;
   isAuthenticated: boolean;
+  runtimeOpen: boolean;
   unavailableReason?: string | null;
   unavailableIssue?: CyclePlayabilityIssue | null;
   challengeName: string;
+  prizeLabel: string;
   dayCurrent: number;
   dayTotal: number;
   revealAtIso: string;
@@ -95,6 +100,7 @@ function buildCycleShell(
   cycle: {
     id: string;
     name: string;
+    prizeLabel: string | null;
     startsAt: Date;
     endsAt: Date;
     revealAt: Date;
@@ -105,6 +111,7 @@ function buildCycleShell(
 ): Pick<
   MarketPulsePlayPageData,
   | "challengeName"
+  | "prizeLabel"
   | "dayCurrent"
   | "dayTotal"
   | "revealAtIso"
@@ -121,6 +128,7 @@ function buildCycleShell(
 
   return {
     challengeName: cycle.name,
+    prizeLabel: cycle.prizeLabel?.trim() || MARKET_PULSE_CYCLE_PRIZE_SHORT,
     dayCurrent,
     dayTotal,
     revealAtIso: cycle.revealAt.toISOString(),
@@ -138,8 +146,10 @@ function buildPreLaunchPageData(
   return {
     status: "pre_launch",
     isAuthenticated,
+    runtimeOpen: false,
     unavailableReason: null,
     challengeName: "Market Pulse",
+    prizeLabel: "",
     dayCurrent: 0,
     dayTotal: 0,
     revealAtIso: MARKET_PULSE_PUBLIC_LAUNCH_AT.toISOString(),
@@ -184,12 +194,29 @@ export async function getMarketPulsePlayPageData(
     return buildPreLaunchPageData(isAuthenticated, now);
   }
 
+  let runtimeOpen = true;
+  if (isDatabaseConfigured()) {
+    try {
+      const settings = await getMarketPulseSettings();
+      runtimeOpen = settings.runtimeStatus === "OPEN";
+    } catch (error) {
+      console.error("[market-pulse/play-data] Failed to load runtime settings:", error);
+      runtimeOpen = false;
+    }
+  }
+
+  const finalize = (
+    data: Omit<MarketPulsePlayPageData, "runtimeOpen">,
+  ): MarketPulsePlayPageData =>
+    gateRuntimeClosedPageData({ ...data, runtimeOpen }, runtimeOpen);
+
   if (!isDatabaseConfigured()) {
-    return {
+    return finalize({
       status: "no_active_cycle",
       isAuthenticated,
       unavailableReason: null,
       challengeName: "Market Pulse",
+      prizeLabel: "",
       dayCurrent: 0,
       dayTotal: 0,
       revealAtIso: now.toISOString(),
@@ -200,7 +227,7 @@ export async function getMarketPulsePlayPageData(
       leaderboardRevealed: false,
       card: null,
       lockedDecision: null,
-    };
+    });
   }
 
   let activeCycle = null;
@@ -227,12 +254,13 @@ export async function getMarketPulsePlayPageData(
       // ignore — fall through to generic empty state
     }
 
-    return {
+    return finalize({
       status: unavailableReason ? "cycle_unavailable" : "no_active_cycle",
       isAuthenticated,
       unavailableReason,
       unavailableIssue,
       challengeName: "Market Pulse",
+      prizeLabel: "",
       dayCurrent: 0,
       dayTotal: 0,
       revealAtIso: now.toISOString(),
@@ -243,7 +271,7 @@ export async function getMarketPulsePlayPageData(
       leaderboardRevealed: false,
       card: null,
       lockedDecision: null,
-    };
+    });
   }
 
   const cycleShell = buildCycleShell(activeCycle, now, locale);
@@ -257,27 +285,27 @@ export async function getMarketPulsePlayPageData(
   }
 
   if (!snapshot) {
-    return {
+    return finalize({
       status: "no_card_today",
       isAuthenticated,
       ...cycleShell,
       leaderboardEntries,
       card: null,
       lockedDecision: null,
-    };
+    });
   }
 
   const card = serializeCard(snapshot.card);
 
   if (!isAuthenticated || !userId) {
-    return {
+    return finalize({
       status: "sign_in_required",
       isAuthenticated: false,
       ...cycleShell,
       leaderboardEntries,
       card,
       lockedDecision: null,
-    };
+    });
   }
 
   let todayForUser = null;
@@ -288,22 +316,22 @@ export async function getMarketPulsePlayPageData(
   }
 
   if (todayForUser?.userDecision) {
-    return {
+    return finalize({
       status: "locked",
       isAuthenticated: true,
       ...cycleShell,
       leaderboardEntries,
       card: serializeCard(todayForUser.card),
       lockedDecision: todayForUser.userDecision.decision as MarketPulseDecision,
-    };
+    });
   }
 
-  return {
+  return finalize({
     status: "playable",
     isAuthenticated: true,
     ...cycleShell,
     leaderboardEntries,
     card,
     lockedDecision: null,
-  };
+  });
 }

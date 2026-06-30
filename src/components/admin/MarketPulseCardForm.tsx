@@ -1,11 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { MarketPulseCardStatus, MarketPulseSignal } from "@prisma/client";
 
 import MarketPulseAdminCardPreview from "@/components/admin/MarketPulseAdminCardPreview";
 import type { AdminActionResult } from "@/lib/market-pulse/admin-actions";
 import { invokeAdminAction } from "@/lib/admin/action-result";
+import {
+  cardFieldErrorId,
+  cardFieldId,
+  focusFirstInvalidCardField,
+} from "@/lib/market-pulse/admin-card-form-ui";
 import {
   cardFormValuesToPreview,
   DEFAULT_CARD_FORM_VALUES,
@@ -14,9 +19,10 @@ import {
   MARKET_PULSE_DEFAULT_USER_PROMPT,
   MARKET_PULSE_SIGNAL_OPTIONS,
   validateCardPublishable,
+  validateMarketPulseCardDraftSave,
+  validateMarketPulseCardForm,
   type CardFormFieldErrors,
   type MarketPulseCardFormValues,
-  validateMarketPulseCardForm,
 } from "@/lib/market-pulse/card-validation";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
@@ -30,6 +36,8 @@ const fieldErrorClass = "border-red-500/50";
 
 type SubmitValues = MarketPulseCardFormValues & { cardId?: string };
 
+type SaveSuccessIntent = "default" | "add_another" | "duplicate";
+
 type MarketPulseCardFormProps = {
   mode: "create" | "edit";
   cycleId: string;
@@ -39,9 +47,16 @@ type MarketPulseCardFormProps = {
   existingDayIndexes: number[];
   ppaSignalLockedAt?: string | null;
   disabled?: boolean;
+  variant?: "default" | "builder";
+  formId?: string;
+  hideFooter?: boolean;
+  autoFocusFirstField?: boolean;
+  onAutoFocusHandled?: () => void;
   onSubmit: (values: SubmitValues) => Promise<AdminActionResult>;
+  onSaveDraft?: (values: SubmitValues) => Promise<AdminActionResult>;
   onCancel?: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (intent?: SaveSuccessIntent) => void;
+  onValuesChange?: (values: MarketPulseCardFormValues) => void;
 };
 
 function mergeInitialValues(
@@ -58,20 +73,27 @@ function mergeInitialValues(
 function FieldLabel({
   children,
   error,
+  errorId,
   hint,
+  required = false,
 }: {
   children: React.ReactNode;
   error?: string;
+  errorId?: string;
   hint?: string;
+  required?: boolean;
 }) {
   return (
     <span className="text-sm font-medium text-zinc-300">
       {children}
+      {required ? <span className="text-red-400"> *</span> : null}
       {hint ? (
         <span className="mt-0.5 block text-xs font-normal text-zinc-500">{hint}</span>
       ) : null}
       {error ? (
-        <span className="mt-1 block text-xs font-normal text-red-400">{error}</span>
+        <span id={errorId} className="mt-1 block text-xs font-normal text-red-400" role="alert">
+          {error}
+        </span>
       ) : null}
     </span>
   );
@@ -94,11 +116,19 @@ export default function MarketPulseCardForm({
   existingDayIndexes,
   ppaSignalLockedAt = null,
   disabled = false,
+  variant = "default",
+  formId,
+  hideFooter = false,
+  autoFocusFirstField = false,
+  onAutoFocusHandled,
   onSubmit,
+  onSaveDraft,
   onCancel,
   onSuccess,
+  onValuesChange,
 }: MarketPulseCardFormProps) {
   const { t, locale } = useTranslations();
+  const isBuilder = variant === "builder";
   const excludeDayIndex =
     mode === "edit" ? initialValues?.dayIndex : undefined;
 
@@ -132,11 +162,25 @@ export default function MarketPulseCardForm({
     [values, ppaSignalLockedAt],
   );
 
+  useEffect(() => {
+    if (!autoFocusFirstField) {
+      return;
+    }
+
+    const element = document.getElementById(cardFieldId("headline"));
+    element?.focus();
+    onAutoFocusHandled?.();
+  }, [autoFocusFirstField, cardId, mode, onAutoFocusHandled]);
+
   function updateField<K extends keyof MarketPulseCardFormValues>(
     key: K,
     value: MarketPulseCardFormValues[K],
   ) {
-    setValues((current) => ({ ...current, [key]: value }));
+    setValues((current) => {
+      const next = { ...current, [key]: value };
+      onValuesChange?.(next);
+      return next;
+    });
     setFieldErrors((current) => {
       if (!current[key]) {
         return current;
@@ -148,27 +192,46 @@ export default function MarketPulseCardForm({
     setStatusMessage(null);
   }
 
-  async function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatusMessage(null);
 
-    const validation = validateMarketPulseCardForm(values, {
-      existingDayIndexes,
-      excludeDayIndex,
-    });
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as
+      | HTMLButtonElement
+      | null;
+    const saveIntent = submitter?.value ?? "full";
+    const draftSave =
+      (saveIntent === "draft" ||
+        saveIntent === "add_another" ||
+        saveIntent === "duplicate") &&
+      Boolean(onSaveDraft);
+    const createAnother = saveIntent === "create_another";
+
+    const validation = draftSave
+      ? validateMarketPulseCardDraftSave(values, {
+          existingDayIndexes,
+          excludeDayIndex,
+        })
+      : validateMarketPulseCardForm(values, {
+          existingDayIndexes,
+          excludeDayIndex,
+        });
     if (!validation.valid) {
       setFieldErrors(validation.errors);
       setStatusIsError(true);
       setStatusMessage(t("auth.admin.mp.cards.fixFields"));
+      focusFirstInvalidCardField(validation.errors);
       return;
     }
 
     setFieldErrors({});
     setIsSubmitting(true);
 
+    const submitHandler = draftSave ? onSaveDraft! : onSubmit;
+
     try {
       const succeeded = await invokeAdminAction(
-        () => onSubmit({ ...values, cycleId, cardId }),
+        () => submitHandler({ ...values, cycleId, cardId }),
         {
           onSuccess: (successMessage, warning) => {
             setStatusIsError(false);
@@ -179,11 +242,26 @@ export default function MarketPulseCardForm({
               setValues(
                 mergeInitialValues(cycleId, {
                   dayIndex: values.dayIndex + 1,
+                  ...(createAnother
+                    ? {
+                        headline: "",
+                        companyName: "",
+                        ticker: "",
+                        summary: "",
+                        newsBody: "",
+                      }
+                    : {}),
                 }),
               );
             }
 
-            onSuccess?.();
+            if (saveIntent === "add_another" || saveIntent === "duplicate") {
+              onSuccess?.(saveIntent);
+            } else if (createAnother) {
+              onSuccess?.("add_another");
+            } else {
+              onSuccess?.("default");
+            }
           },
           onError: (error, serverFieldErrors) => {
             setStatusIsError(true);
@@ -197,6 +275,7 @@ export default function MarketPulseCardForm({
                 }
               }
               setFieldErrors(nextErrors);
+              focusFirstInvalidCardField(nextErrors);
             }
           },
           onThrow: () => onSuccess?.(),
@@ -215,63 +294,88 @@ export default function MarketPulseCardForm({
 
   return (
     <form
-      className="space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 shadow-sm sm:p-6"
+      id={formId}
+      className={`space-y-6 rounded-xl border border-zinc-800 bg-zinc-900/40 shadow-sm ${
+        isBuilder ? "border-0 bg-transparent p-0" : "p-4 sm:p-6"
+      }`}
       onSubmit={(event) => void handleSubmit(event)}
       noValidate
     >
-      <div>
-        <p className="text-sm font-semibold text-zinc-100">
-          {mode === "create"
-            ? t("auth.admin.mp.cards.newCard")
-            : t("auth.admin.mp.cards.editCard")}
-        </p>
-        {cycleName ? (
-          <p className="mt-1 text-sm text-zinc-400">
-            {t("auth.admin.mp.cards.cycleLabel")}: {cycleName}
+      {!isBuilder ? (
+        <div>
+          <p className="text-sm font-semibold text-zinc-100">
+            {mode === "create"
+              ? t("auth.admin.mp.cards.newCard")
+              : t("auth.admin.mp.cards.editCard")}
           </p>
-        ) : null}
-      </div>
+          {cycleName ? (
+            <p className="mt-1 text-sm text-zinc-400">
+              {t("auth.admin.mp.cards.cycleLabel")}: {cycleName}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
+      <div className={isBuilder ? "space-y-8" : "grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]"}>
         <div className="space-y-8">
           <section className="grid gap-4 sm:grid-cols-2">
             <h3 className="sm:col-span-2">
               <SectionHeading>{t("auth.admin.mp.cards.sectionContent")}</SectionHeading>
             </h3>
-            <label className="block sm:col-span-2">
-              <FieldLabel error={fieldErrors.headline}>
+            <label className="block sm:col-span-2" htmlFor={cardFieldId("headline")}>
+              <FieldLabel
+                error={fieldErrors.headline}
+                errorId={cardFieldErrorId("headline")}
+                required
+              >
                 {t("auth.admin.mp.cards.fieldHeadline")}
               </FieldLabel>
               <input
+                id={cardFieldId("headline")}
                 className={`${fieldClass} ${fieldErrors.headline ? fieldErrorClass : ""}`}
                 value={values.headline}
                 onChange={(event) => updateField("headline", event.target.value)}
                 disabled={busy}
+                aria-invalid={Boolean(fieldErrors.headline)}
+                aria-describedby={
+                  fieldErrors.headline ? cardFieldErrorId("headline") : undefined
+                }
               />
             </label>
-            <label className="block sm:col-span-2">
+            <label className="block sm:col-span-2" htmlFor={cardFieldId("newsBody")}>
               <FieldLabel>{t("auth.admin.mp.cards.fieldNewsBody")}</FieldLabel>
               <textarea
+                id={cardFieldId("newsBody")}
                 className={`${fieldClass} min-h-[5rem]`}
                 value={values.newsBody}
                 onChange={(event) => updateField("newsBody", event.target.value)}
                 disabled={busy}
               />
             </label>
-            <label className="block sm:col-span-2">
-              <FieldLabel error={fieldErrors.summary}>
+            <label className="block sm:col-span-2" htmlFor={cardFieldId("summary")}>
+              <FieldLabel
+                error={fieldErrors.summary}
+                errorId={cardFieldErrorId("summary")}
+                required={!isBuilder}
+              >
                 {t("auth.admin.mp.cards.fieldSummary")}
               </FieldLabel>
               <textarea
+                id={cardFieldId("summary")}
                 className={`${fieldClass} min-h-[5rem] ${fieldErrors.summary ? fieldErrorClass : ""}`}
                 value={values.summary}
                 onChange={(event) => updateField("summary", event.target.value)}
                 disabled={busy}
+                aria-invalid={Boolean(fieldErrors.summary)}
+                aria-describedby={
+                  fieldErrors.summary ? cardFieldErrorId("summary") : undefined
+                }
               />
             </label>
-            <label className="block sm:col-span-2">
+            <label className="block sm:col-span-2" htmlFor={cardFieldId("userPrompt")}>
               <FieldLabel>{t("auth.admin.mp.cards.fieldUserPrompt")}</FieldLabel>
               <input
+                id={cardFieldId("userPrompt")}
                 className={fieldClass}
                 value={values.userPrompt}
                 onChange={(event) => updateField("userPrompt", event.target.value)}
@@ -285,15 +389,24 @@ export default function MarketPulseCardForm({
             <h3 className="sm:col-span-2">
               <SectionHeading>{t("auth.admin.mp.cards.sectionMarket")}</SectionHeading>
             </h3>
-            <label className="block sm:col-span-2">
-              <FieldLabel error={fieldErrors.companyName}>
+            <label className="block sm:col-span-2" htmlFor={cardFieldId("companyName")}>
+              <FieldLabel
+                error={fieldErrors.companyName}
+                errorId={cardFieldErrorId("companyName")}
+                required
+              >
                 {t("auth.admin.mp.cards.fieldCompany")}
               </FieldLabel>
               <input
+                id={cardFieldId("companyName")}
                 className={`${fieldClass} ${fieldErrors.companyName ? fieldErrorClass : ""}`}
                 value={values.companyName}
                 onChange={(event) => updateField("companyName", event.target.value)}
                 disabled={busy}
+                aria-invalid={Boolean(fieldErrors.companyName)}
+                aria-describedby={
+                  fieldErrors.companyName ? cardFieldErrorId("companyName") : undefined
+                }
               />
             </label>
             <label className="block sm:col-span-2">
@@ -305,15 +418,24 @@ export default function MarketPulseCardForm({
                 disabled={busy}
               />
             </label>
-            <label className="block">
-              <FieldLabel error={fieldErrors.ticker}>
+            <label className="block" htmlFor={cardFieldId("ticker")}>
+              <FieldLabel
+                error={fieldErrors.ticker}
+                errorId={cardFieldErrorId("ticker")}
+                required
+              >
                 {t("auth.admin.mp.cards.fieldTicker")}
               </FieldLabel>
               <input
+                id={cardFieldId("ticker")}
                 className={`${fieldClass} ${fieldErrors.ticker ? fieldErrorClass : ""}`}
                 value={values.ticker}
                 onChange={(event) => updateField("ticker", event.target.value)}
                 disabled={busy}
+                aria-invalid={Boolean(fieldErrors.ticker)}
+                aria-describedby={
+                  fieldErrors.ticker ? cardFieldErrorId("ticker") : undefined
+                }
               />
             </label>
             <label className="block">
@@ -453,6 +575,11 @@ export default function MarketPulseCardForm({
             <h3 className="sm:col-span-2">
               <SectionHeading>{t("auth.admin.mp.cards.sectionPpa")}</SectionHeading>
             </h3>
+            {isBuilder ? (
+              <p className="sm:col-span-2 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs leading-relaxed text-violet-100">
+                {t("auth.admin.mp.builder.ppaAdminOnly")}
+              </p>
+            ) : null}
             {!locked ? (
               <p className="sm:col-span-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
                 {t("auth.admin.mp.cards.ppaLockWarning")}
@@ -513,11 +640,16 @@ export default function MarketPulseCardForm({
             <h3 className="sm:col-span-2">
               <SectionHeading>{t("auth.admin.mp.cards.sectionPublishing")}</SectionHeading>
             </h3>
-            <label className="block">
-              <FieldLabel error={fieldErrors.dayIndex}>
+            <label className="block" htmlFor={cardFieldId("dayIndex")}>
+              <FieldLabel
+                error={fieldErrors.dayIndex}
+                errorId={cardFieldErrorId("dayIndex")}
+                required
+              >
                 {t("auth.admin.mp.cards.fieldDay")}
               </FieldLabel>
               <input
+                id={cardFieldId("dayIndex")}
                 type="number"
                 min={1}
                 className={`${fieldClass} ${fieldErrors.dayIndex ? fieldErrorClass : ""}`}
@@ -526,6 +658,10 @@ export default function MarketPulseCardForm({
                   updateField("dayIndex", Number(event.target.value))
                 }
                 disabled={busy}
+                aria-invalid={Boolean(fieldErrors.dayIndex)}
+                aria-describedby={
+                  fieldErrors.dayIndex ? cardFieldErrorId("dayIndex") : undefined
+                }
               />
             </label>
             <label className="block">
@@ -589,17 +725,20 @@ export default function MarketPulseCardForm({
           </section>
         </div>
 
-        <div className="xl:sticky xl:top-36 xl:self-start">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
-            {t("auth.admin.mp.cards.livePreview")}
-          </p>
-          <div className="rounded-2xl bg-zinc-950 p-3 sm:p-4">
-            <MarketPulseAdminCardPreview card={preview} />
+        {!isBuilder ? (
+          <div className="xl:sticky xl:top-36 xl:self-start">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
+              {t("auth.admin.mp.cards.livePreview")}
+            </p>
+            <div className="rounded-2xl bg-zinc-950 p-3 sm:p-4">
+              <MarketPulseAdminCardPreview card={preview} />
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
 
-      <div className="flex flex-wrap gap-2 border-t border-zinc-800 pt-4">
+      {!hideFooter ? (
+        <div className="flex flex-wrap gap-2 border-t border-zinc-800 pt-4">
         <button
           type="submit"
           disabled={busy}
@@ -611,6 +750,17 @@ export default function MarketPulseCardForm({
               ? t("auth.admin.mp.cards.createButton")
               : t("auth.admin.mp.cards.saveButton")}
         </button>
+        {mode === "create" ? (
+          <button
+            type="submit"
+            name="saveIntent"
+            value="create_another"
+            disabled={busy}
+            className={`inline-flex min-h-10 items-center justify-center rounded-lg border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`}
+          >
+            {t("auth.admin.mp.builder.fastEntry.createAndAddAnother")}
+          </button>
+        ) : null}
         {onCancel ? (
           <button
             type="button"
@@ -622,14 +772,15 @@ export default function MarketPulseCardForm({
           </button>
         ) : null}
       </div>
+      ) : null}
 
       {statusMessage ? (
         <p
           className={`text-sm font-medium ${
             statusIsError ? "text-red-400" : "text-emerald-400"
           }`}
-          role="status"
-          aria-live="polite"
+          role={statusIsError ? "alert" : "status"}
+          aria-live={statusIsError ? "assertive" : "polite"}
         >
           {translateAuthMessage(locale, statusMessage)}
         </p>

@@ -80,25 +80,41 @@ export function getChallengeCycle(now = Date.now()): MarketPulseChallengeCycle {
   return getCurrentMarketPulseCycle(now);
 }
 
-export function getChallengeCountdown(now = Date.now()): ChallengeCountdown {
-  let totalMs = getChallengeCycleRemainingMs(now);
+function msToChallengeCountdown(totalMs: number): ChallengeCountdown {
+  let remaining = Math.max(0, totalMs);
 
-  const days = Math.floor(totalMs / MS_PER_DAY);
-  totalMs -= days * MS_PER_DAY;
+  const days = Math.floor(remaining / MS_PER_DAY);
+  remaining -= days * MS_PER_DAY;
 
-  const hours = Math.floor(totalMs / (60 * 60 * 1000));
-  totalMs -= hours * 60 * 60 * 1000;
+  const hours = Math.floor(remaining / (60 * 60 * 1000));
+  remaining -= hours * 60 * 60 * 1000;
 
-  const minutes = Math.floor(totalMs / (60 * 1000));
-  totalMs -= minutes * 60 * 1000;
+  const minutes = Math.floor(remaining / (60 * 1000));
+  remaining -= minutes * 60 * 1000;
 
-  const seconds = Math.floor(totalMs / 1000);
+  const seconds = Math.floor(remaining / 1000);
 
   return {
     days,
     hours,
     minutes,
     seconds,
-    totalMs: getChallengeCycleRemainingMs(now),
+    totalMs: Math.max(0, totalMs),
   };
+}
+
+export function getChallengeCountdown(now = Date.now()): ChallengeCountdown {
+  return msToChallengeCountdown(getChallengeCycleRemainingMs(now));
+}
+
+/** Homepage hero: countdown to public launch before Jul 1 2026, then current cycle end. */
+export function getHomeHeroCountdownRemainingMs(now = Date.now()): number {
+  if (now < MARKET_PULSE_PUBLIC_LAUNCH_AT_MS) {
+    return MARKET_PULSE_PUBLIC_LAUNCH_AT_MS - now;
+  }
+  return getChallengeCycleRemainingMs(now);
+}
+
+export function getHomeHeroCountdown(now = Date.now()): ChallengeCountdown {
+  return msToChallengeCountdown(getHomeHeroCountdownRemainingMs(now));
 }
