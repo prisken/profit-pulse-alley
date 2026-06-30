@@ -74,6 +74,8 @@ function statusLabelKey(status: HubLobbyStatus): MarketPulseMessageKey {
       return "mp.hub.lobby.status.revealPending";
     case "revealed":
       return "mp.hub.lobby.status.revealed";
+    case "no_active_cycle":
+      return "mp.hub.lobby.status.noActiveCycle";
     case "closed":
     default:
       return "mp.hub.lobby.status.closed";
@@ -90,6 +92,8 @@ function statusChipVariant(status: HubLobbyStatus) {
       return "locked" as const;
     case "revealed":
       return "revealed" as const;
+    case "no_active_cycle":
+      return "countdown" as const;
     case "closed":
     default:
       return "paused" as const;

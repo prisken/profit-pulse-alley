@@ -5,6 +5,7 @@ export type HubLobbyStatus =
   | "open"
   | "reveal_pending"
   | "revealed"
+  | "no_active_cycle"
   | "closed";
 
 export type HubPrimaryCtaKind =
@@ -35,7 +36,7 @@ export function deriveHubLobbyStatus(
     return "pre_launch";
   }
   if (!data.hasDatabaseCycle) {
-    return "closed";
+    return data.runtimeOpen ? "no_active_cycle" : "closed";
   }
   if (data.leaderboardRevealed) {
     return "revealed";
@@ -90,6 +91,7 @@ export function deriveHubPrimaryCta(
         href: "/market-pulse/reveal",
         disabled: false,
       };
+    case "no_active_cycle":
     case "closed":
     default:
       return {

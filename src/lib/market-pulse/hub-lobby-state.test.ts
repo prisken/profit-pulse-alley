@@ -48,6 +48,24 @@ describe("hub-lobby-state", () => {
     ).toBe("closed");
   });
 
+  it("returns no_active_cycle when runtime is open but no cycle is loaded", () => {
+    expect(
+      deriveHubLobbyStatus(
+        { ...baseData, hasDatabaseCycle: false, runtimeOpen: true },
+        false,
+      ),
+    ).toBe("no_active_cycle");
+  });
+
+  it("returns closed when runtime is paused and no cycle is loaded", () => {
+    expect(
+      deriveHubLobbyStatus(
+        { ...baseData, hasDatabaseCycle: false, runtimeOpen: false },
+        false,
+      ),
+    ).toBe("closed");
+  });
+
   it("returns play CTA for open authenticated runtime", () => {
     const cta = deriveHubPrimaryCta("open", {
       isAuthenticated: true,
