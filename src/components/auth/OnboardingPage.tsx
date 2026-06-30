@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   Component,
@@ -26,6 +25,11 @@ import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950";
 
+function navigateAfterSessionUpdate(callbackUrl: string) {
+  // Full navigation ensures middleware sees the refreshed session cookie.
+  window.location.assign(callbackUrl);
+}
+
 const inputClass = `w-full min-h-11 rounded-xl border border-gray-600 bg-gray-900 px-4 py-3 text-base text-white placeholder:text-gray-500 disabled:opacity-60 sm:text-sm ${focusRing}`;
 
 const primaryButtonClass = `w-full min-h-11 rounded-full bg-amber-500 px-4 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`;
@@ -37,7 +41,6 @@ function OnboardingForm({
   callbackUrl,
 }: Readonly<{ userName: string | null; callbackUrl: string }>) {
   const { t, locale } = useTranslations();
-  const router = useRouter();
   const { update } = useSession();
 
   const [contactNumber, setContactNumber] = useState("");
@@ -52,14 +55,13 @@ function OnboardingForm({
 
     try {
       await update();
-      router.push(callbackUrl);
-      router.refresh();
+      navigateAfterSessionUpdate(callbackUrl);
     } catch {
       setSessionSyncFailed(true);
     } finally {
       setIsLoading(false);
     }
-  }, [callbackUrl, router, update]);
+  }, [callbackUrl, update]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -77,8 +79,7 @@ function OnboardingForm({
 
       try {
         await update();
-        router.push(callbackUrl);
-        router.refresh();
+        navigateAfterSessionUpdate(callbackUrl);
       } catch {
         setSessionSyncFailed(true);
       }
@@ -171,7 +172,6 @@ function OnboardingForm({
 function OnboardingSessionSync({
   callbackUrl,
 }: Readonly<{ callbackUrl: string }>) {
-  const router = useRouter();
   const { update } = useSession();
   const [syncFailed, setSyncFailed] = useState(false);
 
@@ -182,8 +182,7 @@ function OnboardingSessionSync({
       try {
         await update();
         if (!cancelled) {
-          router.replace(callbackUrl);
-          router.refresh();
+          navigateAfterSessionUpdate(callbackUrl);
         }
       } catch {
         if (!cancelled) {
@@ -197,18 +196,17 @@ function OnboardingSessionSync({
     return () => {
       cancelled = true;
     };
-  }, [callbackUrl, router, update]);
+  }, [callbackUrl, update]);
 
   const retrySync = useCallback(async () => {
     setSyncFailed(false);
     try {
       await update();
-      router.replace(callbackUrl);
-      router.refresh();
+      navigateAfterSessionUpdate(callbackUrl);
     } catch {
       setSyncFailed(true);
     }
-  }, [callbackUrl, router, update]);
+  }, [callbackUrl, update]);
 
   if (syncFailed) {
     return (
@@ -282,8 +280,9 @@ function OnboardingRouter({
     (authState === "ready" || sessionTimedOut);
 
   const showLoading =
-    (isLoading && !sessionTimedOut) ||
-    (authState === "pending" && isUnauthenticated && !pendingGraceDone);
+    authState !== "ready" &&
+    ((isLoading && !sessionTimedOut) ||
+      (authState === "pending" && isUnauthenticated && !pendingGraceDone));
 
   const handleTryAgain = useCallback(() => {
     setSessionTimedOut(false);
@@ -292,6 +291,21 @@ function OnboardingRouter({
 
   if (alreadyOnboarded) {
     return <OnboardingSessionSync callbackUrl={callbackUrl} />;
+  }
+
+  // Server already validated the session — render the form without waiting
+  // for a client-side session refetch (common after Google OAuth on mobile).
+  if (
+    authState === "ready" &&
+    !serverAlreadyOnboarded &&
+    (isAuthenticated || isLoading)
+  ) {
+    return (
+      <OnboardingForm
+        userName={userName ?? session?.user?.name ?? null}
+        callbackUrl={callbackUrl}
+      />
+    );
   }
 
   if (showGuest) {

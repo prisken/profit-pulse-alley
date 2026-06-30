@@ -1,10 +1,12 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
+import type { Session } from "next-auth";
 import type { ReactNode } from "react";
 
 export default function AuthSessionProvider({
   children,
-}: Readonly<{ children: ReactNode }>) {
-  return <SessionProvider>{children}</SessionProvider>;
+  session,
+}: Readonly<{ children: ReactNode; session: Session | null }>) {
+  return <SessionProvider session={session}>{children}</SessionProvider>;
 }

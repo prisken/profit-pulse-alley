@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import LayoutShell from "@/components/LayoutShell";
 import AuthSessionProvider from "@/components/providers/AuthSessionProvider";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
+import { auth } from "@/auth";
 import { getServerSiteLocale } from "@/lib/i18n/server";
 import { siteLocaleToHtmlLang } from "@/lib/i18n/locales";
 import "./globals.css";
@@ -34,7 +35,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const locale = await getServerSiteLocale();
+  const [locale, session] = await Promise.all([getServerSiteLocale(), auth()]);
 
   return (
     <html
@@ -43,7 +44,7 @@ export default async function RootLayout({
     >
       <body className="flex min-h-dvh min-w-0 flex-col overflow-x-clip bg-background font-sans text-foreground">
         <LocaleProvider initialLocale={locale}>
-          <AuthSessionProvider>
+          <AuthSessionProvider session={session}>
             <LayoutShell>{children}</LayoutShell>
           </AuthSessionProvider>
         </LocaleProvider>
