@@ -13,7 +13,7 @@ const GOOGLE_FORM_EMBED_HTML = `<iframe src="https://docs.google.com/forms/d/e/1
 const content = {
   en: {
     title: "Fortify Your Future",
-    subtitle: "A Fireside Chat on Business Defense & Investment.",
+    subtitle: "A Fireside Chat on Sales and Marketing",
     hook_line1: "Trapped in the daily grind?",
     hook_line2:
       "When was the last time you stopped working *in* your business to work *on* it?",
@@ -21,11 +21,11 @@ const content = {
       "Join us for an exclusive fireside chat designed to shift your mindset from operator to owner. We have now confirmed the event details. Secure your spot below.",
     event_details_heading: "Event Details",
     event_date_label: "Date:",
-    event_date: "June 26th (Friday)",
+    event_date: "July 17th (Friday)",
     event_time_label: "Time:",
     event_time: "7:00 PM - 9:00 PM",
     event_venue_label: "Venue:",
-    event_venue: "WeWork YF Life Tower",
+    event_venue: "WeWork Lee Garden",
     registration_title: "Register Now",
     registration_subtitle:
       "Fill out the form below to confirm your attendance. Seats are limited.",
@@ -36,18 +36,18 @@ const content = {
   },
   zh: {
     title: "守業・增值・創未來",
-    subtitle: "一場關於「商業防禦與投資」的圍爐對話。",
+    subtitle: "一場關於「銷售與市場推廣」的圍爐對話。",
     hook_line1: "被日常工作困住？",
     hook_line2: "你上一次停下腳步，「規劃」你的業務，是在什麼時候？",
     invitation:
       "我們誠邀您參與這場專屬的爐邊對話，旨在將您的思維從「營運者」轉變為「擁有者」。活動詳情現已確定，請在下方預留您的席位。",
     event_details_heading: "活動詳情",
     event_date_label: "日期：",
-    event_date: "6月26日 (星期五)",
+    event_date: "7月17日 (星期五)",
     event_time_label: "時間：",
     event_time: "晚上 7:00 - 9:00",
     event_venue_label: "地點：",
-    event_venue: "WeWork YF Life Tower",
+    event_venue: "WeWork Lee Garden",
     registration_title: "立即報名",
     registration_subtitle: "請填寫以下表格以確認出席。座位有限，請盡早報名。",
     bonus_heading: "額外禮遇",
