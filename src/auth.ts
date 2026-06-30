@@ -78,10 +78,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if ("role" in user && user.role) {
           token.role = user.role;
         }
+      }
 
+      if (token.id) {
         try {
           const dbUser = await prisma.user.findUnique({
-            where: { id: user.id },
+            where: { id: token.id as string },
             select: { contactNumber: true },
           });
           token.needsOnboarding = !dbUser?.contactNumber?.trim();
@@ -91,17 +93,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
-      if (trigger === "update" && token.id) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { contactNumber: true },
-          });
-          token.needsOnboarding = !dbUser?.contactNumber?.trim();
-        } catch (error) {
-          console.error("[auth] jwt update contact lookup failed:", error);
-          token.needsOnboarding = false;
-        }
+      if (trigger === "update" && !token.id) {
+        console.warn("[auth] jwt update skipped: missing token.id");
       }
 
       return token;

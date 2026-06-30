@@ -25,9 +25,8 @@ import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950";
 
-function navigateAfterSessionUpdate(callbackUrl: string) {
-  // Full navigation ensures middleware sees the refreshed session cookie.
-  window.location.assign(callbackUrl);
+function completeOnboardingUrl(callbackUrl: string): string {
+  return `/api/auth/complete-onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 }
 
 const inputClass = `w-full min-h-11 rounded-xl border border-gray-600 bg-gray-900 px-4 py-3 text-base text-white placeholder:text-gray-500 disabled:opacity-60 sm:text-sm ${focusRing}`;
@@ -41,32 +40,14 @@ function OnboardingForm({
   callbackUrl,
 }: Readonly<{ userName: string | null; callbackUrl: string }>) {
   const { t, locale } = useTranslations();
-  const { update } = useSession();
 
   const [contactNumber, setContactNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionSyncFailed, setSessionSyncFailed] = useState(false);
-
-  const retrySessionSync = useCallback(async () => {
-    setSessionSyncFailed(false);
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      await update();
-      navigateAfterSessionUpdate(callbackUrl);
-    } catch {
-      setSessionSyncFailed(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [callbackUrl, update]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setSessionSyncFailed(false);
     setIsLoading(true);
 
     try {
@@ -77,27 +58,12 @@ function OnboardingForm({
         return;
       }
 
-      try {
-        await update();
-        navigateAfterSessionUpdate(callbackUrl);
-      } catch {
-        setSessionSyncFailed(true);
-      }
+      window.location.assign(completeOnboardingUrl(callbackUrl));
     } catch {
       setError(t("auth.error.generic"));
     } finally {
       setIsLoading(false);
     }
-  }
-
-  if (sessionSyncFailed) {
-    return (
-      <OnboardingRecoveryPanel
-        variant="sessionSyncFailed"
-        callbackUrl={callbackUrl}
-        onTryAgain={() => void retrySessionSync()}
-      />
-    );
   }
 
   return (
@@ -169,54 +135,12 @@ function OnboardingForm({
   );
 }
 
-function OnboardingSessionSync({
+function OnboardingAlreadyCompleteRedirect({
   callbackUrl,
 }: Readonly<{ callbackUrl: string }>) {
-  const { update } = useSession();
-  const [syncFailed, setSyncFailed] = useState(false);
-
   useEffect(() => {
-    let cancelled = false;
-
-    async function run() {
-      try {
-        await update();
-        if (!cancelled) {
-          navigateAfterSessionUpdate(callbackUrl);
-        }
-      } catch {
-        if (!cancelled) {
-          setSyncFailed(true);
-        }
-      }
-    }
-
-    void run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [callbackUrl, update]);
-
-  const retrySync = useCallback(async () => {
-    setSyncFailed(false);
-    try {
-      await update();
-      navigateAfterSessionUpdate(callbackUrl);
-    } catch {
-      setSyncFailed(true);
-    }
-  }, [callbackUrl, update]);
-
-  if (syncFailed) {
-    return (
-      <OnboardingRecoveryPanel
-        variant="sessionSyncFailed"
-        callbackUrl={callbackUrl}
-        onTryAgain={() => void retrySync()}
-      />
-    );
-  }
+    window.location.assign(callbackUrl);
+  }, [callbackUrl]);
 
   return <OnboardingRecoveryPanel variant="sync" callbackUrl={callbackUrl} />;
 }
@@ -290,7 +214,7 @@ function OnboardingRouter({
   }, []);
 
   if (alreadyOnboarded) {
-    return <OnboardingSessionSync callbackUrl={callbackUrl} />;
+    return <OnboardingAlreadyCompleteRedirect callbackUrl={callbackUrl} />;
   }
 
   // Server already validated the session — render the form without waiting

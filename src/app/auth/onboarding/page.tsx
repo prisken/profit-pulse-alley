@@ -4,6 +4,7 @@ import { getServerSiteLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
 import { resolveOnboardingCallbackUrl } from "@/lib/auth/onboarding-routes";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -45,14 +46,22 @@ export default async function OnboardingRoute({
 
     const alreadyOnboarded = Boolean(user?.contactNumber?.trim());
 
-    // Do not server-redirect when contact exists but JWT still has
-    // needsOnboarding — that causes a middleware ↔ onboarding redirect loop.
+    if (alreadyOnboarded) {
+      if (!session.user.needsOnboarding) {
+        redirect(callbackUrl);
+      }
+
+      redirect(
+        `/api/auth/complete-onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+      );
+    }
+
     return (
       <OnboardingPageClient
         userName={user?.name ?? session.user.name ?? null}
         callbackUrl={callbackUrl}
         authState="ready"
-        serverAlreadyOnboarded={alreadyOnboarded}
+        serverAlreadyOnboarded={false}
       />
     );
   } catch (error) {
