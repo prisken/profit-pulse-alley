@@ -182,6 +182,19 @@ function buildColumns(t: (key: MessageKey) => string) {
         </span>
       ),
     }),
+    columnHelper.accessor("contactNumber", {
+      header: t("auth.admin.users.colContact"),
+      cell: (info) => {
+        const value = info.getValue()?.trim();
+        return value ? (
+          <span className="whitespace-nowrap tabular-nums text-zinc-200">
+            {value}
+          </span>
+        ) : (
+          <span className="text-zinc-500">—</span>
+        );
+      },
+    }),
     columnHelper.accessor("role", {
       header: t("auth.admin.users.colRole"),
       cell: (info) => <AdminRoleBadge role={info.getValue()} />,
@@ -254,9 +267,10 @@ function MemberMobileCard({
           <p className="mt-0.5 break-all font-mono text-xs text-zinc-400">
             {member.email}
           </p>
-          {member.contactNumber ? (
-            <p className="mt-0.5 text-xs text-zinc-500">{member.contactNumber}</p>
-          ) : null}
+          <p className="mt-0.5 text-xs text-zinc-500">
+            <span className="text-zinc-600">{t("auth.admin.users.colContact")}: </span>
+            {member.contactNumber?.trim() || "—"}
+          </p>
         </div>
         <AdminRoleBadge role={member.role} />
       </div>
@@ -470,7 +484,7 @@ export default function AdminMembersTable({
           </ul>
 
           <div className="mt-4 hidden overflow-x-auto rounded-xl border border-zinc-700 bg-zinc-950/80 shadow-sm lg:block">
-            <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id} className="border-b border-zinc-800">

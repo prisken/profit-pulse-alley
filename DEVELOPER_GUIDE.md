@@ -14,6 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT**; first cycle **1–10 Jul 2026**; ADMIN test bypass before launch |
+| **Recent `main`** | Per-cycle leaderboard archive + personal scores (`e870da6`); onboarding JWT refresh (`8401693`); Market Pulse brand logo (`76e3ba4`); admin member **Tel** column |
 
 ---
 
@@ -41,7 +42,7 @@ The public site centers on **Market Pulse** — a recurring multi-day investment
 
 | Feature | Route | Auth | Status |
 |---------|-------|------|--------|
-| **Homepage** | `/` | Public | Market Pulse hero + launch announcement; Play Learn Win; Live Events Hub; philosophy; **i18n** |
+| **Homepage** | `/` | Public | Market Pulse hero (**brand logo**) + launch announcement; Play Learn Win; Live Events Hub; philosophy; **i18n** |
 | Brand concept | `/concept` | Public | “Our Philosophy” in nav |
 | Blog (EN + zh-HK) | `/blog`, `/blog/{lang}/[slug]` | Public | 3 paired articles |
 | Events hub | `/events` | Public | Upcoming: Sales & Marketing; past: Fortify + Wo Leung; **i18n** |
@@ -50,15 +51,15 @@ The public site centers on **Market Pulse** — a recurring multi-day investment
 | Past event archive | `/events/wo-leung-yiu-dou-yiu` | Public | Registration closed |
 | **Fortify registration** | `/fortify-survey` | Public | **QR-coded URL — do not change** |
 | **Login** | `/login` | Public | Sign In + Create Account; Google + magic link; **i18n** |
-| **OAuth onboarding** | `/auth/onboarding` | Logged-in | Contact number; recovery UI; no redirect loop |
+| **OAuth onboarding** | `/auth/onboarding` | Logged-in | Contact number; `/api/auth/complete-onboarding` JWT refresh; recovery UI |
 | **Member profile** | `/profile` | Members only | Profile + Market Pulse history; **i18n** |
-| **Market Pulse Hub** | `/market-pulse` | Public | Cycle progress, prize banner, leaderboard, Play CTA; **i18n** |
-| **Market Pulse play** | `/market-pulse/play` | Login to submit | News-style card + image; Bullish/Cautious + swipe; language switcher in header |
+| **Market Pulse Hub** | `/market-pulse` | Public | **Brand logo** hero, cycle progress, prize banner, leaderboard, Play CTA; **i18n** |
+| **Market Pulse play** | `/market-pulse/play` | Login to submit | News-style card + image; Bullish/Cautious + swipe; **logo in play header**; language switcher |
 | **Market Pulse leaderboard** | `/market-pulse/leaderboard` | Public | Per-cycle standings with archive selector (`?cycleId=`); **My score** panel for signed-in members; **i18n** |
 | **PPA Insight reveal** | `/market-pulse/reveal` | Login for personal results | Gated until `revealAt`; **i18n** |
 | **Market Pulse rules** | `/market-pulse/rules` | Public | Challenge rules + scoring; **i18n** |
 | **Contest rules** | `/contest-rules` | Public | Prize eligibility + legal |
-| **Admin dashboard** | `/admin` | `ADMIN` only | **Command center** — overview cards, quick actions, user management |
+| **Admin dashboard** | `/admin` | `ADMIN` only | **Command center** — overview cards, quick actions, user management (**Tel** column) |
 | **Market Pulse admin** | `/admin/market-pulse` | `ADMIN` only | Full MP ops — status header, cycles, cards, reveal/scoring, prizes |
 | Game settings API | `/api/game-settings` | GET public; POST ADMIN | KV theme/event (legacy API-only; no admin UI) |
 | Market Pulse APIs | `/api/market-pulse/*` | Mixed | `today`, `decision`, `leaderboard`, `reveal` |
@@ -102,14 +103,14 @@ Google OAuth redirect URIs (must match exactly):
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
 
-### Verification — last run 29 Jun 2026 (PPA timing final QA)
+### Verification — last run 30 Jun 2026
 
 | Check | Result |
 |-------|--------|
 | **Lint** | `npm run lint` — pass (0 errors; 10 pre-existing warnings) |
 | **Typecheck** | `npm run typecheck` — pass |
 | **Build** | `npm run build` — pass (`prisma db push && next build`) |
-| **Tests** | `npm test` — **179** Vitest tests (31 files) |
+| **Tests** | `npm test` — **230** Vitest tests (39 files) |
 | **PPA timing workflow** | Players may decide before PPA is entered/locked; reveal/scoring requires locked PPA on all published cards; admin 72h warning (`admin-ppa-reveal-warning.ts`) |
 | **Player submit without PPA** | `server-core.test.ts` — “allows submission when PPA is missing and unlocked”; no `ppaSignalLockedAt` check in `submitMarketPulseDecision` |
 | **Reveal PPA gate** | `admin-reveal-action.test.ts` — blocks transaction + scoring when PPA incomplete; succeeds when complete |
@@ -122,7 +123,7 @@ Google OAuth redirect URIs (must match exactly):
 
 **Deploy checklist:** `docs/market-pulse-deploy-checklist.md`
 
-**Auth notes:** JWT strategy; middleware onboarding via `auth.config.ts`; JWT `update` re-fetches `contactNumber` from DB.
+**Auth notes:** JWT strategy; `SessionProvider` hydrated from server `auth()` in root layout; middleware onboarding via `auth.config.ts`; JWT callback syncs `needsOnboarding` from DB `contactNumber` on every token refresh; stale JWT after onboarding cleared via **`GET /api/auth/complete-onboarding`** (server rewrites session cookie).
 
 ### PPA timing — manual QA matrix (29 Jun 2026)
 
@@ -158,10 +159,13 @@ Automated tests cover server rules below. Live browser sign-in was not re-run in
 | 9 | Remove other prize mentions | **Pass** | Public copy is Ocean Park only; rules *gameplay* text still references legacy arcade sim (see §16) |
 | 10 | Bilingual EN / zh-Hant | **Partial** | MP + site chrome locale-driven; event detail pages use static bilingual strings |
 | 11 | Language switcher placement | **Pass** | Header, mobile nav, MP play, login, onboarding |
-| 12 | Onboarding blank/loop fix | **Pass** | `/auth/onboarding` server + client recovery |
+| 12 | Onboarding blank/loop fix | **Pass** | Server redirect via `/api/auth/complete-onboarding`; no client redirect loop |
 | 13 | Fortify Your Future → past | **Pass** | `fortify-your-future.ts`, past banner on detail |
 | 14 | Sales & Marketing coming soon | **Pass** | 17 Jul 2026, TBC — `/events/fortify-sales-marketing` |
 | 15 | `/fortify-survey` unchanged | **Pass** | Do not modify URL or `FortifyYourFutureSurvey.tsx` |
+| 16 | Market Pulse brand logo | **Pass** | `MarketPulseLogo.tsx` on homepage hero, hub hero, play header (`public/images/market-pulse-logo.png`) |
+| 17 | Per-cycle leaderboard + personal score | **Pass** | `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `MarketPulseScore` model |
+| 18 | Admin member Tel column | **Pass** | `AdminMembersTable` — `contactNumber` column; searchable via `user-member-filter.ts` |
 
 ### Production smoke test (manual)
 
@@ -169,11 +173,11 @@ Automated tests cover server rules below. Live browser sign-in was not re-run in
 
 **At launch:** USER can play when runtime `OPEN` + published card exists; pre-launch UI hidden.
 
-**Admin:** `/admin` overview + user management (search, filters, delete confirm); `/admin/market-pulse` status header, PPA reveal warning (≤72h), card PPA badges/filters, reveal confirm modal, prize claims; first-cycle guidance in collapsible Setup section.
+**Admin:** `/admin` overview + user management (search by name/email/**tel**, filters, delete confirm, **Tel** column on desktop); `/admin/market-pulse` status header, PPA reveal warning (≤72h), card PPA badges/filters, reveal confirm modal, per-cycle participation stats, prize claims; first-cycle guidance in collapsible Setup section.
 
 **Public sanity:** `/market-pulse`, `/market-pulse/play`, `/fortify-survey` routes unchanged; scoring/reveal/launch gating not modified by admin redesign.
 
-**Auth:** Google signup → contact onboarding → profile (no loop).
+**Auth:** Google signup → contact onboarding → `/api/auth/complete-onboarding` → profile (no refresh loop).
 
 **Events:** `/events` upcoming Sales & Marketing; past Fortify archived; `/fortify-survey` loads (no redirect).
 
@@ -529,8 +533,10 @@ Vercel Edge middleware has a **1 MB bundle limit**. Importing `@/auth` in middle
 - **Create Account** tab on `/login` → `signUpWithPassword()` hashes password with bcrypt, stores `contactNumber`
 - **Google OAuth:** account saved via Prisma adapter; JWT gets `needsOnboarding` if no `contactNumber`
 - **Middleware:** users with `needsOnboarding` redirected to `/auth/onboarding` (except onboarding route itself)
-- **Onboarding:** `updateContactNumber()` + `session.update()` clears flag; JWT update **re-fetches DB** `contactNumber`
-- **No redirect loop:** server does not redirect away when DB has contact but JWT is stale — client syncs session first
+- **Session hydration:** root `layout.tsx` passes server `auth()` session into `AuthSessionProvider`
+- **JWT sync:** `jwt` callback re-reads `contactNumber` from DB whenever `token.id` is present
+- **Onboarding submit:** `updateContactNumber()` then redirect to **`GET /api/auth/complete-onboarding`** — server verifies DB contact, re-encodes JWT with `needsOnboarding: false`, redirects home (avoids client refresh loop)
+- **Stale JWT recovery:** if DB already has contact but JWT is stale, `/auth/onboarding` server page redirects to complete-onboarding instead of bouncing away
 - **Recovery UI:** `OnboardingRecoveryPanel`, `loading.tsx`, `error.tsx` on `/auth/onboarding`
 
 ### Bilingual (i18n)
@@ -699,7 +705,7 @@ Dark zinc layout (`bg-zinc-950`). Composes five sections — **no blog preview**
 
 | # | Component | Purpose | Primary CTAs |
 |---|-----------|---------|--------------|
-| 1 | `MarketPulseHero` | Market Pulse title, **launch announcement** (pre-launch), countdown | **Explore** / **Play Now** → `/market-pulse` |
+| 1 | `MarketPulseHero` | **Market Pulse brand logo** (`MarketPulseLogo`), **launch announcement** (pre-launch), countdown | **Explore** / **Play Now** → `/market-pulse` |
 | 2 | `PlayLearnWinSection` | Play. Learn. Win. — prize: **one Ocean Park ticket** per cycle | — |
 | 3 | `LiveEventsHubSection` | **Upcoming:** Sales & Marketing (coming soon); **past:** Fortify + placeholders (`home-events-hub.ts`) | → `/events/fortify-sales-marketing` |
 | 4 | `PhilosophySection` | PPA philosophy; expert headshots | — |
@@ -978,7 +984,7 @@ Edit only with approval — update `FortifyYourFutureSurvey.tsx` `content` + for
 
 ### Update homepage copy or events showcase
 
-- **Market Pulse hero:** `MarketPulseHero.tsx`, `launch-config.ts`
+- **Market Pulse hero:** `MarketPulseHero.tsx`, `MarketPulseLogo.tsx`, `public/images/market-pulse-logo.png`, `launch-config.ts`
 - **Past events grid:** `getPastEventsShowcase(locale)` in `src/lib/events/home-events-hub.ts`
 - **Upcoming event:** `getFortifySalesMarketingShowcase(locale)` in `upcoming-event-display.ts`; wired in `page.tsx` + `/events`
 - **Past Fortify:** `fortify-your-future.ts` (archived)
@@ -1023,7 +1029,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 8. **No migration files** — Production uses `prisma db push` in build; adopt `migrate deploy` when ready.
 9. **Legacy GameScore** — Profile may still show old arcade scores alongside swipe challenge history.
 10. **Admin MP UI** — Operational labels mostly English; enums (`OPEN`, `PUBLISHED`) intentionally untranslated.
-11. **Rules page gameplay copy** — `/market-pulse/rules` `whatIsBody` / `scoringBody` still describe the legacy arcade simulation; prize section correctly shows Ocean Park only.
+11. **Rules page gameplay copy** — `/market-pulse/rules` `whatIsBody` still describes the legacy arcade simulation; `scoringBody` and prize sections match current cycle leaderboard model.
 
 ---
 
@@ -1033,7 +1039,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 |---------|---------|
 | Auth config | `src/auth.ts`, `src/auth.config.ts`, `src/middleware.ts`, `src/types/next-auth.d.ts` |
 | Auth actions | `src/lib/auth-actions.ts`, `src/lib/auth/onboarding-routes.ts` |
-| Login / onboarding | `LoginPage.tsx`, `OnboardingPage.tsx`, `OnboardingRecoveryPanel.tsx`, `/auth/onboarding/*` |
+| Login / onboarding | `LoginPage.tsx`, `OnboardingPage.tsx`, `OnboardingRecoveryPanel.tsx`, `/auth/onboarding/*`, `/api/auth/complete-onboarding/route.ts` |
 | i18n | `src/lib/i18n/*`, `LocaleProvider.tsx`, `LanguageSwitcher.tsx` |
 | Admin users | `AdminUserManagement.tsx`, `AdminMembersTable.tsx`, `admin-user-actions.ts`, `admin-user-validation.ts`, `user-member-filter.ts` |
 | Admin action results | `src/lib/admin/action-result.ts` — `finishAdminMutation`, `invokeAdminAction` |
@@ -1048,9 +1054,9 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | Legal / info pages | `src/app/contact/`, `faq/`, `terms/`, `privacy/`, `careers/`, `investment-disclaimer/` |
 | Profile | `src/app/profile/page.tsx` |
 | Admin | `src/app/admin/page.tsx`, `src/app/admin/market-pulse/page.tsx`, `MarketPulseAdminDashboard.tsx` |
-| Market Pulse Hub | `src/app/market-pulse/page.tsx`, `MarketPulseHubPage.tsx`, `hub-data.ts` |
+| Market Pulse Hub | `src/app/market-pulse/page.tsx`, `MarketPulseHubPage.tsx`, `MarketPulseLogo.tsx`, `hub-data.ts` |
 | Market Pulse play | `src/app/market-pulse/play/page.tsx`, `MarketPulsePlayExperience.tsx`, `MarketPulseSwipeCard.tsx` |
-| Leaderboard / reveal | `leaderboard/page.tsx`, `reveal/page.tsx`, `leaderboard-data.ts`, `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `leaderboard-score-breakdown.ts`, `reveal-data.ts` |
+| Leaderboard / reveal | `leaderboard/page.tsx`, `reveal/page.tsx`, `leaderboard-data.ts`, `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `leaderboard-score-breakdown.ts`, `MarketPulseLeaderboardMyScore.tsx`, `reveal-data.ts` |
 | Admin cycle stats | `admin-cycle-stats.ts`, `admin-data.ts` (`MarketPulseAdminCycleRow` participation fields) |
 | Market Pulse domain | `server.ts`, `cycle-playability.ts`, `playable-card.ts`, `reveal-access.ts`, `admin-actions.ts`, `card-validation.ts` |
 | Market Pulse APIs | `src/app/api/market-pulse/*`, `player-handlers.ts` |
@@ -1070,10 +1076,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 - **Languages:** EN + Traditional Chinese (`ppa_locale` cookie); MP launch messages in `launch-config.ts`
 - **Data stores:** Postgres (users, Market Pulse, auth), KV (legacy theme), Markdown (blog)
-- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (179), `npm run build`
-- **Production smoke:** PPA timing matrix above; guest/USER/ADMIN before launch; admin MP card/reveal flow; `/fortify-survey` unchanged
+- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (230), `npm run build`
+- **Production smoke:** PPA timing matrix above; guest/USER/ADMIN before launch; admin MP card/reveal flow; onboarding complete-onboarding; `/fortify-survey` unchanged
 - **Lint warnings:** Legacy castle-siege; TanStack Table in admin members table
 
 ---
 
-*Last updated: 29 Jun 2026 — PPA timing final QA: 179 tests pass; manual QA matrix in §Current site status.*
+*Last updated: 30 Jun 2026 — 230 tests pass; leaderboard archive, onboarding JWT refresh, brand logo, admin Tel column documented.*
