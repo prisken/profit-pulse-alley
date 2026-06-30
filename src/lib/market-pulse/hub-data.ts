@@ -2,6 +2,7 @@ import "server-only";
 
 import { isDatabaseConfigured } from "@/lib/db-config";
 import { getCurrentMarketPulseCycle as getSyntheticChallengeCycle } from "@/lib/market-pulse/challenge-cycle";
+import { shouldUseMarketPulseDevelopmentFallback } from "@/lib/market-pulse/demo-cycle-guards";
 import {
   getActiveMarketPulseCycle,
   getMarketPulseLeaderboard,
@@ -53,6 +54,9 @@ export async function getMarketPulseHubPageData(): Promise<MarketPulseHubPageDat
   const synthetic = getSyntheticChallengeCycle();
 
   if (!isDatabaseConfigured()) {
+    if (!shouldUseMarketPulseDevelopmentFallback()) {
+      return buildProductionSafeEmptyHubData(now, false);
+    }
     return buildFallbackHubData(synthetic, now, true);
   }
 
@@ -66,25 +70,40 @@ export async function getMarketPulseHubPageData(): Promise<MarketPulseHubPageDat
     ]);
   } catch (error) {
     console.error("[market-pulse/hub-data] Failed to load Prisma hub data:", error);
+    if (!shouldUseMarketPulseDevelopmentFallback()) {
+      return buildProductionSafeEmptyHubData(now, false);
+    }
     return buildFallbackHubData(synthetic, now, true);
   }
 
-  const startsAt = prismaCycle?.startsAt ?? synthetic.startAt;
-  const endsAt = prismaCycle?.endsAt ?? synthetic.endAt;
-  const revealAt = prismaCycle?.revealAt ?? synthetic.endAt;
+  if (!prismaCycle) {
+    if (!shouldUseMarketPulseDevelopmentFallback()) {
+      return buildProductionSafeEmptyHubData(
+        now,
+        settings.runtimeStatus === "OPEN",
+      );
+    }
+    return buildFallbackHubData(
+      synthetic,
+      now,
+      settings.runtimeStatus === "OPEN",
+    );
+  }
+
+  const startsAt = prismaCycle.startsAt;
+  const endsAt = prismaCycle.endsAt;
+  const revealAt = prismaCycle.revealAt;
   const { dayCurrent, dayTotal } = getDayProgress(startsAt, endsAt, now);
 
-  const cycleId = prismaCycle?.id ?? synthetic.cycleId;
-  const leaderboardRevealed = prismaCycle
-    ? isMarketPulseCycleRevealed(prismaCycle, now)
-    : false;
+  const cycleId = prismaCycle.id;
+  const leaderboardRevealed = isMarketPulseCycleRevealed(prismaCycle, now);
 
   let leaderboardEntries: MarketPulseLeaderboardRow[] = [];
 
   try {
     leaderboardEntries = await getMarketPulseLeaderboard({
       mode: "CURRENT_CYCLE",
-      cycleId: prismaCycle?.id ?? null,
+      cycleId: prismaCycle.id,
       limit: 5,
     });
   } catch (error) {
@@ -92,10 +111,10 @@ export async function getMarketPulseHubPageData(): Promise<MarketPulseHubPageDat
   }
 
   return {
-    challengeName: prismaCycle?.name ?? DEFAULT_CHALLENGE_NAME,
+    challengeName: prismaCycle.name,
     dayCurrent,
     dayTotal,
-    prizeLabel: prismaCycle?.prizeLabel?.trim() || DEFAULT_PRIZE_LABEL,
+    prizeLabel: prismaCycle.prizeLabel?.trim() || DEFAULT_PRIZE_LABEL,
     startsAtIso: startsAt.toISOString(),
     endsAtIso: endsAt.toISOString(),
     revealAtIso: revealAt.toISOString(),
@@ -104,7 +123,28 @@ export async function getMarketPulseHubPageData(): Promise<MarketPulseHubPageDat
     runtimeOpen: settings.runtimeStatus === "OPEN",
     leaderboardEntries,
     leaderboardRevealed,
-    hasDatabaseCycle: prismaCycle != null,
+    hasDatabaseCycle: true,
+  };
+}
+
+function buildProductionSafeEmptyHubData(
+  now: Date,
+  runtimeOpen: boolean,
+): MarketPulseHubPageData {
+  return {
+    challengeName: DEFAULT_CHALLENGE_NAME,
+    dayCurrent: 0,
+    dayTotal: 0,
+    prizeLabel: DEFAULT_PRIZE_LABEL,
+    startsAtIso: now.toISOString(),
+    endsAtIso: now.toISOString(),
+    revealAtIso: now.toISOString(),
+    revealRemainingMs: 0,
+    cycleId: null,
+    runtimeOpen,
+    leaderboardEntries: [],
+    leaderboardRevealed: false,
+    hasDatabaseCycle: false,
   };
 }
 

@@ -17,11 +17,11 @@ export const marketPulseEnMessages = {
   "mp.meta.rules.description":
     "How Market Pulse works — challenge cycles, scoring, leaderboards, and fair play.",
 
-  "mp.hub.badge.preLaunch": "Opens 1 Jul 2026",
+  "mp.hub.badge.preLaunch": "Not open yet",
   "mp.hub.badge.live": "Live challenge",
   "mp.hub.badge.paused": "Challenge paused",
-  "mp.hub.cta.opens": "Opens 1 Jul 2026",
-  "mp.hub.cta.signInReady": "Sign in to get ready",
+  "mp.hub.cta.opens": "Sign in to play",
+  "mp.hub.cta.signInReady": "Sign in to play",
   "mp.hub.cta.playToday": "Play Today's Card",
   "mp.hub.cta.signInPlay": "Sign in to play",
   "mp.hub.cta.newHere": "New here?",
@@ -40,12 +40,12 @@ export const marketPulseEnMessages = {
   "mp.hub.leaderboard.emptyBody":
     "Be the first to play today's card and claim the top spot.",
 
-  "mp.hub.lobby.status.preLaunch": "Pre-launch",
+  "mp.hub.lobby.status.preLaunch": "Not open",
   "mp.hub.lobby.status.open": "Open",
   "mp.hub.lobby.status.revealPending": "Reveal pending",
   "mp.hub.lobby.status.revealed": "Revealed",
   "mp.hub.lobby.status.closed": "Closed",
-  "mp.hub.lobby.cta.getReady": "Get ready",
+  "mp.hub.lobby.cta.getReady": "View hub",
   "mp.hub.lobby.cta.playToday": "Play today's signal",
   "mp.hub.lobby.cta.viewReveal": "View reveal",
   "mp.hub.lobby.cta.viewLeaderboard": "View leaderboard",
@@ -84,7 +84,7 @@ export const marketPulseEnMessages = {
   "mp.play.preLaunch.signIn": "Sign in",
   "mp.play.preLaunch.hub": "Market Pulse hub",
   "mp.play.preLaunch.signedIn":
-    "You're signed in — we'll see you when the first cycle opens.",
+    "You're signed in — you can play when the current cycle opens.",
   "mp.play.backToHub": "Back to Market Pulse hub",
   "mp.play.chrome.day": "Day {current}/{total}",
   "mp.play.chrome.showCycle": "Show cycle & reveal timer",
@@ -104,17 +104,17 @@ export const marketPulseEnMessages = {
   "mp.play.status.noCycle": "No active Market Pulse challenge is open right now.",
   "mp.play.status.checkBack":
     "Check back soon or visit the hub for the next challenge window.",
-  "mp.play.status.noCardTitle": "Today's Market Pulse card is coming soon.",
+  "mp.play.status.noCardTitle": "Today's signal is being prepared.",
   "mp.play.status.noCardBody":
-    "An admin must publish today's card with Published at set to now or earlier. The cycle must be OPEN, active, and within its start/reveal dates. PPA is not required for players to decide.",
+    "Come back shortly. Once today's card is live, you can lock your Bullish or Cautious call.",
   "mp.play.signInBanner": "Sign in to lock your read and earn points.",
 
-  "mp.play.state.preLaunch.title": "Market Pulse opens soon",
+  "mp.play.state.preLaunch.title": "Market Pulse isn't open yet",
   "mp.play.state.preLaunch.body":
-    "Cycle 01 begins July 1, 2026. Create your account now so your first call is saved when the market opens.",
+    "The current challenge isn't accepting public play right now. Create a free account so you're ready when the cycle opens.",
   "mp.play.state.preLaunch.signedIn":
-    "You're signed in — your first call will be ready when the market opens.",
-  "mp.play.state.preLaunch.cta.hub": "Enter Market Pulse",
+    "You're signed in — you'll be able to play when the cycle opens.",
+  "mp.play.state.preLaunch.cta.hub": "Go to Market Pulse hub",
   "mp.play.state.preLaunch.cta.account": "Create free account",
   "mp.play.state.signIn.title": "Sign in to lock your call",
   "mp.play.state.signIn.body":
@@ -328,7 +328,7 @@ export const marketPulseEnMessages = {
   "mp.reveal.cta.leaderboard": "View leaderboard",
   "mp.reveal.cta.hub": "Back to Market Pulse",
   "mp.reveal.cta.download": "Download PPA Report",
-  "mp.reveal.cta.comingSoon": "Report coming soon",
+  "mp.reveal.cta.comingSoon": "Report unavailable",
   "mp.reveal.cta.nextChallenge": "Play next signal",
   "mp.reveal.back": "← Market Pulse",
 
@@ -378,7 +378,7 @@ export const marketPulseEnMessages = {
   "mp.error.signInRequired": "Sign in required.",
   "mp.error.invalidDecision": "Decision must be Bullish or Cautious.",
   "mp.error.preLaunch":
-    "Market Pulse opens on July 1, 2026. Check back then to lock your read.",
+    "Market Pulse is not open for play yet. Check back when the current cycle is live.",
   "mp.error.gameClosed": "Market Pulse is not open for decisions.",
   "mp.error.cardNotFound": "Card not found.",
   "mp.error.cycleNotOpen": "This challenge cycle is not open.",
@@ -393,7 +393,7 @@ export const marketPulseEnMessages = {
   "mp.error.alreadySubmitted": "You have already submitted a decision for this card.",
   "mp.error.generic": "Something went wrong. Please try again.",
 
-  "mp.announcement.ariaLabel": "Market Pulse launch announcement",
+  "mp.announcement.ariaLabel": "Market Pulse update",
 } as const;
 
 export type MarketPulseMessageKey = keyof typeof marketPulseEnMessages;
@@ -413,11 +413,11 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.meta.rules.description":
     "Market Pulse 玩法 — 挑戰週期、計分、排行榜及公平競賽。",
 
-  "mp.hub.badge.preLaunch": "2026年7月1日開放",
+  "mp.hub.badge.preLaunch": "尚未開放",
   "mp.hub.badge.live": "挑戰進行中",
   "mp.hub.badge.paused": "挑戰暫停",
-  "mp.hub.cta.opens": "2026年7月1日開放",
-  "mp.hub.cta.signInReady": "登入以做好準備",
+  "mp.hub.cta.opens": "登入以挑戰",
+  "mp.hub.cta.signInReady": "登入以挑戰",
   "mp.hub.cta.playToday": "挑戰今日卡片",
   "mp.hub.cta.signInPlay": "登入以挑戰",
   "mp.hub.cta.newHere": "新用戶？",
@@ -433,12 +433,12 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.hub.leaderboard.emptyTitle": "本期尚無分數",
   "mp.hub.leaderboard.emptyBody": "成為首位挑戰今日卡片並登上榜首的玩家。",
 
-  "mp.hub.lobby.status.preLaunch": "開放前",
+  "mp.hub.lobby.status.preLaunch": "尚未開放",
   "mp.hub.lobby.status.open": "進行中",
   "mp.hub.lobby.status.revealPending": "等待揭曉",
   "mp.hub.lobby.status.revealed": "已揭曉",
   "mp.hub.lobby.status.closed": "已結束",
-  "mp.hub.lobby.cta.getReady": "做好準備",
+  "mp.hub.lobby.cta.getReady": "查看主頁",
   "mp.hub.lobby.cta.playToday": "挑戰今日訊號",
   "mp.hub.lobby.cta.viewReveal": "查看揭曉",
   "mp.hub.lobby.cta.viewLeaderboard": "查看排行榜",
@@ -474,7 +474,7 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.play.leaderboard.empty": "尚無分數 — 成為榜首第一位。",
   "mp.play.preLaunch.signIn": "登入",
   "mp.play.preLaunch.hub": "Market Pulse 主頁",
-  "mp.play.preLaunch.signedIn": "你已登入 — 第一期開放時見。",
+  "mp.play.preLaunch.signedIn": "你已登入 — 本期開放時即可挑戰。",
   "mp.play.backToHub": "返回 Market Pulse 主頁",
   "mp.play.chrome.day": "第 {current}/{total} 日",
   "mp.play.chrome.showCycle": "顯示週期與揭曉倒數",
@@ -492,16 +492,16 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.play.status.cycleClosed": "此 Market Pulse 挑戰目前未開放。",
   "mp.play.status.noCycle": "目前沒有進行中的 Market Pulse 挑戰。",
   "mp.play.status.checkBack": "請稍後再來，或前往主頁查看下一期挑戰。",
-  "mp.play.status.noCardTitle": "今日的 Market Pulse 卡片即將推出。",
+  "mp.play.status.noCardTitle": "今日訊號準備中。",
   "mp.play.status.noCardBody":
-    "管理員須發布今日卡片，並將發布時間設為現在或更早。週期須為 OPEN、有效，且在開始／揭曉日期內。玩家決策不需等待 PPA。",
+    "請稍後再來。今日卡片上線後，即可鎖定你的看升或看淡判斷。",
   "mp.play.signInBanner": "登入以鎖定判斷並賺取分數。",
 
-  "mp.play.state.preLaunch.title": "Market Pulse 即將開放",
+  "mp.play.state.preLaunch.title": "Market Pulse 尚未開放",
   "mp.play.state.preLaunch.body":
-    "第一期將於 2026 年 7 月 1 日開始。立即建立帳戶，市場開放時即可保存你的首次判斷。",
-  "mp.play.state.preLaunch.signedIn": "你已登入 — 市場開放時即可提交首次判斷。",
-  "mp.play.state.preLaunch.cta.hub": "進入 Market Pulse",
+    "本期挑戰目前未向公眾開放。建立免費帳戶，週期開放時即可參與。",
+  "mp.play.state.preLaunch.signedIn": "你已登入 — 週期開放時即可挑戰。",
+  "mp.play.state.preLaunch.cta.hub": "前往 Market Pulse 主頁",
   "mp.play.state.preLaunch.cta.account": "免費建立帳戶",
   "mp.play.state.signIn.title": "登入以鎖定你的判斷",
   "mp.play.state.signIn.body":
@@ -704,7 +704,7 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.reveal.cta.leaderboard": "查看排行榜",
   "mp.reveal.cta.hub": "返回 Market Pulse",
   "mp.reveal.cta.download": "下載 PPA 報告",
-  "mp.reveal.cta.comingSoon": "報告即將推出",
+  "mp.reveal.cta.comingSoon": "報告暫未提供",
   "mp.reveal.cta.nextChallenge": "挑戰下一個信號",
   "mp.reveal.back": "← Market Pulse",
 
@@ -752,7 +752,7 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.error.signInRequired": "需要登入。",
   "mp.error.invalidDecision": "判斷必須為看升或謹慎。",
   "mp.error.preLaunch":
-    "Market Pulse 將於 2026年7月1日 開放。請屆時再來鎖定你的判斷。",
+    "Market Pulse 尚未開放遊玩。請在本期挑戰上線後再試。",
   "mp.error.gameClosed": "Market Pulse 目前不接受決策。",
   "mp.error.cardNotFound": "找不到卡片。",
   "mp.error.cycleNotOpen": "此挑戰週期未開放。",
@@ -767,5 +767,5 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.error.alreadySubmitted": "你已為此卡片提交過判斷。",
   "mp.error.generic": "發生錯誤，請再試一次。",
 
-  "mp.announcement.ariaLabel": "Market Pulse 上線公告",
+  "mp.announcement.ariaLabel": "Market Pulse 最新消息",
 };

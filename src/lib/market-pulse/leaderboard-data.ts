@@ -1,6 +1,7 @@
 import "server-only";
 
 import { isDatabaseConfigured } from "@/lib/db-config";
+import { filterCyclesForPublicPlay } from "@/lib/market-pulse/demo-cycle-guards";
 import { prisma } from "@/lib/prisma";
 import {
   buildLeaderboardCycleOptions,
@@ -89,6 +90,8 @@ export async function getMarketPulseLeaderboardPageData(
       error,
     );
   }
+
+  historicalCycles = filterCyclesForPublicPlay(historicalCycles);
 
   const cycles = buildLeaderboardCycleOptions(
     activeCycle,

@@ -14,7 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT**; first cycle **1–10 Jul 2026**; ADMIN test bypass before launch |
-| **Recent `main`** | Market Pulse **admin fast builder** (cycles hub, `/admin/market-pulse/cycles/[cycleId]/builder`, quick-create, scheduling, bulk publish); player journey visual revamp; per-cycle leaderboard; onboarding JWT refresh; admin member **Tel** column |
+| **Recent `main`** | Market Pulse **launch readiness** (public copy cleanup, demo/seed production guards, admin player-visibility card, launch smoke + regression tests); admin fast builder; player journey revamp; per-cycle leaderboard; onboarding JWT refresh |
 
 ---
 
@@ -108,15 +108,20 @@ Google OAuth redirect URIs (must match exactly):
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
 
-### Verification — last run 29 Jun 2026
+### Verification — last run 29 Jun 2026 (launch readiness)
 
 | Check | Result |
 |-------|--------|
 | **Lint** | `npm run lint` — pass (0 errors; 10 pre-existing warnings) |
 | **Typecheck** | `npm run typecheck` — pass |
 | **Build** | `npm run build` — pass (`prisma db push && next build`) |
-| **Tests** | `npm test` — **358** Vitest tests (64 files) |
-| **Admin fast builder** | Cycles hub + builder route; quick-create → `DRAFT` cycle → builder redirect; legacy `#cards` / `#cycles` preserved; scoring/PPA privacy unchanged (security audit 29 Jun 2026) |
+| **Tests** | `npm test` — **453** Vitest tests (77 files) |
+| **Launch smoke** | `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts` |
+| **Public copy** | `public-market-pulse-copy.test.ts` — no stale pre-launch/dev terms in MP i18n |
+| **Demo/seed guards** | `demo-cycle-guards.ts` — demo cycles hidden from public production paths; `seed-guards.ts` blocks `db:seed` in production |
+| **Admin launch UI** | `shouldShowMarketPulseLaunchSetupUi()` hides Setup guide + first-cycle panel after 1 Jul 2026 HKT; operational warnings remain |
+| **Player visibility** | `MarketPulsePlayerVisibilityReadinessCard` + `evaluatePlayerVisibilityReadiness()` on admin overview |
+| **Admin fast builder** | Cycles hub + builder route; quick-create → `DRAFT` cycle → builder redirect; legacy `#cards` / `#cycles` preserved; scoring/PPA privacy unchanged |
 | **PPA timing workflow** | Players may decide before PPA is entered/locked; reveal/scoring requires locked PPA on all published cards; admin 72h warning (`admin-ppa-reveal-warning.ts`) |
 | **Player submit without PPA** | `server-core.test.ts` — “allows submission when PPA is missing and unlocked”; no `ppaSignalLockedAt` check in `submitMarketPulseDecision` |
 | **Reveal PPA gate** | `admin-reveal-action.test.ts` — blocks transaction + scoring when PPA incomplete; succeeds when complete |
@@ -191,21 +196,22 @@ Automated tests cover server rules below. Live browser sign-in was not re-run in
 | 18 | Admin member Tel column | **Pass** | `AdminMembersTable` — `contactNumber` column; searchable via `user-member-filter.ts` |
 | 19 | Homepage + player journey visual revamp | **Pass** | Hero, How it works, cycle loop, PPA teaser; hub lobby; play confirmation; leaderboard/reveal state panels; responsive pass — **security unchanged** |
 
-### Production smoke test (manual)
+### Production smoke test
 
-**Pre-launch (before 1 Jul 2026 00:00 HKT):** guest/USER → `pre_launch` on play; USER submit blocked (403); ADMIN can play/submit when cycle/card gates pass; homepage hero + hub lobby show pre-launch state; EN ↔ 繁 switch works.
+**Primary checklist:** [`docs/market-pulse-deploy-checklist.md`](../docs/market-pulse-deploy-checklist.md) § **Launch smoke test (1 Jul 2026 HKT)** — pass/fail tables for environment, player flows, and automated preflight.
+
+**Automated coverage:** `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts`, plus `launch-first-cycle-boundaries.test.ts`, `admin-player-visibility-readiness.test.ts`, `public-launch-ui.test.ts`, `public-market-pulse-copy.test.ts`, `server-security.test.ts`, `leaderboard-data.test.ts`, `demo-cycle-guards.test.ts`, `hub-data.production.test.ts`, `seed-guards.test.ts`.
+
+<details>
+<summary>Historical — pre-launch manual notes (before 1 Jul 2026 00:00 HKT)</summary>
+
+**Pre-launch:** guest/USER → `pre_launch` on play; USER submit blocked; ADMIN can play/submit when cycle/card gates pass; homepage hero + hub lobby show pre-launch state.
+
+**At launch:** USER can play when runtime `OPEN` + published card exists; pre-launch UI hidden automatically via `shouldShowMarketPulsePreLaunchUi()`.
+
+</details>
 
 **Player journey:** Homepage journey sections load; hub lobby status/CTA correct; play confirmation step; leaderboard locked panel; reveal pending vs ceremony states.
-
-**At launch:** USER can play when runtime `OPEN` + published card exists; pre-launch UI hidden.
-
-**Admin:** `/admin` overview + user management; `/admin/market-pulse` **cycles hub** + fast builder entry, status header, PPA reveal warning (≤72h), legacy card editor (`#cards`), advanced cycle settings (`#cycles`), reveal/scoring, prize claims; first-cycle guidance in collapsible Setup section. **Primary card path:** `/admin/market-pulse/cycles/[cycleId]/builder`.
-
-**Public sanity:** `/market-pulse`, `/market-pulse/play`, `/fortify-survey` routes unchanged; scoring/reveal/launch/PPA privacy not modified by player journey revamp.
-
-**Auth:** Google signup → contact onboarding → `/api/auth/complete-onboarding` → profile (no refresh loop).
-
-**Events:** `/events` upcoming Sales & Marketing; past Fortify archived; `/fortify-survey` loads (no redirect).
 
 ### Rollback
 
@@ -372,7 +378,7 @@ Key test files for the fast builder journey:
 | PPA / public privacy | `server-security.test.ts`, `admin-card-preview.test.ts` |
 | Non-admin rejection | `admin-builder-data.test.ts`, `admin-duplicate-card.test.ts`, `admin-quick-create-cycle.test.ts` |
 
-**Last CI (29 Jun 2026):** lint pass (0 errors), typecheck pass, **358 tests** (64 files), build pass.
+**Last CI (29 Jun 2026):** lint pass (0 errors), typecheck pass, **453 tests** (77 files), build pass.
 
 ### Making Market Pulse visible to players (go-live)
 
@@ -521,6 +527,7 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 ├── prisma/
 │   ├── schema.prisma           ← User, MarketPulse*, Auth.js models
 │   ├── seed.ts                 ← Dev-only Market Pulse demo seed
+│   ├── seed-guards.ts          ← Production seed block (tested)
 │   └── seed-market-pulse-data.ts
 ├── scripts/
 │   └── import-leads.ts
@@ -554,9 +561,13 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 │   │   ├── layout/route-chrome.ts
 │   │   └── market-pulse/
 │   │       ├── hub-lobby-state.ts, play-page-state.ts, analytics.ts
-│   │       ├── launch-config.ts        ← Public launch Jul 2026, ADMIN bypass
+│   │       ├── launch-config.ts        ← Public launch Jul 2026, ADMIN bypass, setup UI gate
+│   │       ├── demo-cycle-guards.ts    ← Hide demo/seed cycles on public production paths
+│   │       ├── admin-player-visibility-readiness.ts
+│   │       ├── admin-operational-warnings.ts
 │   │       ├── first-cycle-admin-guidance.ts
 │   │       ├── server.ts, cycle-playability.ts, reveal-access.ts, admin-actions.ts
+│   │       ├── launch-smoke.test.ts, launch-regression-audit.test.ts, …
 │   │       └── *.test.ts               ← MP unit tests (see `npm test` count)
 └── …
 ```
@@ -579,7 +590,7 @@ npm run dev
 | `npm run build` | **`prisma db push && next build`** (Vercel uses this) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript (`tsc --noEmit`) |
-| `npm test` | Vitest unit tests (`vitest run`) — **358 tests** (64 files) |
+| `npm test` | Vitest unit tests (`vitest run`) — **453 tests** (77 files) |
 | `npm run db:migrate` | Prisma migrate dev (when using migration files) |
 | `npm run db:push` | Push schema without migration files |
 | `npm run db:seed` | Seed **demo Market Pulse** data (dev only — see [§4.1](#41-market-pulse-demo-seed)) |
@@ -619,7 +630,7 @@ Optional explicit flag (staging / intentional runs):
 MARKET_PULSE_SEED=1 npm run db:seed
 ```
 
-Files: `prisma/seed.ts` (runner + guards), `prisma/seed-market-pulse-data.ts` (demo card copy).
+Files: `prisma/seed.ts` (runner), `prisma/seed-guards.ts` (production block), `prisma/seed-market-pulse-data.ts` (demo card copy).
 
 ---
 
@@ -1028,8 +1039,8 @@ Shell: `MarketPulseAdminShell` — sticky **status header**, **quick actions**, 
 
 | Section | Key components | Ops |
 |---------|----------------|-----|
-| **Overview** | Summary cards, PPA complete badge | Runtime, active cycle, card counts |
-| **Setup guide** | `FirstCycleGuidancePanel` (collapsible) | Jul 2026 first-cycle recommendations + PPA/reveal note + prefill create-cycle |
+| **Overview** | Summary cards, PPA complete badge, **Launch readiness** (`MarketPulsePlayerVisibilityReadinessCard`) | Runtime, active cycle, card counts; ready/blocked player visibility |
+| **Setup guide** | `FirstCycleGuidancePanel` (collapsible) | **Hidden after 1 Jul 2026 HKT** (`shouldShowMarketPulseLaunchSetupUi`); Jul 2026 first-cycle recommendations pre-launch only |
 | **Runtime** | Runtime form | Master `OPEN`/`CLOSED` switch for submissions |
 | **Cycles** | Cycle list + form + participation/scoring stats | Create/edit; set active; per-cycle cards/participants/decisions/completion; scores-generated flag; top winner after reveal |
 | **Cards** | `MarketPulseCardList`, `MarketPulseCardFilters`, `MarketPulseCardPanel`, `MarketPulseCardForm` | PPA status badges; **Needs PPA** filter; reveal-urgent card styling; lock/publish/edit PPA |
@@ -1041,7 +1052,7 @@ Shell: `MarketPulseAdminShell` — sticky **status header**, **quick actions**, 
 
 **PPA helpers:** `admin-card-ppa-status.ts` (per-card status), `admin-ppa-reveal-warning.ts` (72h window), `reveal-ppa-validation.ts` (reveal block), `PPA_REVEAL_WARNING_HOURS = 72` in `constants.ts`.
 
-**Playability:** `admin-mp-status.ts` drives alert panel when cycle dates/runtime/unpublished cards block `/market-pulse/play` (`cycle-playability.ts`). PPA missing → setup note (>72h) or urgent banner (≤72h), not a player playability block.
+**Playability:** `admin-mp-status.ts` drives alert panel when cycle dates/runtime/unpublished cards block `/market-pulse/play` (`cycle-playability.ts`). Demo/seed active cycle → `demo-cycle-active` alert. PPA missing → setup note (>72h) or urgent banner (≤72h), not a player playability block. Post-launch overview uses `admin-operational-warnings.ts` instead of inaugural launch-window checks.
 
 Server actions: `src/lib/market-pulse/admin-actions.ts` (wrapped with `finishAdminMutation`). Requires `role = ADMIN`. See `docs/market-pulse-deploy-checklist.md` §4.
 
@@ -1283,7 +1294,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | MP admin cards | `MarketPulseCardList.tsx`, `MarketPulseCardForm.tsx`, `MarketPulseAdminCardPreview.tsx`, `admin-card-filter.ts` |
 | MP reveal/prize | `MarketPulseRevealScoringSection.tsx`, `RevealCycleButton.tsx`, `admin-reveal-status.ts`, `reveal-ppa-validation.ts`, `admin-ppa-reveal-warning.ts`, `MarketPulsePrizeReview.tsx` |
 | MP card admin | `MarketPulseCardPanel.tsx`, `admin-card-ppa-status.ts`, `admin-card-filter.ts` |
-| Launch / pre-launch | `src/lib/market-pulse/launch-config.ts`, `MarketPulseLaunchAnnouncement.tsx` |
+| Launch / pre-launch | `launch-config.ts`, `MarketPulseLaunchAnnouncement.tsx`, `shouldShowMarketPulseLaunchSetupUi` |
+| Launch smoke / regression | `launch-smoke.test.ts`, `launch-regression-audit.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts` |
+| Demo/seed production guards | `demo-cycle-guards.ts`, `seed-guards.ts`, `hub-data.ts` (production-safe fallback) |
+| Player visibility (admin) | `admin-player-visibility-readiness.ts`, `MarketPulsePlayerVisibilityReadinessCard.tsx` |
 | First-cycle admin | `first-cycle-admin-guidance.ts`, `FirstCycleGuidancePanel.tsx` |
 | Content layout | `src/components/layout/ContentPageLayout.tsx` |
 | Legal / info pages | `src/app/contact/`, `faq/`, `terms/`, `privacy/`, `careers/`, `investment-disclaimer/` |
@@ -1312,10 +1326,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 - **Languages:** EN + Traditional Chinese (`ppa_locale` cookie); MP launch messages in `launch-config.ts`
 - **Data stores:** Postgres (users, Market Pulse, auth), KV (legacy theme), Markdown (blog)
-- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (358), `npm run build`
-- **Production smoke:** PPA timing matrix above; guest/USER/ADMIN before launch; hub lobby + play confirmation; leaderboard locked states; reveal ceremony; onboarding complete-onboarding; admin fast builder path; `/fortify-survey` unchanged
+- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (453), `npm run build`
+- **Production smoke:** [`docs/market-pulse-deploy-checklist.md`](docs/market-pulse-deploy-checklist.md) § Launch smoke test; automated suites listed in [Production smoke test](#production-smoke-test)
 - **Lint warnings:** Legacy castle-siege; TanStack Table in admin members table
 
 ---
 
-*Last updated: 29 Jun 2026 — Market Pulse admin fast builder workflow documented; 358 tests pass; scoring/launch/PPA privacy unchanged.*
+*Last updated: 29 Jun 2026 — Market Pulse launch readiness (copy, demo guards, smoke/regression tests, admin visibility card); 453 tests pass; scoring/launch/PPA privacy unchanged.*

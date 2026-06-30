@@ -5,6 +5,88 @@ Routes: `/market-pulse`, `/market-pulse/play`, `/market-pulse/leaderboard`, `/ma
 
 ---
 
+## Launch smoke test (1 Jul 2026 HKT) — pass / fail
+
+Run this block **immediately before pushing to production** for the public launch (1 Jul 2026 00:00 HKT). Mark each row **Pass** or **Fail**. Do not ship if any **Fail** remains unresolved.
+
+### Automated preflight (run locally or in CI)
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+Targeted launch smoke suite:
+
+```bash
+npm test -- \
+  src/lib/market-pulse/launch-smoke.test.ts \
+  src/lib/market-pulse/play-data.launch.test.ts \
+  src/lib/market-pulse/reveal-data.launch.test.ts \
+  src/lib/market-pulse/launch-first-cycle-boundaries.test.ts \
+  src/lib/market-pulse/admin-player-visibility-readiness.test.ts \
+  src/lib/market-pulse/public-launch-ui.test.ts \
+  src/lib/market-pulse/server-security.test.ts \
+  src/lib/market-pulse/leaderboard-data.test.ts
+```
+
+| Check | Automated | Manual |
+|-------|-----------|--------|
+| Launch instant = 1 Jul 2026 00:00 HKT | `launch-first-cycle-boundaries.test.ts` | — |
+| USER not blocked after launch | `launch-smoke.test.ts`, `play-data.launch.test.ts` | — |
+| Guest prompted to sign in (not submit) | `launch-smoke.test.ts`, `play-data.launch.test.ts` | Guest swipe → sign-in CTA |
+| ADMIN still works after launch | `launch-smoke.test.ts`, `admin-player-visibility-readiness.test.ts` | Sign in as ADMIN → `/admin/market-pulse` |
+| Play gates (OPEN cycle + published card) | `play-data.launch.test.ts` | USER plays today’s card |
+| Runtime CLOSED blocks play | `play-data.launch.test.ts` | Set runtime CLOSED → play closed panel |
+| No active cycle blocks play | `play-data.launch.test.ts` | Unpin cycle → no play |
+| No published today card | `play-data.launch.test.ts` | Unpublish today’s card → no card panel |
+| PPA hidden on play before reveal | `launch-smoke.test.ts`, `server-security.test.ts` | Network tab on `/market-pulse/play` |
+| PPA hidden on hub / leaderboard before reveal | `launch-smoke.test.ts`, `public-launch-ui.test.ts` | Hub + leaderboard page source |
+| Leaderboard locked before reveal | `launch-smoke.test.ts`, `leaderboard-data.test.ts` | `/market-pulse/leaderboard` locked UI |
+| Leaderboard revealed after scoring | `launch-smoke.test.ts`, `leaderboard-data.test.ts` | Post-reveal standings visible |
+| Reveal pending before `revealAt` | `reveal-data.launch.test.ts` | `/market-pulse/reveal` countdown |
+| Reveal results only when valid | `reveal-data.launch.test.ts` | Signed-in USER after admin reveal |
+| `/admin/market-pulse` requires ADMIN | `launch-smoke.test.ts` | Non-admin → redirect home |
+| Builder requires ADMIN | `launch-smoke.test.ts`, `admin-builder-data.test.ts` | Non-admin → redirect home |
+| Launch readiness card ready/blocked | `admin-player-visibility-readiness.test.ts` | Overview card on admin dashboard |
+| `/fortify-survey` unchanged | `launch-smoke.test.ts` | Page loads; no redirect |
+
+### Manual smoke — environment & data
+
+| # | Step | Pass |
+|---|------|------|
+| 1 | **Environment variables** — `POSTGRES_URL`, `AUTH_SECRET`, Google OAuth (if used), production domain in redirect URIs | ☐ |
+| 2 | **Production DB connected** — `POSTGRES_URL` points at production; `npm run build` succeeds | ☐ |
+| 3 | **First admin exists** — at least one `User.role = 'ADMIN'` | ☐ |
+| 4 | **Runtime OPEN** — game setting `runtimeStatus = OPEN` on `/admin/market-pulse` | ☐ |
+| 5 | **Active cycle OPEN** — correct cycle pinned as active; status `OPEN` | ☐ |
+| 6 | **First public cycle dates** — starts 1 Jul 2026 00:00 HKT; ends/reveal per ops plan (recommended reveal 11 Jul 00:00 HKT) | ☐ |
+| 7 | **Today’s card published** — day’s card `PUBLISHED` with `publishedAt` on or before now | ☐ |
+| 8 | **PPA locked** — published cards have locked PPA if your publish validation requires it | ☐ |
+
+### Manual smoke — player flows
+
+| # | Step | Pass |
+|---|------|------|
+| 9 | **Guest flow** — hub loads; play shows today’s card; sign-in required to submit; no PPA in payload | ☐ |
+| 10 | **USER flow** — sign in → play → confirm Bullish/Cautious → locked card; duplicate submit blocked | ☐ |
+| 11 | **ADMIN flow** — `/admin/market-pulse` overview, builder, publish, readiness card accurate | ☐ |
+| 12 | **EN / zh-Hant switch** — hub, play, rules, footer copy toggles; dates readable in both locales | ☐ |
+| 13 | **Mobile play flow** — swipe/buttons work; page does not scroll during horizontal swipe | ☐ |
+| 14 | **Leaderboard locked** — ranks visible; scores show locked label before reveal | ☐ |
+| 15 | **Reveal pending** — countdown; no personal results or PPA before reveal | ☐ |
+| 16 | **`/fortify-survey` unchanged** — survey renders; URL stable (QR codes) | ☐ |
+
+**Sign-off (launch smoke):**
+
+| Role | Name | Date | All pass |
+|------|------|------|----------|
+| Engineering | | | ☐ |
+
+---
+
 ## 1. Environment checks
 
 Confirm all required variables are set in the production host (e.g. Vercel → **Settings → Environment Variables**).
@@ -70,7 +152,7 @@ npm run build
 - [ ] `npx prisma migrate deploy` succeeds (or `db push` only if migrations not adopted yet — document which)
 - [ ] `npx prisma generate` succeeds
 - [ ] `npm run build` succeeds with no TypeScript errors
-- [ ] `npm test` passes locally or in CI — **358** tests (`vitest run`, 64 files)
+- [ ] `npm test` passes locally or in CI — see **Launch smoke test** § automated preflight
 
 ---
 
@@ -269,4 +351,4 @@ npm test -- src/lib/market-pulse/admin-mp-navigation.test.ts src/lib/market-puls
 
 ---
 
-*Related: `DEVELOPER_GUIDE.md` (§ Market Pulse admin fast builder workflow), `src/lib/market-pulse/` (domain logic). Last verified: 29 Jun 2026 — lint/typecheck/test/build pass (358 tests).*
+*Related: `DEVELOPER_GUIDE.md` (§ Market Pulse admin fast builder workflow), `src/lib/market-pulse/` (domain logic). Automated launch smoke: `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`.*

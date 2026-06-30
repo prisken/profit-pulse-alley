@@ -36,7 +36,7 @@ import {
 import type { SiteLocale } from "@/lib/i18n/locales";
 import {
   canAccessMarketPulsePlay,
-  isBeforePublicLaunch,
+  shouldShowMarketPulsePreLaunchUi,
 } from "@/lib/market-pulse/launch-config";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 
@@ -334,7 +334,7 @@ export default function MarketPulseLeaderboard({
   const { t } = useTranslations();
   const router = useRouter();
   const { data: session, status } = useSession();
-  const showPreLaunchMarketing = isBeforePublicLaunch();
+  const showPreLaunchMarketing = shouldShowMarketPulsePreLaunchUi();
   const adminRole =
     status === "authenticated" ? session?.user?.role : undefined;
   const playBlocked = !canAccessMarketPulsePlay(adminRole);

@@ -11,6 +11,8 @@ import {
   getCyclePlayabilityIssue,
 } from "@/lib/market-pulse/cycle-playability";
 import { evaluateFirstPublicCycleSetup } from "@/lib/market-pulse/first-cycle-admin-guidance";
+import { evaluateActiveCycleOperationalWarnings } from "@/lib/market-pulse/admin-operational-warnings";
+import { isBeforePublicLaunch } from "@/lib/market-pulse/launch-config";
 import type { MarketPulseAdminCycleRow } from "@/lib/market-pulse/admin-data";
 import { getMarketPulseSettings } from "@/lib/market-pulse/server";
 import { prisma } from "@/lib/prisma";
@@ -128,39 +130,45 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
           cardCount: cycle._count.cards,
         };
 
-        const evaluation = evaluateFirstPublicCycleSetup({
+        const guidanceCards = cycle.cards.map((card, index) => ({
+          id: `overview-${index}`,
+          cycleId: cycle.id,
+          dayIndex: index + 1,
+          companyName: "",
+          companyNameZh: null,
+          ticker: "",
+          exchange: null,
+          logoUrl: null,
+          logoInitials: null,
+          priceLabel: null,
+          priceDirection: null,
+          headline: "",
+          newsBody: null,
+          sourceName: null,
+          sourceUrl: null,
+          sourceDate: null,
+          cardImageUrl: null,
+          cardImageAlt: null,
+          summary: null,
+          userPrompt: null,
+          status: card.status,
+          ppaSignal: null,
+          ppaInsight: null,
+          ppaSignalLockedAt: card.ppaSignalLockedAt?.toISOString() ?? null,
+          publishedAt: null,
+          revealAt: null,
+          decisionCount: 0,
+        }));
+
+        const guidanceInput = {
           runtimeStatus: settings.runtimeStatus,
           activeCycle: cycleRowForGuidance(cycle, activeCycle),
-          cards: cycle.cards.map((card, index) => ({
-            id: `overview-${index}`,
-            cycleId: cycle.id,
-            dayIndex: index + 1,
-            companyName: "",
-            companyNameZh: null,
-            ticker: "",
-            exchange: null,
-            logoUrl: null,
-            logoInitials: null,
-            priceLabel: null,
-            priceDirection: null,
-            headline: "",
-            newsBody: null,
-            sourceName: null,
-            sourceUrl: null,
-            sourceDate: null,
-            cardImageUrl: null,
-            cardImageAlt: null,
-            summary: null,
-            userPrompt: null,
-            status: card.status,
-            ppaSignal: null,
-            ppaInsight: null,
-            ppaSignalLockedAt: card.ppaSignalLockedAt?.toISOString() ?? null,
-            publishedAt: null,
-            revealAt: null,
-            decisionCount: 0,
-          })),
-        });
+          cards: guidanceCards,
+        };
+
+        const evaluation = isBeforePublicLaunch(now)
+          ? evaluateFirstPublicCycleSetup(guidanceInput)
+          : evaluateActiveCycleOperationalWarnings(guidanceInput);
         systemNotes.push(...evaluation.warnings);
       }
     } else {

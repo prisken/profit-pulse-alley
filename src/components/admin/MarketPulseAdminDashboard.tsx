@@ -9,6 +9,7 @@ import type {
 
 import MarketPulsePrizeReview from "@/components/admin/MarketPulsePrizeReview";
 import FirstCycleGuidancePanel from "@/components/admin/FirstCycleGuidancePanel";
+import MarketPulsePlayerVisibilityReadinessCard from "@/components/admin/MarketPulsePlayerVisibilityReadinessCard";
 import {
   MarketPulseAdminAlerts,
   MarketPulseAdminQuickActions,
@@ -45,6 +46,7 @@ import {
   buildMarketPulsePlayabilityAlerts,
   buildMarketPulseStatusSnapshot,
 } from "@/lib/market-pulse/admin-mp-status";
+import { evaluatePlayerVisibilityReadiness } from "@/lib/market-pulse/admin-player-visibility-readiness";
 import {
   evaluatePpaRevealWarning,
 } from "@/lib/market-pulse/admin-ppa-reveal-warning";
@@ -56,6 +58,7 @@ import type { PrizeReviewData } from "@/lib/market-pulse/prize-review-data";
 import {
   getFirstPublicCycleFormPrefill,
 } from "@/lib/market-pulse/first-cycle-admin-guidance";
+import { shouldShowMarketPulseLaunchSetupUi } from "@/lib/market-pulse/launch-config";
 import type { MarketPulseCycleFormValues } from "@/lib/market-pulse/cycle-validation";
 import { toDatetimeLocalValue } from "@/lib/market-pulse/cycle-validation";
 
@@ -272,6 +275,18 @@ export default function MarketPulseAdminDashboard({
     }));
   }, [ppaRevealWarning, locale]);
 
+  const playerVisibilityReadiness = useMemo(
+    () =>
+      evaluatePlayerVisibilityReadiness({
+        runtimeStatus: initialData.runtimeStatus,
+        activeCycle,
+        activeCycleCards,
+      }),
+    [initialData.runtimeStatus, activeCycle, activeCycleCards],
+  );
+
+  const showLaunchSetupUi = shouldShowMarketPulseLaunchSetupUi();
+
   const playabilityAlerts = useMemo(
     () =>
       buildMarketPulsePlayabilityAlerts({
@@ -359,29 +374,32 @@ export default function MarketPulseAdminDashboard({
           activeCycle={activeCycle}
           totals={totals}
           ppaComplete={ppaRevealWarning.severity === "complete"}
+          playerVisibilityReadiness={playerVisibilityReadiness}
         />
       </MarketPulseAdminSection>
 
-      <MarketPulseAdminSection
-        id="setup"
-        title={t("auth.admin.mp.shell.setup")}
-        description={t("auth.admin.mp.shell.setupSummary")}
-      >
-        <details className="rounded-lg border border-sky-500/25 bg-sky-500/5">
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-sky-100 marker:content-none [&::-webkit-details-marker]:hidden">
-            {t("auth.admin.mp.shell.setupSummary")}
-          </summary>
-          <div className="border-t border-sky-500/20 px-4 pb-4 pt-3">
-            <FirstCycleGuidancePanel
-              runtimeStatus={initialData.runtimeStatus}
-              activeCycle={activeCycle}
-              cards={initialData.cards}
-              onPrefillCreateCycle={handlePrefillFirstCycle}
-              embedded
-            />
-          </div>
-        </details>
-      </MarketPulseAdminSection>
+      {showLaunchSetupUi ? (
+        <MarketPulseAdminSection
+          id="setup"
+          title={t("auth.admin.mp.shell.setup")}
+          description={t("auth.admin.mp.shell.setupSummary")}
+        >
+          <details className="rounded-lg border border-sky-500/25 bg-sky-500/5">
+            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-sky-100 marker:content-none [&::-webkit-details-marker]:hidden">
+              {t("auth.admin.mp.shell.setupSummary")}
+            </summary>
+            <div className="border-t border-sky-500/20 px-4 pb-4 pt-3">
+              <FirstCycleGuidancePanel
+                runtimeStatus={initialData.runtimeStatus}
+                activeCycle={activeCycle}
+                cards={initialData.cards}
+                onPrefillCreateCycle={handlePrefillFirstCycle}
+                embedded
+              />
+            </div>
+          </details>
+        </MarketPulseAdminSection>
+      ) : null}
 
       <MarketPulseAdminSection
         id="runtime"
@@ -518,6 +536,7 @@ function OverviewSection({
   activeCycle,
   totals,
   ppaComplete,
+  playerVisibilityReadiness,
 }: {
   initialData: MarketPulseAdminDashboardData;
   activeCycle: MarketPulseAdminDashboardData["cycles"][number] | null;
@@ -531,11 +550,13 @@ function OverviewSection({
     prizeLabel: string | null;
   } | null;
   ppaComplete: boolean;
+  playerVisibilityReadiness: ReturnType<typeof evaluatePlayerVisibilityReadiness>;
 }) {
   const { t } = useTranslations();
 
   return (
     <div className="space-y-4">
+      <MarketPulsePlayerVisibilityReadinessCard readiness={playerVisibilityReadiness} />
       {activeCycle && ppaComplete ? <MarketPulsePpaCompleteBadge /> : null}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
         <StatCard label={t("auth.admin.mp.statRuntime")} value={initialData.runtimeStatus} />

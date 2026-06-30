@@ -57,6 +57,16 @@ describe("hub-lobby-state", () => {
     expect(cta.href).toBe("/market-pulse/play");
   });
 
+  it("returns sign-in CTA for open guests after public launch", () => {
+    const cta = deriveHubPrimaryCta("open", {
+      isAuthenticated: false,
+      runtimeOpen: true,
+    });
+    expect(cta.kind).toBe("sign_in");
+    expect(cta.href).toContain("/login?callbackUrl=");
+    expect(cta.disabled).toBe(false);
+  });
+
   it("returns view leaderboard when cycle is revealed", () => {
     const cta = deriveHubPrimaryCta("revealed", {
       isAuthenticated: false,

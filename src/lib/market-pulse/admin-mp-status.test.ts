@@ -151,6 +151,35 @@ describe("buildMarketPulsePlayabilityAlerts", () => {
 
     expect(alerts.some((alert) => alert.id === "today-card-issue")).toBe(true);
   });
+
+  it("does not warn about demo seed data for normal production cycles", () => {
+    const alerts = buildMarketPulsePlayabilityAlerts({
+      runtimeStatus: "OPEN",
+      activeCycle: baseCycle,
+      activeCycleCards: [buildCard()],
+      now: new Date("2026-06-01T12:00:00.000Z"),
+    });
+
+    expect(alerts.some((alert) => alert.id === "demo-cycle-active")).toBe(
+      false,
+    );
+  });
+
+  it("warns when the active cycle is demo-marked", () => {
+    const alerts = buildMarketPulsePlayabilityAlerts({
+      runtimeStatus: "OPEN",
+      activeCycle: {
+        ...baseCycle,
+        name: "[DEMO] Market Pulse Local Seed",
+      },
+      activeCycleCards: [buildCard()],
+      now: new Date("2026-06-01T12:00:00.000Z"),
+    });
+
+    const demoAlert = alerts.find((alert) => alert.id === "demo-cycle-active");
+    expect(demoAlert).toBeDefined();
+    expect(demoAlert?.message).toMatch(/\[DEMO\]/i);
+  });
 });
 
 describe("getTodayCardStatus", () => {

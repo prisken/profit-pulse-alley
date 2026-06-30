@@ -1,6 +1,7 @@
 import type { SiteLocale } from "@/lib/i18n/locales";
 import { translate, type MessageKey } from "@/lib/i18n/messages";
 import type { CyclePlayabilityIssue } from "@/lib/market-pulse/cycle-playability";
+import { MARKET_PULSE_PUBLIC_LAUNCH_SUBMIT_ERROR } from "@/lib/market-pulse/launch-config";
 
 const ERROR_KEY_BY_MESSAGE: Record<string, MessageKey> = {
   "No card available.": "mp.error.noCardAvailable",
@@ -38,7 +39,10 @@ export function translateMarketPulseError(
     return translate(locale, exact);
   }
 
-  if (error.includes("Market Pulse opens on")) {
+  if (
+    error.includes("not open for play yet") ||
+    error.includes(MARKET_PULSE_PUBLIC_LAUNCH_SUBMIT_ERROR)
+  ) {
     return translate(locale, "mp.error.preLaunch");
   }
 

@@ -38,6 +38,11 @@ import {
   MARKET_PULSE_PUBLIC_LAUNCH_SUBMIT_ERROR,
   canSubmitMarketPulseDecision,
 } from "@/lib/market-pulse/launch-config";
+import {
+  resolveAllowDemoCycles,
+  shouldTreatCycleAsActiveForPublic,
+  type GetActiveMarketPulseCycleOptions,
+} from "@/lib/market-pulse/demo-cycle-guards";
 import { prisma } from "@/lib/prisma";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -233,7 +238,10 @@ export async function getMarketPulseSettings(): Promise<GameSettingWithCycle> {
   });
 }
 
-export async function getActiveMarketPulseCycle(): Promise<CycleWithCards | null> {
+export async function getActiveMarketPulseCycle(
+  options: GetActiveMarketPulseCycleOptions = {},
+): Promise<CycleWithCards | null> {
+  const allowDemoCycles = resolveAllowDemoCycles(options);
   const settings = await getMarketPulseSettings();
   const now = currentTime();
 
@@ -244,11 +252,17 @@ export async function getActiveMarketPulseCycle(): Promise<CycleWithCards | null
     });
 
     if (pinned && isCyclePlayableForServer(pinned, now)) {
-      return pinned;
+      if (
+        shouldTreatCycleAsActiveForPublic(pinned.name, allowDemoCycles)
+      ) {
+        return pinned;
+      }
+
+      return null;
     }
   }
 
-  return prisma.marketPulseCycle.findFirst({
+  const candidate = await prisma.marketPulseCycle.findFirst({
     where: {
       status: "OPEN",
       startsAt: { lte: now },
@@ -257,6 +271,15 @@ export async function getActiveMarketPulseCycle(): Promise<CycleWithCards | null
     orderBy: { startsAt: "desc" },
     include: cycleWithCardsInclude,
   });
+
+  if (
+    candidate &&
+    !shouldTreatCycleAsActiveForPublic(candidate.name, allowDemoCycles)
+  ) {
+    return null;
+  }
+
+  return candidate;
 }
 
 /** Today's published card and cycle without user-specific decision data. */
@@ -939,7 +962,7 @@ export async function getRevealedMarketPulseCycleForPage(): Promise<{
     return { revealedCycle: active, pendingActiveCycle: null };
   }
 
-  const revealedCycle = await prisma.marketPulseCycle.findFirst({
+  const revealedCandidates = await prisma.marketPulseCycle.findMany({
     where: {
       OR: [{ status: "REVEALED" }, { revealAt: { lte: now } }],
       NOT: { status: "ARCHIVED" },
@@ -955,7 +978,15 @@ export async function getRevealedMarketPulseCycleForPage(): Promise<{
     },
   });
 
-  if (revealedCycle && isMarketPulseCycleRevealed(revealedCycle, now)) {
+  const allowDemoCycles = resolveAllowDemoCycles();
+  const revealedCycle =
+    revealedCandidates.find(
+      (cycle) =>
+        isMarketPulseCycleRevealed(cycle, now) &&
+        shouldTreatCycleAsActiveForPublic(cycle.name, allowDemoCycles),
+    ) ?? null;
+
+  if (revealedCycle) {
     return { revealedCycle, pendingActiveCycle: null };
   }
 

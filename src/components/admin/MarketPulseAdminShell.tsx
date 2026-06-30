@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import type { MarketPulseStatusSnapshot, PlayabilityAlert } from "@/lib/market-pulse/admin-mp-status";
+import { getMarketPulseAdminNavSections } from "@/lib/market-pulse/admin-mp-navigation";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { translateWith, type MessageKey } from "@/lib/i18n/messages";
 
@@ -308,25 +309,11 @@ export function MarketPulsePpaCompleteBadge() {
   );
 }
 
-export type MarketPulseAdminNavSection = {
-  id: string;
-  labelKey: string;
-};
-
-const NAV_SECTIONS: MarketPulseAdminNavSection[] = [
-  { id: "cycles-hub", labelKey: "auth.admin.mp.nav.cyclesHub" },
-  { id: "overview", labelKey: "auth.admin.mp.overview" },
-  { id: "setup", labelKey: "auth.admin.mp.shell.setup" },
-  { id: "runtime", labelKey: "auth.admin.mp.runtime" },
-  { id: "cycles", labelKey: "auth.admin.mp.nav.advancedCycles" },
-  { id: "cards", labelKey: "auth.admin.mp.nav.legacyCards" },
-  { id: "reveal-scoring", labelKey: "auth.admin.mp.reveal.nav" },
-  { id: "prize-claims", labelKey: "auth.admin.mp.shell.prizeNav" },
-  { id: "audit", labelKey: "auth.admin.mp.shell.auditNav" },
-];
+export type { MarketPulseAdminNavSection } from "@/lib/market-pulse/admin-mp-navigation";
 
 export function MarketPulseAdminSectionNav() {
   const { t } = useTranslations();
+  const sections = getMarketPulseAdminNavSections();
 
   return (
     <nav
@@ -334,7 +321,7 @@ export function MarketPulseAdminSectionNav() {
       className="sticky top-[calc(var(--mp-status-offset,0px)+0.5rem)] z-20 -mx-1 overflow-x-auto px-1 py-2"
     >
       <ul className="flex min-w-max gap-1.5">
-        {NAV_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <li key={section.id}>
             <a
               href={`#${section.id}`}

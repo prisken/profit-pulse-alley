@@ -2,12 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import ContentPageLayout from "@/components/layout/ContentPageLayout";
-import LegalDraftNotice from "@/components/legal/LegalDraftNotice";
 import MarketPulseLaunchAnnouncement from "@/components/market-pulse/MarketPulseLaunchAnnouncement";
-import { siteLocaleToMarketPulseLocale } from "@/lib/i18n/locales";
 import { getServerTranslations, getServerSiteLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
-import { getMarketPulseLaunchMessages } from "@/lib/market-pulse/launch-config";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerSiteLocale();
@@ -18,15 +15,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ContestRulesPage() {
-  const { t, locale } = await getServerTranslations();
-  const launch = getMarketPulseLaunchMessages(
-    siteLocaleToMarketPulseLocale(locale),
-  );
+  const { t } = await getServerTranslations();
 
   return (
     <ContentPageLayout title={t("legal.contest.title")}>
-      <LegalDraftNotice />
-
       <MarketPulseLaunchAnnouncement />
 
       <p className="lead text-zinc-300">
@@ -58,10 +50,9 @@ export default async function ContestRulesPage() {
 
       <h2>{t("legal.contest.prizesHeading")}</h2>
       <ul>
-        <li>{launch.opens}</li>
-        <li>{launch.firstCycle}</li>
+        <li>{t("legal.contest.prizesCycle")}</li>
         <li>
-          <strong>{launch.prize}</strong>
+          <strong>{t("legal.contest.prizesAward")}</strong>
         </li>
         <li>
           <strong>{t("legal.contest.prizesVerificationPrefix")}</strong>

@@ -18,11 +18,12 @@ export const enMessages = {
   "nav.account": "Account",
   "nav.backToPulse": "Pulse",
   "nav.board": "Board",
-  "announcement.opens": "Market Pulse opens on July 1, 2026.",
-  "announcement.firstCycle": "First cycle: July 1–10, 2026.",
+  "announcement.opens": "Market Pulse is live.",
+  "announcement.firstCycle":
+    "Each challenge cycle runs for ten calendar days (Hong Kong time).",
   "announcement.prize":
     "One Ocean Park ticket will be awarded to the winner of each cycle.",
-  "announcement.comingSoon": "Coming soon",
+  "announcement.comingSoon": "Market Pulse",
   "signal.bullish": "Bullish",
   "signal.cautious": "Cautious",
   "lang.switcherLabel": "Language",
@@ -61,7 +62,7 @@ export const enMessages = {
   "footer.social.twitter": "Twitter",
   "footer.social.instagram": "Instagram",
 
-  "home.hero.badgePreLaunch": "Opens 1 Jul 2026",
+  "home.hero.badgePreLaunch": "Not open yet",
   "home.hero.badgeLive": "Live challenge",
   "home.hero.headline": "Can you read the market before the crowd?",
   "home.hero.subheadline":
@@ -173,7 +174,7 @@ export const enMessages = {
   "home.countdown.ariaLabel":
     "{days} days, {hours} hours, {minutes} minutes, and {seconds} seconds remaining in this Market Pulse cycle",
   "home.countdown.ariaOpensIn":
-    "Market Pulse opens in {days} days, {hours} hours, {minutes} minutes, and {seconds} seconds",
+    "Time until Market Pulse play begins: {days} days, {hours} hours, {minutes} minutes, and {seconds} seconds",
   "home.countdown.ariaCycleEndsIn":
     "{days} days, {hours} hours, {minutes} minutes, and {seconds} seconds remaining in this Market Pulse cycle",
 
@@ -364,6 +365,10 @@ export const enMessages = {
   "legal.contest.howBodySuffix":
     "to enter or play. Creating an account and submitting decisions during an active challenge cycle constitutes entry for that cycle's leaderboard, subject to these rules and any cycle-specific announcements.",
   "legal.contest.prizesHeading": "Prizes",
+  "legal.contest.prizesCycle":
+    "Challenge cycles run on a recurring ten-day schedule (Hong Kong time). Active dates are shown in Market Pulse.",
+  "legal.contest.prizesAward":
+    "One Ocean Park ticket is awarded to the winner of each cycle.",
   "legal.contest.prizesVerificationPrefix": "All prizes are subject to verification",
   "legal.contest.prizesVerificationSuffix":
     ", availability, and substitution of equal or greater value where permitted.",

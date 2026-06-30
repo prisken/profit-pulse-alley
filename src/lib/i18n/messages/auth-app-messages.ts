@@ -58,7 +58,7 @@ export const authAppEnMessages = {
   "auth.marketPulse.benefit.saveCalls": "Save every Bullish or Cautious call you make",
   "auth.marketPulse.benefit.participation": "Earn participation points each cycle",
   "auth.marketPulse.benefit.leaderboard": "Climb the cycle leaderboard after reveal",
-  "auth.marketPulse.benefit.prize": "Stay prize-eligible with a complete profile",
+  "auth.marketPulse.benefit.prize": "Compete for the One Ocean Park ticket each cycle",
   "auth.marketPulse.onboarding.title": "Complete your profile for Market Pulse",
   "auth.marketPulse.onboarding.body":
     "Add your contact number to complete your profile and keep your score prize-eligible.",
@@ -190,6 +190,9 @@ export const authAppEnMessages = {
   "auth.admin.mp.shell.auditNav": "Audit",
   "auth.admin.mp.shell.revealHelp":
     "Close cycles and run reveal from each cycle panel. All published cards need locked PPA before reveal. Export leaderboards after reveal.",
+  "auth.admin.mp.playerVisibility.title": "Launch readiness",
+  "auth.admin.mp.playerVisibility.checklist": "Player visibility checklist",
+  "auth.admin.mp.playerVisibility.canSubmitToday": "Players can submit today",
   "auth.admin.mp.shell.setupSummary": "First public cycle guidance (collapsible)",
 
   "auth.admin.mp.ppaWarning.title": "PPA insight needed before reveal",
@@ -511,7 +514,6 @@ export const authAppEnMessages = {
   "auth.admin.mp.builder.colValidation": "Validation",
   "auth.admin.mp.builder.colActions": "Actions",
   "auth.admin.mp.builder.duplicate": "Duplicate",
-  "auth.admin.mp.builder.duplicateSoon": "Duplicate coming soon",
   "auth.admin.mp.builder.editorTitle": "Card editor",
   "auth.admin.mp.builder.selectCardHint":
     "Select a card from the list to edit, preview, or publish.",
@@ -733,7 +735,7 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.marketPulse.benefit.saveCalls": "儲存每次看漲或謹慎的判斷",
   "auth.marketPulse.benefit.participation": "每個週期累積參與分",
   "auth.marketPulse.benefit.leaderboard": "揭曉後登上週期排行榜",
-  "auth.marketPulse.benefit.prize": "完成個人資料以保持獎賞資格",
+  "auth.marketPulse.benefit.prize": "每期競逐一張海洋公園門票",
   "auth.marketPulse.onboarding.title": "完成 Market Pulse 個人資料",
   "auth.marketPulse.onboarding.body":
     "新增聯絡電話以完成個人資料，並保持分數的獎賞資格。",
@@ -837,6 +839,9 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.admin.mp.shell.auditNav": "稽核",
   "auth.admin.mp.shell.revealHelp":
     "在各週期面板關閉週期並執行揭曉。所有已發布卡片須有已鎖定 PPA 方可揭曉。揭曉後可匯出排行榜。",
+  "auth.admin.mp.playerVisibility.title": "上線就緒狀態",
+  "auth.admin.mp.playerVisibility.checklist": "玩家可見性檢查清單",
+  "auth.admin.mp.playerVisibility.canSubmitToday": "玩家今日可提交",
   "auth.admin.mp.shell.setupSummary": "首次公開週期指南（可收合）",
 
   "auth.admin.mp.ppaWarning.title": "揭曉前需完成 PPA 洞察",
@@ -1169,7 +1174,6 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.admin.mp.builder.colValidation": "驗證",
   "auth.admin.mp.builder.colActions": "操作",
   "auth.admin.mp.builder.duplicate": "複製",
-  "auth.admin.mp.builder.duplicateSoon": "複製功能即將推出",
   "auth.admin.mp.builder.editorTitle": "卡片編輯器",
   "auth.admin.mp.builder.selectCardHint": "從列表選擇卡片以編輯、預覽或發佈。",
   "auth.admin.mp.builder.validation.published": "已發佈",

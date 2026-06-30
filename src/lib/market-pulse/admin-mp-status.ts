@@ -8,6 +8,10 @@ import { evaluatePpaRevealWarning } from "@/lib/market-pulse/admin-ppa-reveal-wa
 import { PPA_REVEAL_WARNING_HOURS } from "@/lib/market-pulse/constants";
 import { describeCyclePlayabilityIssue } from "@/lib/market-pulse/cycle-playability";
 import {
+  isDemoOrSeedCycleName,
+  isMarketPulseProductionDeploy,
+} from "@/lib/market-pulse/demo-cycle-guards";
+import {
   findPlayableCardForToday,
   getCycleDisplayDay,
 } from "@/lib/market-pulse/playable-card";
@@ -171,6 +175,14 @@ export function buildMarketPulsePlayabilityAlerts(input: {
   }
 
   const cycle = input.activeCycle;
+
+  if (isDemoOrSeedCycleName(cycle.name)) {
+    alerts.push({
+      id: "demo-cycle-active",
+      severity: isMarketPulseProductionDeploy() ? "error" : "warning",
+      message: `Active cycle "${cycle.name}" is demo or local seed data. Public players will not see it in production until you pin a real cycle.`,
+    });
+  }
 
   if (!cycle.isPlayableNow && cycle.playabilityIssue) {
     alerts.push({

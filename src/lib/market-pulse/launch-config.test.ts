@@ -8,6 +8,7 @@ import {
   canSubmitMarketPulseDecision,
   isBeforePublicLaunch,
   shouldShowMarketPulsePreLaunchUi,
+  shouldShowMarketPulseLaunchSetupUi,
 } from "@/lib/market-pulse/launch-config";
 
 describe("launch-config", () => {
@@ -61,9 +62,18 @@ describe("launch-config", () => {
     ).toBe(false);
   });
 
+  it("hides admin launch setup UI after public launch", () => {
+    expect(
+      shouldShowMarketPulseLaunchSetupUi(new Date("2026-06-30T15:59:59.999Z")),
+    ).toBe(true);
+    expect(
+      shouldShowMarketPulseLaunchSetupUi(new Date("2026-06-30T16:00:00.000Z")),
+    ).toBe(false);
+  });
+
   it("exposes bilingual launch copy for future locale switching", () => {
-    expect(MARKET_PULSE_LAUNCH_MESSAGES.en.opens).toContain("July 1, 2026");
-    expect(MARKET_PULSE_LAUNCH_MESSAGES["zh-HK"].opens).toContain("2026年7月1日");
+    expect(MARKET_PULSE_LAUNCH_MESSAGES.en.opens).toContain("live");
+    expect(MARKET_PULSE_LAUNCH_MESSAGES["zh-HK"].opens).toContain("已上線");
     expect(MARKET_PULSE_LAUNCH_MESSAGES.en.prize).toContain("One Ocean Park ticket");
     expect(MARKET_PULSE_LAUNCH_MESSAGES["zh-HK"].prize).toContain("海洋公園");
   });

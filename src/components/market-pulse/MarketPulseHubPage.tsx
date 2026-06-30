@@ -39,7 +39,7 @@ import {
 } from "@/lib/market-pulse/hub-lobby-state";
 import {
   canAccessMarketPulsePlay,
-  isBeforePublicLaunch,
+  shouldShowMarketPulsePreLaunchUi,
 } from "@/lib/market-pulse/launch-config";
 import type { MarketPulseMessageKey } from "@/lib/i18n/messages/market-pulse-messages";
 import type { SiteLocale } from "@/lib/i18n/locales";
@@ -449,7 +449,7 @@ export default function MarketPulseHubPage({
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isLoading = status === "loading";
-  const showPreLaunchMarketing = isBeforePublicLaunch();
+  const showPreLaunchMarketing = shouldShowMarketPulsePreLaunchUi();
   const adminRole =
     status === "authenticated" ? session?.user?.role : undefined;
   const playBlocked = !canAccessMarketPulsePlay(adminRole);
@@ -537,7 +537,7 @@ export default function MarketPulseHubPage({
                 </p>
               ) : null}
 
-              {playBlocked && isAuthenticated && !isLoading ? (
+              {showPreLaunchMarketing && playBlocked && isAuthenticated && !isLoading ? (
                 <p className="mt-3 text-sm text-zinc-400">
                   {t("mp.play.preLaunch.signedIn")}
                 </p>

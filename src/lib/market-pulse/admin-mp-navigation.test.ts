@@ -6,6 +6,7 @@ import {
   MARKET_PULSE_PUBLIC_PATHS,
   buildAdminMpBuilderBreadcrumbs,
   buildAdminMpDashboardBreadcrumbs,
+  getMarketPulseAdminNavSections,
   marketPulseCycleBuilderPath,
 } from "@/lib/market-pulse/admin-mp-navigation";
 
@@ -38,5 +39,12 @@ describe("admin Market Pulse navigation", () => {
     expect(crumbs).toHaveLength(3);
     expect(crumbs[1]?.href).toBe("/admin/market-pulse");
     expect(crumbs[2]?.label).toBe("Cycle 01");
+  });
+
+  it("omits setup nav after public launch", () => {
+    const afterLaunch = new Date("2026-07-02T00:00:00.000Z");
+    const sections = getMarketPulseAdminNavSections(afterLaunch);
+    expect(sections.some((section) => section.id === "setup")).toBe(false);
+    expect(sections.some((section) => section.id === "runtime")).toBe(true);
   });
 });

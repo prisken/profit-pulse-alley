@@ -3,14 +3,11 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import ContentPageLayout from "@/components/layout/ContentPageLayout";
-import LegalDraftNotice from "@/components/legal/LegalDraftNotice";
 import MarketPulseLaunchAnnouncement from "@/components/market-pulse/MarketPulseLaunchAnnouncement";
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
-import { siteLocaleToMarketPulseLocale } from "@/lib/i18n/locales";
 import { getServerTranslations, getServerSiteLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
 import { CHALLENGE_CYCLE_DAYS } from "@/lib/market-pulse/challenge-cycle";
-import { getMarketPulseLaunchMessages } from "@/lib/market-pulse/launch-config";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerSiteLocale();
@@ -75,17 +72,12 @@ function RulesCard({
 }
 
 export default async function MarketPulseRulesPage() {
-  const { t, locale } = await getServerTranslations();
-  const launch = getMarketPulseLaunchMessages(
-    siteLocaleToMarketPulseLocale(locale),
-  );
+  const { t } = await getServerTranslations();
   const cycleDays = String(CHALLENGE_CYCLE_DAYS);
 
   return (
     <ContentPageLayout title={t("mp.rules.title")}>
       <div className="not-prose space-y-4 sm:space-y-8">
-        <LegalDraftNotice />
-
         <MarketPulseLaunchAnnouncement />
 
         <p className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4 text-sm leading-relaxed text-zinc-300 sm:border-0 sm:bg-transparent sm:p-0 sm:text-lg sm:text-zinc-300">
@@ -117,11 +109,12 @@ export default async function MarketPulseRulesPage() {
 
         <RulesCard title={t("mp.rules.section.prize")} collapsibleOnMobile>
           <p>{t("mp.rules.section.prizeIntro")}</p>
+          <p>{t("legal.contest.prizesCycle")}</p>
           <p>
-            <strong className="font-semibold text-zinc-100">{launch.opens}</strong>{" "}
-            <strong className="font-semibold text-zinc-100">{launch.firstCycle}</strong>
+            <strong className="font-semibold text-zinc-100">
+              {t("legal.contest.prizesAward")}
+            </strong>
           </p>
-          <p>{launch.prize}</p>
           <p>{t("mp.rules.section.prizeDisclaimer")}</p>
         </RulesCard>
 

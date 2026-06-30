@@ -19,10 +19,10 @@ export const zhHantMessages: Messages = {
   "nav.account": "帳戶",
   "nav.backToPulse": "脈搏",
   "nav.board": "排行",
-  "announcement.opens": "Market Pulse 將於 2026年7月1日 開放。",
-  "announcement.firstCycle": "第一期挑戰：2026年7月1日至7月10日。",
+  "announcement.opens": "Market Pulse 已上線。",
+  "announcement.firstCycle": "每期挑戰為十個曆日（香港時間）。",
   "announcement.prize": "每期冠軍將獲得一張海洋公園門票。",
-  "announcement.comingSoon": "即將推出",
+  "announcement.comingSoon": "Market Pulse",
   "signal.bullish": "看升",
   "signal.cautious": "謹慎",
   "lang.switcherLabel": "語言",
@@ -60,7 +60,7 @@ export const zhHantMessages: Messages = {
   "footer.social.twitter": "Twitter",
   "footer.social.instagram": "Instagram",
 
-  "home.hero.badgePreLaunch": "2026年7月1日開放",
+  "home.hero.badgePreLaunch": "尚未開放",
   "home.hero.badgeLive": "挑戰進行中",
   "home.hero.headline": "你能否比市場更早讀懂走勢？",
   "home.hero.subheadline":
@@ -165,7 +165,7 @@ export const zhHantMessages: Messages = {
   "home.countdown.ariaLabel":
     "Market Pulse 本期尚餘 {days} 日 {hours} 小時 {minutes} 分 {seconds} 秒",
   "home.countdown.ariaOpensIn":
-    "Market Pulse 將於 {days} 日 {hours} 小時 {minutes} 分 {seconds} 秒後開放",
+    "距離 Market Pulse 開始遊玩尚餘 {days} 日 {hours} 小時 {minutes} 分 {seconds} 秒",
   "home.countdown.ariaCycleEndsIn":
     "Market Pulse 本期尚餘 {days} 日 {hours} 小時 {minutes} 分 {seconds} 秒",
 
@@ -345,6 +345,9 @@ export const zhHantMessages: Messages = {
   "legal.contest.howBodySuffix":
     "即可參加或遊玩。建立帳戶並於有效挑戰週期內提交決策，即構成該期排行榜的參賽，並受本規則及任何週期特定公告約束。",
   "legal.contest.prizesHeading": "獎賞",
+  "legal.contest.prizesCycle":
+    "挑戰週期按固定十天曆日（香港時間）重複進行。進行中的日期於 Market Pulse 內顯示。",
+  "legal.contest.prizesAward": "每期冠軍獲得一張海洋公園門票。",
   "legal.contest.prizesVerificationPrefix": "所有獎賞須經核實",
   "legal.contest.prizesVerificationSuffix":
     "，並視供應情況而定；在法律允許下可替換為同等或更高價值的獎品。",

@@ -61,6 +61,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import {
+  getActiveMarketPulseCycle,
   getMarketPulseLeaderboard,
   submitMarketPulseDecision,
 } from "@/lib/market-pulse/server";
@@ -140,7 +141,7 @@ describe("submitMarketPulseDecision", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error).toContain("Market Pulse opens on July 1, 2026");
+      expect(result.error).toContain("not open for play yet");
     }
     expect(prismaMocks.decisionCreate).not.toHaveBeenCalled();
   });
@@ -401,6 +402,138 @@ describe("submitMarketPulseDecision", () => {
       expect(result.error).toContain("window for this card has closed");
     }
     expect(prismaMocks.decisionCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe("getActiveMarketPulseCycle", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("skips pinned cycle when revealAt has passed and falls back to query", async () => {
+    const julyCycleStart = new Date("2026-06-30T16:00:00.000Z");
+    const julyCycleEnd = new Date("2026-07-10T16:00:00.000Z");
+    const julyReveal = new Date("2026-07-10T16:00:00.000Z");
+    vi.setSystemTime(new Date("2026-07-10T16:00:00.001Z"));
+
+    prismaMocks.gameSettingFindFirst.mockResolvedValue({
+      id: TEST_SETTINGS_ID,
+      runtimeStatus: "OPEN",
+      activeCycleId: TEST_CYCLE_ID,
+      activeCycle: null,
+    });
+    prismaMocks.cycleFindUnique.mockResolvedValue({
+      id: TEST_CYCLE_ID,
+      name: "Expired July Cycle",
+      status: "OPEN",
+      startsAt: julyCycleStart,
+      endsAt: julyCycleEnd,
+      revealAt: julyReveal,
+      cards: [],
+    });
+    prismaMocks.cycleFindFirst.mockResolvedValue(null);
+
+    const cycle = await getActiveMarketPulseCycle();
+
+    expect(cycle).toBeNull();
+    expect(prismaMocks.cycleFindUnique).toHaveBeenCalled();
+    expect(prismaMocks.cycleFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          revealAt: { gte: new Date("2026-07-10T16:00:00.001Z") },
+        }),
+      }),
+    );
+  });
+
+  it("returns pinned cycle while revealAt is still in the future", async () => {
+    const julyCycleStart = new Date("2026-06-30T16:00:00.000Z");
+    const julyCycleEnd = new Date("2026-07-10T16:00:00.000Z");
+    const julyReveal = new Date("2026-07-10T16:00:00.000Z");
+    vi.setSystemTime(new Date("2026-07-10T15:59:59.999Z"));
+
+    const pinned = {
+      id: TEST_CYCLE_ID,
+      name: "July Cycle",
+      status: "OPEN",
+      startsAt: julyCycleStart,
+      endsAt: julyCycleEnd,
+      revealAt: julyReveal,
+      cards: [],
+    };
+
+    prismaMocks.gameSettingFindFirst.mockResolvedValue({
+      id: TEST_SETTINGS_ID,
+      runtimeStatus: "OPEN",
+      activeCycleId: TEST_CYCLE_ID,
+      activeCycle: null,
+    });
+    prismaMocks.cycleFindUnique.mockResolvedValue(pinned);
+
+    const cycle = await getActiveMarketPulseCycle();
+
+    expect(cycle).toEqual(pinned);
+    expect(prismaMocks.cycleFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("hides demo pinned cycles in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.setSystemTime(CYCLE_START);
+
+    prismaMocks.gameSettingFindFirst.mockResolvedValue({
+      id: TEST_SETTINGS_ID,
+      runtimeStatus: "OPEN",
+      activeCycleId: TEST_CYCLE_ID,
+      activeCycle: null,
+    });
+    prismaMocks.cycleFindUnique.mockResolvedValue({
+      id: TEST_CYCLE_ID,
+      name: "[DEMO] Market Pulse Local Seed",
+      status: "OPEN",
+      startsAt: CYCLE_START,
+      endsAt: CYCLE_END,
+      revealAt: CYCLE_REVEAL_FUTURE,
+      cards: [],
+    });
+
+    const cycle = await getActiveMarketPulseCycle();
+
+    expect(cycle).toBeNull();
+    expect(prismaMocks.cycleFindFirst).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+
+  it("returns demo pinned cycles in development", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.setSystemTime(CYCLE_START);
+
+    const pinned = {
+      id: TEST_CYCLE_ID,
+      name: "[DEMO] Market Pulse Local Seed",
+      status: "OPEN",
+      startsAt: CYCLE_START,
+      endsAt: CYCLE_END,
+      revealAt: CYCLE_REVEAL_FUTURE,
+      cards: [],
+    };
+
+    prismaMocks.gameSettingFindFirst.mockResolvedValue({
+      id: TEST_SETTINGS_ID,
+      runtimeStatus: "OPEN",
+      activeCycleId: TEST_CYCLE_ID,
+      activeCycle: null,
+    });
+    prismaMocks.cycleFindUnique.mockResolvedValue(pinned);
+
+    const cycle = await getActiveMarketPulseCycle();
+
+    expect(cycle).toEqual(pinned);
+    vi.unstubAllEnvs();
   });
 });
 

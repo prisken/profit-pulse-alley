@@ -28,13 +28,14 @@ export const MARKET_PULSE_FIRST_CYCLE_END_AT = new Date(
 
 export const MARKET_PULSE_LAUNCH_MESSAGES = {
   en: {
-    opens: "Market Pulse opens on July 1, 2026.",
-    firstCycle: "First cycle: July 1–10, 2026.",
+    opens: "Market Pulse is live.",
+    firstCycle:
+      "Each challenge cycle runs for ten calendar days (Hong Kong time).",
     prize: "One Ocean Park ticket will be awarded to the winner of each cycle.",
   },
   "zh-HK": {
-    opens: "Market Pulse 將於 2026年7月1日 開放。",
-    firstCycle: "第一期挑戰：2026年7月1日至7月10日。",
+    opens: "Market Pulse 已上線。",
+    firstCycle: "每期挑戰為十個曆日（香港時間）。",
     prize: "每期冠軍將獲得一張海洋公園門票。",
   },
 } as const;
@@ -64,7 +65,8 @@ export const MARKET_PULSE_FIRST_CYCLE_MESSAGE =
 export const MARKET_PULSE_PRIZE_MESSAGE = MARKET_PULSE_LAUNCH_MESSAGES.en.prize;
 
 /** Friendly error returned when a non-admin submits before public launch. */
-export const MARKET_PULSE_PUBLIC_LAUNCH_SUBMIT_ERROR = `${MARKET_PULSE_LAUNCH_MESSAGES.en.opens} Check back then to lock your read.`;
+export const MARKET_PULSE_PUBLIC_LAUNCH_SUBMIT_ERROR =
+  "Market Pulse is not open for play yet. Check back when the current cycle is live.";
 
 export type MarketPulseAccessRole = "USER" | "ADMIN";
 
@@ -92,5 +94,10 @@ export function canSubmitMarketPulseDecision(
 
 /** Whether pre-launch marketing (countdown, announcement banner) should show. */
 export function shouldShowMarketPulsePreLaunchUi(at: Date = new Date()): boolean {
+  return isBeforePublicLaunch(at);
+}
+
+/** Whether inaugural launch setup guidance should appear in admin UI. */
+export function shouldShowMarketPulseLaunchSetupUi(at: Date = new Date()): boolean {
   return isBeforePublicLaunch(at);
 }
