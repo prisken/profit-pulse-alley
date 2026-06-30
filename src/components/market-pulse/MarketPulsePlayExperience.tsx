@@ -461,8 +461,60 @@ function PlayChromeHeader({
   const { t } = useTranslations();
 
   return (
-    <header className="shrink-0 border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur-sm">
-      <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+    <header className="shrink-0 overflow-x-clip border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur-sm">
+      {/* Mobile: compact centered logo + top-right controls (matches play page target layout) */}
+      <div className="relative mx-auto w-full max-w-6xl overflow-hidden px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
+        <Link
+          href="/market-pulse"
+          className={mergeMpClasses(
+            "absolute left-0 top-[max(0.75rem,env(safe-area-inset-top))] z-10 inline-flex min-h-10 min-w-10 items-center justify-center text-zinc-400 transition-colors hover:text-white",
+            focusRing,
+          )}
+          aria-label={t("nav.backToPulse")}
+        >
+          <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden="true" />
+        </Link>
+
+        <div className="mx-auto flex w-full max-w-[220px] items-center justify-center px-10">
+          <Link
+            href="/market-pulse"
+            className={mergeMpClasses("block w-full", focusRing)}
+            aria-label={t("nav.marketPulse")}
+          >
+            <MarketPulseLogo variant="play" />
+          </Link>
+        </div>
+
+        <div className="absolute right-0 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex shrink-0 items-center gap-1.5">
+          <LanguageSwitcher variant="dark" className="shrink-0" />
+          <Link
+            href="/market-pulse/leaderboard"
+            className={mergeMpClasses(
+              "inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white",
+              focusRing,
+            )}
+            aria-label={t("nav.board")}
+          >
+            <Trophy className="h-4 w-4 shrink-0 text-amber-400" aria-hidden="true" />
+          </Link>
+        </div>
+
+        {showCycleChrome ? (
+          <div className="mt-2 flex flex-col items-center gap-1 px-10">
+            <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-200">
+              {t("mp.play.chrome.day")
+                .replace("{current}", String(dayCurrent))
+                .replace("{total}", String(dayTotal))}
+            </span>
+            <p className="max-w-[16rem] line-clamp-2 text-balance text-center text-[11px] font-medium leading-snug text-zinc-400">
+              {challengeName}
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Tablet/desktop: three-column chrome header */}
+      <div className="mx-auto hidden max-w-6xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:grid md:px-6">
         <Link
           href="/market-pulse"
           className={mergeMpClasses(
@@ -474,17 +526,20 @@ function PlayChromeHeader({
           <span className="hidden sm:inline">{t("nav.backToPulse")}</span>
         </Link>
 
-        <div className="flex min-w-0 flex-col items-center justify-center gap-1">
-          <div className="flex items-center justify-center gap-2">
+        <div className="flex min-w-0 max-w-[360px] flex-col items-center justify-center gap-1 justify-self-center">
+          <div className="flex w-full items-center justify-center gap-2">
             <Link
               href="/market-pulse"
-              className={mergeMpClasses("inline-flex shrink-0 items-center", focusRing)}
+              className={mergeMpClasses(
+                "inline-flex w-full max-w-[280px] shrink-0 items-center justify-center",
+                focusRing,
+              )}
               aria-label={t("nav.marketPulse")}
             >
-              <MarketPulseLogo variant="header" />
+              <MarketPulseLogo variant="header" className="w-full" />
             </Link>
             {showCycleChrome ? (
-              <span className="shrink-0 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-200 sm:text-xs">
+              <span className="shrink-0 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-200">
                 {t("mp.play.chrome.day")
                   .replace("{current}", String(dayCurrent))
                   .replace("{total}", String(dayTotal))}
@@ -492,7 +547,7 @@ function PlayChromeHeader({
             ) : null}
           </div>
           {showCycleChrome ? (
-            <p className="max-w-[14rem] line-clamp-2 text-balance text-center text-[11px] font-medium leading-snug text-zinc-400 sm:max-w-xs sm:text-xs">
+            <p className="max-w-xs line-clamp-2 text-balance text-center text-xs font-medium leading-snug text-zinc-400">
               {challengeName}
             </p>
           ) : null}
@@ -503,12 +558,12 @@ function PlayChromeHeader({
           <Link
             href="/market-pulse/leaderboard"
             className={mergeMpClasses(
-              "inline-flex min-h-10 min-w-10 items-center justify-center gap-1 rounded-lg text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white sm:px-2",
+              "inline-flex min-h-10 items-center justify-center gap-1 rounded-lg px-2 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white",
               focusRing,
             )}
           >
             <Trophy className="h-4 w-4 shrink-0 text-amber-400" aria-hidden="true" />
-            <span className="hidden sm:inline">{t("nav.board")}</span>
+            <span>{t("nav.board")}</span>
           </Link>
         </div>
       </div>
