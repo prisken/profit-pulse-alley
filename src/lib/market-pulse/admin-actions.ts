@@ -573,7 +573,14 @@ export async function updateMarketPulseCycleAction(
     });
   }
 
+  const builderPath = marketPulseCycleBuilderPath(input.cycleId);
   sideEffects.push(revalidateAdminEffect());
+  sideEffects.push({
+    label: "builder cache refresh",
+    run: () => {
+      revalidatePath(builderPath);
+    },
+  });
 
   let extraWarning: string | undefined;
   if (input.setActive) {

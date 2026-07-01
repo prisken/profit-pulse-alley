@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { validateMarketPulseCycleForm } from "@/lib/market-pulse/cycle-validation";
+import {
+  parseCycleDate,
+  toDatetimeLocalValue,
+  validateMarketPulseCycleForm,
+} from "@/lib/market-pulse/cycle-validation";
+import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config";
 
 describe("validateMarketPulseCycleForm", () => {
   it("requires name", () => {
@@ -45,5 +50,12 @@ describe("validateMarketPulseCycleForm", () => {
     });
     expect(result.valid).toBe(true);
     expect(result.errors).toEqual({});
+  });
+
+  it("parses and formats cycle datetimes as HKT wall clock", () => {
+    const iso = MARKET_PULSE_PUBLIC_LAUNCH_AT.toISOString();
+    const local = toDatetimeLocalValue(iso);
+    expect(local).toBe("2026-07-01T00:00");
+    expect(parseCycleDate(local)?.toISOString()).toBe(iso);
   });
 });

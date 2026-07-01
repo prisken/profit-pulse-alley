@@ -7,6 +7,7 @@ import {
   evaluateFirstPublicCycleSetup,
   getFirstPublicCycleFormPrefill,
 } from "@/lib/market-pulse/first-cycle-admin-guidance";
+import { parseCycleDate } from "@/lib/market-pulse/cycle-validation";
 import {
   MARKET_PULSE_FIRST_CYCLE_END_AT,
   MARKET_PULSE_PUBLIC_LAUNCH_AT,
@@ -86,14 +87,14 @@ describe("getFirstPublicCycleFormPrefill", () => {
     expect(prefill.status).toBe("OPEN");
     expect(prefill.setActive).toBe(true);
     expect(prefill.prizeLabel).toContain("Ocean Park");
-    expect(new Date(prefill.startsAt).toISOString()).toBe(
+    expect(parseCycleDate(prefill.startsAt)?.toISOString()).toBe(
       MARKET_PULSE_PUBLIC_LAUNCH_AT.toISOString(),
     );
-    expect(new Date(prefill.endsAt).toISOString()).toBe(
+    expect(parseCycleDate(prefill.endsAt)?.toISOString()).toBe(
       MARKET_PULSE_FIRST_CYCLE_END_AT.toISOString(),
     );
-    expect(new Date(prefill.revealAt).getTime()).toBeGreaterThanOrEqual(
-      new Date(prefill.endsAt).getTime(),
+    expect(parseCycleDate(prefill.revealAt)?.getTime()).toBeGreaterThanOrEqual(
+      parseCycleDate(prefill.endsAt)!.getTime(),
     );
   });
 });

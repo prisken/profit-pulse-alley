@@ -51,3 +51,60 @@ export function hktReleaseAtUtcFromCalendarDayIndex(hktDayIndex: number): Date {
       MARKET_PULSE_CARD_RELEASE_HKT_HOUR * MS_PER_HOUR,
   );
 }
+
+const HKT_DATETIME_LOCAL_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/;
+
+/**
+ * Parse an HTML datetime-local value as HKT wall-clock time → UTC instant.
+ * Independent of server or browser local timezone.
+ */
+export function parseHktDatetimeLocal(value: string): Date | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const match = trimmed.match(HKT_DATETIME_LOCAL_PATTERN);
+  if (!match) {
+    const legacy = new Date(trimmed);
+    return Number.isNaN(legacy.getTime()) ? null : legacy;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = match[6] ? Number(match[6]) : 0;
+
+  if (
+    !Number.isFinite(year) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31 ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59
+  ) {
+    return null;
+  }
+
+  const hktWallClockUtcMs = Date.UTC(year, month - 1, day, hour, minute, second, 0);
+  return new Date(hktWallClockUtcMs - HKT_UTC_OFFSET_MS);
+}
+
+/** Format a UTC instant for an HTML datetime-local input (HKT wall-clock). */
+export function toHktDatetimeLocalValue(iso: string): string {
+  const utcMs = new Date(iso).getTime();
+  if (Number.isNaN(utcMs)) {
+    return "";
+  }
+
+  const hktMs = utcMs + HKT_UTC_OFFSET_MS;
+  const hkt = new Date(hktMs);
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${hkt.getUTCFullYear()}-${pad(hkt.getUTCMonth() + 1)}-${pad(hkt.getUTCDate())}T${pad(hkt.getUTCHours())}:${pad(hkt.getUTCMinutes())}`;
+}

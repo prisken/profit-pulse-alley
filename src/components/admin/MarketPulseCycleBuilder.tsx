@@ -284,7 +284,7 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
   }
 
   function refresh() {
-    router.refresh();
+    return router.refresh();
   }
 
   function runAction(action: () => Promise<AdminActionResult>) {
@@ -525,6 +525,7 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
         {saveCycleOpen ? (
           <div className="mt-4 border-t border-zinc-800 pt-4">
             <MarketPulseCycleForm
+              key={`${cycle.id}-${cycle.startsAt}-${cycle.endsAt}-${cycle.revealAt}`}
               mode="edit"
               cycleId={cycle.id}
               isActive={cycle.isActive}
@@ -539,8 +540,8 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
                 setActive: cycle.isActive,
               }}
               onCancel={() => setSaveCycleOpen(false)}
-              onSuccess={() => {
-                refresh();
+              onSuccess={async () => {
+                await refresh();
                 setSaveCycleOpen(false);
               }}
               onSubmit={(values) =>

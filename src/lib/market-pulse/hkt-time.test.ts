@@ -10,8 +10,11 @@ import {
   MARKET_PULSE_CARD_RELEASE_UTC_HOUR,
   MS_PER_DAY,
   MS_PER_HOUR,
+  parseHktDatetimeLocal,
   startOfHktCalendarDay,
+  toHktDatetimeLocalValue,
 } from "@/lib/market-pulse/hkt-time";
+import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config";
 
 /** 1 Jul 2026 00:00 HKT = 2026-06-30T16:00:00.000Z */
 const JUL_1_MIDNIGHT_HKT_UTC = new Date("2026-06-30T16:00:00.000Z");
@@ -92,6 +95,36 @@ describe("HKT day index consistency", () => {
     expect(instant.getTime() - midnight.getTime()).toBeLessThan(MS_PER_DAY);
     expect(hktReleaseAtUtcFromCalendarDayIndex(dayIndex).toISOString()).toBe(
       "2026-07-10T01:00:00.000Z",
+    );
+  });
+});
+
+describe("HKT datetime-local admin helpers", () => {
+  it("round-trips July 1 2026 00:00 HKT regardless of process TZ", () => {
+    const originalTz = process.env.TZ;
+    const iso = MARKET_PULSE_PUBLIC_LAUNCH_AT.toISOString();
+
+    try {
+      process.env.TZ = "UTC";
+      const local = toHktDatetimeLocalValue(iso);
+      expect(local).toBe("2026-07-01T00:00");
+      expect(parseHktDatetimeLocal(local)?.toISOString()).toBe(iso);
+
+      process.env.TZ = "America/Los_Angeles";
+      expect(toHktDatetimeLocalValue(iso)).toBe("2026-07-01T00:00");
+      expect(parseHktDatetimeLocal("2026-07-01T00:00")?.toISOString()).toBe(iso);
+    } finally {
+      if (originalTz === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = originalTz;
+      }
+    }
+  });
+
+  it("parses admin datetime-local strings as HKT wall clock", () => {
+    expect(parseHktDatetimeLocal("2026-07-01T16:00")?.toISOString()).toBe(
+      "2026-07-01T08:00:00.000Z",
     );
   });
 });

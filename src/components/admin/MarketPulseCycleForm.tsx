@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MarketPulseCycleStatus } from "@prisma/client";
 
 import type { AdminActionResult } from "@/lib/market-pulse/admin-actions";
@@ -30,7 +30,7 @@ type MarketPulseCycleFormProps = {
   submitLabel?: string;
   onSubmit: (values: SubmitValues) => Promise<AdminActionResult>;
   onCancel?: () => void;
-  onSuccess?: () => void;
+  onSuccess?: () => void | Promise<void>;
 };
 
 function mergeInitialValues(
@@ -64,6 +64,23 @@ export default function MarketPulseCycleForm({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusWarning, setStatusWarning] = useState<string | null>(null);
   const [statusIsError, setStatusIsError] = useState(false);
+
+  useEffect(() => {
+    if (mode !== "edit" || !initialValues) {
+      return;
+    }
+    setValues(mergeInitialValues(initialValues));
+    setFieldErrors({});
+  }, [
+    mode,
+    initialValues?.name,
+    initialValues?.startsAt,
+    initialValues?.endsAt,
+    initialValues?.revealAt,
+    initialValues?.status,
+    initialValues?.prizeLabel,
+    initialValues?.setActive,
+  ]);
 
   function updateField<K extends keyof MarketPulseCycleFormValues>(
     key: K,
@@ -100,7 +117,7 @@ export default function MarketPulseCycleForm({
       const succeeded = await invokeAdminAction(
         () => onSubmit({ ...values, cycleId }),
         {
-          onSuccess: (successMessage, warning) => {
+          onSuccess: async (successMessage, warning) => {
             setStatusIsError(false);
             setStatusMessage(successMessage ?? "Cycle saved.");
             setStatusWarning(warning ?? null);
@@ -109,7 +126,7 @@ export default function MarketPulseCycleForm({
               setValues(mergeInitialValues());
             }
 
-            onSuccess?.();
+            await onSuccess?.();
           },
           onError: (error, serverFieldErrors) => {
             setStatusIsError(true);
@@ -151,7 +168,8 @@ export default function MarketPulseCycleForm({
           {mode === "create" ? "New cycle" : "Edit cycle"}
         </p>
         <p className="mt-1 text-sm text-foreground/65">
-          Start must be before end. Reveal must be on or after end.
+          Start must be before end. Reveal must be on or after end. All times are
+          Hong Kong (HKT, UTC+8).
         </p>
       </div>
 

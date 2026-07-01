@@ -977,6 +977,7 @@ function CyclePanel({
       {editing ? (
         <div className="mt-4 border-t border-zinc-800 pt-4">
           <MarketPulseCycleForm
+            key={`${cycle.id}-${cycle.startsAt}-${cycle.endsAt}-${cycle.revealAt}`}
             mode="edit"
             cycleId={cycle.id}
             isActive={cycle.isActive}
@@ -991,8 +992,8 @@ function CyclePanel({
               setActive: cycle.isActive,
             }}
             onCancel={() => setEditing(false)}
-            onSuccess={() => {
-              onRefresh();
+            onSuccess={async () => {
+              await onRefresh();
               setEditing(false);
             }}
             onSubmit={(values) =>

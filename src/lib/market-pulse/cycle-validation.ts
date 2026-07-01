@@ -1,5 +1,10 @@
 import type { MarketPulseCycleStatus } from "@prisma/client";
 
+import {
+  parseHktDatetimeLocal,
+  toHktDatetimeLocalValue,
+} from "@/lib/market-pulse/hkt-time";
+
 export const MARKET_PULSE_CYCLE_STATUS_OPTIONS: MarketPulseCycleStatus[] = [
   "DRAFT",
   "OPEN",
@@ -22,21 +27,14 @@ export type CycleFormFieldErrors = Partial<
   Record<"name" | "startsAt" | "endsAt" | "revealAt", string>
 >;
 
+/** Parse admin cycle datetime-local input as HKT wall-clock time. */
 export function parseCycleDate(value: string): Date | null {
-  if (!value.trim()) {
-    return null;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  return date;
+  return parseHktDatetimeLocal(value);
 }
 
+/** Format a stored UTC instant for admin cycle datetime-local inputs (HKT). */
 export function toDatetimeLocalValue(iso: string): string {
-  const date = new Date(iso);
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return toHktDatetimeLocalValue(iso);
 }
 
 export function validateMarketPulseCycleForm(values: {
