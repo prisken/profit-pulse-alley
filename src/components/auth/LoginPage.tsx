@@ -11,6 +11,7 @@ import { signUpWithPassword } from "@/lib/auth-actions";
 import MarketPulseAuthPanel from "@/components/auth/MarketPulseAuthPanel";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useTranslations } from "@/components/providers/LocaleProvider";
+import { isRemovedAccountLoginReason } from "@/lib/auth/invalid-session";
 import { isMarketPulseAuthCallback } from "@/lib/auth/market-pulse-auth-context";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 
@@ -52,23 +53,12 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const { status, data: session } = useSession();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  const accountRemoved = isRemovedAccountLoginReason(searchParams.get("reason"));
   const fromMarketPulse = isMarketPulseAuthCallback(callbackUrl);
 
-  useEffect(() => {
-    if (status !== "authenticated" || !session?.user?.needsOnboarding) {
-      return;
-    }
-
-    const onboardingTarget = callbackUrl.startsWith("/auth/onboarding")
-      ? callbackUrl
-      : callbackUrl === "/" || callbackUrl === "/login"
-        ? "/auth/onboarding"
-        : `/auth/onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-
-    router.replace(onboardingTarget);
-  }, [status, session, callbackUrl, router]);
-
-  const [activeTab, setActiveTab] = useState<AuthTab>("sign-in");
+  const [activeTab, setActiveTab] = useState<AuthTab>(
+    accountRemoved ? "create-account" : "sign-in",
+  );
 
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
@@ -88,6 +78,20 @@ function LoginForm() {
   const [emailSent, setEmailSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.user?.needsOnboarding) {
+      return;
+    }
+
+    const onboardingTarget = callbackUrl.startsWith("/auth/onboarding")
+      ? callbackUrl
+      : callbackUrl === "/" || callbackUrl === "/login"
+        ? "/auth/onboarding"
+        : `/auth/onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+
+    router.replace(onboardingTarget);
+  }, [status, session, callbackUrl, router]);
 
   const isBusy =
     isGoogleLoading ||
@@ -298,6 +302,15 @@ function LoginForm() {
       </div>
 
         <div className="mt-4">
+        {accountRemoved ? (
+          <div
+            className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-center text-sm text-amber-100 sm:mb-4 sm:px-4 sm:py-3"
+            role="status"
+          >
+            {t("auth.login.accountRemoved")}
+          </div>
+        ) : null}
+
         {success ? (
           <div
             className="mb-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-center text-sm text-emerald-300 sm:mb-4 sm:px-4 sm:py-3"

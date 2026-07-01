@@ -2,17 +2,22 @@ import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 
 import authConfig from "@/auth.config";
+import { buildInvalidSessionSignOutRedirect } from "@/lib/auth/invalid-session";
 
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
-  if (
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/auth/onboarding")
-  ) {
+  if (pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
+  if (req.auth?.user?.sessionInvalid) {
+    return NextResponse.redirect(new URL(buildInvalidSessionSignOutRedirect(), req.url));
+  }
+
+  if (pathname.startsWith("/login") || pathname.startsWith("/auth/onboarding")) {
     return NextResponse.next();
   }
 

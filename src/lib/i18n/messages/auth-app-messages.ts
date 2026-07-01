@@ -47,6 +47,8 @@ export const authAppEnMessages = {
   "auth.login.checkEmailBody": "We sent a sign-in link to {email}.",
   "auth.login.communityAgreement":
     "By signing in, you agree to join the Profit Pulse Ally community.",
+  "auth.login.accountRemoved":
+    "Your account is no longer active. Sign in again or create a new account below.",
 
   "auth.marketPulse.panelAria": "Market Pulse sign-in context",
   "auth.marketPulse.signIn.title": "Sign in to lock your call",
@@ -739,6 +741,8 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.login.checkEmailBody": "我們已將登入連結傳送至 {email}。",
   "auth.login.communityAgreement":
     "登入即表示你同意加入 Profit Pulse Ally 社群。",
+  "auth.login.accountRemoved":
+    "你的帳戶已失效。請重新登入或在下方建立新帳戶。",
 
   "auth.marketPulse.panelAria": "Market Pulse 登入說明",
   "auth.marketPulse.signIn.title": "登入以鎖定你的判斷",

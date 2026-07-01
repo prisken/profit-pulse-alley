@@ -1,5 +1,6 @@
 import OnboardingPageClient from "@/components/auth/OnboardingPage";
 import { auth } from "@/auth";
+import { buildInvalidSessionSignOutRedirect } from "@/lib/auth/invalid-session";
 import { getServerSiteLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
 import { resolveOnboardingCallbackUrl } from "@/lib/auth/onboarding-routes";
@@ -24,6 +25,10 @@ export default async function OnboardingRoute({
   const callbackUrl = resolveOnboardingCallbackUrl(params.callbackUrl);
   const session = await auth();
 
+  if (session?.user?.sessionInvalid) {
+    redirect(buildInvalidSessionSignOutRedirect());
+  }
+
   if (!session?.user?.id) {
     // After Google OAuth, some mobile browsers deliver the session cookie to the
     // client before the server render sees it. Let the client resolve auth
@@ -44,7 +49,11 @@ export default async function OnboardingRoute({
       select: { contactNumber: true, name: true },
     });
 
-    const alreadyOnboarded = Boolean(user?.contactNumber?.trim());
+    if (!user) {
+      redirect(buildInvalidSessionSignOutRedirect());
+    }
+
+    const alreadyOnboarded = Boolean(user.contactNumber?.trim());
 
     if (alreadyOnboarded) {
       if (!session.user.needsOnboarding) {
@@ -58,7 +67,7 @@ export default async function OnboardingRoute({
 
     return (
       <OnboardingPageClient
-        userName={user?.name ?? session.user.name ?? null}
+        userName={user.name ?? session.user.name ?? null}
         callbackUrl={callbackUrl}
         authState="ready"
         serverAlreadyOnboarded={false}

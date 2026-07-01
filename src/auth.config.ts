@@ -16,6 +16,7 @@ export default {
         session.user.id = token.id as string;
         session.user.role = token.role as "USER" | "ADMIN";
         session.user.needsOnboarding = Boolean(token.needsOnboarding);
+        session.user.sessionInvalid = Boolean(token.sessionInvalid);
       }
       return session;
     },

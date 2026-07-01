@@ -8,6 +8,7 @@ import Nodemailer from "next-auth/providers/nodemailer";
 import bcrypt from "bcrypt";
 
 import authConfig from "@/auth.config";
+import { resolveJwtUserState } from "@/lib/auth/invalid-session";
 import { prisma } from "@/lib/prisma";
 
 const providers: NextAuthConfig["providers"] = [
@@ -86,9 +87,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             where: { id: token.id as string },
             select: { contactNumber: true },
           });
-          token.needsOnboarding = !dbUser?.contactNumber?.trim();
+          const jwtUserState = resolveJwtUserState(dbUser);
+          token.sessionInvalid = jwtUserState.sessionInvalid;
+          token.needsOnboarding = jwtUserState.needsOnboarding;
         } catch (error) {
           console.error("[auth] jwt contact lookup failed:", error);
+          token.sessionInvalid = false;
           token.needsOnboarding = false;
         }
       }
@@ -104,6 +108,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.role = token.role as Role;
         session.user.needsOnboarding = Boolean(token.needsOnboarding);
+        session.user.sessionInvalid = Boolean(token.sessionInvalid);
       }
       return session;
     },
