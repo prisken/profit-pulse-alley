@@ -57,6 +57,9 @@ import type {
 
 const EXIT_DISTANCE = 720;
 
+/** Horizontal swipe-to-decide is off until it no longer fights vertical card scroll on mobile. */
+const CARD_SWIPE_DECISION_ENABLED = false;
+
 const focusRing = MP_FOCUS_RING;
 
 const springSnap = { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.85 };
@@ -713,7 +716,11 @@ export default function MarketPulseSwipeCard({
 
   const interactionsDisabled =
     disabled || phase === "submitting" || phase === "locked";
-  const swipeEnabled = !interactionsDisabled && !reduceMotion && phase === "idle";
+  const swipeEnabled =
+    CARD_SWIPE_DECISION_ENABLED &&
+    !interactionsDisabled &&
+    !reduceMotion &&
+    phase === "idle";
   const cardRegionLabel = disabled
     ? t("mp.card.aria.preview").replace("{company}", card.companyName)
     : t("mp.card.aria.playable").replace("{company}", card.companyName);
@@ -899,11 +906,11 @@ export default function MarketPulseSwipeCard({
     <div
       className={`mx-auto flex w-full min-h-0 max-w-md flex-col overflow-x-hidden ${className}`}
     >
-      {!interactionsDisabled && !reduceMotion ? (
+      {!interactionsDisabled && swipeEnabled ? (
         <SwipeHint reduceMotion={reduceMotion} />
       ) : null}
 
-      {reduceMotion && !interactionsDisabled ? (
+      {!interactionsDisabled && !swipeEnabled ? (
         <p className="mb-1.5 shrink-0 text-center text-[11px] text-zinc-500 sm:mb-2 sm:text-xs">
           {t("mp.card.reducedMotionHint")}
         </p>
@@ -940,49 +947,51 @@ export default function MarketPulseSwipeCard({
                 aria-labelledby={`card-headline-${card.id}`}
                 aria-label={cardRegionLabel}
               >
-                <motion.div
-                  style={
-                    swipeEnabled
-                      ? {
-                          x,
-                          rotate,
-                          scale,
-                          opacity: cardOpacity,
-                          touchAction: "pan-y",
-                        }
-                      : undefined
-                  }
-                  drag={swipeEnabled ? "x" : false}
-                  dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.72}
-                  dragMomentum={false}
-                  dragPropagation={false}
-                  onDragEnd={handleDragEnd}
-                  className={`relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${
-                    swipeEnabled ? "cursor-grab active:cursor-grabbing" : ""
-                  }`}
-                >
-                  {!reduceMotion ? (
-                    <>
-                      <SwipeStamp
-                        label={t("signal.bullish")}
-                        opacity={bullishStampOpacity}
-                        rotate={bullishStampRotate}
-                        tone="bullish"
-                      />
-                      <SwipeStamp
-                        label={t("signal.cautious")}
-                        opacity={cautiousStampOpacity}
-                        rotate={cautiousStampRotate}
-                        tone="cautious"
-                      />
-                    </>
-                  ) : null}
+                {swipeEnabled ? (
+                  <motion.div
+                    style={{
+                      x,
+                      rotate,
+                      scale,
+                      opacity: cardOpacity,
+                      touchAction: "pan-y",
+                    }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.72}
+                    dragMomentum={false}
+                    dragPropagation={false}
+                    onDragEnd={handleDragEnd}
+                    className="relative flex min-h-0 min-w-0 flex-1 cursor-grab flex-col overflow-hidden active:cursor-grabbing"
+                  >
+                    {!reduceMotion ? (
+                      <>
+                        <SwipeStamp
+                          label={t("signal.bullish")}
+                          opacity={bullishStampOpacity}
+                          rotate={bullishStampRotate}
+                          tone="bullish"
+                        />
+                        <SwipeStamp
+                          label={t("signal.cautious")}
+                          opacity={cautiousStampOpacity}
+                          rotate={cautiousStampRotate}
+                          tone="cautious"
+                        />
+                      </>
+                    ) : null}
 
-                  <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3.5 overflow-y-auto overflow-x-hidden overscroll-contain pr-0.5 [-webkit-overflow-scrolling:touch] sm:gap-4">
-                    <CardBody card={card} />
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3.5 overflow-y-auto overflow-x-hidden overscroll-contain pr-0.5 [-webkit-overflow-scrolling:touch] sm:gap-4">
+                      <CardBody card={card} />
+                    </div>
+                  </motion.div>
+                ) : (
+                  <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3.5 overflow-y-auto overflow-x-hidden overscroll-contain pr-0.5 [-webkit-overflow-scrolling:touch] sm:gap-4">
+                      <CardBody card={card} />
+                    </div>
                   </div>
-                </motion.div>
+                )}
 
                 {disabled && !showDecisionControls ? (
                   <div className="mt-3 shrink-0 border-t border-white/10 pt-3">
