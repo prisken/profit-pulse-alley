@@ -2,14 +2,16 @@ import "server-only";
 
 import type {
   MarketPulseCardStatus,
+  MarketPulseCardType,
   MarketPulseCycleStatus,
   MarketPulseGameRuntimeStatus,
   MarketPulseSignal,
 } from "@prisma/client";
 
 import {
-  computeAdminCycleParticipationStats,
   buildAdminCycleWinnerMap,
+  computeAdminCycleCardBreakdown,
+  computeAdminCycleParticipationStats,
 } from "@/lib/market-pulse/admin-cycle-stats";
 import { requireAdminSession } from "@/lib/market-pulse/admin-auth";
 import { mapMarketPulseAdminCardRow } from "@/lib/market-pulse/admin-card-row";
@@ -26,6 +28,7 @@ export type MarketPulseAdminCardRow = {
   cycleId: string;
   dayIndex: number;
   sortOrder: number;
+  cardType: MarketPulseCardType;
   companyName: string;
   companyNameZh: string | null;
   ticker: string;
@@ -71,6 +74,8 @@ export type MarketPulseAdminCycleRow = {
   isPlayableNow: boolean;
   playabilityIssue: string | null;
   cardCount: number;
+  signalCardCount: number;
+  restCardCount: number;
   decisionCount: number;
   usersPlayed: number;
   missingSignalCount: number;
@@ -114,8 +119,9 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
     include: {
       _count: { select: { cards: true, decisions: true } },
       cards: {
-        select: {
+      select: {
           id: true,
+          cardType: true,
           ppaSignal: true,
           ppaSignalLockedAt: true,
         },
@@ -166,11 +172,10 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
 
   const cycleRows: MarketPulseAdminCycleRow[] = cycles.map((cycle) => {
     const usersPlayed = new Set(cycle.decisions.map((d) => d.userId)).size;
-    const missingSignalCount = cycle.cards.filter((c) => !c.ppaSignal).length;
-    const unlockedCount = cycle.cards.filter((c) => !c.ppaSignalLockedAt).length;
+    const cardBreakdown = computeAdminCycleCardBreakdown(cycle.cards);
     const playabilityIssue = getCyclePlayabilityIssue(cycle, now);
     const participationStats = computeAdminCycleParticipationStats({
-      cardCount: cycle._count.cards,
+      cardCount: cardBreakdown.totalCards,
       participantCount: usersPlayed,
       decisionCount: cycle._count.decisions,
     });
@@ -192,11 +197,13 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
       playabilityIssue: playabilityIssue
         ? describeCyclePlayabilityIssue(playabilityIssue)
         : null,
-      cardCount: cycle._count.cards,
+      cardCount: cardBreakdown.totalCards,
+      signalCardCount: cardBreakdown.signalCards,
+      restCardCount: cardBreakdown.restCards,
       decisionCount: cycle._count.decisions,
       usersPlayed,
-      missingSignalCount,
-      unlockedCount,
+      missingSignalCount: cardBreakdown.missingPpaSignalCards,
+      unlockedCount: cardBreakdown.unlockedSignalCards,
       averageDecisionsPerParticipant:
         participationStats.averageDecisionsPerParticipant,
       completionRatePercent: participationStats.completionRatePercent,

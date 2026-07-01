@@ -14,7 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
-| **Recent `main`** | **Admin cycle datetime fix** — Starts/Ends/Reveal saved as HKT wall clock on client + server (`66b3855`); **Market Pulse card scheduling** (9:00 AM HKT release, multi-card per day, bilingual cards); **530** Vitest tests (82 files) |
+| **Recent `main`** | **Market rest cards** — `REST` card type + `ACKNOWLEDGED` decisions; +10 participation only; streak-neutral scoring (`computeSignalMatchStreak`); admin builder/filters; rules + i18n; **597** Vitest tests (86 files) |
 
 ---
 
@@ -22,7 +22,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 
 ### Site strategy (current)
 
-The public site centers on **Market Pulse** — a recurring multi-day investment challenge where members swipe **Bullish** or **Cautious** on daily market signal cards, earn participation points, and compete on leaderboards until **PPA Insight** is revealed at cycle end. Supporting pillars: **fireside events**, **membership**, and **expert-led philosophy** (PPA Take).
+The public site centers on **Market Pulse** — a recurring multi-day investment challenge where members swipe **Bullish** or **Cautious** on daily market signal cards (or **claim participation** on **Market rest cards**), earn participation points, and compete on leaderboards until **PPA Insight** is revealed at cycle end. Supporting pillars: **fireside events**, **membership**, and **expert-led philosophy** (PPA Take).
 
 **Homepage (Jun 2026 player journey revamp):** visual-first dark zinc layout with a **Market Pulse hero** (decorative signal preview, proof chips, launch-aware CTAs), **How it works**, **cycle loop / scoring explainer**, **PPA Insight teaser** (locked sample — no live PPA data), then events, philosophy, and final CTA. **Bilingual** copy via `ppa_locale` cookie. Blog is nav/footer only.
 
@@ -74,7 +74,7 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | **OAuth onboarding** | `/auth/onboarding` | Logged-in | Contact number; `/api/auth/complete-onboarding` JWT refresh; recovery UI |
 | **Member profile** | `/profile` | Members only | Profile + Market Pulse history; **i18n** |
 | **Market Pulse Hub** | `/market-pulse` | Public | **Game lobby** — status chip (`Open` / `No active cycle` / `Closed` / …), journey steps, prize, locked/revealed leaderboard preview, context-aware primary CTA; **i18n** |
-| **Market Pulse play** | `/market-pulse/play` | Login to submit | Upgraded signal card; Bullish/Cautious swipe/tap + **confirmation**; locked/submitted state; non-playable state panels; **i18n** |
+| **Market Pulse play** | `/market-pulse/play` | Login to submit | Signal cards: Bullish/Cautious swipe/tap + **confirmation**; **rest cards:** Claim participation (`ACKNOWLEDGED`); locked/submitted state; non-playable state panels; **i18n** |
 | **Market Pulse leaderboard** | `/market-pulse/leaderboard` | Public | Locked/revealed/archive state panels; per-cycle archive (`?cycleId=`); **My score** panel (logic unchanged); **i18n** |
 | **PPA Insight reveal** | `/market-pulse/reveal` | Login for personal results | Pending locked ceremony; revealed results + learning framing; PPA only post-reveal; **i18n** |
 | **Market Pulse rules** | `/market-pulse/rules` | Public | Challenge rules + scoring; **i18n** |
@@ -124,19 +124,20 @@ Google OAuth redirect URIs (must match exactly):
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
 
-### Verification — last run 1 Jul 2026 (530 tests)
+### Verification — last run 29 Jun 2026 (597 tests)
 
 | Check | Result |
 |-------|--------|
 | **Lint** | `npm run lint` — pass (0 errors; pre-existing warnings in legacy/admin) |
 | **Typecheck** | `npm run typecheck` — pass |
-| **Build** | `npm run build` — pass (`prisma db push && next build`; first deploy may need schema migration for `sortOrder` + `@@unique([cycleId, dayIndex, sortOrder])`) |
-| **Tests** | `npm test` — **530** Vitest tests (82 files) |
+| **Build** | `npm run build` — pass (`prisma db push && next build`) |
+| **Tests** | `npm test` — **597** Vitest tests (86 files) |
 | **Hub lobby chip** | `hub-lobby-state.test.ts` — `no_active_cycle` when runtime OPEN + no DB cycle; `closed` when runtime paused |
 | **Launch smoke** | `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts` |
 | **Card release (HKT)** | `hkt-time.test.ts`, `card-release-schedule.test.ts` — fixed UTC+8 math; Day 1 = `2026-07-01T01:00:00.000Z` when cycle starts `2026-06-30T16:00:00.000Z`; dual gate (derived release + `publishedAt`) |
 | **Admin cycle datetimes (HKT)** | `cycle-validation.test.ts`, `hkt-time.test.ts` — `parseHktDatetimeLocal` / `toHktDatetimeLocalValue` round-trip; TZ-independent on Vercel UTC |
 | **Multi-card play** | `play-data-multi-card.test.ts`, `playable-card.test.ts`, `score-calculation.test.ts` — same-day cards, streak order by `sortOrder` |
+| **Market rest cards** | `card-type.test.ts`, `play-rest-card.test.ts`, `player-handlers.test.ts`, `score-calculation.test.ts` — `ACKNOWLEDGED` on REST; +10 only; REST skipped in `computeSignalMatchStreak`; reveal/leaderboard participation-only rows |
 | **Card localization** | `card-localization.test.ts` — zh-Hant + EN fallback; PPA stripped pre-reveal |
 | **Reveal / leaderboard multi-card** | `leaderboard-score-breakdown.test.ts`, `reveal-ppa-validation.test.ts` — duplicate `dayIndex` OK; per-card breakdown labels |
 | **Public copy** | `public-market-pulse-copy.test.ts` — no stale pre-launch/dev terms in MP i18n |
@@ -153,7 +154,7 @@ Google OAuth redirect URIs (must match exactly):
 | **Launch gating** | Unchanged — `launch-config.ts`; non-admin blocked before 1 Jul 2026 |
 | **PPA pre-reveal** | Unchanged — `reveal-access.ts`, `player-handlers.ts` strip PPA before reveal |
 | **Unrevealed scores** | Unchanged — leaderboard page returns `entries: []` when locked; viewer score panel omits points pre-reveal |
-| **Scoring formulas** | Unchanged — +10 / +50 / +100 every 3 matches (`constants.ts`, `score-calculation.ts`) |
+| **Scoring formulas** | +10 participation per card; +50 match on SIGNAL cards when decision matches PPA; +100 streak every 3 consecutive correct **SIGNAL** matches — REST cards are streak-neutral (`score-calculation.ts`, `constants.ts`) |
 | **Player journey revamp** | Display-only UX; logic gates unchanged |
 | **`/fortify-survey`** | Unchanged — full-page route; no redirect |
 
@@ -527,6 +528,25 @@ Cycle create/edit forms (`MarketPulseCycleForm` on `/admin/market-pulse` and the
 
 **Multiple cards per day:** Players can play all published cards for today's cycle day (`findPlayableCardsForToday`). Order: `dayIndex → sortOrder → createdAt`. Submitting one card does not lock the rest. Scoring, reveal, and leaderboard breakdowns use the same sort order.
 
+#### Market rest cards (`REST`)
+
+Some cycle days publish a **Market rest card** instead of a signal card. Rest cards are **participation-only**, **PPA-free**, and **prediction-free**.
+
+| Concern | Behavior |
+|---------|----------|
+| **Schema** | `MarketPulseCard.cardType`: `SIGNAL` (default) \| `REST`; decisions use `MarketPulseSignal.ACKNOWLEDGED` |
+| **Player UI** | `MarketPulseRestCard.tsx` — “Claim participation”; no Bullish/Cautious; `MarketPulsePlayExperience` routes by card type |
+| **Validation** | `card-type.ts` — `validatePlayerDecisionForCard()` rejects `BULLISH`/`CAUTIOUS` on REST; rejects `ACKNOWLEDGED` on SIGNAL |
+| **Scoring** | `buildScoreEventsForUser()` — REST + `ACKNOWLEDGED`: +10 participation only; no match or streak bonus |
+| **Streak logic** | `isStreakNeutralScoreEntry()` skips REST; `computeSignalMatchStreak()` walks play order — REST does not increment, reset, or break the signal-match streak; +100 every 3 consecutive correct SIGNAL matches |
+| **Reveal / leaderboard** | REST rows in per-card breakdown: `isRestCard: true`, `ppaSignal: null`, participation points only |
+| **Admin** | Card type in builder/form; quick-create rest draft; cycle stats (signal/rest counts); type filters; `today-card-issue` and `ppa-urgent` alerts **ignore** REST cards |
+| **API** | `/api/market-pulse/today` includes `cardType`; `/decision` accepts `ACKNOWLEDGED` for REST only; PPA stripped from REST payloads |
+
+**Key modules:** `card-type.ts`, `score-calculation.ts`, `player-handlers.ts`, `leaderboard-score-breakdown.ts`, `reveal-data.ts`, `admin-mp-status.ts`, `admin-player-visibility-readiness.ts`.
+
+**Tests:** `card-type.test.ts`, `play-rest-card.test.ts`, `player-handlers.test.ts`, `score-calculation.test.ts` (REST-neutral streak scenarios), `leaderboard-score-breakdown.test.ts`.
+
 #### PPA privacy (admin vs public)
 
 | Surface | PPA visible? |
@@ -560,6 +580,7 @@ Key test files for the fast builder journey:
 | Scheduling / release | `admin-card-scheduling.test.ts`, `card-release-schedule.test.ts`, `hkt-time.test.ts` |
 | Cycle admin datetimes | `cycle-validation.test.ts`, `first-cycle-admin-guidance.test.ts` |
 | Multi-card play | `play-data-multi-card.test.ts`, `playable-card.test.ts` |
+| Market rest cards | `card-type.test.ts`, `play-rest-card.test.ts`, `player-handlers.test.ts`, `score-calculation.test.ts` |
 | Card localization | `card-localization.test.ts` |
 | Play order / reveal labels | `card-play-order.test.ts`, `leaderboard-score-breakdown.test.ts` |
 | Readiness | `admin-cycle-readiness.test.ts` |
@@ -567,7 +588,7 @@ Key test files for the fast builder journey:
 | PPA / public privacy | `server-security.test.ts`, `admin-card-preview.test.ts` |
 | Non-admin rejection | `admin-builder-data.test.ts`, `admin-duplicate-card.test.ts`, `admin-quick-create-cycle.test.ts` |
 
-**Last CI (1 Jul 2026):** lint pass (0 errors), typecheck pass, **530 tests** (82 files), build pass.
+**Last CI (29 Jun 2026):** lint pass (0 errors), typecheck pass, **597 tests** (86 files), build pass.
 
 ### Making Market Pulse visible to players (go-live)
 
@@ -781,7 +802,7 @@ npm run dev
 | `npm run build` | **`prisma db push && next build`** (Vercel uses this) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript (`tsc --noEmit`) |
-| `npm test` | Vitest unit tests (`vitest run`) — **530 tests** (82 files) |
+| `npm test` | Vitest unit tests (`vitest run`) — **597 tests** (86 files) |
 | `npm run db:migrate` | Prisma migrate dev (when using migration files) |
 | `npm run db:push` | Push schema without migration files |
 | `npm run db:seed` | Seed **demo Market Pulse** data (dev only — see [§4.1](#41-market-pulse-demo-seed)) |
@@ -856,7 +877,7 @@ There are **no committed migration files** (`prisma/migrations/`). Schema is syn
 - **Vercel build:** `prisma db push` runs automatically before `next build`
 - **Local dev:** `npm run db:push` or `npm run db:migrate` after schema changes
 
-**Revamp schema additions** (`MarketPulseCard`): `newsBody`, `logoInitials`, `cardImageUrl`, `cardImageAlt`, `userPrompt` — nullable; **`db push` required** on deploy if not already applied.
+**Revamp schema additions** (`MarketPulseCard`): `newsBody`, `logoInitials`, `cardImageUrl`, `cardImageAlt`, `userPrompt` — nullable; `cardType` (`SIGNAL` \| `REST`, default `SIGNAL`); `MarketPulseSignal.ACKNOWLEDGED` for rest-card decisions — **`db push` required** on deploy if not already applied.
 
 **First migration (when ready):**
 
@@ -872,8 +893,8 @@ Then change `package.json` build to `prisma migrate deploy && next build` and ba
 |-------|---------|
 | `User` | Members — `email`, `name`, `image`, `contactNumber?`, `password?`, `role` (`USER` \| `ADMIN`) |
 | `MarketPulseCycle` | Challenge window — `startsAt`, `endsAt`, `revealAt`, `status`, `prizeLabel` |
-| `MarketPulseCard` | Daily signal card — headline, ticker, `newsBody`, `cardImageUrl`/`cardImageAlt`, `logoInitials`, `userPrompt`, `ppaSignal` (admin-only until reveal), `status` |
-| `MarketPulseDecision` | User's Bullish/Cautious call per card (`@@unique([userId, cardId])`) |
+| `MarketPulseCard` | Daily card — `cardType` (`SIGNAL` \| `REST`), headline, ticker, `newsBody`, `cardImageUrl`/`cardImageAlt`, `logoInitials`, `userPrompt`, `ppaSignal` (SIGNAL only; admin-only until reveal), `status` |
+| `MarketPulseDecision` | User decision per card — `BULLISH` / `CAUTIOUS` on signal cards; `ACKNOWLEDGED` on rest cards (`@@unique([userId, cardId])`) |
 | `MarketPulseScoreEvent` | Per-card participation + match + streak points (computed on reveal) |
 | `MarketPulseScore` | Per-user per-cycle aggregate (`participationScore`, `decisionsSubmitted`, `totalCards`) — written on reveal |
 | `MarketPulsePrizeClaim` | Prize fulfillment workflow |
@@ -1150,10 +1171,10 @@ Dark zinc layout (`bg-zinc-950`). Composes seven sections in order — **no blog
 ### 10.4 Market Pulse play (`/market-pulse/play`)
 
 - **Server:** `getMarketPulsePlayPageData()` — today's published card, locked decision, sidebar leaderboard; `gateRuntimeClosedPageData()` maps playable states to `runtime_closed` when game runtime is not `OPEN`
-- **Client:** `MarketPulsePlayExperience` + `MarketPulseSwipeCard` — upgraded **signal card** (headline, news body, logo, price, 16:9 image, summary); drag/tap **Bullish** or **Cautious**
+- **Client:** `MarketPulsePlayExperience` + `MarketPulseSwipeCard` (signal) or `MarketPulseRestCard` (rest) — signal card shows headline, news body, logo, price, 16:9 image, summary; drag/tap **Bullish** or **Cautious**; rest card shows **Claim participation**
 - **Confirmation step:** Card phase `confirm` — user must confirm decision before submit (`decision_confirmation_opened` analytics)
 - **Locked/submitted:** `DecisionLockedCard` after successful submit or when revisiting a decided card; phase `locked`
-- **Submit:** `submitMarketPulseDecisionAction` → `MarketPulseDecision` row (scores persisted on admin reveal, not at submit time)
+- **Submit:** `submitMarketPulseDecisionAction` → `MarketPulseDecision` row (`BULLISH`/`CAUTIOUS` or `ACKNOWLEDGED` on rest cards; scores persisted on admin reveal, not at submit time)
 - **States:** `pre_launch`, `no_active_cycle`, `cycle_unavailable`, `runtime_closed`, `no_card_today`, `sign_in_required`, `playable`, `locked`
 - **Pre-launch:** non-admin → `pre_launch` status; ADMIN bypass via `launch-config.ts`
 - **Non-playable UI:** `PlayStatusCard` / status panels for each blocked state; decorative `PlayDecorativeSignalPreview` where card is hidden
@@ -1175,7 +1196,7 @@ Dark zinc layout (`bg-zinc-950`). Composes seven sections in order — **no blog
 - **Archive:** Revealed past cycles appear as **Archived result**; active unrevealed cycle appears as **Current cycle** (locked until reveal).
 - **Public standings:** Loaded only when the selected cycle is **revealed** (`viewState === ready`). Unrevealed cycles show `LeaderboardStatePanel` — **no scores in page props or client payload**.
 - **Top-3 polish:** Rank badges and visual hierarchy on revealed standings (display only).
-- **Scoring unchanged:** `getMarketPulseLeaderboard` + `calculateAndPersistCycleScores` on admin reveal; formulas in `score-calculation.ts` (+10 participation, +50 match, +100 streak every 3 matches).
+- **Scoring:** `getMarketPulseLeaderboard` + `calculateAndPersistCycleScores` on admin reveal; formulas in `score-calculation.ts` (+10 participation per card, +50 SIGNAL match, +100 every 3 consecutive correct SIGNAL matches; REST cards streak-neutral)
 
 #### My score for this cycle (logged-in only)
 
@@ -1204,7 +1225,7 @@ Dark zinc layout (`bg-zinc-950`). Composes seven sections in order — **no blog
 
 ### 10.6 Market Pulse rules & contest
 
-- **`/market-pulse/rules`** — challenge overview, scoring, fair play (`legal-copy.ts`)
+- **`/market-pulse/rules`** — challenge overview, signal + rest card scoring, fair play (`market-pulse-messages.ts`)
 - **`/contest-rules`** — prize eligibility and contest terms
 
 ### 10.7 Member profile (`/profile`)
@@ -1339,8 +1360,8 @@ Not shown on `/admin`. Component `AdminGameSettings.tsx` is retained but unmount
 
 | Route | Method | Auth | Behavior |
 |-------|--------|------|----------|
-| `/api/market-pulse/today` | GET | User | Today's card + decision state; **PPA stripped** pre-reveal |
-| `/api/market-pulse/decision` | POST | User | Submit Bullish/Cautious; **403 before public launch** unless `ADMIN` |
+| `/api/market-pulse/today` | GET | User | Today's card(s) + decision state; **PPA stripped** pre-reveal; REST cards omit PPA |
+| `/api/market-pulse/decision` | POST | User | Submit `BULLISH`/`CAUTIOUS` (signal) or `ACKNOWLEDGED` (rest); **403 before public launch** unless `ADMIN` |
 | `/api/market-pulse/leaderboard` | GET | Public | `?cycleId=` (page) or `?mode=current-cycle\|monthly\|all-time` (legacy API); empty array if DB unavailable |
 | `/api/market-pulse/reveal` | GET | User | Personal reveal payload; 404 until cycle revealed |
 
@@ -1500,8 +1521,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 7. **Demo seed dates** — `npm run db:seed` creates a cycle relative to seed time; production may retain expired `[DEMO]` cycles — update in admin or create new Jul 2026 cycle.
 8. **No migration files** — Production uses `prisma db push` in build; adopt `migrate deploy` when ready.
 9. **Legacy GameScore** — Profile may still show old arcade scores alongside swipe challenge history.
-10. **Admin MP UI** — Operational labels mostly English; enums (`OPEN`, `PUBLISHED`) intentionally untranslated.
-11. **Rules page gameplay copy** — `/market-pulse/rules` `whatIsBody` still describes the legacy arcade simulation; `scoringBody` and prize sections match current cycle leaderboard model.
+10. **Admin MP UI** — Operational labels mostly English; enums (`OPEN`, `PUBLISHED`, `SIGNAL`, `REST`) intentionally untranslated.
 
 ---
 
@@ -1530,12 +1550,12 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | Profile | `src/app/profile/page.tsx` |
 | Admin | `src/app/admin/page.tsx`, `src/app/admin/market-pulse/page.tsx`, `MarketPulseAdminDashboard.tsx` |
 | Market Pulse Hub | `src/app/market-pulse/page.tsx`, `MarketPulseHubPage.tsx`, `hub-lobby-state.ts`, `hub-data.ts` |
-| Market Pulse play | `src/app/market-pulse/play/page.tsx`, `MarketPulsePlayExperience.tsx`, `MarketPulseSwipeCard.tsx`, `DecisionLockedCard.tsx`, `play-page-state.ts`, `play-data.ts` |
+| Market Pulse play | `src/app/market-pulse/play/page.tsx`, `MarketPulsePlayExperience.tsx`, `MarketPulseSwipeCard.tsx`, `MarketPulseRestCard.tsx`, `DecisionLockedCard.tsx`, `play-page-state.ts`, `play-data.ts`, `card-type.ts` |
 | Leaderboard / reveal | `leaderboard/page.tsx`, `reveal/page.tsx`, `leaderboard-data.ts`, `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `LeaderboardStatePanel.tsx`, `MarketPulseLeaderboardMyScore.tsx`, `RevealStatePanel.tsx`, `reveal-data.ts` |
 | Homepage journey | `src/app/page.tsx`, `MarketPulseHero.tsx`, `MarketPulseHowItWorksSection.tsx`, `MarketPulseCycleLoopSection.tsx`, `MarketPulsePpaInsightSection.tsx`, `HomeHeroSignalPreview.tsx` |
 | MP visual / analytics | `MarketPulseVisualPrimitives.tsx`, `MarketPulseTrackedLink.tsx`, `analytics.ts` |
 | Admin cycle stats | `admin-cycle-stats.ts`, `admin-data.ts` (`MarketPulseAdminCycleRow` participation fields) |
-| Market Pulse domain | `server.ts`, `cycle-playability.ts`, `playable-card.ts`, `reveal-access.ts`, `admin-actions.ts`, `card-validation.ts` |
+| Market Pulse domain | `server.ts`, `cycle-playability.ts`, `playable-card.ts`, `reveal-access.ts`, `admin-actions.ts`, `card-validation.ts`, `score-calculation.ts`, `card-type.ts` |
 | Market Pulse APIs | `src/app/api/market-pulse/*`, `player-handlers.ts` |
 | Deploy checklist | `docs/market-pulse-deploy-checklist.md` |
 | Fortify (QR) | `FortifyYourFutureSurvey.tsx`, `fortify-your-future.ts`, `fortify-sales-marketing.ts` |
@@ -1552,10 +1572,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 - **Languages:** EN + Traditional Chinese (`ppa_locale` cookie); MP launch messages in `launch-config.ts`
 - **Data stores:** Postgres (users, Market Pulse, auth), KV (legacy theme), Markdown (blog)
-- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (530), `npm run build`
+- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (597), `npm run build`
 - **Production smoke:** [`docs/market-pulse-deploy-checklist.md`](docs/market-pulse-deploy-checklist.md) § Launch smoke test; automated suites listed in [Production smoke test](#production-smoke-test)
 - **Lint warnings:** Legacy castle-siege; TanStack Table in admin members table
 
 ---
 
-*Last updated: 1 Jul 2026 — Admin cycle Starts/Ends/Reveal saved as HKT wall clock (`66b3855`); 530 tests pass; scoring/launch/PPA privacy unchanged.*
+*Last updated: 29 Jun 2026 — Market rest cards (`REST` / `ACKNOWLEDGED`); streak-neutral scoring via `computeSignalMatchStreak`; 597 tests pass.*

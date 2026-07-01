@@ -12,18 +12,31 @@ import {
   isMarketPulseProductionDeploy,
 } from "@/lib/market-pulse/demo-cycle-guards";
 import {
-  findPlayableCardForToday,
+  isMarketPulseRestCard,
+  isMarketPulseSignalCard,
+} from "@/lib/market-pulse/card-type";
+import {
+  findCardsForCycleDisplayDay,
+  findPlayableCardsForToday,
   getCycleDisplayDay,
 } from "@/lib/market-pulse/playable-card";
-import {
-  isCardReleasedForPlay,
-} from "@/lib/market-pulse/card-release-schedule";
+import { isCardReleasedForPlay } from "@/lib/market-pulse/card-release-schedule";
+import type { MessageKey } from "@/lib/i18n/messages";
+
+export type TodayCardShellMessage = {
+  key: MessageKey;
+  params: Record<string, string | number>;
+};
 
 export type TodayCardStatus = {
   displayDay: number;
   companyName: string | null;
   status: string;
   tone: "ok" | "warn" | "neutral";
+  liveCount: number;
+  signalCount: number;
+  restCount: number;
+  shellMessage: TodayCardShellMessage;
 };
 
 export type MarketPulseStatusSnapshot = {
@@ -49,7 +62,46 @@ function toPlayableCard(card: MarketPulseAdminCardRow): MarketPulseCard {
     status: card.status,
     publishedAt: card.publishedAt ? new Date(card.publishedAt) : null,
     dayIndex: card.dayIndex,
+    sortOrder: card.sortOrder,
+    createdAt: new Date(card.createdAt),
   } as MarketPulseCard;
+}
+
+function buildTodayShellMessage(input: {
+  liveCount: number;
+  signalCount: number;
+  restCount: number;
+  signalName: string | null;
+}): TodayCardShellMessage {
+  if (input.restCount === 1 && input.signalCount === 0) {
+    return {
+      key: "auth.admin.mp.shell.todayRestCardLive",
+      params: {},
+    };
+  }
+
+  if (input.signalCount === 1 && input.restCount === 0) {
+    return {
+      key: "auth.admin.mp.shell.todaySignalCardLive",
+      params: { name: input.signalName?.trim() || "Signal card" },
+    };
+  }
+
+  if (input.signalCount > 0 && input.restCount > 0) {
+    return {
+      key: "auth.admin.mp.shell.todayMixedCardsLive",
+      params: {
+        count: input.liveCount,
+        signalCount: input.signalCount,
+        restCount: input.restCount,
+      },
+    };
+  }
+
+  return {
+    key: "auth.admin.mp.shell.todayCardsLive",
+    params: { count: input.liveCount },
+  };
 }
 
 export function getTodayCardStatus(
@@ -62,28 +114,47 @@ export function getTodayCardStatus(
   }
 
   const startsAt = new Date(activeCycle.startsAt);
+  const revealAt = new Date(activeCycle.revealAt);
   const displayDay = getCycleDisplayDay(startsAt, now);
-  const playable = findPlayableCardForToday(
+  const playable = findPlayableCardsForToday(
     {
       startsAt,
+      revealAt,
       cards: activeCycleCards.map(toPlayableCard),
     },
     now,
   );
 
-  if (playable) {
-    const source = activeCycleCards.find((card) => card.id === playable.id);
+  const playableIds = new Set(playable.map((card) => card.id));
+  const liveCards = activeCycleCards.filter((card) => playableIds.has(card.id));
+
+  if (liveCards.length > 0) {
+    const signalCards = liveCards.filter((card) => isMarketPulseSignalCard(card));
+    const restCards = liveCards.filter((card) => isMarketPulseRestCard(card));
+
     return {
       displayDay,
-      companyName: source?.companyName ?? null,
-      status: playable.status,
+      companyName: signalCards[0]?.companyName ?? null,
+      status: "PUBLISHED",
       tone: "ok",
+      liveCount: liveCards.length,
+      signalCount: signalCards.length,
+      restCount: restCards.length,
+      shellMessage: buildTodayShellMessage({
+        liveCount: liveCards.length,
+        signalCount: signalCards.length,
+        restCount: restCards.length,
+        signalName: signalCards[0]?.companyName ?? signalCards[0]?.headline ?? null,
+      }),
     };
   }
 
-  const cardForDay = activeCycleCards.find(
-    (card) => card.dayIndex === displayDay || card.dayIndex === displayDay - 1,
+  const cardsForDay = findCardsForCycleDisplayDay(
+    activeCycleCards.map(toPlayableCard),
+    startsAt,
+    now,
   );
+  const cardForDay = cardsForDay[0];
 
   if (!cardForDay) {
     return {
@@ -91,15 +162,31 @@ export function getTodayCardStatus(
       companyName: null,
       status: "missing",
       tone: "warn",
+      liveCount: 0,
+      signalCount: 0,
+      restCount: 0,
+      shellMessage: {
+        key: "auth.admin.mp.shell.todayCardMissing",
+        params: { day: displayDay },
+      },
     };
   }
+
+  const source = activeCycleCards.find((card) => card.id === cardForDay.id);
 
   if (cardForDay.status !== "PUBLISHED") {
     return {
       displayDay,
-      companyName: cardForDay.companyName,
+      companyName: source?.companyName ?? null,
       status: cardForDay.status,
       tone: "warn",
+      liveCount: 0,
+      signalCount: 0,
+      restCount: 0,
+      shellMessage: {
+        key: "auth.admin.mp.shell.todayCardIssue",
+        params: { day: displayDay, status: cardForDay.status },
+      },
     };
   }
 
@@ -107,9 +194,7 @@ export function getTodayCardStatus(
     !isCardReleasedForPlay(
       {
         status: cardForDay.status,
-        publishedAt: cardForDay.publishedAt
-          ? new Date(cardForDay.publishedAt)
-          : null,
+        publishedAt: cardForDay.publishedAt,
         dayIndex: cardForDay.dayIndex,
       },
       { startsAt },
@@ -118,17 +203,31 @@ export function getTodayCardStatus(
   ) {
     return {
       displayDay,
-      companyName: cardForDay.companyName,
+      companyName: source?.companyName ?? null,
       status: "scheduled",
       tone: "warn",
+      liveCount: 0,
+      signalCount: 0,
+      restCount: 0,
+      shellMessage: {
+        key: "auth.admin.mp.shell.todayCardIssue",
+        params: { day: displayDay, status: "scheduled" },
+      },
     };
   }
 
   return {
     displayDay,
-    companyName: cardForDay.companyName,
+    companyName: source?.companyName ?? null,
     status: cardForDay.status,
     tone: "neutral",
+    liveCount: 0,
+    signalCount: 0,
+    restCount: 0,
+    shellMessage: {
+      key: "auth.admin.mp.shell.todayCardIssue",
+      params: { day: displayDay, status: cardForDay.status },
+    },
   };
 }
 
@@ -208,11 +307,11 @@ export function buildMarketPulsePlayabilityAlerts(input: {
   }
 
   const today = getTodayCardStatus(cycle, input.activeCycleCards, now);
-  if (today && (today.status === "missing" || today.tone === "warn")) {
+  if (today && today.tone === "warn") {
     const detail =
       today.status === "missing"
-        ? `No card for day ${today.displayDay}.`
-        : `Today's card (day ${today.displayDay}) is ${today.status}.`;
+        ? `No playable card for day ${today.displayDay}.`
+        : `Today's playable card(s) for day ${today.displayDay} are not ready (${today.status}).`;
     alerts.push({
       id: "today-card-issue",
       severity: "warning",
@@ -248,7 +347,7 @@ export function buildMarketPulsePlayabilityAlerts(input: {
     alerts.push({
       id: "ppa-urgent",
       severity: "error",
-      message: `Reveal is scheduled for ${revealLabel}. ${ppaWarning.missingCards.length} card(s) are missing locked PPA insight (within ${PPA_REVEAL_WARNING_HOURS} hours).`,
+      message: `Reveal is scheduled for ${revealLabel}. ${ppaWarning.missingCards.length} signal card(s) are missing locked PPA insight (within ${PPA_REVEAL_WARNING_HOURS} hours).`,
     });
   }
 
@@ -262,8 +361,8 @@ export function buildMarketPulsePlayabilityAlerts(input: {
       severity: "warning",
       message:
         hoursLabel != null
-          ? `${ppaWarning.missingCards.length} card(s) need locked PPA insight before reveal (scheduled in about ${hoursLabel} hours).`
-          : `${ppaWarning.missingCards.length} card(s) need locked PPA insight before reveal.`,
+          ? `${ppaWarning.missingCards.length} signal card(s) need locked PPA insight before reveal (scheduled in about ${hoursLabel} hours).`
+          : `${ppaWarning.missingCards.length} signal card(s) need locked PPA insight before reveal.`,
     });
   }
 

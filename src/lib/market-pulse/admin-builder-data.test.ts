@@ -136,5 +136,64 @@ describe("getMarketPulseCycleBuilderData", () => {
     expect(data?.cycle.isActive).toBe(true);
     expect(data?.cards).toHaveLength(1);
     expect(data?.cards[0]?.headline).toBe("Headline");
+    expect(data?.cards[0]?.cardType).toBe("SIGNAL");
+  });
+
+  it("includes REST card type on builder card rows", async () => {
+    const startsAt = new Date("2026-06-01T00:00:00.000Z");
+    const endsAt = new Date("2026-06-07T00:00:00.000Z");
+    const revealAt = new Date("2026-06-08T00:00:00.000Z");
+
+    prismaMocks.cycleFindUnique.mockResolvedValue({
+      id: "cycle-1",
+      name: "June cycle",
+      status: "ACTIVE",
+      startsAt,
+      endsAt,
+      revealAt,
+      prizeLabel: "Prize",
+      cards: [],
+      decisions: [],
+      _count: { cards: 1, decisions: 0 },
+    });
+
+    prismaMocks.cardFindMany.mockResolvedValue([
+      {
+        id: "rest-1",
+        cycleId: "cycle-1",
+        dayIndex: 3,
+        companyName: "",
+        companyNameZh: null,
+        ticker: "",
+        exchange: null,
+        logoUrl: null,
+        logoInitials: null,
+        priceLabel: null,
+        priceDirection: null,
+        headline: "Market rest day",
+        newsBody: "Rest body",
+        sourceName: null,
+        sourceUrl: null,
+        sourceDate: null,
+        cardImageUrl: null,
+        cardImageAlt: null,
+        summary: null,
+        userPrompt: null,
+        status: "DRAFT",
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
+        publishedAt: null,
+        revealAt: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        ...MARKET_PULSE_CARD_TEST_DEFAULTS,
+        cardType: "REST",
+        _count: { decisions: 0 },
+      },
+    ]);
+
+    const data = await getMarketPulseCycleBuilderData("cycle-1");
+
+    expect(data?.cards[0]?.cardType).toBe("REST");
   });
 });

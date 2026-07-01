@@ -5,7 +5,10 @@ import type { MarketPulseLeaderboardType } from "@prisma/client";
 import type { SiteLocale } from "@/lib/i18n/locales";
 import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
 import type { MarketPulseRequestMeta } from "@/lib/market-pulse/request-meta";
-import { stripPpaFromCardPayload } from "@/lib/market-pulse/swipe-card";
+import {
+  sanitizeMarketPulseApiCardPayload,
+  sanitizeMarketPulseApiRevealCard,
+} from "@/lib/market-pulse/swipe-card";
 import {
   getMarketPulseLeaderboard,
   getMarketPulseRevealForUser,
@@ -65,17 +68,55 @@ export type GetMarketPulseLeaderboardActionResult =
   | MarketPulsePlayerError;
 
 export type GetMarketPulseTodayResult =
-  | { ok: true; data: TodayMarketPulseCardForUser }
+  | { ok: true; data: TodayMarketPulseTodayApiPayload }
   | MarketPulsePlayerError;
+
+export type TodayMarketPulseTodayApiPayload = {
+  cycle: TodayMarketPulseCardForUser["cycle"];
+  card: ReturnType<typeof sanitizeMarketPulseApiCardPayload>;
+  userDecision: TodayMarketPulseCardForUser["userDecision"];
+  cards: Array<{
+    card: ReturnType<typeof sanitizeMarketPulseApiCardPayload>;
+    userDecision: TodayMarketPulseCardForUser["userDecision"];
+  }>;
+};
 
 export type GetMarketPulseRevealResult =
   | { ok: true; data: MarketPulseRevealForUser }
   | MarketPulsePlayerError;
 
+function sanitizeTodayApiPayload(
+  data: TodayMarketPulseCardForUser,
+): TodayMarketPulseTodayApiPayload {
+  return {
+    cycle: data.cycle,
+    card: sanitizeMarketPulseApiCardPayload(data.card),
+    userDecision: data.userDecision,
+    cards: data.cards.map((slot) => ({
+      card: sanitizeMarketPulseApiCardPayload(slot.card),
+      userDecision: slot.userDecision,
+    })),
+  };
+}
+
+function sanitizeRevealApiPayload(
+  data: MarketPulseRevealForUser,
+): MarketPulseRevealForUser {
+  return {
+    ...data,
+    cards: data.cards.map((card) => sanitizeMarketPulseApiRevealCard(card)),
+  };
+}
+
 function mapSubmitError(error: string): MarketPulsePlayerError {
   const normalized = error.toLowerCase();
 
-  if (normalized.includes("decision must be bullish or cautious")) {
+  if (
+    normalized.includes("decision must be bullish or cautious") ||
+    normalized.includes("not valid for market rest cards") ||
+    normalized.includes("only valid for market rest cards") ||
+    normalized.includes("participation acknowledgement")
+  ) {
     return {
       ok: false,
       code: "INVALID_DECISION",
@@ -185,10 +226,7 @@ export async function handleGetMarketPulseToday(
 
   return {
     ok: true,
-    data: {
-      ...data,
-      card: stripPpaFromCardPayload(data.card),
-    },
+    data: sanitizeTodayApiPayload(data),
   };
 }
 
@@ -308,7 +346,7 @@ export async function handleGetMarketPulseReveal(
     };
   }
 
-  return { ok: true, data };
+  return { ok: true, data: sanitizeRevealApiPayload(data) };
 }
 
 export function marketPulseErrorStatus(

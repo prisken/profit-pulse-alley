@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import {
   CardStatusBadge,
+  CardTypeBadge,
   IndicatorBadge,
   PpaStatusBadge,
   getPpaStatusMessageKey,
@@ -35,6 +36,7 @@ import {
 } from "@/lib/market-pulse/admin-card-ppa-status";
 import { formatBuilderDayCardLabel, sortMarketPulseBuilderCards } from "@/lib/market-pulse/admin-card-scheduling";
 import { isCardPublished } from "@/lib/market-pulse/admin-card-filter";
+import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
 import type { MarketPulseCardFormValues } from "@/lib/market-pulse/card-validation";
 import { cardFormValuesToPreview } from "@/lib/market-pulse/card-validation";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
@@ -112,6 +114,7 @@ export default function MarketPulseBuilderCardEditor({
       : null;
 
   const ppaStatus = getAdminCardPpaStatus(card);
+  const isRestCard = isMarketPulseRestCard(card);
   const published = isCardPublished(card);
   const playerLive = isCardLiveForPlayers(card, cycleStartsAt);
   const busy = disabled || isPending;
@@ -147,6 +150,7 @@ export default function MarketPulseBuilderCardEditor({
   );
 
   const canLockPpa =
+    !isRestCard &&
     !card.ppaSignalLockedAt &&
     Boolean(formValues.ppaSignal) &&
     Boolean(formValues.ppaInsight.trim());
@@ -241,6 +245,7 @@ export default function MarketPulseBuilderCardEditor({
             {formatBuilderDayCardLabel(card.dayIndex, card.sortOrder)}
           </span>
           <CardStatusBadge status={card.status} />
+          {isRestCard ? <CardTypeBadge cardType={card.cardType} /> : null}
           <IndicatorBadge
             label={
               playerLive
@@ -252,7 +257,9 @@ export default function MarketPulseBuilderCardEditor({
           <PpaStatusBadge label={ppaStatusLabel} tone={ppaBadgeTone} />
         </div>
         <p className="line-clamp-2 text-sm font-medium text-zinc-100">{card.headline || "—"}</p>
-        <p className="font-mono text-xs text-emerald-400/90">{card.ticker}</p>
+        {!isRestCard ? (
+          <p className="font-mono text-xs text-emerald-400/90">{card.ticker}</p>
+        ) : null}
         {cycleName ? (
           <p className="text-xs text-zinc-500">{cycleName}</p>
         ) : null}

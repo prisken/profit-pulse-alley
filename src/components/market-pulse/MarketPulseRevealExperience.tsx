@@ -161,13 +161,22 @@ function RevealCardItem({
 }: Readonly<{ card: MarketPulseRevealCardRow; index: number }>) {
   const { t } = useTranslations();
   const reduceMotion = useReducedMotion() ?? false;
-  const userTone = getSignalTone(card.userDecision as MarketPulseDecision);
-  const ppaTone = getSignalTone(card.ppaSignal as MarketPulseDecision);
+  const isRestCard = card.isRestCard;
+  const userTone = isRestCard
+    ? null
+    : getSignalTone(card.userDecision as MarketPulseDecision);
+  const ppaTone = isRestCard || !card.ppaSignal
+    ? null
+    : getSignalTone(card.ppaSignal as MarketPulseDecision);
   const formatDecision = (decision: MarketPulseDecision) =>
     t(decision === "BULLISH" ? "signal.bullish" : "signal.cautious");
 
   const articleClassName = `overflow-hidden rounded-xl border bg-gradient-to-br from-zinc-900/90 to-zinc-950 shadow-xl shadow-black/25 sm:rounded-2xl ${
-    card.isMatch ? "border-emerald-500/25" : "border-zinc-800"
+    isRestCard
+      ? "border-sky-500/25"
+      : card.isMatch
+        ? "border-emerald-500/25"
+        : "border-zinc-800"
   }`;
 
   const articleBody = (
@@ -179,53 +188,77 @@ function RevealCardItem({
               <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-xs">
                 {formatRevealCardDayLabel(card, t)}
               </p>
-              <MarketPulseProofChip
-                label={
-                  card.isMatch
-                    ? t("mp.reveal.card.match")
-                    : t("mp.reveal.card.noMatch")
-                }
-                variant={card.isMatch ? "participation" : "lockedUntilReveal"}
-                icon={
-                  card.isMatch ? (
-                    <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
-                  ) : (
-                    <XCircle className="h-3 w-3" aria-hidden="true" />
-                  )
-                }
-              />
+              {isRestCard ? (
+                <MarketPulseProofChip
+                  label={t("mp.rest.badge")}
+                  variant="lockedUntilReveal"
+                />
+              ) : (
+                <MarketPulseProofChip
+                  label={
+                    card.isMatch
+                      ? t("mp.reveal.card.match")
+                      : t("mp.reveal.card.noMatch")
+                  }
+                  variant={card.isMatch ? "participation" : "lockedUntilReveal"}
+                  icon={
+                    card.isMatch ? (
+                      <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+                    ) : (
+                      <XCircle className="h-3 w-3" aria-hidden="true" />
+                    )
+                  }
+                />
+              )}
             </div>
             <h3 className="mt-1 line-clamp-2 break-words text-base font-semibold text-white sm:text-lg">
-              {card.companyName}
+              {isRestCard ? card.headline : card.companyName}
             </h3>
-            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-zinc-400 sm:mt-1 sm:text-sm">
-              {card.headline}
-            </p>
+            {!isRestCard ? (
+              <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-zinc-400 sm:mt-1 sm:text-sm">
+                {card.headline}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
 
       <div className="grid gap-3 p-3 sm:grid-cols-2 sm:gap-4 sm:p-5">
-        <div className="grid grid-cols-2 gap-2 sm:block sm:space-y-3">
-          <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2 sm:border-0 sm:bg-transparent sm:p-0">
+        {isRestCard ? (
+          <div className="rounded-lg border border-sky-500/15 bg-sky-500/5 px-2.5 py-2 sm:col-span-2 sm:px-4 sm:py-3">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
-              {t("mp.reveal.card.yourCall")}
+              {t("mp.reveal.card.restParticipation")}
             </p>
-            <p className={`mt-0.5 text-sm font-semibold sm:mt-1 ${userTone.textClass}`}>
-              {formatDecision(card.userDecision as MarketPulseDecision)}
+            <p className="mt-0.5 text-sm font-semibold text-sky-300 sm:mt-1">
+              {t("mp.play.completion.acknowledged")}
             </p>
           </div>
-          <div className="rounded-lg border border-sky-500/15 bg-sky-500/5 px-2.5 py-2 sm:border-0 sm:bg-transparent sm:p-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
-              {t("mp.reveal.card.ppaSignal")}
-            </p>
-            <p className={`mt-0.5 text-sm font-semibold sm:mt-1 ${ppaTone.textClass}`}>
-              {formatDecision(card.ppaSignal as MarketPulseDecision)}
-            </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 sm:block sm:space-y-3">
+            <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-2.5 py-2 sm:border-0 sm:bg-transparent sm:p-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
+                {t("mp.reveal.card.yourCall")}
+              </p>
+              <p className={`mt-0.5 text-sm font-semibold sm:mt-1 ${userTone!.textClass}`}>
+                {formatDecision(card.userDecision as MarketPulseDecision)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-sky-500/15 bg-sky-500/5 px-2.5 py-2 sm:border-0 sm:bg-transparent sm:p-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
+                {t("mp.reveal.card.ppaSignal")}
+              </p>
+              <p className={`mt-0.5 text-sm font-semibold sm:mt-1 ${ppaTone!.textClass}`}>
+                {formatDecision(card.ppaSignal as MarketPulseDecision)}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="rounded-lg border border-emerald-500/15 bg-zinc-950/60 p-2.5 sm:rounded-xl sm:p-4">
+        <div
+          className={`rounded-lg border bg-zinc-950/60 p-2.5 sm:rounded-xl sm:p-4 ${
+            isRestCard ? "border-sky-500/15 sm:col-span-2" : "border-emerald-500/15"
+          }`}
+        >
           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-[11px]">
             {t("mp.reveal.card.score")}
           </p>
@@ -237,22 +270,26 @@ function RevealCardItem({
               )}
               points={card.participationPoints}
             />
-            <ScoreLine
-              label={t("mp.reveal.card.matchBonus").replace(
-                "{points}",
-                String(MATCH_BONUS_POINTS),
-              )}
-              points={card.matchBonus}
-              highlight
-            />
-            <ScoreLine
-              label={t("mp.reveal.card.streakBonus").replace(
-                "{points}",
-                String(STREAK_BONUS_POINTS),
-              )}
-              points={card.streakBonus}
-              highlight
-            />
+            {!isRestCard ? (
+              <>
+                <ScoreLine
+                  label={t("mp.reveal.card.matchBonus").replace(
+                    "{points}",
+                    String(MATCH_BONUS_POINTS),
+                  )}
+                  points={card.matchBonus}
+                  highlight
+                />
+                <ScoreLine
+                  label={t("mp.reveal.card.streakBonus").replace(
+                    "{points}",
+                    String(STREAK_BONUS_POINTS),
+                  )}
+                  points={card.streakBonus}
+                  highlight
+                />
+              </>
+            ) : null}
           </ul>
           <p className="mt-2 border-t border-zinc-800 pt-2 text-sm font-bold tabular-nums text-emerald-300 sm:mt-3 sm:pt-3">
             {t("mp.reveal.card.points").replace("{points}", formatPoints(card.totalPoints))}
@@ -260,7 +297,7 @@ function RevealCardItem({
         </div>
       </div>
 
-      {card.ppaInsight ? (
+      {card.ppaInsight && !isRestCard ? (
         <details className="group border-t border-emerald-500/15 bg-emerald-500/5">
           <summary
             className={`cursor-pointer list-none px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400/80 marker:content-none sm:px-5 sm:py-3 sm:text-[11px] [&::-webkit-details-marker]:hidden ${focusRing}`}

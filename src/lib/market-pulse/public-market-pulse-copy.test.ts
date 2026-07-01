@@ -24,7 +24,37 @@ const BANNED_PUBLIC_COPY = [
   /將於.*開放/,
   /即將開放/,
   /即將推出/,
+  /fictional startup/i,
+  /虛構的初創/,
+  /virtual capital/i,
+  /虛擬資本/,
+  /in-game timeline/i,
+  /遊戲時間軸/,
+  /educational simulation/i,
+  /教育性模擬/,
 ];
+
+const REQUIRED_REST_COPY_KEYS = [
+  "mp.rest.badge",
+  "mp.rest.noSignalToday",
+  "mp.rest.claimParticipation",
+  "mp.rest.success.locked",
+  "mp.rest.participationOnlyNote",
+  "mp.rest.noPredictionRequired",
+  "mp.rules.section.restDays",
+  "mp.rules.section.scoringRestCard",
+  "mp.scoring.restCard",
+  "mp.cardType.rest",
+] as const;
+
+const REQUIRED_SCORING_COPY_KEYS = [
+  "mp.rules.section.scoringSignalParticipation",
+  "mp.rules.section.scoringSignalMatch",
+  "mp.rules.section.scoringSignalStreak",
+  "mp.scoring.signalParticipation",
+  "mp.scoring.signalMatch",
+  "mp.scoring.signalStreak",
+] as const;
 
 function isMarketPulseHomeKey(key: string): boolean {
   return (
@@ -96,5 +126,28 @@ describe("public Market Pulse production copy", () => {
     expect(marketPulseEnMessages["mp.play.status.noCardTitle"]).toMatch(
       /prepared|signal/i,
     );
+  });
+
+  it("describes swipe-card rules and market rest days (not legacy arcade simulation)", () => {
+    const whatIs = marketPulseEnMessages["mp.rules.section.whatIsBody"];
+    expect(whatIs).toMatch(/signal cards/i);
+    expect(whatIs).not.toMatch(/fictional startup|virtual capital|simulation/i);
+
+    const whatIsZh = marketPulseZhHantMessages["mp.rules.section.whatIsBody"];
+    expect(whatIsZh).toMatch(/訊號卡片/);
+    expect(whatIsZh).not.toMatch(/虛構|虛擬資本|模擬/);
+
+    for (const key of REQUIRED_REST_COPY_KEYS) {
+      expect(marketPulseEnMessages[key]).toBeTruthy();
+      expect(marketPulseZhHantMessages[key]).toBeTruthy();
+    }
+
+    for (const key of REQUIRED_SCORING_COPY_KEYS) {
+      expect(marketPulseEnMessages[key]).toMatch(/\+?\{?points\}?|參與|participation/i);
+      expect(marketPulseZhHantMessages[key]).toBeTruthy();
+    }
+
+    expect(enMessages["home.cycleLoop.scoring.rest"]).toMatch(/rest card/i);
+    expect(zhHantMessages["home.cycleLoop.scoring.rest"]).toMatch(/休息卡/);
   });
 });

@@ -38,12 +38,16 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { quickCreateMarketPulseCardDraftAction } from "@/lib/market-pulse/admin-actions";
+import { quickCreateMarketPulseCardDraftAction, quickCreateMarketPulseRestCardDraftAction } from "@/lib/market-pulse/admin-actions";
 import { isCardLiveForPlayers } from "@/lib/market-pulse/admin-card-ppa-status";
 import {
   QUICK_DRAFT_CARD_COMPANY_NAME,
   QUICK_DRAFT_CARD_HEADLINE,
   QUICK_DRAFT_CARD_TICKER,
+  QUICK_REST_DRAFT_CARD_HEADLINE,
+  QUICK_REST_DRAFT_CARD_HEADLINE_ZH,
+  QUICK_REST_DRAFT_CARD_NEWS_BODY,
+  QUICK_REST_DRAFT_CARD_NEWS_BODY_ZH,
 } from "@/lib/market-pulse/cycle-card-defaults";
 import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config";
 
@@ -144,5 +148,36 @@ describe("quickCreateMarketPulseCardDraftAction", () => {
         MARKET_PULSE_PUBLIC_LAUNCH_AT,
       ),
     ).toBe(false);
+  });
+
+  it("creates a REST draft with default bilingual rest copy", async () => {
+    prismaMocks.cycleFindUnique.mockResolvedValue({
+      id: "cycle-1",
+      startsAt: MARKET_PULSE_PUBLIC_LAUNCH_AT,
+      endsAt: new Date("2026-04-10T12:00:00+08:00"),
+      revealAt: new Date("2026-04-01T12:00:00+08:00"),
+      prizeLabel: "One Ocean Park ticket",
+      cards: [],
+    });
+
+    const result = await quickCreateMarketPulseRestCardDraftAction("cycle-1");
+
+    expect(result.ok).toBe(true);
+    expect(prismaMocks.cardCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        cycleId: "cycle-1",
+        cardType: "REST",
+        headline: QUICK_REST_DRAFT_CARD_HEADLINE,
+        headlineZhHant: QUICK_REST_DRAFT_CARD_HEADLINE_ZH,
+        newsBody: QUICK_REST_DRAFT_CARD_NEWS_BODY,
+        newsBodyZhHant: QUICK_REST_DRAFT_CARD_NEWS_BODY_ZH,
+        companyName: "",
+        ticker: "",
+        status: "DRAFT",
+        ppaSignal: null,
+        ppaInsight: null,
+        publishedAt: null,
+      }),
+    });
   });
 });

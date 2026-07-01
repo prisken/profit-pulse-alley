@@ -229,6 +229,8 @@ export default function MarketPulseAdminDashboard({
     }
     return {
       cards: activeCycle.cardCount,
+      signalCards: activeCycle.signalCardCount,
+      restCards: activeCycle.restCardCount,
       decisions: activeCycle.decisionCount,
       usersPlayed: activeCycle.usersPlayed,
       missingSignal: activeCycle.missingSignalCount,
@@ -542,6 +544,8 @@ function OverviewSection({
   activeCycle: MarketPulseAdminDashboardData["cycles"][number] | null;
   totals: {
     cards: number;
+    signalCards: number;
+    restCards: number;
     decisions: number;
     usersPlayed: number;
     missingSignal: number;
@@ -562,7 +566,17 @@ function OverviewSection({
         <StatCard label={t("auth.admin.mp.statRuntime")} value={initialData.runtimeStatus} />
         <StatCard label={t("auth.admin.mp.statActiveCycle")} value={activeCycle?.name ?? t("auth.admin.mp.none")} />
         <StatCard label={t("auth.admin.mp.statCycleStatus")} value={activeCycle?.status ?? "—"} />
-        <StatCard label={t("auth.admin.mp.statCards")} value={totals ? String(totals.cards) : "—"} />
+        <StatCard
+          label={t("auth.admin.mp.statCards")}
+          value={
+            totals
+              ? t("auth.admin.mp.statCardsBreakdown")
+                  .replace("{total}", String(totals.cards))
+                  .replace("{signal}", String(totals.signalCards))
+                  .replace("{rest}", String(totals.restCards))
+              : "—"
+          }
+        />
         <StatCard label={t("auth.admin.mp.statDecisions")} value={totals ? String(totals.decisions) : "—"} />
         <StatCard label={t("auth.admin.mp.statUsersPlayed")} value={totals ? String(totals.usersPlayed) : "—"} />
         <StatCard
@@ -574,7 +588,9 @@ function OverviewSection({
           label={t("auth.admin.mp.statPpaGaps")}
           value={
             totals
-              ? `${totals.missingSignal} missing · ${totals.unlocked} unlocked`
+              ? t("auth.admin.mp.statPpaGapsDetail")
+                  .replace("{missing}", String(totals.missingSignal))
+                  .replace("{unlocked}", String(totals.unlocked))
               : "—"
           }
         />
@@ -924,8 +940,14 @@ function CyclePanel({
             </p>
           ) : null}
           <p className="mt-1 text-xs text-zinc-500">
-            {cycle.cardCount} cards · {cycle.decisionCount} decisions · {cycle.usersPlayed} players ·{" "}
-            {cycle.missingSignalCount} missing signal · {cycle.unlockedCount} unlocked
+            {t("auth.admin.mp.cycleStatsLine")
+              .replace("{cards}", String(cycle.cardCount))
+              .replace("{signal}", String(cycle.signalCardCount))
+              .replace("{rest}", String(cycle.restCardCount))
+              .replace("{decisions}", String(cycle.decisionCount))
+              .replace("{players}", String(cycle.usersPlayed))
+              .replace("{missing}", String(cycle.missingSignalCount))
+              .replace("{unlocked}", String(cycle.unlockedCount))}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">

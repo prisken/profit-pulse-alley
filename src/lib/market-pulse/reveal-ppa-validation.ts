@@ -1,10 +1,11 @@
-import type { MarketPulseCardStatus } from "@prisma/client";
+import type { MarketPulseCardStatus, MarketPulseCardType } from "@prisma/client";
 
 import {
   buildCardsOnDayCountMap,
   formatMarketPulseCardDayLabel,
   formatMarketPulseDayDisplayNumber,
 } from "@/lib/market-pulse/card-play-order";
+import { isMarketPulseSignalCard } from "@/lib/market-pulse/card-type";
 
 export type RevealPpaMissingField = "ppaSignal" | "ppaInsight" | "ppaLocked";
 
@@ -34,6 +35,7 @@ export type RevealPpaCardInput = {
   headline: string;
   companyName: string;
   status: MarketPulseCardStatus;
+  cardType?: MarketPulseCardType | null;
   ppaSignal: string | null;
   ppaInsight: string | null;
   ppaSignalLockedAt: Date | string | null;
@@ -49,9 +51,31 @@ export function getPublishedCardsForReveal<T extends Pick<RevealPpaCardInput, "c
   );
 }
 
+/** Published signal cards only — REST cards never require PPA for reveal. */
+export function getPublishedSignalCardsForReveal<
+  T extends Pick<RevealPpaCardInput, "cycleId" | "status" | "cardType">,
+>(cycleId: string, cards: T[]): T[] {
+  return getPublishedCardsForReveal(cycleId, cards).filter((card) =>
+    isMarketPulseSignalCard(card),
+  );
+}
+
+export function cardRequiresRevealPpa(
+  card: Pick<RevealPpaCardInput, "cardType">,
+): boolean {
+  return isMarketPulseSignalCard(card);
+}
+
 export function getMissingPpaFields(
-  card: Pick<RevealPpaCardInput, "ppaSignal" | "ppaInsight" | "ppaSignalLockedAt">,
+  card: Pick<
+    RevealPpaCardInput,
+    "cardType" | "ppaSignal" | "ppaInsight" | "ppaSignalLockedAt"
+  >,
 ): RevealPpaMissingField[] {
+  if (!cardRequiresRevealPpa(card)) {
+    return [];
+  }
+
   const missing: RevealPpaMissingField[] = [];
 
   if (!card.ppaSignal) {
@@ -104,10 +128,10 @@ export function validatePublishedCardsPpaForReveal(
   cycleId: string,
   cards: RevealPpaCardInput[],
 ): RevealPpaValidationResult {
-  const published = getPublishedCardsForReveal(cycleId, cards);
+  const publishedSignalCards = getPublishedSignalCardsForReveal(cycleId, cards);
   const missingCards: RevealPpaMissingCard[] = [];
 
-  for (const card of published) {
+  for (const card of publishedSignalCards) {
     const missing = getMissingPpaFields(card);
     if (missing.length > 0) {
       missingCards.push({
@@ -127,7 +151,7 @@ export function validatePublishedCardsPpaForReveal(
 
   return {
     ready: false,
-    message: formatRevealPpaBlockMessage(missingCards, published),
+    message: formatRevealPpaBlockMessage(missingCards, publishedSignalCards),
     missingCards,
   };
 }

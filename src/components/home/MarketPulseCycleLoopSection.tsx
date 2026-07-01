@@ -13,6 +13,7 @@ import {
   MATCH_BONUS_POINTS,
   PARTICIPATION_POINTS,
   STREAK_BONUS_POINTS,
+  STREAK_INTERVAL,
 } from "@/lib/market-pulse/constants";
 import {
   MP_FOCUS_RING,
@@ -120,9 +121,12 @@ export default async function MarketPulseCycleLoopSection() {
       "{points}",
       String(MATCH_BONUS_POINTS),
     ),
-    t("home.cycleLoop.scoring.streak").replace(
+    t("home.cycleLoop.scoring.streak")
+      .replace("{points}", String(STREAK_BONUS_POINTS))
+      .replace("{interval}", String(STREAK_INTERVAL)),
+    t("home.cycleLoop.scoring.rest").replace(
       "{points}",
-      String(STREAK_BONUS_POINTS),
+      String(PARTICIPATION_POINTS),
     ),
   ];
 

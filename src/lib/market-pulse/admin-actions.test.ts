@@ -60,6 +60,7 @@ const validCreateInput = {
   cycleId: "cycle-1",
   dayIndex: 1,
   sortOrder: 0,
+  cardType: "SIGNAL" as const,
   companyName: "Acme Corp",
   companyNameZh: "",
   ticker: "ACME",

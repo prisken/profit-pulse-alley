@@ -3,7 +3,12 @@ export {
   QUICK_DRAFT_CARD_HEADLINE,
   QUICK_DRAFT_CARD_STATUS,
   QUICK_DRAFT_CARD_TICKER,
+  QUICK_REST_DRAFT_CARD_HEADLINE,
+  QUICK_REST_DRAFT_CARD_HEADLINE_ZH,
+  QUICK_REST_DRAFT_CARD_NEWS_BODY,
+  QUICK_REST_DRAFT_CARD_NEWS_BODY_ZH,
   buildQuickDraftCardDefaults,
+  buildQuickRestDraftCardDefaults,
   deriveCycleCardCreationDefaults,
   formatCycleCardCategoryLabel,
   isPlaceholderDraftContent,
@@ -15,4 +20,5 @@ export {
   type CycleCardDefaultsContext,
   type CycleCardReference,
   type QuickDraftCardDefaults,
+  type QuickRestDraftCardDefaults,
 } from "@/lib/market-pulse/cycle-card-defaults";

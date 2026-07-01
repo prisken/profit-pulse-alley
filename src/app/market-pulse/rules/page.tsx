@@ -8,6 +8,12 @@ import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseIn
 import { getServerTranslations, getServerSiteLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
 import { CHALLENGE_CYCLE_DAYS } from "@/lib/market-pulse/challenge-cycle";
+import {
+  MATCH_BONUS_POINTS,
+  PARTICIPATION_POINTS,
+  STREAK_BONUS_POINTS,
+  STREAK_INTERVAL,
+} from "@/lib/market-pulse/constants";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerSiteLocale();
@@ -100,11 +106,49 @@ export default async function MarketPulseRulesPage() {
             <li>{t("mp.rules.section.howWorks2")}</li>
             <li>{t("mp.rules.section.howWorks3")}</li>
             <li>{t("mp.rules.section.howWorks4")}</li>
+            <li>{t("mp.rules.section.howWorks5")}</li>
+          </ul>
+        </RulesCard>
+
+        <RulesCard title={t("mp.rules.section.restDays")} collapsibleOnMobile>
+          <p>{t("mp.rules.section.restDaysBody")}</p>
+          <ul className="list-disc space-y-2 pl-5">
+            <li>{t("mp.rules.section.restDays1")}</li>
+            <li>{t("mp.rules.section.restDays2")}</li>
+            <li>{t("mp.rules.section.restDays3")}</li>
+            <li>{t("mp.rules.section.restDays4")}</li>
+            <li>{t("mp.rules.section.restDays5")}</li>
           </ul>
         </RulesCard>
 
         <RulesCard title={t("mp.rules.section.scoring")} collapsibleOnMobile>
-          <p>{t("mp.rules.section.scoringBody")}</p>
+          <p>{t("mp.rules.section.scoringIntro")}</p>
+          <ul className="list-disc space-y-2 pl-5">
+            <li>
+              {t("mp.rules.section.scoringSignalParticipation").replace(
+                "{points}",
+                String(PARTICIPATION_POINTS),
+              )}
+            </li>
+            <li>
+              {t("mp.rules.section.scoringSignalMatch").replace(
+                "{points}",
+                String(MATCH_BONUS_POINTS),
+              )}
+            </li>
+            <li>
+              {t("mp.rules.section.scoringSignalStreak")
+                .replace("{points}", String(STREAK_BONUS_POINTS))
+                .replace("{interval}", String(STREAK_INTERVAL))}
+            </li>
+            <li>
+              {t("mp.rules.section.scoringRestCard").replace(
+                "{points}",
+                String(PARTICIPATION_POINTS),
+              )}
+            </li>
+          </ul>
+          <p>{t("mp.rules.section.scoringNote")}</p>
         </RulesCard>
 
         <RulesCard title={t("mp.rules.section.prize")} collapsibleOnMobile>

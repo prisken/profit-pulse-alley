@@ -4,7 +4,7 @@ import type { MarketPulseCycleStatus } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { isDatabaseConfigured } from "@/lib/db-config";
-import type { MarketPulseDecision } from "@/lib/market-pulse/constants";
+import type { MarketPulsePlayerChoice } from "@/lib/market-pulse/card-type";
 import type { CyclePlayabilityIssue } from "@/lib/market-pulse/cycle-playability";
 import {
   describeCyclePlayabilityIssue,
@@ -20,6 +20,7 @@ import {
   isMarketPulseCycleRevealed,
   type MarketPulseCardPublicPayload,
   type MarketPulseLeaderboardRow,
+  type MarketPulseUserDecisionState,
 } from "@/lib/market-pulse/server";
 import {
   MARKET_PULSE_CYCLE_PRIZE_SHORT,
@@ -44,7 +45,7 @@ export type MarketPulsePlayPageStatus =
 
 export type MarketPulsePlayCardSlot = {
   card: MarketPulseSwipeCardData;
-  userDecision: MarketPulseDecision | null;
+  userDecision: MarketPulsePlayerChoice | null;
 };
 
 export type MarketPulsePlayPageData = {
@@ -70,7 +71,7 @@ export type MarketPulsePlayPageData = {
   /** Active card for the current step (guest preview or play/locked). */
   card: MarketPulseSwipeCardData | null;
   /** Decision for the active card when locked or reviewing a completed card. */
-  lockedDecision: MarketPulseDecision | null;
+  lockedDecision: MarketPulsePlayerChoice | null;
   /** 1-based progress within today's card set; null when only one card. */
   cardProgress: { current: number; total: number } | null;
 };
@@ -138,7 +139,7 @@ function buildCardProgress(
 function serializeSessionSlots(
   slots: Array<{
     card: MarketPulseCardPublicPayload;
-    userDecision: { decision: MarketPulseDecision } | null;
+    userDecision: MarketPulseUserDecisionState | null;
   }>,
 ): MarketPulsePlayCardSlot[] {
   return slots.map((slot) => ({

@@ -1,10 +1,15 @@
-import type { MarketPulseCardStatus, MarketPulseCycleStatus } from "@prisma/client";
+import type { MarketPulseCardStatus, MarketPulseCardType, MarketPulseCycleStatus } from "@prisma/client";
 
 import type { AdminCardPpaStatusKind } from "@/lib/market-pulse/admin-card-ppa-status";
+import {
+  isRestCardType,
+  MARKET_PULSE_CARD_TYPE_ADMIN_LABELS,
+} from "@/lib/market-pulse/card-type";
 import type { MessageKey } from "@/lib/i18n/messages";
 
 const PPA_STATUS_I18N: Record<AdminCardPpaStatusKind, MessageKey> = {
   complete: "auth.admin.mp.cards.ppaStatus.complete",
+  rest_card: "auth.admin.mp.cards.ppaStatus.restCard",
   missing_signal: "auth.admin.mp.cards.ppaStatus.missingSignal",
   missing_insight: "auth.admin.mp.cards.ppaStatus.missingInsight",
   not_locked: "auth.admin.mp.cards.ppaStatus.notLocked",
@@ -83,7 +88,7 @@ export function ppaStatusBadgeTone(
   kind: AdminCardPpaStatusKind,
   revealUrgent: boolean,
 ): "ok" | "warn" | "error" {
-  if (kind === "complete") {
+  if (kind === "complete" || kind === "rest_card") {
     return "ok";
   }
   return revealUrgent ? "error" : "warn";
@@ -98,4 +103,19 @@ export function PpaStatusBadge({
   tone,
 }: Readonly<{ label: string; tone: "ok" | "warn" | "error" }>) {
   return <IndicatorBadge label={label} tone={tone} />;
+}
+
+export function CardTypeBadge({
+  cardType,
+}: Readonly<{ cardType: MarketPulseCardType }>) {
+  if (!isRestCardType(cardType)) {
+    return null;
+  }
+
+  return (
+    <IndicatorBadge
+      label={MARKET_PULSE_CARD_TYPE_ADMIN_LABELS.REST}
+      tone="neutral"
+    />
+  );
 }

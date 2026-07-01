@@ -37,10 +37,12 @@ export function buildBuilderCardValidationSummary(input: {
   }
 
   const publishError = validateCardPublishable({
+    cardType: input.values.cardType,
     headline: input.values.headline,
     companyName: input.values.companyName,
     ticker: input.values.ticker,
     summary: input.values.summary,
+    newsBody: input.values.newsBody,
     ppaSignal: input.values.ppaSignal || null,
     ppaInsight: input.values.ppaInsight,
     ppaSignalLockedAt: input.ppaSignalLockedAt,
@@ -51,6 +53,7 @@ export function buildBuilderCardValidationSummary(input: {
   }
 
   const ppaStatus = getAdminCardPpaStatus({
+    cardType: input.values.cardType,
     ppaSignal: input.values.ppaSignal || null,
     ppaInsight: input.values.ppaInsight,
     ppaSignalLockedAt: input.ppaSignalLockedAt,
@@ -107,6 +110,7 @@ export function buildBuilderCardValidationSummaryFromRow(
       cycleId: card.cycleId,
       dayIndex: card.dayIndex,
       sortOrder: card.sortOrder,
+      cardType: card.cardType,
       companyName: card.companyName,
       companyNameZh: card.companyNameZh ?? "",
       ticker: card.ticker,

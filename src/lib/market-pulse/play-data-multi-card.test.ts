@@ -207,4 +207,126 @@ describe("getMarketPulsePlayPageData — multiple cards per day", () => {
     expect(data.card?.headline).toBe("Headline A");
     expect(data.cardsToday).toHaveLength(2);
   });
+
+  it("advances to signal card after rest card is acknowledged", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "user-1", role: "USER" } });
+    const restDb = buildDbCard({
+      id: "card-rest",
+      cardType: "REST",
+      sortOrder: 0,
+      headline: "Rest day",
+      ppaSignal: null,
+      ppaInsight: null,
+      ppaSignalLockedAt: null,
+    });
+    const signalDb = buildDbCard({
+      id: "card-signal",
+      cardType: "SIGNAL",
+      sortOrder: 1,
+      headline: "Signal day",
+    });
+    const snapshot = {
+      cycle: {
+        id: activeCycle.id,
+        name: activeCycle.name,
+        startsAt: activeCycle.startsAt,
+        endsAt: activeCycle.endsAt,
+        revealAt: activeCycle.revealAt,
+        status: activeCycle.status,
+      },
+      cards: [
+        {
+          card: getMarketPulseCardPublicPayload(restDb, {
+            cycle: activeCycle,
+            at: AFTER_LAUNCH,
+          }),
+          userDecision: {
+            id: "dec-rest",
+            decision: "ACKNOWLEDGED" as const,
+            decidedAt: AFTER_LAUNCH,
+          },
+        },
+        {
+          card: getMarketPulseCardPublicPayload(signalDb, {
+            cycle: activeCycle,
+            at: AFTER_LAUNCH,
+          }),
+          userDecision: null,
+        },
+      ],
+    };
+    mocks.getTodayMarketPulsePlaySessionSnapshot.mockResolvedValue({
+      cycle: snapshot.cycle,
+      cards: snapshot.cards.map((slot) => ({ ...slot, userDecision: null })),
+    });
+    mocks.getTodayMarketPulsePlaySession.mockResolvedValue(snapshot);
+
+    const data = await getMarketPulsePlayPageData();
+
+    expect(data.status).toBe("playable");
+    expect(data.card?.id).toBe("card-signal");
+    expect(data.card?.cardType).toBe("SIGNAL");
+    expect(data.cardProgress).toEqual({ current: 2, total: 2 });
+  });
+
+  it("counts acknowledged rest cards toward all-completed state", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "user-1", role: "USER" } });
+    const restDb = buildDbCard({
+      id: "card-rest",
+      cardType: "REST",
+      sortOrder: 0,
+      headline: "Rest day",
+      ppaSignal: null,
+      ppaInsight: null,
+      ppaSignalLockedAt: null,
+    });
+    const signalDb = buildDbCard({
+      id: "card-signal",
+      cardType: "SIGNAL",
+      sortOrder: 1,
+      headline: "Signal day",
+    });
+    const snapshot = {
+      cycle: {
+        id: activeCycle.id,
+        name: activeCycle.name,
+        startsAt: activeCycle.startsAt,
+        endsAt: activeCycle.endsAt,
+        revealAt: activeCycle.revealAt,
+        status: activeCycle.status,
+      },
+      cards: [
+        {
+          card: getMarketPulseCardPublicPayload(restDb, {
+            cycle: activeCycle,
+            at: AFTER_LAUNCH,
+          }),
+          userDecision: {
+            id: "dec-rest",
+            decision: "ACKNOWLEDGED" as const,
+            decidedAt: AFTER_LAUNCH,
+          },
+        },
+        {
+          card: getMarketPulseCardPublicPayload(signalDb, {
+            cycle: activeCycle,
+            at: AFTER_LAUNCH,
+          }),
+          userDecision: {
+            id: "dec-signal",
+            decision: "CAUTIOUS" as const,
+            decidedAt: AFTER_LAUNCH,
+          },
+        },
+      ],
+    };
+    mocks.getTodayMarketPulsePlaySession.mockResolvedValue(snapshot);
+
+    const data = await getMarketPulsePlayPageData();
+
+    expect(data.status).toBe("locked");
+    expect(data.cardsToday).toHaveLength(2);
+    expect(data.cardsToday.every((slot) => slot.userDecision)).toBe(true);
+    expect(data.lockedDecision).toBe("CAUTIOUS");
+  });
 });

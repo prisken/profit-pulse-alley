@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
-import { CardStatusBadge, IndicatorBadge, PpaStatusBadge, getPpaStatusMessageKey, ppaStatusBadgeTone } from "@/components/admin/AdminCardStatusBadge";
+import { CardStatusBadge, CardTypeBadge, IndicatorBadge, PpaStatusBadge, getPpaStatusMessageKey, ppaStatusBadgeTone } from "@/components/admin/AdminCardStatusBadge";
 import MarketPulseAdminCardPreview from "@/components/admin/MarketPulseAdminCardPreview";
 import MarketPulseCardForm from "@/components/admin/MarketPulseCardForm";
 import {
@@ -23,6 +23,7 @@ import {
   isCardImageMissing,
   isCardPublished,
 } from "@/lib/market-pulse/admin-card-filter";
+import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
 import type { MarketPulseAdminCardPreviewData } from "@/lib/market-pulse/card-validation";
 import {
   MARKET_PULSE_DEFAULT_USER_PROMPT,
@@ -78,6 +79,7 @@ export function cardToFormValues(card: MarketPulseAdminCardRow): Partial<MarketP
     cycleId: card.cycleId,
     dayIndex: card.dayIndex,
     sortOrder: card.sortOrder,
+    cardType: card.cardType,
     companyName: card.companyName,
     companyNameZh: card.companyNameZh ?? "",
     ticker: card.ticker,
@@ -115,6 +117,7 @@ export function buildCardPayload(values: MarketPulseCardFormValues) {
     cycleId: values.cycleId,
     dayIndex: values.dayIndex,
     sortOrder: values.sortOrder,
+    cardType: values.cardType,
     companyName: values.companyName,
     companyNameZh: values.companyNameZh,
     ticker: values.ticker,
@@ -277,6 +280,7 @@ export function MarketPulseCardPanel({
   const [isPending, startTransition] = useTransition();
 
   const ppaStatus = getAdminCardPpaStatus(card);
+  const isRestCard = isMarketPulseRestCard(card);
   const published = isCardPublished(card);
   const playerLive = cycleStartsAt
     ? isCardLiveForPlayers(card, cycleStartsAt)
@@ -288,6 +292,7 @@ export function MarketPulseCardPanel({
   const ppaBadgeTone = ppaStatusBadgeTone(ppaStatus.kind, ppaUrgent);
   const ppaStatusLabel = t(getPpaStatusMessageKey(ppaStatus.kind));
   const canLockPpa =
+    !isRestCard &&
     !card.ppaSignalLockedAt &&
     Boolean(card.ppaSignal) &&
     Boolean(card.ppaInsight?.trim());
@@ -349,6 +354,7 @@ export function MarketPulseCardPanel({
               {t("auth.admin.mp.cards.dayLabel").replace("{day}", String(card.dayIndex))}
             </span>
             <CardStatusBadge status={card.status} />
+            {isRestCard ? <CardTypeBadge cardType={card.cardType} /> : null}
             <IndicatorBadge
               label={
                 playerLive
@@ -371,8 +377,10 @@ export function MarketPulseCardPanel({
           <p className="mt-2 line-clamp-2 text-sm font-medium text-zinc-100">
             {card.headline || "—"}
           </p>
-          <p className="mt-1 font-mono text-xs text-emerald-400/90">{card.ticker}</p>
-          {ppaStatus.needsPpa ? (
+          {!isRestCard ? (
+            <p className="mt-1 font-mono text-xs text-emerald-400/90">{card.ticker}</p>
+          ) : null}
+          {ppaStatus.needsPpa && !isRestCard ? (
             <p
               className={`mt-1.5 text-xs ${
                 ppaUrgent ? "font-medium text-red-200/90" : "text-amber-200/80"
@@ -396,7 +404,7 @@ export function MarketPulseCardPanel({
               {t("auth.admin.mp.openBuilder")}
             </Link>
           ) : null}
-          {ppaStatus.needsPpa ? (
+          {ppaStatus.needsPpa && !isRestCard ? (
             <button
               type="button"
               className={`${ppaUrgent ? primaryButtonClass : buttonClass} ${expandedMode === "edit" ? "border-emerald-500/40 bg-emerald-500/10" : ""}`}

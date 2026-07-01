@@ -19,6 +19,7 @@ import MarketPulseCountdown from "@/components/market-pulse/MarketPulseCountdown
 import CycleProgress from "@/components/market-pulse/CycleProgress";
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
 import MarketPulseLogo from "@/components/market-pulse/MarketPulseLogo";
+import MarketPulseRestCard from "@/components/market-pulse/MarketPulseRestCard";
 import MarketPulseSwipeCard from "@/components/market-pulse/MarketPulseSwipeCard";
 import PlayStatusCard from "@/components/market-pulse/PlayStatusCard";
 import type { DecisionLockedCardContext } from "@/components/market-pulse/DecisionLockedCard";
@@ -35,6 +36,11 @@ import {
   translateMarketPulseError,
 } from "@/lib/i18n/market-pulse-ui";
 import {
+  isMarketPulseRestCard,
+  isMarketPulseSignalDecision,
+  type MarketPulsePlayerChoice,
+} from "@/lib/market-pulse/card-type";
+import {
   MARKET_PULSE_ANALYTICS_EVENTS,
   trackMarketPulseEvent,
 } from "@/lib/market-pulse/analytics";
@@ -42,8 +48,9 @@ import type { MarketPulseDecision } from "@/lib/market-pulse/constants";
 import type { MarketPulsePlayPageData } from "@/lib/market-pulse/play-data";
 import { MARKET_PULSE_EASE } from "@/lib/market-pulse/motion";
 import { submitMarketPulseDecisionAction } from "@/lib/market-pulse/player-actions";
-import type { MarketPulseSwipeSubmitResult } from "@/lib/market-pulse/types";
+import type { MarketPulseSwipeCardData, MarketPulseSwipeSubmitResult } from "@/lib/market-pulse/types";
 import type { SiteLocale } from "@/lib/i18n/locales";
+import { translate } from "@/lib/i18n/messages";
 
 type PlayLeaderboardEntry = MarketPulsePlayPageData["leaderboardEntries"][number];
 
@@ -204,12 +211,13 @@ function PlayNonPlayableState({
   }
 
   if (data.status === "sign_in_required" && data.card) {
+    const revealMessage = formatRevealMessage(locale, data.revealAtLabel || null);
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
         <PlayStatusCard
           icon={LogIn}
           accent="emerald"
-          showSignalPreview
+          showSignalPreview={!isMarketPulseRestCard(data.card)}
           title={t("mp.play.state.signIn.title")}
           body={t("mp.play.state.signIn.body")}
           ctas={[
@@ -225,20 +233,33 @@ function PlayNonPlayableState({
             },
           ]}
         />
-        <MarketPulseSwipeCard
-          card={data.card}
-          disabled
-          className="min-h-0 shrink-0"
-          analyticsContext={{
-            cycleId: data.cycleId ?? undefined,
-            dayIndex: data.dayCurrent,
-          }}
-          onSubmit={async () => ({
-            ok: false,
-            error: t("mp.error.signInRequired"),
-          })}
-          revealMessage={formatRevealMessage(locale, data.revealAtLabel || null)}
-        />
+        {isMarketPulseRestCard(data.card) ? (
+          <MarketPulseRestCard
+            card={data.card}
+            disabled
+            showClaimButton
+            className="min-h-0 shrink-0"
+            onClaim={async () => ({
+              ok: false,
+              error: t("mp.error.signInRequired"),
+            })}
+          />
+        ) : (
+          <MarketPulseSwipeCard
+            card={data.card}
+            disabled
+            className="min-h-0 shrink-0"
+            analyticsContext={{
+              cycleId: data.cycleId ?? undefined,
+              dayIndex: data.dayCurrent,
+            }}
+            onSubmit={async () => ({
+              ok: false,
+              error: t("mp.error.signInRequired"),
+            })}
+            revealMessage={revealMessage}
+          />
+        )}
       </div>
     );
   }
@@ -607,12 +628,83 @@ function PlayChromeHeader({
   );
 }
 
+function formatCompletionDecisionLabel(
+  locale: SiteLocale,
+  t: (key: import("@/lib/i18n/messages/market-pulse-messages").MarketPulseMessageKey) => string,
+  decision: MarketPulsePlayerChoice,
+): string {
+  if (decision === "ACKNOWLEDGED") {
+    return t("mp.play.completion.acknowledged");
+  }
+  return translate(locale, decision === "BULLISH" ? "signal.bullish" : "signal.cautious");
+}
+
+function formatCompletionCardLabel(
+  t: (key: import("@/lib/i18n/messages/market-pulse-messages").MarketPulseMessageKey) => string,
+  card: MarketPulseSwipeCardData,
+  index: number,
+): string {
+  const labelKey = isMarketPulseRestCard(card)
+    ? "mp.play.completion.restLabel"
+    : "mp.play.completion.cardLabel";
+  return t(labelKey).replace("{index}", String(index + 1));
+}
+
+function PlayActiveCard({
+  card,
+  status,
+  lockedDecision,
+  onSubmit,
+  revealMessage,
+  lockedCycleContext,
+  analyticsContext,
+  className,
+}: Readonly<{
+  card: MarketPulseSwipeCardData;
+  status: "playable" | "locked";
+  lockedDecision: MarketPulsePlayerChoice | null;
+  onSubmit: (decision: MarketPulsePlayerChoice) => Promise<MarketPulseSwipeSubmitResult>;
+  revealMessage: string;
+  lockedCycleContext: DecisionLockedCardContext;
+  analyticsContext: { cycleId?: string; dayIndex?: number };
+  className?: string;
+}>) {
+  if (isMarketPulseRestCard(card)) {
+    return (
+      <MarketPulseRestCard
+        card={card}
+        className={className}
+        initialAcknowledged={lockedDecision === "ACKNOWLEDGED"}
+        disabled={status === "locked"}
+        onClaim={() => onSubmit("ACKNOWLEDGED")}
+        lockedCycleContext={lockedCycleContext}
+      />
+    );
+  }
+
+  return (
+    <MarketPulseSwipeCard
+      card={card}
+      className={className}
+      initialDecision={
+        lockedDecision && isMarketPulseSignalDecision(lockedDecision)
+          ? lockedDecision
+          : null
+      }
+      analyticsContext={analyticsContext}
+      onSubmit={(decision: MarketPulseDecision) => onSubmit(decision)}
+      revealMessage={revealMessage}
+      lockedCycleContext={lockedCycleContext}
+    />
+  );
+}
+
 function TodayCompletionSummary({
   cardsToday,
 }: Readonly<{
   cardsToday: MarketPulsePlayPageData["cardsToday"];
 }>) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const completedCount = cardsToday.filter((slot) => slot.userDecision).length;
 
   if (cardsToday.length <= 1 || completedCount < cardsToday.length) {
@@ -640,11 +732,11 @@ function TodayCompletionSummary({
             className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-zinc-950/40 px-3 py-2 text-xs"
           >
             <span className="text-zinc-400">
-              {t("mp.play.completion.cardLabel").replace("{index}", String(index + 1))}
+              {formatCompletionCardLabel(t, slot.card, index)}
             </span>
             <span className="font-medium text-zinc-100">
               {slot.userDecision
-                ? t(slot.userDecision === "BULLISH" ? "signal.bullish" : "signal.cautious")
+                ? formatCompletionDecisionLabel(locale, t, slot.userDecision)
                 : "—"}
             </span>
           </li>
@@ -663,7 +755,7 @@ export default function MarketPulsePlayExperience({
   const loginHref = `/login?callbackUrl=${encodeURIComponent("/market-pulse/play")}`;
 
   const handleSubmit = useCallback(
-    async (decision: MarketPulseDecision): Promise<MarketPulseSwipeSubmitResult> => {
+    async (decision: MarketPulsePlayerChoice): Promise<MarketPulseSwipeSubmitResult> => {
       if (!data.card) {
         return { ok: false, error: t("mp.error.noCardAvailable") };
       }
@@ -799,10 +891,11 @@ export default function MarketPulsePlayExperience({
                 }`}
               >
                 <TodayCompletionSummary cardsToday={data.cardsToday} />
-                <MarketPulseSwipeCard
+                <PlayActiveCard
                   card={data.card}
+                  status={data.status}
+                  lockedDecision={data.lockedDecision}
                   className="min-h-0 flex-1"
-                  initialDecision={data.lockedDecision}
                   analyticsContext={{
                     cycleId: data.cycleId ?? undefined,
                     dayIndex: data.dayCurrent,

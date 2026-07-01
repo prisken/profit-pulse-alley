@@ -5,6 +5,7 @@ import {
   getAdminCardPpaStatus,
   isCardLiveForPlayers,
 } from "@/lib/market-pulse/admin-card-ppa-status";
+import { MARKET_PULSE_REST_CARD_PPA_ADMIN_LABEL } from "@/lib/market-pulse/card-type";
 import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config";
 import { getCycleDayReleaseAt } from "@/lib/market-pulse/card-release-schedule";
 
@@ -65,6 +66,19 @@ describe("getAdminCardPpaStatus", () => {
       expect.arrayContaining(["ppaSignal", "ppaInsight", "ppaLocked"]),
     );
   });
+
+  it("returns rest_card status without needs PPA for REST cards", () => {
+    const status = getAdminCardPpaStatus({
+      cardType: "REST",
+      ppaSignal: null,
+      ppaInsight: null,
+      ppaSignalLockedAt: null,
+    });
+
+    expect(status.kind).toBe("rest_card");
+    expect(status.needsPpa).toBe(false);
+    expect(status.label).toBe(MARKET_PULSE_REST_CARD_PPA_ADMIN_LABEL);
+  });
 });
 
 describe("cardNeedsPpa", () => {
@@ -84,6 +98,17 @@ describe("cardNeedsPpa", () => {
         ppaSignal: "BULLISH",
         ppaInsight: "x",
         ppaSignalLockedAt: "2026-01-01T00:00:00.000Z",
+      }),
+    ).toBe(false);
+  });
+
+  it("is false for REST cards without PPA", () => {
+    expect(
+      cardNeedsPpa({
+        cardType: "REST",
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
       }),
     ).toBe(false);
   });

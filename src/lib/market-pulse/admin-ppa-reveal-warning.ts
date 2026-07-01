@@ -41,6 +41,7 @@ function toRevealPpaCardInput(card: MarketPulseAdminCardRow) {
     headline: card.headline,
     companyName: card.companyName,
     status: card.status,
+    cardType: card.cardType,
     ppaSignal: card.ppaSignal,
     ppaInsight: card.ppaInsight,
     ppaSignalLockedAt: card.ppaSignalLockedAt,

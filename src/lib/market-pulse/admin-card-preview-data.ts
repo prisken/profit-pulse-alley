@@ -10,6 +10,7 @@ export function adminPreviewDataToSwipeCard(
 ): MarketPulseSwipeCardData {
   return toMarketPulseSwipeCardData({
     id: cardId,
+    cardType: "SIGNAL",
     companyName: preview.companyName?.trim() || "Company name",
     companyNameZh: preview.companyNameZh ?? null,
     ticker: preview.ticker?.trim() || "TICKER",

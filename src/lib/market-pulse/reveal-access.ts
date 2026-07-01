@@ -7,12 +7,14 @@ import type {
 
 import type { SiteLocale } from "@/lib/i18n/locales";
 import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
+import { isMarketPulseSignalCard } from "@/lib/market-pulse/card-type";
 import { localizeMarketPulseCardPublicPayload } from "@/lib/market-pulse/card-localization";
 
 export type MarketPulseCardPublicPayload = {
   id: string;
   cycleId: string;
   dayIndex: number;
+  cardType: MarketPulseCard["cardType"];
   companyName: string;
   companyNameZh: string | null;
   ticker: string;
@@ -79,6 +81,7 @@ export function getMarketPulseCardPublicPayload(
     id: card.id,
     cycleId: card.cycleId,
     dayIndex: card.dayIndex,
+    cardType: card.cardType,
     companyName: card.companyName,
     companyNameZh: card.companyNameZh,
     ticker: card.ticker,
@@ -102,7 +105,7 @@ export function getMarketPulseCardPublicPayload(
     isRevealed: revealed,
   };
 
-  if (revealed) {
+  if (revealed && isMarketPulseSignalCard(card)) {
     if (card.ppaSignal) {
       payload.ppaSignal = card.ppaSignal;
     }

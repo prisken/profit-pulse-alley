@@ -107,6 +107,7 @@ describe("card payload shape", () => {
 
     expect(toMarketPulseSwipeCardData(payload)).toEqual({
       id: "card-1",
+      cardType: "SIGNAL",
       companyName: "Acme Corp",
       companyNameZh: null,
       ticker: "ACME",

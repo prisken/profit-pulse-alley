@@ -34,6 +34,8 @@ function baseCycle(
     scoresGenerated: false,
     topWinnerName: null,
     topWinnerScore: null,
+    signalCardCount: 0,
+    restCardCount: 0,
     ...overrides,
   };
 }
@@ -46,6 +48,7 @@ function baseCard(
     cycleId: "cycle-1",
     dayIndex: 1,
     sortOrder: 0,
+    cardType: "SIGNAL",
     companyName: "Acme",
     companyNameZh: null,
     ticker: "ACME",
@@ -178,6 +181,29 @@ describe("evaluateCycleReadiness", () => {
       report.cardIssues.some((issue) =>
         issue.message.includes("PPA signal is required for reveal and scoring."),
       ),
+    ).toBe(false);
+  });
+
+  it("accepts REST cards without PPA when display content is complete", () => {
+    const report = evaluateCycleReadiness(baseCycle(), [
+      baseCard({
+        cardType: "REST",
+        companyName: "",
+        ticker: "",
+        headline: "Market rest day",
+        newsBody: "No market signal today.",
+        summary: null,
+        userPrompt: null,
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
+      }),
+    ]);
+
+    expect(report.overallStatus).toBe("ready");
+    expect(report.cards[0]?.status).toBe("ready");
+    expect(
+      report.cardIssues.some((issue) => issue.message.toLowerCase().includes("ppa")),
     ).toBe(false);
   });
 

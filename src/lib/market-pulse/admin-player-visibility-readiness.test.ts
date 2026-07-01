@@ -4,7 +4,8 @@ import type {
   MarketPulseAdminCardRow,
   MarketPulseAdminCycleRow,
 } from "@/lib/market-pulse/admin-data";
-import { MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
+import { MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS, MARKET_PULSE_ADMIN_CYCLE_ROW_STATS_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
+import { MARKET_PULSE_CARD_TYPE_REST } from "@/lib/market-pulse/card-type";
 import { evaluatePlayerVisibilityReadiness } from "@/lib/market-pulse/admin-player-visibility-readiness";
 import { canAccessMarketPulsePlay } from "@/lib/market-pulse/launch-config";
 
@@ -43,18 +44,7 @@ function buildCycle(
     isActive: true,
     isPlayableNow: true,
     playabilityIssue: null,
-    cardCount: 1,
-    decisionCount: 0,
-    usersPlayed: 0,
-    missingSignalCount: 0,
-    unlockedCount: 0,
-    averageDecisionsPerParticipant: 0,
-    completionRatePercent: null,
-    scoreEventCount: 0,
-    scoresGenerated: false,
-    topWinnerName: null,
-    topWinnerScore: null,
-    ...MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS,
+    ...MARKET_PULSE_ADMIN_CYCLE_ROW_STATS_DEFAULTS,
     ...overrides,
   };
 }
@@ -188,6 +178,35 @@ describe("evaluatePlayerVisibilityReadiness", () => {
   it("allows USER play after 1 Jul 2026 HKT", () => {
     expect(canAccessMarketPulsePlay("USER", AFTER_PUBLIC_LAUNCH)).toBe(true);
     expect(canAccessMarketPulsePlay("USER", BEFORE_PUBLIC_LAUNCH)).toBe(false);
+  });
+
+  it("passes readiness when today's playable card is a published rest card", () => {
+    const result = evaluatePlayerVisibilityReadiness({
+      runtimeStatus: "OPEN",
+      activeCycle: buildCycle({ cardCount: 1, signalCardCount: 0, restCardCount: 1 }),
+      activeCycleCards: [
+        buildCard({
+          cardType: MARKET_PULSE_CARD_TYPE_REST,
+          companyName: "",
+          ticker: "REST",
+          headline: "Market rest day",
+          newsBody: "No market signal today.",
+          ppaSignal: null,
+          ppaInsight: null,
+          ppaSignalLockedAt: null,
+        }),
+      ],
+      now: AFTER_PUBLIC_LAUNCH,
+    });
+
+    expect(result.overallStatus).toBe("ready");
+    expect(result.playersCanSubmitToday).toBe(true);
+    expect(result.checks.find((check) => check.id === "today-card-live")?.status).toBe(
+      "pass",
+    );
+    expect(result.checks.find((check) => check.id === "ppa-privacy")?.message).toMatch(
+      /not required on market rest/i,
+    );
   });
 });
 

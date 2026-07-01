@@ -48,6 +48,20 @@ export function cardMatchesCycleDisplayDay(
   return cardDayIndex === displayDay || cardDayIndex === zeroBasedDay;
 }
 
+/** All cards mapped to the current cycle display day (1-based or legacy 0-based index). */
+export function findCardsForCycleDisplayDay(
+  cards: MarketPulseCard[],
+  cycleStartsAt: Date,
+  at: Date,
+): MarketPulseCard[] {
+  const zeroBasedDay = getCycleDayIndexZeroBased(cycleStartsAt, at);
+  const displayDay = zeroBasedDay + 1;
+
+  return cards.filter((card) =>
+    cardMatchesCycleDisplayDay(card.dayIndex, displayDay, zeroBasedDay),
+  );
+}
+
 export function isPublishedAndLive(
   card: MarketPulseCard,
   cycle: Pick<MarketPulseCycle, "startsAt">,

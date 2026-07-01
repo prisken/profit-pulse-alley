@@ -6,7 +6,7 @@ import {
   isMarketPulseCardRevealed,
   isMarketPulseCycleRevealed,
 } from "@/lib/market-pulse/reveal-access";
-import { stripPpaFromCardPayload, toMarketPulseSwipeCardData } from "@/lib/market-pulse/swipe-card";
+import { stripPpaFromCardPayload, sanitizeMarketPulseApiCardPayload, toMarketPulseSwipeCardData } from "@/lib/market-pulse/swipe-card";
 import { MARKET_PULSE_CARD_TEST_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
 
 const baseCard = {
@@ -105,6 +105,34 @@ describe("getMarketPulseCardPublicPayload", () => {
 
     expect(payload.headline).toBe("Acme expands");
   });
+
+  it("localizes REST card text and never exposes PPA fields", () => {
+    const payload = getMarketPulseCardPublicPayload(
+      {
+        ...baseCard,
+        cardType: "REST",
+        companyName: "",
+        ticker: "REST",
+        headline: "Market rest day",
+        headlineZhHant: "市場休息日",
+        newsBody: "No market signal today.",
+        newsBodyZhHant: "今日沒有市場信號。",
+        ppaSignal: null,
+        ppaInsight: null,
+      },
+      {
+        cycle: { ...baseCycle, status: "REVEALED" },
+        at: new Date("2026-01-10T00:00:00.000Z"),
+        locale: "zh-Hant",
+      },
+    );
+
+    expect(payload.cardType).toBe("REST");
+    expect(payload.headline).toBe("市場休息日");
+    expect(payload.newsBody).toBe("今日沒有市場信號。");
+    expect(payload.ppaSignal).toBeUndefined();
+    expect(payload.ppaInsight).toBeUndefined();
+  });
 });
 
 describe("isMarketPulseCardRevealed", () => {
@@ -137,6 +165,7 @@ describe("client payload stripping", () => {
     expect(
       toMarketPulseSwipeCardData({
         id: "card-1",
+        cardType: "SIGNAL",
         companyName: "Acme",
         ticker: "ACME",
         headline: "Headline",
@@ -145,6 +174,7 @@ describe("client payload stripping", () => {
       }),
     ).toEqual({
       id: "card-1",
+      cardType: "SIGNAL",
       companyName: "Acme",
       companyNameZh: undefined,
       ticker: "ACME",
@@ -163,5 +193,19 @@ describe("client payload stripping", () => {
       summary: undefined,
       userPrompt: undefined,
     });
+  });
+
+  it("sanitizeMarketPulseApiCardPayload strips PPA from REST cards", () => {
+    const sanitized = sanitizeMarketPulseApiCardPayload({
+      id: "rest-1",
+      cardType: "REST",
+      headline: "Market rest day",
+      ppaSignal: "BULLISH",
+      ppaInsight: "should not leak",
+    });
+
+    expect(sanitized.cardType).toBe("REST");
+    expect(sanitized).not.toHaveProperty("ppaSignal");
+    expect(sanitized).not.toHaveProperty("ppaInsight");
   });
 });

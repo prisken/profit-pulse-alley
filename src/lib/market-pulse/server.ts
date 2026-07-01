@@ -2,6 +2,7 @@ import "server-only";
 
 import type {
   MarketPulseCard,
+  MarketPulseCardType,
   MarketPulseCycle,
   MarketPulseCycleStatus,
   MarketPulseGameSetting,
@@ -9,11 +10,11 @@ import type {
   MarketPulseSignal,
 } from "@prisma/client";
 
+import { PARTICIPATION_POINTS } from "@/lib/market-pulse/constants";
 import {
-  PARTICIPATION_POINTS,
-  isValidMarketPulseDecision,
-  type MarketPulseDecision,
-} from "@/lib/market-pulse/constants";
+  validatePlayerDecisionForCard,
+  type MarketPulsePlayerChoice,
+} from "@/lib/market-pulse/card-type";
 import {
   buildCycleUserScoreRows,
   resolveDecisionsSubmitted,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/market-pulse/cycle-user-score";
 import {
   buildScoreEventsForUser,
+  computeSignalMatchStreak,
   type ScoreCalculationDecision,
 } from "@/lib/market-pulse/score-calculation";
 import { findPlayableCardsForToday } from "@/lib/market-pulse/playable-card";
@@ -33,6 +35,7 @@ import {
 } from "@/lib/market-pulse/card-play-order";
 import { isCardReleasedForPlay } from "@/lib/market-pulse/card-release-schedule";
 import { localizeMarketPulseRevealCardFields } from "@/lib/market-pulse/card-localization";
+import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
 import type { SiteLocale } from "@/lib/i18n/locales";
 import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
 import {
@@ -91,8 +94,11 @@ export type TodayMarketPulseCardForUser = {
     revealAt: Date;
     status: MarketPulseCycleStatus;
   };
+  /** Primary card — first unplayed today, otherwise the last played card. */
   card: MarketPulseCardPublicPayload;
   userDecision: MarketPulseUserDecisionState | null;
+  /** All playable cards for today (multi-card days). */
+  cards: TodayMarketPulseCardSlot[];
 };
 
 export type TodayMarketPulseCardSlot = {
@@ -159,10 +165,11 @@ export type MarketPulseRevealCardBreakdown = {
   dayIndex: number;
   sortOrder: number;
   cardsOnDay: number;
+  cardType: MarketPulseCardType;
   companyName: string;
   headline: string;
   userDecision: MarketPulseSignal;
-  ppaSignal: MarketPulseSignal;
+  ppaSignal: MarketPulseSignal | null;
   ppaInsight: string | null;
   participationPoints: number;
   matchBonus: number;
@@ -220,7 +227,7 @@ function getDayIndexForCycle(
   return Math.floor(elapsed / MS_PER_DAY);
 }
 
-function toPrismaSignal(decision: MarketPulseDecision): MarketPulseSignal {
+function toPrismaSignal(decision: MarketPulsePlayerChoice): MarketPulseSignal {
   return decision;
 }
 
@@ -408,6 +415,7 @@ export async function getTodayMarketPulseCardSnapshot(
   return {
     cycle: session.cycle,
     card: first.card,
+    cards: session.cards,
   };
 }
 
@@ -420,11 +428,14 @@ export async function getTodayMarketPulseCardForUser(
     return null;
   }
 
-  const first = session.cards[0]!;
+  const firstUnplayed = session.cards.find((slot) => !slot.userDecision);
+  const primary = firstUnplayed ?? session.cards[session.cards.length - 1]!;
+
   return {
     cycle: session.cycle,
-    card: first.card,
-    userDecision: first.userDecision,
+    card: primary.card,
+    userDecision: primary.userDecision,
+    cards: session.cards,
   };
 }
 
@@ -432,12 +443,7 @@ export async function submitMarketPulseDecision(
   input: SubmitMarketPulseDecisionInput,
 ): Promise<SubmitMarketPulseDecisionResult> {
   const { userId, cardId, ipHash, userAgentHash } = input;
-
-  if (!isValidMarketPulseDecision(input.decision)) {
-    return { ok: false, error: "Decision must be BULLISH or CAUTIOUS." };
-  }
-
-  const decision = input.decision;
+  const decisionInput = input.decision.trim();
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -487,6 +493,12 @@ export async function submitMarketPulseDecision(
   if (!card) {
     return { ok: false, error: "Card not found." };
   }
+
+  const decisionValidation = validatePlayerDecisionForCard(card, decisionInput);
+  if (!decisionValidation.ok) {
+    return { ok: false, error: decisionValidation.error };
+  }
+  const decision = decisionValidation.decision;
 
   if (card.cycle.status !== "OPEN") {
     return { ok: false, error: "This challenge cycle is not open." };
@@ -611,6 +623,7 @@ export async function calculateAndPersistCycleScores(
           dayIndex: true,
           sortOrder: true,
           createdAt: true,
+          cardType: true,
           ppaSignal: true,
         },
       },
@@ -987,43 +1000,9 @@ function countPublishedCards(cycle: CycleWithCards, at: Date): number {
 }
 
 function computeCurrentStreak(
-  decisions: Array<{
-    decision: MarketPulseSignal;
-    card: {
-      id?: string;
-      dayIndex: number;
-      sortOrder?: number | null;
-      createdAt?: Date | string | null;
-      ppaSignal: MarketPulseSignal | null;
-    };
-  }>,
+  decisions: Parameters<typeof computeSignalMatchStreak>[0],
 ): number {
-  const sorted = [...decisions].sort((a, b) =>
-    compareMarketPulseCardsByPlayOrder(
-      {
-        dayIndex: a.card.dayIndex,
-        sortOrder: a.card.sortOrder,
-        createdAt: a.card.createdAt,
-        id: a.card.id,
-      },
-      {
-        dayIndex: b.card.dayIndex,
-        sortOrder: b.card.sortOrder,
-        createdAt: b.card.createdAt,
-        id: b.card.id,
-      },
-    ),
-  );
-
-  let streak = 0;
-  for (const entry of sorted) {
-    if (entry.card.ppaSignal && entry.decision === entry.card.ppaSignal) {
-      streak += 1;
-    } else {
-      streak = 0;
-    }
-  }
-  return streak;
+  return computeSignalMatchStreak(decisions);
 }
 
 export async function getRevealedMarketPulseCycleForPage(): Promise<{
@@ -1114,6 +1093,7 @@ export async function getUserMarketPulseProgress(
             dayIndex: true,
             sortOrder: true,
             createdAt: true,
+            cardType: true,
             ppaSignal: true,
           },
         },
@@ -1233,6 +1213,7 @@ export async function getMarketPulseRevealForUser(
           dayIndex: true,
           sortOrder: true,
           createdAt: true,
+          cardType: true,
           companyName: true,
           companyNameZh: true,
           headline: true,
@@ -1290,7 +1271,8 @@ export async function getMarketPulseRevealForUser(
   const cards: MarketPulseRevealCardBreakdown[] = [];
 
   for (const entry of sortedDecisions) {
-    if (!entry.card.ppaSignal) {
+    const isRestCard = isMarketPulseRestCard(entry.card);
+    if (!isRestCard && !entry.card.ppaSignal) {
       continue;
     }
 
@@ -1302,11 +1284,12 @@ export async function getMarketPulseRevealForUser(
       dayIndex: entry.card.dayIndex,
       sortOrder,
       cardsOnDay: cardsOnDayByIndex.get(entry.card.dayIndex) ?? 1,
+      cardType: entry.card.cardType ?? "SIGNAL",
       companyName: localized.companyName,
       headline: localized.headline,
       userDecision: entry.decision,
-      ppaSignal: entry.card.ppaSignal,
-      ppaInsight: localized.ppaInsight,
+      ppaSignal: isRestCard ? null : entry.card.ppaSignal,
+      ppaInsight: isRestCard ? null : localized.ppaInsight,
       participationPoints: scores?.participationPoints ?? PARTICIPATION_POINTS,
       matchBonus: scores?.matchBonus ?? 0,
       streakBonus: scores?.streakBonus ?? 0,

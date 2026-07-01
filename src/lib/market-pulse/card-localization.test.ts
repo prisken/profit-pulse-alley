@@ -182,6 +182,7 @@ describe("localizeMarketPulseSwipeCardData", () => {
     const swipe = localizeMarketPulseSwipeCardData(
       {
         id: "card-1",
+        cardType: "SIGNAL",
         companyName: "Acme Corp",
         companyNameZh: "艾克米公司",
         ticker: "ACME",

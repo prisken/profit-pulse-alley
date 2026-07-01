@@ -78,7 +78,13 @@ function MessageBody({
   );
 }
 
-function formatDecisionLabel(value: string): string {
+function formatDecisionLabel(
+  value: string,
+  t: (key: MessageKey) => string,
+): string {
+  if (value === "ACKNOWLEDGED") {
+    return t("mp.play.completion.acknowledged");
+  }
   if (value === "BULLISH" || value === "CAUTIOUS") {
     return formatSignal(value as MarketPulseDecision);
   }
@@ -134,7 +140,11 @@ function ScoreBreakdown({
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400/90">
                   {formatBreakdownDayLabel(card, t)}
-                  <span className="ml-2 text-zinc-500">{card.ticker}</span>
+                  {card.isRestCard ? (
+                    <span className="ml-2 text-sky-400">{t("mp.rest.badge")}</span>
+                  ) : (
+                    <span className="ml-2 text-zinc-500">{card.ticker}</span>
+                  )}
                 </p>
                 <p className="mt-1 line-clamp-2 text-sm text-zinc-200">
                   {card.headline}
@@ -147,40 +157,46 @@ function ScoreBreakdown({
                 )}
               </p>
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-                  {t("mp.leaderboard.myScore.breakdownYourCall")}
-                </p>
-                <p className="font-medium text-zinc-200">
-                  {formatDecisionLabel(card.userDecision)}
-                </p>
+            {card.isRestCard ? (
+              <p className="mt-2 text-xs font-medium text-sky-300">
+                {formatDecisionLabel(card.userDecision, t)}
+              </p>
+            ) : (
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500">
+                    {t("mp.leaderboard.myScore.breakdownYourCall")}
+                  </p>
+                  <p className="font-medium text-zinc-200">
+                    {formatDecisionLabel(card.userDecision, t)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500">
+                    {t("mp.leaderboard.myScore.breakdownPpa")}
+                  </p>
+                  <p className="font-medium text-zinc-200">
+                    {card.ppaSignal
+                      ? formatDecisionLabel(card.ppaSignal, t)
+                      : "—"}
+                  </p>
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500">
+                    {t("mp.reveal.card.match")}
+                  </p>
+                  <p
+                    className={`font-medium ${
+                      card.isMatch ? "text-emerald-400" : "text-zinc-400"
+                    }`}
+                  >
+                    {card.isMatch
+                      ? t("mp.leaderboard.myScore.breakdownMatch")
+                      : t("mp.leaderboard.myScore.breakdownNoMatch")}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-                  {t("mp.leaderboard.myScore.breakdownPpa")}
-                </p>
-                <p className="font-medium text-zinc-200">
-                  {card.ppaSignal
-                    ? formatDecisionLabel(card.ppaSignal)
-                    : "—"}
-                </p>
-              </div>
-              <div className="col-span-2 sm:col-span-1">
-                <p className="text-[10px] uppercase tracking-wider text-zinc-500">
-                  {t("mp.reveal.card.match")}
-                </p>
-                <p
-                  className={`font-medium ${
-                    card.isMatch ? "text-emerald-400" : "text-zinc-400"
-                  }`}
-                >
-                  {card.isMatch
-                    ? t("mp.leaderboard.myScore.breakdownMatch")
-                    : t("mp.leaderboard.myScore.breakdownNoMatch")}
-                </p>
-              </div>
-            </div>
+            )}
             <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-zinc-400">
               <li>
                 {t("mp.leaderboard.myScore.breakdownParticipation").replace(

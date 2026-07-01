@@ -33,9 +33,16 @@ enum MarketPulseCardStatus {
   REVEALED
 }
 
+enum MarketPulseCardType {
+  SIGNAL
+  REST
+}
+
 enum MarketPulseSignal {
   BULLISH
   CAUTIOUS
+  /// Rest-card participation acknowledgement stored on MarketPulseDecision.
+  ACKNOWLEDGED
 }
 
 enum MarketPulseLeaderboardType {
@@ -132,6 +139,7 @@ model MarketPulseCard {
   dayIndex          Int
   /// Order within a cycle day (0 = first). Together with dayIndex identifies a card slot when multiple signals run on one day.
   sortOrder         Int                   @default(0)
+  cardType          MarketPulseCardType     @default(SIGNAL)
   companyName       String
   /// Traditional Chinese company name (legacy zh field — English default is companyName).
   companyNameZh     String?

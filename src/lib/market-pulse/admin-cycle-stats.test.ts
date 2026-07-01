@@ -2,10 +2,42 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildAdminCycleWinnerMap,
+  computeAdminCycleCardBreakdown,
   computeAdminCycleParticipationStats,
   formatAdminAverageDecisions,
   formatAdminCompletionRate,
 } from "@/lib/market-pulse/admin-cycle-stats";
+import { MARKET_PULSE_CARD_TYPE_REST } from "@/lib/market-pulse/card-type";
+
+describe("computeAdminCycleCardBreakdown", () => {
+  it("counts signal and rest cards separately and limits PPA gaps to signal cards", () => {
+    expect(
+      computeAdminCycleCardBreakdown([
+        {
+          cardType: "SIGNAL",
+          ppaSignal: "BULLISH",
+          ppaSignalLockedAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          cardType: MARKET_PULSE_CARD_TYPE_REST,
+          ppaSignal: null,
+          ppaSignalLockedAt: null,
+        },
+        {
+          cardType: "SIGNAL",
+          ppaSignal: null,
+          ppaSignalLockedAt: null,
+        },
+      ]),
+    ).toEqual({
+      totalCards: 3,
+      signalCards: 2,
+      restCards: 1,
+      missingPpaSignalCards: 1,
+      unlockedSignalCards: 1,
+    });
+  });
+});
 
 describe("computeAdminCycleParticipationStats", () => {
   it("computes averages and completion per cycle inputs", () => {

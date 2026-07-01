@@ -102,6 +102,7 @@ export type ChallengeCountdown = {
 /** Sanitized card fields safe for swipe UI — never includes PPA signal or insight. */
 export type MarketPulseSwipeCardData = {
   id: string;
+  cardType: import("@prisma/client").MarketPulseCardType;
   companyName: string;
   companyNameZh?: string | null;
   ticker: string;
@@ -131,12 +132,14 @@ export type MarketPulseRevealCardRow = {
   dayIndex: number;
   sortOrder: number;
   cardsOnDay: number;
+  cardType: import("@prisma/client").MarketPulseCardType;
   companyName: string;
   headline: string;
   userDecision: string;
-  ppaSignal: string;
+  ppaSignal: string | null;
   ppaInsight: string | null;
   isMatch: boolean;
+  isRestCard: boolean;
   participationPoints: number;
   matchBonus: number;
   streakBonus: number;

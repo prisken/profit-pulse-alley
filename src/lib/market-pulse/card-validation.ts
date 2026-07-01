@@ -1,4 +1,19 @@
-import type { MarketPulseCardStatus, MarketPulseSignal } from "@prisma/client";
+import type {
+  MarketPulseCardStatus,
+  MarketPulseCardType,
+  MarketPulseSignal,
+} from "@prisma/client";
+
+import {
+  cardTypeRequiresPpa,
+  isMarketPulseRestCard,
+  isMarketPulseSignalCard,
+  isRestCardType,
+  MARKET_PULSE_CARD_TYPE_SIGNAL,
+  MARKET_PULSE_PPA_SIGNAL_VALUES,
+  resolveMarketPulseCardType,
+  type MarketPulsePpaSignal,
+} from "@/lib/market-pulse/card-type";
 
 export const MARKET_PULSE_CARD_STATUS_OPTIONS: MarketPulseCardStatus[] = [
   "DRAFT",
@@ -8,9 +23,8 @@ export const MARKET_PULSE_CARD_STATUS_OPTIONS: MarketPulseCardStatus[] = [
   "REVEALED",
 ];
 
-export const MARKET_PULSE_SIGNAL_OPTIONS: MarketPulseSignal[] = [
-  "BULLISH",
-  "CAUTIOUS",
+export const MARKET_PULSE_SIGNAL_OPTIONS: MarketPulsePpaSignal[] = [
+  ...MARKET_PULSE_PPA_SIGNAL_VALUES,
 ];
 
 const PPA_REQUIRED_STATUSES: MarketPulseCardStatus[] = ["READY", "PUBLISHED"];
@@ -25,6 +39,7 @@ export type MarketPulseCardFormValues = {
   cycleId: string;
   dayIndex: number;
   sortOrder: number;
+  cardType: MarketPulseCardType;
   companyName: string;
   companyNameZh: string;
   ticker: string;
@@ -85,8 +100,251 @@ export function toCardDatetimeLocalValue(iso: string | null | undefined): string
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function requiresPpaForStatus(status: MarketPulseCardStatus): boolean {
-  return PPA_REQUIRED_STATUSES.includes(status);
+export function requiresPpaForStatus(
+  status: MarketPulseCardStatus,
+  cardType: MarketPulseCardType = MARKET_PULSE_CARD_TYPE_SIGNAL,
+): boolean {
+  return isMarketPulseSignalCard({ cardType }) && PPA_REQUIRED_STATUSES.includes(status);
+}
+
+function validateSharedCardScheduling(
+  values: Pick<MarketPulseCardFormValues, "cycleId" | "dayIndex" | "sortOrder">,
+  options?: {
+    existingSortOrdersOnDay?: Array<{ sortOrder: number; exclude?: boolean }>;
+  },
+  errors: CardFormFieldErrors = {},
+): CardFormFieldErrors {
+  if (!values.cycleId.trim()) {
+    errors.cycleId = "Cycle is required.";
+  }
+
+  if (!Number.isInteger(values.dayIndex) || values.dayIndex < 1) {
+    errors.dayIndex = "Day index must be a positive integer.";
+  }
+
+  if (!Number.isInteger(values.sortOrder) || values.sortOrder < 0) {
+    errors.sortOrder = "Order within day must be zero or greater.";
+  } else if (
+    options?.existingSortOrdersOnDay?.some(
+      (row) => !row.exclude && row.sortOrder === values.sortOrder,
+    )
+  ) {
+    errors.sortOrder = "Another card on this cycle day already uses this order.";
+  }
+
+  return errors;
+}
+
+function validateSharedCardMediaUrls(
+  values: Pick<
+    MarketPulseCardFormValues,
+    "logoUrl" | "sourceUrl" | "cardImageUrl" | "cardImageAlt"
+  >,
+  errors: CardFormFieldErrors = {},
+): CardFormFieldErrors {
+  if (values.logoUrl.trim() && !isValidOptionalHttpUrl(values.logoUrl)) {
+    errors.logoUrl = "Company logo URL must be a valid http(s) URL.";
+  }
+  if (values.sourceUrl.trim() && !isValidOptionalHttpUrl(values.sourceUrl)) {
+    errors.sourceUrl = "News source URL must be a valid http(s) URL.";
+  }
+  if (values.cardImageUrl.trim() && !isValidOptionalHttpUrl(values.cardImageUrl)) {
+    errors.cardImageUrl = "Card image URL must be a valid http(s) URL.";
+  }
+  if (values.cardImageUrl.trim() && !values.cardImageAlt.trim()) {
+    errors.cardImageAlt = "Card image alt text is required when an image URL is set.";
+  }
+
+  return errors;
+}
+
+function validateSharedCardDates(
+  values: Pick<
+    MarketPulseCardFormValues,
+    "publishedAt" | "revealAt" | "sourceDate"
+  >,
+  errors: CardFormFieldErrors = {},
+): CardFormFieldErrors {
+  if (values.publishedAt.trim() && !parseCardDate(values.publishedAt)) {
+    errors.publishedAt = "Invalid published date.";
+  }
+  if (values.revealAt.trim() && !parseCardDate(values.revealAt)) {
+    errors.revealAt = "Invalid reveal date.";
+  }
+  if (values.sourceDate.trim() && !parseCardDate(values.sourceDate)) {
+    errors.sourceDate = "Invalid news published date.";
+  }
+
+  return errors;
+}
+
+function hasRestCardBodyContent(input: {
+  newsBody: string;
+  summary: string;
+}): boolean {
+  return Boolean(input.newsBody.trim() || input.summary.trim());
+}
+
+function validateSignalMarketPulseCardForm(
+  values: MarketPulseCardFormValues,
+  options?: {
+    existingDayIndexes?: number[];
+    excludeDayIndex?: number;
+    existingSortOrdersOnDay?: Array<{ sortOrder: number; exclude?: boolean }>;
+  },
+): { valid: boolean; errors: CardFormFieldErrors } {
+  const errors = validateSharedCardScheduling(values, options);
+
+  if (!values.companyName.trim()) {
+    errors.companyName = "Company name is required.";
+  }
+  if (!values.ticker.trim()) {
+    errors.ticker = "Ticker is required.";
+  }
+  if (!values.headline.trim()) {
+    errors.headline = "News headline is required.";
+  }
+  if (!values.summary.trim()) {
+    errors.summary = "Summary is required.";
+  }
+
+  validateSharedCardMediaUrls(values, errors);
+
+  if (requiresPpaForStatus(values.status, values.cardType)) {
+    if (!values.ppaSignal) {
+      errors.ppaSignal = "PPA signal is required for READY or PUBLISHED status.";
+    }
+    if (!values.ppaInsight.trim()) {
+      errors.ppaInsight = "PPA insight is required for READY or PUBLISHED status.";
+    }
+  }
+
+  validateSharedCardDates(values, errors);
+
+  return { valid: Object.keys(errors).length === 0, errors };
+}
+
+function validateRestMarketPulseCardForm(
+  values: MarketPulseCardFormValues,
+  options?: {
+    existingSortOrdersOnDay?: Array<{ sortOrder: number; exclude?: boolean }>;
+  },
+): { valid: boolean; errors: CardFormFieldErrors } {
+  const errors = validateSharedCardScheduling(values, options);
+
+  if (!values.headline.trim()) {
+    errors.headline = "Rest card title is required.";
+  }
+  if (!hasRestCardBodyContent(values)) {
+    errors.newsBody = "Rest card body text or summary is required.";
+  }
+
+  validateSharedCardMediaUrls(values, errors);
+  validateSharedCardDates(values, errors);
+
+  return { valid: Object.keys(errors).length === 0, errors };
+}
+
+function validateSignalMarketPulseCardDraftSave(
+  values: MarketPulseCardFormValues,
+  options?: {
+    existingSortOrdersOnDay?: Array<{ sortOrder: number; exclude?: boolean }>;
+  },
+): { valid: boolean; errors: CardFormFieldErrors } {
+  const errors = validateSharedCardScheduling(values, options);
+
+  if (!values.companyName.trim()) {
+    errors.companyName = "Company name is required.";
+  }
+  if (!values.ticker.trim()) {
+    errors.ticker = "Ticker is required.";
+  }
+  if (!values.headline.trim()) {
+    errors.headline = "News headline is required.";
+  }
+
+  validateSharedCardMediaUrls(values, errors);
+  validateSharedCardDates(values, errors);
+
+  return { valid: Object.keys(errors).length === 0, errors };
+}
+
+function validateRestMarketPulseCardDraftSave(
+  values: MarketPulseCardFormValues,
+  options?: {
+    existingSortOrdersOnDay?: Array<{ sortOrder: number; exclude?: boolean }>;
+  },
+): { valid: boolean; errors: CardFormFieldErrors } {
+  const errors = validateSharedCardScheduling(values, options);
+
+  if (!values.headline.trim()) {
+    errors.headline = "Rest card title is required.";
+  }
+
+  validateSharedCardMediaUrls(values, errors);
+  validateSharedCardDates(values, errors);
+
+  return { valid: Object.keys(errors).length === 0, errors };
+}
+
+function validateSignalCardPublishable(card: {
+  headline: string;
+  companyName: string;
+  ticker: string;
+  summary: string | null;
+  ppaSignal: MarketPulseSignal | null;
+  ppaInsight: string | null;
+  ppaSignalLockedAt: Date | string | null;
+  cardImageUrl?: string | null;
+  cardImageAlt?: string | null;
+}): string | null {
+  if (!card.headline.trim()) {
+    return "Headline is required to publish.";
+  }
+  if (!card.companyName.trim()) {
+    return "Company name is required to publish.";
+  }
+  if (!card.ticker.trim()) {
+    return "Ticker is required to publish.";
+  }
+  if (!card.summary?.trim()) {
+    return "Summary is required to publish.";
+  }
+  if (!card.ppaSignal) {
+    return "PPA signal is required to publish.";
+  }
+  if (!card.ppaInsight?.trim()) {
+    return "PPA insight is required to publish.";
+  }
+  if (!card.ppaSignalLockedAt) {
+    return "PPA signal must be locked before publishing.";
+  }
+  if (card.cardImageUrl?.trim() && !card.cardImageAlt?.trim()) {
+    return "Card image alt text is required when an image URL is set.";
+  }
+  return null;
+}
+
+function validateRestCardPublishable(card: {
+  headline: string;
+  newsBody?: string | null;
+  summary?: string | null;
+  cardImageUrl?: string | null;
+  cardImageAlt?: string | null;
+}): string | null {
+  if (!card.headline.trim()) {
+    return "Rest card title is required to publish.";
+  }
+  if (!hasRestCardBodyContent({
+    newsBody: card.newsBody ?? "",
+    summary: card.summary ?? "",
+  })) {
+    return "Rest card body text or summary is required to publish.";
+  }
+  if (card.cardImageUrl?.trim() && !card.cardImageAlt?.trim()) {
+    return "Card image alt text is required when an image URL is set.";
+  }
+  return null;
 }
 
 export function isValidOptionalHttpUrl(value: string): boolean {
@@ -110,68 +368,13 @@ export function validateMarketPulseCardForm(
     existingSortOrdersOnDay?: Array<{ sortOrder: number; exclude?: boolean }>;
   },
 ): { valid: boolean; errors: CardFormFieldErrors } {
-  const errors: CardFormFieldErrors = {};
+  const cardType = resolveMarketPulseCardType(values.cardType);
 
-  if (!values.cycleId.trim()) {
-    errors.cycleId = "Cycle is required.";
-  }
-
-  if (!Number.isInteger(values.dayIndex) || values.dayIndex < 1) {
-    errors.dayIndex = "Day index must be a positive integer.";
+  if (isRestCardType(cardType)) {
+    return validateRestMarketPulseCardForm(values, options);
   }
 
-  if (!Number.isInteger(values.sortOrder) || values.sortOrder < 0) {
-    errors.sortOrder = "Order within day must be zero or greater.";
-  } else if (options?.existingSortOrdersOnDay?.some((row) => !row.exclude && row.sortOrder === values.sortOrder)) {
-    errors.sortOrder = "Another card on this cycle day already uses this order.";
-  }
-
-  if (!values.companyName.trim()) {
-    errors.companyName = "Company name is required.";
-  }
-  if (!values.ticker.trim()) {
-    errors.ticker = "Ticker is required.";
-  }
-  if (!values.headline.trim()) {
-    errors.headline = "News headline is required.";
-  }
-  if (!values.summary.trim()) {
-    errors.summary = "Summary is required.";
-  }
-
-  if (values.logoUrl.trim() && !isValidOptionalHttpUrl(values.logoUrl)) {
-    errors.logoUrl = "Company logo URL must be a valid http(s) URL.";
-  }
-  if (values.sourceUrl.trim() && !isValidOptionalHttpUrl(values.sourceUrl)) {
-    errors.sourceUrl = "News source URL must be a valid http(s) URL.";
-  }
-  if (values.cardImageUrl.trim() && !isValidOptionalHttpUrl(values.cardImageUrl)) {
-    errors.cardImageUrl = "Card image URL must be a valid http(s) URL.";
-  }
-  if (values.cardImageUrl.trim() && !values.cardImageAlt.trim()) {
-    errors.cardImageAlt = "Card image alt text is required when an image URL is set.";
-  }
-
-  if (requiresPpaForStatus(values.status)) {
-    if (!values.ppaSignal) {
-      errors.ppaSignal = "PPA signal is required for READY or PUBLISHED status.";
-    }
-    if (!values.ppaInsight.trim()) {
-      errors.ppaInsight = "PPA insight is required for READY or PUBLISHED status.";
-    }
-  }
-
-  if (values.publishedAt.trim() && !parseCardDate(values.publishedAt)) {
-    errors.publishedAt = "Invalid published date.";
-  }
-  if (values.revealAt.trim() && !parseCardDate(values.revealAt)) {
-    errors.revealAt = "Invalid reveal date.";
-  }
-  if (values.sourceDate.trim() && !parseCardDate(values.sourceDate)) {
-    errors.sourceDate = "Invalid news published date.";
-  }
-
-  return { valid: Object.keys(errors).length === 0, errors };
+  return validateSignalMarketPulseCardForm(values, options);
 }
 
 /** Relaxed validation for builder draft saves — publish rules enforced separately. */
@@ -183,97 +386,46 @@ export function validateMarketPulseCardDraftSave(
     existingSortOrdersOnDay?: Array<{ sortOrder: number; exclude?: boolean }>;
   },
 ): { valid: boolean; errors: CardFormFieldErrors } {
-  const errors: CardFormFieldErrors = {};
+  const cardType = resolveMarketPulseCardType(values.cardType);
 
-  if (!values.cycleId.trim()) {
-    errors.cycleId = "Cycle is required.";
-  }
-
-  if (!Number.isInteger(values.dayIndex) || values.dayIndex < 1) {
-    errors.dayIndex = "Day index must be a positive integer.";
+  if (isRestCardType(cardType)) {
+    return validateRestMarketPulseCardDraftSave(values, options);
   }
 
-  if (!Number.isInteger(values.sortOrder) || values.sortOrder < 0) {
-    errors.sortOrder = "Order within day must be zero or greater.";
-  } else if (options?.existingSortOrdersOnDay?.some((row) => !row.exclude && row.sortOrder === values.sortOrder)) {
-    errors.sortOrder = "Another card on this cycle day already uses this order.";
-  }
-
-  if (!values.companyName.trim()) {
-    errors.companyName = "Company name is required.";
-  }
-  if (!values.ticker.trim()) {
-    errors.ticker = "Ticker is required.";
-  }
-  if (!values.headline.trim()) {
-    errors.headline = "News headline is required.";
-  }
-
-  if (values.logoUrl.trim() && !isValidOptionalHttpUrl(values.logoUrl)) {
-    errors.logoUrl = "Company logo URL must be a valid http(s) URL.";
-  }
-  if (values.sourceUrl.trim() && !isValidOptionalHttpUrl(values.sourceUrl)) {
-    errors.sourceUrl = "News source URL must be a valid http(s) URL.";
-  }
-  if (values.cardImageUrl.trim() && !isValidOptionalHttpUrl(values.cardImageUrl)) {
-    errors.cardImageUrl = "Card image URL must be a valid http(s) URL.";
-  }
-  if (values.cardImageUrl.trim() && !values.cardImageAlt.trim()) {
-    errors.cardImageAlt = "Card image alt text is required when an image URL is set.";
-  }
-
-  if (values.publishedAt.trim() && !parseCardDate(values.publishedAt)) {
-    errors.publishedAt = "Invalid published date.";
-  }
-  if (values.revealAt.trim() && !parseCardDate(values.revealAt)) {
-    errors.revealAt = "Invalid reveal date.";
-  }
-  if (values.sourceDate.trim() && !parseCardDate(values.sourceDate)) {
-    errors.sourceDate = "Invalid news published date.";
-  }
-
-  return { valid: Object.keys(errors).length === 0, errors };
+  return validateSignalMarketPulseCardDraftSave(values, options);
 }
 
 export function validateCardPublishable(card: {
+  cardType?: MarketPulseCardType | null;
   headline: string;
   companyName: string;
   ticker: string;
   summary: string | null;
+  newsBody?: string | null;
   ppaSignal: MarketPulseSignal | null;
   ppaInsight: string | null;
   ppaSignalLockedAt: Date | string | null;
+  cardImageUrl?: string | null;
+  cardImageAlt?: string | null;
 }): string | null {
-  if (!card.headline.trim()) {
-    return "Headline is required to publish.";
+  if (isMarketPulseRestCard(card)) {
+    return validateRestCardPublishable(card);
   }
-  if (!card.companyName.trim()) {
-    return "Company name is required to publish.";
-  }
-  if (!card.ticker.trim()) {
-    return "Ticker is required to publish.";
-  }
-  if (!card.summary?.trim()) {
-    return "Summary is required to publish.";
-  }
-  if (!card.ppaSignal) {
-    return "PPA signal is required to publish.";
-  }
-  if (!card.ppaInsight?.trim()) {
-    return "PPA insight is required to publish.";
-  }
-  if (!card.ppaSignalLockedAt) {
-    return "PPA signal must be locked before publishing.";
-  }
-  return null;
+
+  return validateSignalCardPublishable(card);
 }
 
 export function validateCardStatusPpa(input: {
+  cardType?: MarketPulseCardType | null;
   status: MarketPulseCardStatus;
   ppaSignal: MarketPulseSignal | null;
   ppaInsight: string | null;
 }): string | null {
-  if (!requiresPpaForStatus(input.status)) {
+  if (!cardTypeRequiresPpa(input)) {
+    return null;
+  }
+
+  if (!requiresPpaForStatus(input.status, resolveMarketPulseCardType(input.cardType))) {
     return null;
   }
   if (!input.ppaSignal) {
@@ -289,6 +441,7 @@ export const DEFAULT_CARD_FORM_VALUES: MarketPulseCardFormValues = {
   cycleId: "",
   dayIndex: 1,
   sortOrder: 0,
+  cardType: MARKET_PULSE_CARD_TYPE_SIGNAL,
   companyName: "",
   companyNameZh: "",
   ticker: "",

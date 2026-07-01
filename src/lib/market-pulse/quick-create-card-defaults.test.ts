@@ -6,7 +6,9 @@ import {
   QUICK_DRAFT_CARD_COMPANY_NAME,
   QUICK_DRAFT_CARD_HEADLINE,
   QUICK_DRAFT_CARD_TICKER,
+  QUICK_REST_DRAFT_CARD_HEADLINE,
   buildQuickDraftCardDefaults,
+  buildQuickRestDraftCardDefaults,
   nextQuickDraftDayIndex,
 } from "@/lib/market-pulse/quick-create-card-defaults";
 
@@ -30,5 +32,22 @@ describe("quick-create-card-defaults re-exports", () => {
     expect(defaults.userPrompt).toBe(MARKET_PULSE_DEFAULT_USER_PROMPT);
     expect(defaults.status).toBe("DRAFT");
     expect(defaults.sourceDate.getTime()).toBe(MARKET_PULSE_PUBLIC_LAUNCH_AT.getTime());
+  });
+
+  it("builds REST draft defaults with bilingual copy", () => {
+    const defaults = buildQuickRestDraftCardDefaults({
+      cycle: {
+        startsAt: MARKET_PULSE_PUBLIC_LAUNCH_AT,
+        revealAt: new Date("2026-04-01T12:00:00+08:00"),
+        prizeLabel: null,
+      },
+      cards: [],
+    });
+
+    expect(defaults.headline).toBe(QUICK_REST_DRAFT_CARD_HEADLINE);
+    expect(defaults.newsBody).toContain("participation");
+    expect(defaults.headlineZhHant).toBeTruthy();
+    expect(defaults.newsBodyZhHant).toBeTruthy();
+    expect(defaults.status).toBe("DRAFT");
   });
 });

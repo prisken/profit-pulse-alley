@@ -18,6 +18,7 @@ export async function validateCycleReadyForReveal(
       headline: true,
       companyName: true,
       status: true,
+      cardType: true,
       ppaSignal: true,
       ppaInsight: true,
       ppaSignalLockedAt: true,

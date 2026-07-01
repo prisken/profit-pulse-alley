@@ -5,6 +5,7 @@ import type {
   MarketPulseAdminCycleRow,
 } from "@/lib/market-pulse/admin-data";
 import { MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
+import { MARKET_PULSE_CARD_TYPE_REST } from "@/lib/market-pulse/card-type";
 import { PPA_REVEAL_WARNING_HOURS } from "@/lib/market-pulse/constants";
 import {
   evaluatePpaRevealWarning,
@@ -38,6 +39,8 @@ const baseCycle: MarketPulseAdminCycleRow = {
   scoresGenerated: false,
   topWinnerName: null,
   topWinnerScore: null,
+  signalCardCount: 1,
+  restCardCount: 0,
 };
 
 function buildCard(
@@ -175,5 +178,23 @@ describe("evaluatePpaRevealWarning", () => {
         now: justOutside,
       }).severity,
     ).toBe("setup");
+  });
+
+  it("ignores published rest cards when evaluating missing PPA", () => {
+    const result = evaluatePpaRevealWarning({
+      activeCycle: baseCycle,
+      cards: [
+        buildCard({
+          cardType: MARKET_PULSE_CARD_TYPE_REST,
+          ppaSignal: null,
+          ppaInsight: null,
+          ppaSignalLockedAt: null,
+        }),
+      ],
+      now: withinWindow,
+    });
+
+    expect(result.severity).toBe("complete");
+    expect(result.missingCards).toHaveLength(0);
   });
 });

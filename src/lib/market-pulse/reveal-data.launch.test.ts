@@ -102,6 +102,7 @@ describe("Launch smoke — reveal page", () => {
           dayIndex: 1,
           sortOrder: 0,
           cardsOnDay: 1,
+          cardType: "SIGNAL",
           companyName: "Example Co",
           headline: "Headline",
           userDecision: "BULLISH",
@@ -126,6 +127,60 @@ describe("Launch smoke — reveal page", () => {
     expect(data.results?.cards[0]?.ppaSignal).toBe("BULLISH");
     expect(data.results?.cards[0]?.ppaInsight).toBe("Insight text");
     expect(data.results?.totalPoints).toBe(150);
+  });
+
+  it("includes rest cards as participation-only rows in personal results", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "user-1" } });
+    mocks.getRevealedMarketPulseCycleForPage.mockResolvedValue({
+      revealedCycle: { ...pendingCycle, status: "REVEALED" as const },
+      pendingActiveCycle: null,
+    });
+    mocks.getMarketPulseRevealForUser.mockResolvedValue({
+      cycleId: pendingCycle.id,
+      cycleName: pendingCycle.name,
+      isRevealed: true,
+      totals: {
+        participationPoints: 20,
+        matchBonus: 0,
+        streakBonus: 0,
+        totalPoints: 20,
+      },
+      cards: [
+        {
+          cardId: "rest-1",
+          dayIndex: 2,
+          sortOrder: 0,
+          cardsOnDay: 1,
+          cardType: "REST",
+          companyName: "Market rest",
+          headline: "Market rest day",
+          userDecision: "ACKNOWLEDGED",
+          ppaSignal: null,
+          ppaInsight: null,
+          participationPoints: 10,
+          matchBonus: 0,
+          streakBonus: 0,
+          totalPoints: 10,
+        },
+      ],
+    });
+    mocks.getUserMarketPulseProgress.mockResolvedValue({
+      rank: 3,
+      currentStreak: 0,
+    });
+
+    const data = await getMarketPulseRevealPageData();
+
+    expect(data.results?.cards[0]).toMatchObject({
+      cardType: "REST",
+      isRestCard: true,
+      isMatch: false,
+      ppaSignal: null,
+      ppaInsight: null,
+      totalPoints: 10,
+    });
+    expect(data.results?.matchesCount).toBe(0);
+    expect(data.results?.totalPlayed).toBe(1);
   });
 
   it("falls back to pending when reveal payload is not yet valid for the user", async () => {

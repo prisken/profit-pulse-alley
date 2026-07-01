@@ -9,6 +9,7 @@ import {
   isValidOptionalHttpUrl,
   parseCardDate,
 } from "@/lib/market-pulse/card-validation";
+import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
 import {
   MARKET_PULSE_CYCLE_STATUS_OPTIONS,
   validateMarketPulseCycleDates,
@@ -42,6 +43,7 @@ export type CycleReadinessCardRow = {
   cardId: string;
   dayIndex: number;
   headline: string;
+  cardType: MarketPulseAdminCardRow["cardType"];
   status: CycleReadinessCardStatus;
   issues: string[];
 };
@@ -130,7 +132,7 @@ function collectCardContentIssues(
     issues.push("Order within day must be zero or greater.");
   }
 
-  if (!card.userPrompt?.trim()) {
+  if (!card.userPrompt?.trim() && !isMarketPulseRestCard(card)) {
     issues.push("Player prompt is required.");
   }
 
@@ -244,6 +246,7 @@ export function evaluateCycleReadiness(
       cardId: card.id,
       dayIndex: card.dayIndex,
       headline: card.headline,
+      cardType: card.cardType,
       status: getCycleReadinessCardStatus(
         card,
         schedulingIssues.length > 0,

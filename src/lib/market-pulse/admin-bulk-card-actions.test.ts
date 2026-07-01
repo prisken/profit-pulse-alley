@@ -86,6 +86,37 @@ describe("planBulkPublish", () => {
     expect(plan.publishable).toHaveLength(0);
     expect(plan.skipped[0]?.reason).toBe("Already published.");
   });
+
+  it("publishes REST cards without ticker or PPA", () => {
+    const cards = [
+      baseCard({
+        id: "rest-ready",
+        cardType: "REST",
+        companyName: "",
+        ticker: "",
+        summary: null,
+        newsBody: "Weekend break.",
+        userPrompt: null,
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
+      }),
+      baseCard({
+        id: "signal-invalid",
+        cardType: "SIGNAL",
+        summary: null,
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
+      }),
+    ];
+
+    const plan = planBulkPublish(cards, ["rest-ready", "signal-invalid"]);
+
+    expect(plan.publishable.map((card) => card.cardId)).toEqual(["rest-ready"]);
+    expect(plan.skipped).toHaveLength(1);
+    expect(plan.skipped[0]?.cardId).toBe("signal-invalid");
+  });
 });
 
 describe("planBulkUnpublish", () => {

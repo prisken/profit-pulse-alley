@@ -10,7 +10,7 @@ import {
   TEST_CYCLE_ID,
   TEST_USER_ID,
 } from "@/lib/market-pulse/market-pulse-test-fixtures";
-import { buildScoreEventsForUser } from "@/lib/market-pulse/score-calculation";
+import { buildScoreEventsForUser, computeSignalMatchStreak } from "@/lib/market-pulse/score-calculation";
 
 function decisionRow(
   dayIndex: number,
@@ -174,6 +174,230 @@ describe("buildScoreEventsForUser", () => {
       cycleId: TEST_CYCLE_ID,
       cardId: TEST_CARD_ID,
       reason: `cycle_score:card:${TEST_CARD_ID}:day:4`,
+    });
+  });
+
+  function restRow(
+    dayIndex: number,
+    cardId = `rest-day-${dayIndex}`,
+    options: { sortOrder?: number; createdAt?: string } = {},
+  ) {
+    return {
+      userId: TEST_USER_ID,
+      cardId,
+      decision: "ACKNOWLEDGED" as const,
+      card: {
+        id: cardId,
+        dayIndex,
+        sortOrder: options.sortOrder ?? 0,
+        createdAt: options.createdAt ?? "2026-06-01T00:00:00.000Z",
+        cardType: "REST" as const,
+        ppaSignal: null,
+      },
+    };
+  }
+
+  it("awards +10 participation only for acknowledged rest cards", () => {
+    const events = buildScoreEventsForUser(TEST_CYCLE_ID, [
+      restRow(1, "rest-1"),
+    ]);
+
+    expect(events[0]).toMatchObject({
+      participationPoints: PARTICIPATION_POINTS,
+      matchBonus: 0,
+      streakBonus: 0,
+      totalPoints: PARTICIPATION_POINTS,
+    });
+  });
+
+  it("does not reset signal streak when a rest card is played between matches", () => {
+    const events = buildScoreEventsForUser(TEST_CYCLE_ID, [
+      decisionRow(0, "BULLISH", "BULLISH", "sig-0"),
+      restRow(1, "rest-1"),
+      decisionRow(2, "BULLISH", "BULLISH", "sig-2"),
+      decisionRow(3, "BULLISH", "BULLISH", "sig-3"),
+    ]);
+
+    expect(events.map((event) => event.cardId)).toEqual([
+      "sig-0",
+      "rest-1",
+      "sig-2",
+      "sig-3",
+    ]);
+    expect(events[1]).toMatchObject({
+      matchBonus: 0,
+      streakBonus: 0,
+      totalPoints: PARTICIPATION_POINTS,
+    });
+    expect(events[3]?.streakBonus).toBe(STREAK_BONUS_POINTS);
+  });
+
+  it("earns streak bonus across three matching signals with rest cards between them", () => {
+    const events = buildScoreEventsForUser(TEST_CYCLE_ID, [
+      decisionRow(0, "BULLISH", "BULLISH", "sig-0"),
+      restRow(1, "rest-1"),
+      decisionRow(2, "BULLISH", "BULLISH", "sig-2"),
+      restRow(3, "rest-2"),
+      decisionRow(4, "BULLISH", "BULLISH", "sig-4"),
+    ]);
+
+    expect(events[4]?.streakBonus).toBe(STREAK_BONUS_POINTS);
+    expect(events[4]?.matchBonus).toBe(MATCH_BONUS_POINTS);
+  });
+
+  it("scores canonical REST-neutral streak example: signal, rest, signal, signal → 290 total", () => {
+    const events = buildScoreEventsForUser(TEST_CYCLE_ID, [
+      decisionRow(1, "BULLISH", "BULLISH", "sig-1"),
+      restRow(2, "rest-2"),
+      decisionRow(3, "BULLISH", "BULLISH", "sig-3"),
+      decisionRow(4, "BULLISH", "BULLISH", "sig-4"),
+    ]);
+
+    expect(events).toHaveLength(4);
+    expect(events[0]).toMatchObject({
+      cardId: "sig-1",
+      participationPoints: 10,
+      matchBonus: 50,
+      streakBonus: 0,
+      totalPoints: 60,
+    });
+    expect(events[1]).toMatchObject({
+      cardId: "rest-2",
+      participationPoints: 10,
+      matchBonus: 0,
+      streakBonus: 0,
+      totalPoints: 10,
+    });
+    expect(events[2]).toMatchObject({
+      cardId: "sig-3",
+      participationPoints: 10,
+      matchBonus: 50,
+      streakBonus: 0,
+      totalPoints: 60,
+    });
+    expect(events[3]).toMatchObject({
+      cardId: "sig-4",
+      participationPoints: 10,
+      matchBonus: 50,
+      streakBonus: 100,
+      totalPoints: 160,
+    });
+
+    const totals = events.reduce(
+      (acc, event) => ({
+        participation: acc.participation + event.participationPoints,
+        match: acc.match + event.matchBonus,
+        streak: acc.streak + event.streakBonus,
+        total: acc.total + event.totalPoints,
+      }),
+      { participation: 0, match: 0, streak: 0, total: 0 },
+    );
+
+    expect(totals).toEqual({
+      participation: 40,
+      match: 150,
+      streak: 100,
+      total: 290,
+    });
+  });
+
+  it("skips multiple rest cards without breaking signal streak progression", () => {
+    const events = buildScoreEventsForUser(TEST_CYCLE_ID, [
+      decisionRow(1, "BULLISH", "BULLISH", "sig-1"),
+      restRow(2, "rest-a"),
+      restRow(3, "rest-b"),
+      decisionRow(4, "BULLISH", "BULLISH", "sig-4"),
+      decisionRow(5, "BULLISH", "BULLISH", "sig-5"),
+    ]);
+
+    expect(events[4]?.streakBonus).toBe(STREAK_BONUS_POINTS);
+    expect(events[1]).toMatchObject({
+      matchBonus: 0,
+      streakBonus: 0,
+      totalPoints: PARTICIPATION_POINTS,
+    });
+    expect(events[2]).toMatchObject({
+      matchBonus: 0,
+      streakBonus: 0,
+      totalPoints: PARTICIPATION_POINTS,
+    });
+  });
+
+  it("resets signal streak to 0 after a wrong SIGNAL even when rest cards were skipped", () => {
+    const events = buildScoreEventsForUser(TEST_CYCLE_ID, [
+      decisionRow(1, "BULLISH", "BULLISH", "sig-1"),
+      restRow(2, "rest-2"),
+      decisionRow(3, "CAUTIOUS", "BULLISH", "sig-3"),
+      decisionRow(4, "BULLISH", "BULLISH", "sig-4"),
+      decisionRow(5, "BULLISH", "BULLISH", "sig-5"),
+      decisionRow(6, "BULLISH", "BULLISH", "sig-6"),
+    ]);
+
+    expect(events[2]?.matchBonus).toBe(0);
+    expect(events[2]?.streakBonus).toBe(0);
+    expect(events[4]?.streakBonus).toBe(0);
+    expect(events[5]?.streakBonus).toBe(STREAK_BONUS_POINTS);
+  });
+
+  describe("REST-neutral streak behavior", () => {
+    it("SIGNAL correct → REST acknowledged → SIGNAL correct → SIGNAL correct earns one +100 streak bonus", () => {
+      const decisions = [
+        decisionRow(1, "BULLISH", "BULLISH", "sig-1"),
+        restRow(2, "rest-2"),
+        decisionRow(3, "BULLISH", "BULLISH", "sig-3"),
+        decisionRow(4, "BULLISH", "BULLISH", "sig-4"),
+      ];
+      const events = buildScoreEventsForUser(TEST_CYCLE_ID, decisions);
+
+      expect(events.filter((event) => event.streakBonus > 0)).toHaveLength(1);
+      expect(events[3]?.streakBonus).toBe(STREAK_BONUS_POINTS);
+      expect(computeSignalMatchStreak(decisions)).toBe(3);
+    });
+
+    it("SIGNAL correct → REST acknowledged → SIGNAL wrong resets streak to 0", () => {
+      const decisions = [
+        decisionRow(1, "BULLISH", "BULLISH", "sig-1"),
+        restRow(2, "rest-2"),
+        decisionRow(3, "CAUTIOUS", "BULLISH", "sig-3"),
+      ];
+      const events = buildScoreEventsForUser(TEST_CYCLE_ID, decisions);
+
+      expect(events[2]).toMatchObject({
+        matchBonus: 0,
+        streakBonus: 0,
+        totalPoints: PARTICIPATION_POINTS,
+      });
+      expect(computeSignalMatchStreak(decisions)).toBe(0);
+    });
+
+    it("SIGNAL correct → REST acknowledged → REST acknowledged → SIGNAL correct gives streak count 2, no bonus yet", () => {
+      const decisions = [
+        decisionRow(1, "BULLISH", "BULLISH", "sig-1"),
+        restRow(2, "rest-a"),
+        restRow(3, "rest-b"),
+        decisionRow(4, "BULLISH", "BULLISH", "sig-4"),
+      ];
+      const events = buildScoreEventsForUser(TEST_CYCLE_ID, decisions);
+
+      expect(events[3]).toMatchObject({
+        matchBonus: MATCH_BONUS_POINTS,
+        streakBonus: 0,
+        totalPoints: PARTICIPATION_POINTS + MATCH_BONUS_POINTS,
+      });
+      expect(computeSignalMatchStreak(decisions)).toBe(2);
+    });
+
+    it("REST-only cycle awards participation only and no streak", () => {
+      const decisions = [restRow(1, "rest-1"), restRow(2, "rest-2"), restRow(3, "rest-3")];
+      const events = buildScoreEventsForUser(TEST_CYCLE_ID, decisions);
+
+      expect(events).toHaveLength(3);
+      expect(events.every((event) => event.totalPoints === PARTICIPATION_POINTS)).toBe(
+        true,
+      );
+      expect(events.every((event) => event.matchBonus === 0)).toBe(true);
+      expect(events.every((event) => event.streakBonus === 0)).toBe(true);
+      expect(computeSignalMatchStreak(decisions)).toBe(0);
     });
   });
 });

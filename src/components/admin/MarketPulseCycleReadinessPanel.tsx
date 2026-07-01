@@ -1,10 +1,12 @@
 "use client";
 
+import { CardTypeBadge } from "@/components/admin/AdminCardStatusBadge";
 import type {
   CycleReadinessCardStatus,
   CycleReadinessReport,
 } from "@/lib/market-pulse/admin-cycle-readiness";
 import { useTranslations } from "@/components/providers/LocaleProvider";
+import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
 import { translateWith, type MessageKey } from "@/lib/i18n/messages";
 
 function overallStatusClass(status: CycleReadinessReport["overallStatus"]): string {
@@ -149,13 +151,21 @@ export default function MarketPulseCycleReadinessPanel({
                     {onSelectCard ? (
                       <button
                         type="button"
-                        className="truncate text-left text-emerald-400 underline-offset-4 hover:underline"
+                        className="inline-flex max-w-full items-center gap-2 truncate text-left text-emerald-400 underline-offset-4 hover:underline"
                         onClick={() => onSelectCard(row.cardId)}
                       >
-                        {row.headline}
+                        {isMarketPulseRestCard(row) ? (
+                          <CardTypeBadge cardType={row.cardType} />
+                        ) : null}
+                        <span className="truncate">{row.headline}</span>
                       </button>
                     ) : (
-                      row.headline
+                      <span className="inline-flex items-center gap-2 truncate">
+                        {isMarketPulseRestCard(row) ? (
+                          <CardTypeBadge cardType={row.cardType} />
+                        ) : null}
+                        {row.headline}
+                      </span>
                     )}
                   </td>
                   <td className="px-2 py-2">

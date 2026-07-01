@@ -12,6 +12,7 @@ import {
 } from "@/lib/market-pulse/cycle-playability";
 import { evaluateFirstPublicCycleSetup } from "@/lib/market-pulse/first-cycle-admin-guidance";
 import { evaluateActiveCycleOperationalWarnings } from "@/lib/market-pulse/admin-operational-warnings";
+import { computeAdminCycleCardBreakdown } from "@/lib/market-pulse/admin-cycle-stats";
 import { isBeforePublicLaunch } from "@/lib/market-pulse/launch-config";
 import type { MarketPulseAdminCycleRow } from "@/lib/market-pulse/admin-data";
 import { MARKET_PULSE_ADMIN_CARD_ROW_LOCALIZATION_DEFAULTS } from "@/lib/market-pulse/admin-card-row";
@@ -26,6 +27,8 @@ export type AdminOverviewActiveCycle = {
   playabilityIssue: string | null;
   unlockedCount: number;
   missingSignalCount: number;
+  signalCardCount: number;
+  restCardCount: number;
   cardCount: number;
 };
 
@@ -69,6 +72,8 @@ function cycleRowForGuidance(
     isPlayableNow: activeCycle.isPlayableNow,
     playabilityIssue: activeCycle.playabilityIssue,
     cardCount: activeCycle.cardCount,
+    signalCardCount: activeCycle.signalCardCount,
+    restCardCount: activeCycle.restCardCount,
     decisionCount: 0,
     usersPlayed: 0,
     missingSignalCount: activeCycle.missingSignalCount,
@@ -107,7 +112,12 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
         include: {
           _count: { select: { cards: true } },
           cards: {
-            select: { ppaSignal: true, ppaSignalLockedAt: true, status: true },
+            select: {
+              cardType: true,
+              ppaSignal: true,
+              ppaSignalLockedAt: true,
+              status: true,
+            },
           },
         },
       });
@@ -115,8 +125,7 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
       if (cycle) {
         const now = new Date();
         const playabilityIssue = getCyclePlayabilityIssue(cycle, now);
-        const missingSignalCount = cycle.cards.filter((c) => !c.ppaSignal).length;
-        const unlockedCount = cycle.cards.filter((c) => !c.ppaSignalLockedAt).length;
+        const cardBreakdown = computeAdminCycleCardBreakdown(cycle.cards);
 
         activeCycle = {
           id: cycle.id,
@@ -126,15 +135,18 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
           playabilityIssue: playabilityIssue
             ? describeCyclePlayabilityIssue(playabilityIssue)
             : null,
-          unlockedCount,
-          missingSignalCount,
-          cardCount: cycle._count.cards,
+          unlockedCount: cardBreakdown.unlockedSignalCards,
+          missingSignalCount: cardBreakdown.missingPpaSignalCards,
+          signalCardCount: cardBreakdown.signalCards,
+          restCardCount: cardBreakdown.restCards,
+          cardCount: cardBreakdown.totalCards,
         };
 
         const guidanceCards = cycle.cards.map((card, index) => ({
           id: `overview-${index}`,
           cycleId: cycle.id,
           dayIndex: index + 1,
+          cardType: card.cardType,
           companyName: "",
           companyNameZh: null,
           ticker: "",

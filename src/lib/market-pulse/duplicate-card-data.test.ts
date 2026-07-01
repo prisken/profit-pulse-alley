@@ -5,6 +5,7 @@ import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config"
 
 const source = {
   cycleId: "cycle-1",
+  cardType: "SIGNAL" as const,
   companyName: "Acme Corp",
   companyNameZh: "艾克米",
   ticker: "ACME",
@@ -69,5 +70,29 @@ describe("buildDuplicateCardCreateData", () => {
     expect(duplicate.revealAt).toBeNull();
     expect(duplicate.ppaSignalLockedAt).toBeNull();
     expect(duplicate.dayIndex).toBe(1);
+  });
+
+  it("preserves REST card type and clears PPA fields on duplicate", () => {
+    const duplicate = buildDuplicateCardCreateData({
+      source: {
+        ...source,
+        cardType: "REST",
+        companyName: "",
+        ticker: "",
+        ppaSignal: null,
+        ppaInsight: null,
+      },
+      targetCycleId: "cycle-1",
+      targetCycleStartsAt: MARKET_PULSE_PUBLIC_LAUNCH_AT,
+      existingCards: [],
+    });
+
+    expect(duplicate.cardType).toBe("REST");
+    expect(duplicate.ppaSignal).toBeNull();
+    expect(duplicate.ppaInsight).toBeNull();
+    expect(duplicate.headline).toBe(source.headline);
+    expect(duplicate.status).toBe("DRAFT");
+    expect(duplicate.publishedAt).toBeNull();
+    expect(duplicate.ppaSignalLockedAt).toBeNull();
   });
 });

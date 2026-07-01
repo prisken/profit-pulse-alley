@@ -38,6 +38,8 @@ function buildCycle(
     scoresGenerated: false,
     topWinnerName: null,
     topWinnerScore: null,
+    signalCardCount: 1,
+    restCardCount: 0,
     ...MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS,
     ...overrides,
   };

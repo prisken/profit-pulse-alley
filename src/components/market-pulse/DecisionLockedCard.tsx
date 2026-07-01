@@ -10,10 +10,9 @@ import {
   mergeMpClasses,
 } from "@/components/market-pulse/MarketPulseVisualPrimitives";
 import { useTranslations } from "@/components/providers/LocaleProvider";
-import {
-  PARTICIPATION_POINTS,
-  type MarketPulseDecision,
-} from "@/lib/market-pulse/constants";
+import { PARTICIPATION_POINTS } from "@/lib/market-pulse/constants";
+import type { MarketPulsePlayerChoice } from "@/lib/market-pulse/card-type";
+import { isRestCardAcknowledgement } from "@/lib/market-pulse/card-type";
 import { shouldShowLockedCycleProgress } from "@/lib/market-pulse/locked-state-display";
 
 const springIn = { type: "spring" as const, stiffness: 320, damping: 28 };
@@ -25,7 +24,7 @@ export type DecisionLockedCardContext = {
 };
 
 export type DecisionLockedCardProps = {
-  decision: MarketPulseDecision;
+  decision: MarketPulsePlayerChoice;
   revealMessage?: string;
   cycleContext?: DecisionLockedCardContext;
   className?: string;
@@ -39,12 +38,31 @@ export default function DecisionLockedCard({
 }: DecisionLockedCardProps) {
   const { t } = useTranslations();
   const reduceMotion = useReducedMotion() ?? false;
-  const isBullish = decision === "BULLISH";
-  const choiceLabel = t(isBullish ? "signal.bullish" : "signal.cautious");
-  const accentBorder = isBullish ? "border-emerald-500/50" : "border-amber-500/50";
-  const accentBg = isBullish ? "bg-emerald-500/10" : "bg-amber-500/10";
-  const accentText = isBullish ? "text-emerald-300" : "text-amber-300";
-  const accentGlow = isBullish ? "shadow-emerald-900/20" : "shadow-amber-900/20";
+  const isAcknowledged = isRestCardAcknowledgement(decision);
+  const isBullish = !isAcknowledged && decision === "BULLISH";
+  const choiceLabel = isAcknowledged
+    ? t("mp.rest.locked.choice")
+    : t(isBullish ? "signal.bullish" : "signal.cautious");
+  const accentBorder = isAcknowledged
+    ? "border-sky-500/50"
+    : isBullish
+      ? "border-emerald-500/50"
+      : "border-amber-500/50";
+  const accentBg = isAcknowledged
+    ? "bg-sky-500/10"
+    : isBullish
+      ? "bg-emerald-500/10"
+      : "bg-amber-500/10";
+  const accentText = isAcknowledged
+    ? "text-sky-300"
+    : isBullish
+      ? "text-emerald-300"
+      : "text-amber-300";
+  const accentGlow = isAcknowledged
+    ? "shadow-sky-900/20"
+    : isBullish
+      ? "shadow-emerald-900/20"
+      : "shadow-amber-900/20";
   const resolvedRevealMessage =
     revealMessage ?? t("mp.play.reveal.default");
   const showCycleProgress = shouldShowLockedCycleProgress(
@@ -68,7 +86,11 @@ export default function DecisionLockedCard({
       <div
         className={mergeMpClasses(
           "pointer-events-none absolute inset-x-8 top-0 h-24 rounded-full blur-3xl",
-          isBullish ? "bg-emerald-500/15" : "bg-amber-500/10",
+          isAcknowledged
+            ? "bg-sky-500/15"
+            : isBullish
+              ? "bg-emerald-500/15"
+              : "bg-amber-500/10",
         )}
         aria-hidden="true"
       />
@@ -110,15 +132,21 @@ export default function DecisionLockedCard({
           )}
         >
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-          {t("mp.locked.badge")}
+          {isAcknowledged ? t("mp.rest.locked.badge") : t("mp.locked.badge")}
         </div>
 
         <h2
           id="locked-call-heading"
           className="mt-3 text-base font-semibold text-white sm:text-lg"
         >
-          {t("mp.locked.chosePrefix")}{" "}
-          <span className={accentText}>{choiceLabel}</span>
+          {isAcknowledged ? (
+            t("mp.rest.locked.title")
+          ) : (
+            <>
+              {t("mp.locked.chosePrefix")}{" "}
+              <span className={accentText}>{choiceLabel}</span>
+            </>
+          )}
         </h2>
 
         <p className="mt-2 text-sm leading-relaxed text-zinc-300 sm:text-[15px]">
@@ -152,7 +180,7 @@ export default function DecisionLockedCard({
         </p>
 
         <p className="mt-3 text-sm font-medium text-zinc-300">
-          {t("mp.locked.nextSignal")}
+          {isAcknowledged ? t("mp.rest.locked.nextCard") : t("mp.locked.nextSignal")}
         </p>
       </div>
 
@@ -176,7 +204,9 @@ export default function DecisionLockedCard({
           className={mergeMpClasses(
             "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border-2 px-4 text-sm font-semibold transition-colors",
             MP_FOCUS_RING,
-            isBullish
+            isAcknowledged
+              ? "border-sky-500/70 bg-sky-500/10 text-sky-100 hover:bg-sky-500/15"
+              : isBullish
               ? "border-emerald-500/70 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/15"
               : "border-amber-500/70 bg-amber-500/10 text-amber-100 hover:bg-amber-500/15",
           )}

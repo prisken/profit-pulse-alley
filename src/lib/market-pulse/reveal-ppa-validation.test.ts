@@ -60,6 +60,19 @@ describe("getMissingPpaFields", () => {
       "ppaLocked",
     );
   });
+
+  it("returns empty for REST cards even without PPA", () => {
+    expect(
+      getMissingPpaFields(
+        buildCard({
+          cardType: "REST",
+          ppaSignal: null,
+          ppaInsight: null,
+          ppaSignalLockedAt: null,
+        }),
+      ),
+    ).toEqual([]);
+  });
 });
 
 describe("validatePublishedCardsPpaForReveal", () => {
@@ -157,6 +170,46 @@ describe("validatePublishedCardsPpaForReveal", () => {
     expect(message).toMatch(/Cannot reveal yet/i);
     expect(message).toMatch(/1 card/i);
     expect(message).toMatch(/day 2 \(Beta\)/i);
+  });
+
+  it("succeeds when only REST cards lack PPA", () => {
+    const result = validatePublishedCardsPpaForReveal(CYCLE_ID, [
+      buildCard(),
+      buildCard({
+        id: "rest-1",
+        dayIndex: 2,
+        cardType: "REST",
+        companyName: "Rest",
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
+      }),
+    ]);
+
+    expect(result).toEqual({ ready: true });
+  });
+
+  it("still blocks reveal when a signal card lacks PPA alongside rest cards", () => {
+    const result = validatePublishedCardsPpaForReveal(CYCLE_ID, [
+      buildCard({
+        id: "signal-missing",
+        ppaInsight: "",
+      }),
+      buildCard({
+        id: "rest-1",
+        dayIndex: 2,
+        cardType: "REST",
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
+      }),
+    ]);
+
+    expect(result.ready).toBe(false);
+    if (!result.ready) {
+      expect(result.missingCards).toHaveLength(1);
+      expect(result.missingCards[0]?.id).toBe("signal-missing");
+    }
   });
 });
 

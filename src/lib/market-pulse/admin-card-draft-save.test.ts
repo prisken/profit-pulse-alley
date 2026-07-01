@@ -85,6 +85,7 @@ const draftSaveInput = {
   cycleId: "cycle-1",
   dayIndex: 1,
   sortOrder: 0,
+  cardType: "SIGNAL" as const,
   companyName: "Acme Corp",
   companyNameZh: "",
   ticker: "ACME",
@@ -166,6 +167,45 @@ describe("updateMarketPulseCardDraftAction", () => {
         MARKET_PULSE_PUBLIC_LAUNCH_AT,
       ),
     ).toBe(false);
+  });
+
+  it("saves REST card bilingual fields without signal-only requirements", async () => {
+    prismaMocks.cardFindUnique.mockResolvedValue({
+      ...existingCard,
+      cardType: "REST",
+      companyName: "",
+      ticker: "",
+    });
+
+    const result = await updateMarketPulseCardDraftAction({
+      ...draftSaveInput,
+      cardType: "REST",
+      companyName: "",
+      ticker: "",
+      headline: "Market rest day",
+      headlineZhHant: "市場休息日",
+      newsBody: "No signal today.",
+      newsBodyZhHant: "今日沒有市場信號。",
+      summary: "",
+      userPrompt: "",
+      ppaSignal: null,
+      ppaInsight: "",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(prismaMocks.cardUpdate).toHaveBeenCalledWith({
+      where: { id: "card-1" },
+      data: expect.objectContaining({
+        cardType: "REST",
+        headline: "Market rest day",
+        headlineZhHant: "市場休息日",
+        newsBody: "No signal today.",
+        newsBodyZhHant: "今日沒有市場信號。",
+        companyName: "",
+        ticker: "",
+        summary: null,
+      }),
+    });
   });
 });
 

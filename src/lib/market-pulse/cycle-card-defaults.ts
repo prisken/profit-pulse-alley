@@ -15,6 +15,13 @@ export const QUICK_DRAFT_CARD_COMPANY_NAME = "Untitled company";
 export const QUICK_DRAFT_CARD_TICKER = "TBD";
 export const QUICK_DRAFT_CARD_STATUS: MarketPulseCardStatus = "DRAFT";
 
+export const QUICK_REST_DRAFT_CARD_HEADLINE = "Market rest day";
+export const QUICK_REST_DRAFT_CARD_NEWS_BODY =
+  "No market signal is published today. Check in to claim participation.";
+export const QUICK_REST_DRAFT_CARD_HEADLINE_ZH = "市場休息日";
+export const QUICK_REST_DRAFT_CARD_NEWS_BODY_ZH =
+  "今日沒有市場信號。登入即可獲得參與分。";
+
 export type CycleCardReference = Pick<
   MarketPulseAdminCardRow,
   | "id"
@@ -51,6 +58,18 @@ export type CycleCardCreationDefaults = {
   referenceCardId: string | null;
   referenceDayIndex: number | null;
   exceedsCycleCapacity: boolean;
+  schedulingWarning: string | null;
+};
+
+export type QuickRestDraftCardDefaults = {
+  dayIndex: number;
+  sortOrder: number;
+  headline: string;
+  headlineZhHant: string;
+  newsBody: string;
+  newsBodyZhHant: string;
+  status: MarketPulseCardStatus;
+  sourceDate: Date;
   schedulingWarning: string | null;
 };
 
@@ -172,6 +191,26 @@ export function quickDraftCardSourceDate(
   dayIndex: number,
 ): Date {
   return getCycleDayReleaseAt(cycleStartsAt, dayIndex);
+}
+
+export function buildQuickRestDraftCardDefaults(input: {
+  cycle: CycleCardDefaultsContext;
+  cards: CycleCardReference[];
+  now?: Date;
+}): QuickRestDraftCardDefaults {
+  const derived = deriveCycleCardCreationDefaults(input);
+
+  return {
+    dayIndex: derived.dayIndex,
+    sortOrder: derived.sortOrder,
+    headline: QUICK_REST_DRAFT_CARD_HEADLINE,
+    headlineZhHant: QUICK_REST_DRAFT_CARD_HEADLINE_ZH,
+    newsBody: QUICK_REST_DRAFT_CARD_NEWS_BODY,
+    newsBodyZhHant: QUICK_REST_DRAFT_CARD_NEWS_BODY_ZH,
+    status: QUICK_DRAFT_CARD_STATUS,
+    sourceDate: derived.sourceDate,
+    schedulingWarning: derived.schedulingWarning,
+  };
 }
 
 export function buildQuickDraftCardDefaults(input: {

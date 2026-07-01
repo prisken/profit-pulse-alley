@@ -39,6 +39,7 @@ import {
 } from "@/lib/market-pulse/quick-create-cycle-defaults";
 import {
   buildQuickDraftCardDefaults,
+  buildQuickRestDraftCardDefaults,
 } from "@/lib/market-pulse/cycle-card-defaults";
 import { buildDuplicateCardCreateData } from "@/lib/market-pulse/duplicate-card-data";
 import {
@@ -155,6 +156,7 @@ function cardPayloadFromInput(
     cycleId: input.cycleId,
     dayIndex: input.dayIndex,
     sortOrder: input.sortOrder ?? 0,
+    cardType: input.cardType,
     companyName: input.companyName.trim(),
     companyNameZh: trimOrNull(input.companyNameZh),
     ticker: input.ticker.trim(),
@@ -781,6 +783,7 @@ export async function createMarketPulseCardAction(
   }
 
   const statusPpaError = validateCardStatusPpa({
+    cardType: input.cardType,
     status: input.status,
     ppaSignal: input.ppaSignal,
     ppaInsight: trimOrNull(input.ppaInsight),
@@ -892,6 +895,99 @@ export async function quickCreateMarketPulseCardDraftAction(
 
   return finishAdminMutation(
     "Draft card created.",
+    [
+      revalidateAdminEffect(),
+      {
+        label: "builder cache refresh",
+        run: () => {
+          revalidatePath(builderPath);
+        },
+      },
+    ],
+    {
+      data: {
+        cardId: card.id,
+      },
+      extraWarning: defaults.schedulingWarning ?? undefined,
+    },
+  );
+}
+
+export async function quickCreateMarketPulseRestCardDraftAction(
+  cycleId: string,
+): Promise<AdminActionResult<QuickCreateMarketPulseCardDraftResult>> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const cycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: cycleId },
+    select: {
+      id: true,
+      startsAt: true,
+      endsAt: true,
+      revealAt: true,
+      prizeLabel: true,
+      cards: {
+        select: {
+          id: true,
+          dayIndex: true,
+          sortOrder: true,
+          sourceDate: true,
+          userPrompt: true,
+          exchange: true,
+          sourceName: true,
+          sourceUrl: true,
+          headline: true,
+          companyName: true,
+          ticker: true,
+        },
+      },
+    },
+  });
+  if (!cycle) {
+    return adminFail("Cycle not found.");
+  }
+
+  const defaults = buildQuickRestDraftCardDefaults({
+    cycle: {
+      startsAt: cycle.startsAt,
+      endsAt: cycle.endsAt,
+      revealAt: cycle.revealAt,
+      prizeLabel: cycle.prizeLabel,
+    },
+    cards: cycle.cards,
+  });
+
+  let card;
+  try {
+    card = await prisma.marketPulseCard.create({
+      data: {
+        cycleId: cycle.id,
+        cardType: "REST",
+        dayIndex: defaults.dayIndex,
+        sortOrder: defaults.sortOrder,
+        companyName: "",
+        ticker: "",
+        headline: defaults.headline,
+        headlineZhHant: defaults.headlineZhHant,
+        newsBody: defaults.newsBody,
+        newsBodyZhHant: defaults.newsBodyZhHant,
+        status: defaults.status,
+        sourceDate: defaults.sourceDate,
+        ppaSignal: null,
+        ppaInsight: null,
+        publishedAt: null,
+      },
+    });
+  } catch (error) {
+    console.error("[admin] quickCreateMarketPulseRestCardDraftAction failed:", error);
+    return adminFail("Could not create rest card. Please try again.");
+  }
+
+  const builderPath = marketPulseCycleBuilderPath(cycle.id);
+
+  return finishAdminMutation(
+    "Rest card draft created.",
     [
       revalidateAdminEffect(),
       {
@@ -1039,6 +1135,7 @@ export async function updateMarketPulseCardAction(
   const nextSignal = input.ppaSignal ?? null;
   const nextInsight = trimOrNull(input.ppaInsight);
   const statusPpaError = validateCardStatusPpa({
+    cardType: input.cardType,
     status: input.status,
     ppaSignal: nextSignal,
     ppaInsight: nextInsight,
@@ -1488,6 +1585,7 @@ const bulkCardSelect = {
   cycleId: true,
   dayIndex: true,
   sortOrder: true,
+  cardType: true,
   companyName: true,
   companyNameZh: true,
   ticker: true,

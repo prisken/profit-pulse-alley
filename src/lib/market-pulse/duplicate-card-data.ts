@@ -1,10 +1,11 @@
-import type { MarketPulseCardStatus, MarketPulseSignal } from "@prisma/client";
+import type { MarketPulseCardStatus, MarketPulseCardType, MarketPulseSignal } from "@prisma/client";
 
 import {
   collectUsedSourceDateKeys,
   nextAvailableSourceDate,
   suggestQuickDraftSlot,
 } from "@/lib/market-pulse/admin-card-scheduling";
+import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
 
 import { QUICK_DRAFT_CARD_STATUS } from "@/lib/market-pulse/cycle-card-defaults";
 
@@ -12,6 +13,7 @@ export const DUPLICATE_CARD_STATUS: MarketPulseCardStatus = QUICK_DRAFT_CARD_STA
 
 export type DuplicateCardSource = {
   cycleId: string;
+  cardType: MarketPulseCardType;
   companyName: string;
   companyNameZh: string | null;
   ticker: string;
@@ -42,6 +44,7 @@ export type DuplicateCardCreateData = {
   cycleId: string;
   dayIndex: number;
   sortOrder: number;
+  cardType: MarketPulseCardType;
   companyName: string;
   companyNameZh: string | null;
   ticker: string;
@@ -101,6 +104,7 @@ export function buildDuplicateCardCreateData(input: {
     cycleId: input.targetCycleId,
     dayIndex,
     sortOrder,
+    cardType: input.source.cardType,
     companyName: input.source.companyName,
     companyNameZh: input.source.companyNameZh,
     ticker: input.source.ticker,
@@ -123,9 +127,11 @@ export function buildDuplicateCardCreateData(input: {
     summaryZhHant: input.source.summaryZhHant,
     userPrompt: input.source.userPrompt,
     userPromptZhHant: input.source.userPromptZhHant,
-    ppaSignal: input.source.ppaSignal,
-    ppaInsight: input.source.ppaInsight,
-    ppaInsightZhHant: input.source.ppaInsightZhHant,
+    ppaSignal: isMarketPulseRestCard(input.source) ? null : input.source.ppaSignal,
+    ppaInsight: isMarketPulseRestCard(input.source) ? null : input.source.ppaInsight,
+    ppaInsightZhHant: isMarketPulseRestCard(input.source)
+      ? null
+      : input.source.ppaInsightZhHant,
     status: DUPLICATE_CARD_STATUS,
     publishedAt: null,
     revealAt: null,

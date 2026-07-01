@@ -50,20 +50,11 @@ export function MarketPulseAdminStatusHeader({ snapshot }: Readonly<StatusHeader
   const { t, locale } = useTranslations();
 
   const todayLabel = snapshot.todayCard
-    ? snapshot.todayCard.tone === "ok"
-      ? translateWith(locale, "auth.admin.mp.shell.todayCardOk", {
-          day: snapshot.todayCard.displayDay,
-          status: snapshot.todayCard.status,
-          name: snapshot.todayCard.companyName ?? "—",
-        })
-      : snapshot.todayCard.status === "missing"
-        ? translateWith(locale, "auth.admin.mp.shell.todayCardMissing", {
-            day: snapshot.todayCard.displayDay,
-          })
-        : translateWith(locale, "auth.admin.mp.shell.todayCardIssue", {
-            day: snapshot.todayCard.displayDay,
-            status: snapshot.todayCard.status,
-          })
+    ? translateWith(
+        locale,
+        snapshot.todayCard.shellMessage.key,
+        snapshot.todayCard.shellMessage.params,
+      )
     : t("auth.admin.mp.shell.todayCardUnavailable");
 
   const items: Array<{

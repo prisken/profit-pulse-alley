@@ -47,6 +47,7 @@ const ADMIN = { userId: "admin-1", email: "admin@example.com" };
 const sourceCard = {
   id: "card-source",
   cycleId: "cycle-1",
+  cardType: "SIGNAL" as const,
   dayIndex: 1,
   companyName: "Acme Corp",
   companyNameZh: null,
@@ -168,6 +169,35 @@ describe("duplicateMarketPulseCardAction", () => {
         endsAt: true,
         cards: { select: { dayIndex: true, sortOrder: true, sourceDate: true } },
       },
+    });
+  });
+
+  it("preserves REST card type and clears PPA on duplicate", async () => {
+    prismaMocks.cardFindUnique.mockResolvedValue({
+      ...sourceCard,
+      cardType: "REST",
+      companyName: "",
+      ticker: "",
+      headline: "Market rest day",
+      newsBody: "Rest body",
+      summary: null,
+      ppaSignal: null,
+      ppaInsight: null,
+      ppaSignalLockedAt: null,
+    });
+
+    await duplicateMarketPulseCardAction({ sourceCardId: "card-source" });
+
+    expect(prismaMocks.cardCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        cardType: "REST",
+        headline: "Market rest day",
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
+        status: "DRAFT",
+        publishedAt: null,
+      }),
     });
   });
 });

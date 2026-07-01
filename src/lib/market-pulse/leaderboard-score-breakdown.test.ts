@@ -110,6 +110,8 @@ describe("getLeaderboardViewerScoreBreakdown", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       dayIndex: 0,
+      cardType: "SIGNAL",
+      isRestCard: false,
       ticker: "AAPL",
       headline: "Apple climbs",
       userDecision: "BULLISH",
@@ -225,5 +227,66 @@ describe("getLeaderboardViewerScoreBreakdown", () => {
         where: { userId: TEST_USER_ID, cycleId: OTHER_CYCLE_ID },
       }),
     );
+  });
+
+  it("includes rest cards with participation-only breakdown", async () => {
+    mocks.decisionFindMany.mockResolvedValue([
+      {
+        cardId: "rest-1",
+        decision: "ACKNOWLEDGED",
+        card: {
+          id: "rest-1",
+          dayIndex: 2,
+          sortOrder: 0,
+          createdAt: "2026-06-03T09:00:00.000Z",
+          cardType: "REST",
+          ticker: "",
+          headline: "Market rest day",
+          headlineZhHant: "市場休息日",
+          companyName: "Market rest",
+          companyNameZh: null,
+          newsBody: null,
+          newsBodyZhHant: null,
+          summary: null,
+          summaryZhHant: null,
+          cardImageAlt: null,
+          cardImageAltZhHant: null,
+          userPrompt: null,
+          userPromptZhHant: null,
+          ppaSignal: null,
+          ppaInsight: null,
+          ppaInsightZhHant: null,
+        },
+      },
+    ]);
+    mocks.scoreEventFindMany.mockResolvedValue([
+      {
+        cardId: "rest-1",
+        participationPoints: PARTICIPATION_POINTS,
+        matchBonus: 0,
+        streakBonus: 0,
+        totalPoints: PARTICIPATION_POINTS,
+      },
+    ]);
+
+    const rows = await getLeaderboardViewerScoreBreakdown(
+      TEST_USER_ID,
+      TEST_CYCLE_ID,
+      "zh-Hant",
+    );
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      isRestCard: true,
+      cardType: "REST",
+      userDecision: "ACKNOWLEDGED",
+      ppaSignal: null,
+      isMatch: false,
+      participationPoints: PARTICIPATION_POINTS,
+      matchBonus: 0,
+      streakBonus: 0,
+      totalPoints: PARTICIPATION_POINTS,
+      headline: "市場休息日",
+    });
   });
 });

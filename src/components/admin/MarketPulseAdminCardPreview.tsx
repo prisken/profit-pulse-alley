@@ -6,8 +6,8 @@ import { Lock } from "lucide-react";
 import MarketPulseSwipeCard from "@/components/market-pulse/MarketPulseSwipeCard";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { adminPreviewDataToSwipeCard } from "@/lib/market-pulse/admin-card-preview-data";
-import { SIGNAL_LABELS } from "@/lib/market-pulse/constants";
 import type { MarketPulseAdminCardPreviewData } from "@/lib/market-pulse/card-validation";
+import { isMarketPulsePpaSignal } from "@/lib/market-pulse/card-type";
 import { getSignalTone } from "@/lib/market-pulse/constants";
 
 const noopSubmit = async () => ({ ok: true as const });
@@ -33,10 +33,9 @@ export default function MarketPulseAdminCardPreview({
     [card, cardId],
   );
   const locked = Boolean(card.ppaSignalLockedAt);
-  const ppaTone =
-    card.ppaSignal && card.ppaSignal in SIGNAL_LABELS
-      ? getSignalTone(card.ppaSignal)
-      : null;
+  const ppaTone = isMarketPulsePpaSignal(card.ppaSignal)
+    ? getSignalTone(card.ppaSignal)
+    : null;
 
   return (
     <div className={`mx-auto w-full max-w-md ${className}`}>

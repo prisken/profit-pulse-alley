@@ -5,6 +5,7 @@ import type {
   AdminCardFilterState,
   AdminCardPublishFilter,
   AdminCardStatusFilter,
+  AdminCardTypeFilter,
 } from "@/lib/market-pulse/admin-card-filter";
 import { MARKET_PULSE_CARD_STATUS_OPTIONS } from "@/lib/market-pulse/card-validation";
 import { useTranslations } from "@/components/providers/LocaleProvider";
@@ -105,6 +106,23 @@ export default function MarketPulseCardFilters({
             <option value="ALL">{t("auth.admin.mp.cards.filterAllPublish")}</option>
             <option value="PUBLISHED">{t("auth.admin.mp.cards.filterPublished")}</option>
             <option value="UNPUBLISHED">{t("auth.admin.mp.cards.filterUnpublished")}</option>
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="sr-only">{t("auth.admin.mp.cards.filterCardType")}</span>
+          <select
+            value={filters.cardTypeFilter}
+            onChange={(event) =>
+              patch({ cardTypeFilter: event.target.value as AdminCardTypeFilter })
+            }
+            disabled={disabled}
+            className={fieldClass}
+            aria-label={t("auth.admin.mp.cards.filterCardType")}
+          >
+            <option value="ALL">{t("auth.admin.mp.cards.filterAllCardTypes")}</option>
+            <option value="SIGNAL">{t("auth.admin.mp.cards.filterSignalCards")}</option>
+            <option value="REST">{t("auth.admin.mp.cards.filterRestCards")}</option>
           </select>
         </label>
       </div>

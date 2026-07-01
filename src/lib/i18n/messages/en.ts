@@ -119,11 +119,13 @@ export const enMessages = {
   "home.cycleLoop.pillar3.body":
     "One Ocean Park ticket goes to the winner of each cycle.",
   "home.cycleLoop.scoring.heading": "How points add up",
-  "home.cycleLoop.scoring.participation": "+{points} participation",
-  "home.cycleLoop.scoring.match": "+{points} match bonus",
-  "home.cycleLoop.scoring.streak": "+{points} streak bonus",
+  "home.cycleLoop.scoring.participation": "+{points} signal card participation",
+  "home.cycleLoop.scoring.match": "+{points} correct signal match",
+  "home.cycleLoop.scoring.streak":
+    "+{points} streak bonus every {interval} correct signal matches",
+  "home.cycleLoop.scoring.rest": "+{points} market rest card (participation only)",
   "home.cycleLoop.scoring.note":
-    "Match and streak bonuses unlock after PPA Insight is revealed.",
+    "Match and streak bonuses apply to signal cards only and unlock after PPA Insight is revealed.",
   "home.cycleLoop.preview.heading": "Leaderboard",
   "home.cycleLoop.preview.label": "Preview",
   "home.cycleLoop.preview.subtitle": "Sample standings — not live scores.",

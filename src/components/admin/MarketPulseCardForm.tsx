@@ -26,6 +26,11 @@ import {
 } from "@/lib/market-pulse/card-validation";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
+import {
+  isMarketPulseRestCard,
+  MARKET_PULSE_CARD_TYPE_REST,
+  MARKET_PULSE_CARD_TYPE_SIGNAL,
+} from "@/lib/market-pulse/card-type";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
@@ -147,6 +152,9 @@ export default function MarketPulseCardForm({
   const [statusIsError, setStatusIsError] = useState(false);
 
   const locked = Boolean(ppaSignalLockedAt);
+  const isRestCard = isMarketPulseRestCard({ cardType: values.cardType });
+  const canChangeCardType =
+    mode === "create" || values.status === "DRAFT" || values.status === "READY";
 
   const existingSortOrdersOnDay = useMemo(
     () =>
@@ -168,13 +176,17 @@ export default function MarketPulseCardForm({
   const publishBlocker = useMemo(
     () =>
       validateCardPublishable({
+        cardType: values.cardType,
         headline: values.headline,
         companyName: values.companyName,
         ticker: values.ticker,
         summary: values.summary,
+        newsBody: values.newsBody,
         ppaSignal: values.ppaSignal || null,
         ppaInsight: values.ppaInsight,
         ppaSignalLockedAt: ppaSignalLockedAt,
+        cardImageUrl: values.cardImageUrl,
+        cardImageAlt: values.cardImageAlt,
       }),
     [values, ppaSignalLockedAt],
   );
@@ -336,6 +348,52 @@ export default function MarketPulseCardForm({
       <div className={isBuilder ? "space-y-8" : "grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]"}>
         <div className="space-y-8">
           <section className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <SectionHeading>{t("auth.admin.mp.cards.fieldCardType")}</SectionHeading>
+              {canChangeCardType ? (
+                <div
+                  className="mt-3 inline-flex rounded-lg border border-zinc-700 p-0.5"
+                  role="group"
+                  aria-label={t("auth.admin.mp.cards.fieldCardType")}
+                >
+                  {(
+                    [
+                      [MARKET_PULSE_CARD_TYPE_SIGNAL, "auth.admin.mp.cards.cardTypeSignal"],
+                      [MARKET_PULSE_CARD_TYPE_REST, "auth.admin.mp.cards.cardTypeRest"],
+                    ] as const
+                  ).map(([type, labelKey]) => (
+                    <button
+                      key={type}
+                      type="button"
+                      disabled={busy}
+                      className={`min-h-9 rounded-md px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm ${
+                        values.cardType === type
+                          ? "bg-emerald-600 text-white"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      } ${focusRing}`}
+                      aria-pressed={values.cardType === type}
+                      onClick={() => updateField("cardType", type)}
+                    >
+                      {t(labelKey)}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-zinc-300">
+                  {isRestCard
+                    ? t("auth.admin.mp.cards.cardTypeRest")
+                    : t("auth.admin.mp.cards.cardTypeSignal")}
+                </p>
+              )}
+              {isRestCard ? (
+                <p className="mt-3 rounded-lg border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-sm leading-relaxed text-sky-100">
+                  {t("auth.admin.mp.cards.restCardHelp")}
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3">
               <SectionHeading>{t("auth.admin.mp.cards.sectionContent")}</SectionHeading>
               <div
@@ -372,7 +430,9 @@ export default function MarketPulseCardForm({
                     errorId={cardFieldErrorId("headline")}
                     required
                   >
-                    {t("auth.admin.mp.cards.fieldHeadline")}
+                    {isRestCard
+                      ? t("auth.admin.mp.cards.fieldRestTitle")
+                      : t("auth.admin.mp.cards.fieldHeadline")}
                   </FieldLabel>
                   <input
                     id={cardFieldId("headline")}
@@ -387,15 +447,30 @@ export default function MarketPulseCardForm({
                   />
                 </label>
                 <label className="block sm:col-span-2" htmlFor={cardFieldId("newsBody")}>
-                  <FieldLabel>{t("auth.admin.mp.cards.fieldNewsBody")}</FieldLabel>
+                  <FieldLabel
+                    error={isRestCard ? fieldErrors.newsBody : undefined}
+                    errorId={cardFieldErrorId("newsBody")}
+                    required={isRestCard}
+                  >
+                    {isRestCard
+                      ? t("auth.admin.mp.cards.fieldRestBody")
+                      : t("auth.admin.mp.cards.fieldNewsBody")}
+                  </FieldLabel>
                   <textarea
                     id={cardFieldId("newsBody")}
-                    className={`${fieldClass} min-h-[5rem]`}
+                    className={`${fieldClass} min-h-[5rem] ${isRestCard && fieldErrors.newsBody ? fieldErrorClass : ""}`}
                     value={values.newsBody}
                     onChange={(event) => updateField("newsBody", event.target.value)}
                     disabled={busy}
+                    aria-invalid={Boolean(isRestCard && fieldErrors.newsBody)}
+                    aria-describedby={
+                      isRestCard && fieldErrors.newsBody
+                        ? cardFieldErrorId("newsBody")
+                        : undefined
+                    }
                   />
                 </label>
+                {!isRestCard ? (
                 <label className="block sm:col-span-2" htmlFor={cardFieldId("summary")}>
                   <FieldLabel
                     error={fieldErrors.summary}
@@ -416,6 +491,8 @@ export default function MarketPulseCardForm({
                     }
                   />
                 </label>
+                ) : null}
+                {!isRestCard ? (
                 <label className="block sm:col-span-2" htmlFor={cardFieldId("userPrompt")}>
                   <FieldLabel>{t("auth.admin.mp.cards.fieldUserPrompt")}</FieldLabel>
                   <input
@@ -427,12 +504,15 @@ export default function MarketPulseCardForm({
                     placeholder={MARKET_PULSE_DEFAULT_USER_PROMPT}
                   />
                 </label>
+                ) : null}
               </>
             ) : (
               <>
                 <label className="block sm:col-span-2">
                   <FieldLabel hint={optionalZhHint}>
-                    {t("auth.admin.mp.cards.fieldHeadlineZhHant")}
+                    {isRestCard
+                      ? t("auth.admin.mp.cards.fieldRestTitleZhHant")
+                      : t("auth.admin.mp.cards.fieldHeadlineZhHant")}
                   </FieldLabel>
                   <input
                     className={fieldClass}
@@ -443,7 +523,9 @@ export default function MarketPulseCardForm({
                 </label>
                 <label className="block sm:col-span-2">
                   <FieldLabel hint={optionalZhHint}>
-                    {t("auth.admin.mp.cards.fieldNewsBodyZhHant")}
+                    {isRestCard
+                      ? t("auth.admin.mp.cards.fieldRestBodyZhHant")
+                      : t("auth.admin.mp.cards.fieldNewsBodyZhHant")}
                   </FieldLabel>
                   <textarea
                     className={`${fieldClass} min-h-[5rem]`}
@@ -452,6 +534,8 @@ export default function MarketPulseCardForm({
                     disabled={busy}
                   />
                 </label>
+                {!isRestCard ? (
+                <>
                 <label className="block sm:col-span-2">
                   <FieldLabel hint={optionalZhHint}>
                     {t("auth.admin.mp.cards.fieldSummaryZhHant")}
@@ -485,6 +569,9 @@ export default function MarketPulseCardForm({
                     disabled={busy}
                   />
                 </label>
+                </>
+                ) : null}
+                {!isRestCard ? (
                 <label className="block sm:col-span-2">
                   <FieldLabel hint={optionalZhHint}>
                     {t("auth.admin.mp.cards.fieldImageAltZhHant")}
@@ -496,10 +583,12 @@ export default function MarketPulseCardForm({
                     disabled={busy}
                   />
                 </label>
+                ) : null}
               </>
             )}
           </section>
 
+          {!isRestCard ? (
           <section className="grid gap-4 sm:grid-cols-2">
             <h3 className="sm:col-span-2">
               <SectionHeading>{t("auth.admin.mp.cards.sectionMarket")}</SectionHeading>
@@ -617,6 +706,7 @@ export default function MarketPulseCardForm({
               />
             </label>
           </section>
+          ) : null}
 
           <section className="grid gap-4 sm:grid-cols-2">
             <h3 className="sm:col-span-2">
@@ -677,6 +767,7 @@ export default function MarketPulseCardForm({
             )}
           </section>
 
+          {!isRestCard ? (
           <section className="grid gap-4 sm:grid-cols-2">
             <h3 className="sm:col-span-2">
               <SectionHeading>{t("auth.admin.mp.cards.sectionPpa")}</SectionHeading>
@@ -752,6 +843,7 @@ export default function MarketPulseCardForm({
               </label>
             ) : null}
           </section>
+          ) : null}
 
           <section className="grid gap-4 sm:grid-cols-2">
             <h3 className="sm:col-span-2">
@@ -827,7 +919,11 @@ export default function MarketPulseCardForm({
               <ul className="mt-2 list-inside list-disc space-y-1 text-xs leading-relaxed">
                 <li>{t("auth.admin.mp.cards.publishNoteRequired")}</li>
                 <li>{t("auth.admin.mp.cards.publishNoteImage")}</li>
-                <li>{t("auth.admin.mp.cards.publishNotePpa")}</li>
+                {!isRestCard ? (
+                  <li>{t("auth.admin.mp.cards.publishNotePpa")}</li>
+                ) : (
+                  <li>{t("auth.admin.mp.cards.publishNoteRest")}</li>
+                )}
               </ul>
               {publishBlocker ? (
                 <p className="mt-2 text-xs font-medium text-amber-200">{publishBlocker}</p>

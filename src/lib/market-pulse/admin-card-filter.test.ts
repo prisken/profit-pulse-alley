@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { MarketPulseAdminCardRow } from "@/lib/market-pulse/admin-data";
 import { MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
+import { MARKET_PULSE_CARD_TYPE_REST } from "@/lib/market-pulse/card-type";
 import {
   DEFAULT_ADMIN_CARD_FILTERS,
   filterAdminCards,
@@ -100,12 +101,49 @@ describe("filterAdminCards", () => {
     expect(
       isCardNeedsPpa(
         buildCard({
+          cardType: MARKET_PULSE_CARD_TYPE_REST,
+          ppaSignal: null,
+          ppaInsight: null,
+          ppaSignalLockedAt: null,
+        }),
+      ),
+    ).toBe(false);
+    expect(
+      isCardNeedsPpa(
+        buildCard({
           ppaSignal: "BULLISH",
           ppaInsight: "x",
           ppaSignalLockedAt: "2026-01-01T00:00:00.000Z",
         }),
       ),
     ).toBe(false);
+  });
+
+  it("filters by card type and excludes rest cards from needs PPA", () => {
+    const mixed = [
+      ...cards,
+      buildCard({
+        id: "rest-1",
+        cardType: MARKET_PULSE_CARD_TYPE_REST,
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
+      }),
+    ];
+
+    expect(
+      filterAdminCards(mixed, {
+        ...DEFAULT_ADMIN_CARD_FILTERS,
+        cardTypeFilter: "REST",
+      }),
+    ).toHaveLength(1);
+
+    expect(
+      filterAdminCards(mixed, {
+        ...DEFAULT_ADMIN_CARD_FILTERS,
+        needsPpaOnly: true,
+      }).every((card) => card.cardType !== MARKET_PULSE_CARD_TYPE_REST),
+    ).toBe(true);
   });
 });
 

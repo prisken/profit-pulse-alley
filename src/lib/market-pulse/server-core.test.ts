@@ -70,6 +70,7 @@ function buildPlayableCard(overrides: Record<string, unknown> = {}) {
   return {
     id: TEST_CARD_ID,
     cycleId: TEST_CYCLE_ID,
+    cardType: "SIGNAL",
     dayIndex: PLAYABLE_DAY_INDEX,
     sortOrder: 0,
     status: "PUBLISHED",
@@ -259,6 +260,112 @@ describe("submitMarketPulseDecision", () => {
       ok: false,
       error: "Decision must be BULLISH or CAUTIOUS.",
     });
+    expect(prismaMocks.decisionCreate).not.toHaveBeenCalled();
+  });
+
+  it("creates ACKNOWLEDGED decision for rest cards", async () => {
+    setupOpenRuntime();
+    const restCard = buildPlayableCard({
+      cardType: "REST",
+      ppaSignal: null,
+      ppaInsight: null,
+      ppaSignalLockedAt: null,
+    });
+    prismaMocks.cardFindUnique.mockResolvedValue(restCard);
+    prismaMocks.cycleFindUnique.mockResolvedValue(
+      buildActiveCycleWithCards([restCard]),
+    );
+    prismaMocks.decisionCreate.mockResolvedValue({
+      id: TEST_DECISION_ID,
+      decision: "ACKNOWLEDGED",
+      decidedAt: FIXED_NOW,
+    });
+
+    const result = await submitMarketPulseDecision({
+      userId: TEST_USER_ID,
+      cardId: TEST_CARD_ID,
+      decision: "ACKNOWLEDGED",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(prismaMocks.decisionCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ decision: "ACKNOWLEDGED" }),
+      }),
+    );
+  });
+
+  it("rejects ACKNOWLEDGED on signal cards", async () => {
+    setupOpenRuntime();
+
+    const result = await submitMarketPulseDecision({
+      userId: TEST_USER_ID,
+      cardId: TEST_CARD_ID,
+      decision: "ACKNOWLEDGED",
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "ACKNOWLEDGED is only valid for Market rest cards.",
+    });
+    expect(prismaMocks.decisionCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejects BULLISH and CAUTIOUS on rest cards", async () => {
+    setupOpenRuntime();
+    const restCard = buildPlayableCard({
+      cardType: "REST",
+      ppaSignal: null,
+      ppaInsight: null,
+      ppaSignalLockedAt: null,
+    });
+    prismaMocks.cardFindUnique.mockResolvedValue(restCard);
+    prismaMocks.cycleFindUnique.mockResolvedValue(
+      buildActiveCycleWithCards([restCard]),
+    );
+
+    for (const decision of ["BULLISH", "CAUTIOUS"] as const) {
+      const result = await submitMarketPulseDecision({
+        userId: TEST_USER_ID,
+        cardId: TEST_CARD_ID,
+        decision,
+      });
+
+      expect(result).toEqual({
+        ok: false,
+        error: "BULLISH and CAUTIOUS are not valid for Market rest cards.",
+      });
+    }
+
+    expect(prismaMocks.decisionCreate).not.toHaveBeenCalled();
+  });
+
+  it("returns existing decision for duplicate ACKNOWLEDGED on rest cards", async () => {
+    setupOpenRuntime();
+    const restCard = buildPlayableCard({
+      cardType: "REST",
+      ppaSignal: null,
+      ppaInsight: null,
+      ppaSignalLockedAt: null,
+    });
+    prismaMocks.cardFindUnique.mockResolvedValue(restCard);
+    prismaMocks.decisionFindUnique.mockResolvedValue({
+      id: TEST_DECISION_ID,
+      decision: "ACKNOWLEDGED",
+      decidedAt: FIXED_NOW,
+    });
+
+    const result = await submitMarketPulseDecision({
+      userId: TEST_USER_ID,
+      cardId: TEST_CARD_ID,
+      decision: "ACKNOWLEDGED",
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.alreadySubmitted).toBe(true);
+      expect(result.decision.decision).toBe("ACKNOWLEDGED");
+    }
     expect(prismaMocks.decisionCreate).not.toHaveBeenCalled();
   });
 

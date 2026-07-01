@@ -2,14 +2,20 @@ import type { MarketPulseCardStatus } from "@prisma/client";
 
 import type { MarketPulseAdminCardRow } from "@/lib/market-pulse/admin-data";
 import { cardNeedsPpa } from "@/lib/market-pulse/admin-card-ppa-status";
+import {
+  isMarketPulseRestCard,
+  isMarketPulseSignalCard,
+} from "@/lib/market-pulse/card-type";
 
 export type AdminCardPublishFilter = "ALL" | "PUBLISHED" | "UNPUBLISHED";
 export type AdminCardStatusFilter = "ALL" | MarketPulseCardStatus;
+export type AdminCardTypeFilter = "ALL" | "SIGNAL" | "REST";
 
 export type AdminCardFilterState = {
   cycleId: string;
   status: AdminCardStatusFilter;
   publishFilter: AdminCardPublishFilter;
+  cardTypeFilter: AdminCardTypeFilter;
   missingImageOnly: boolean;
   needsPpaOnly: boolean;
 };
@@ -18,6 +24,7 @@ export const DEFAULT_ADMIN_CARD_FILTERS: AdminCardFilterState = {
   cycleId: "ALL",
   status: "ALL",
   publishFilter: "ALL",
+  cardTypeFilter: "ALL",
   missingImageOnly: false,
   needsPpaOnly: false,
 };
@@ -39,7 +46,10 @@ export function isCardPpaUnlocked(
 }
 
 export function isCardNeedsPpa(
-  card: Pick<MarketPulseAdminCardRow, "ppaSignal" | "ppaInsight" | "ppaSignalLockedAt">,
+  card: Pick<
+    MarketPulseAdminCardRow,
+    "cardType" | "ppaSignal" | "ppaInsight" | "ppaSignalLockedAt"
+  >,
 ): boolean {
   return cardNeedsPpa(card);
 }
@@ -62,6 +72,14 @@ export function filterAdminCards<T extends MarketPulseAdminCardRow>(
     }
 
     if (filters.publishFilter === "UNPUBLISHED" && isCardPublished(card)) {
+      return false;
+    }
+
+    if (filters.cardTypeFilter === "SIGNAL" && !isMarketPulseSignalCard(card)) {
+      return false;
+    }
+
+    if (filters.cardTypeFilter === "REST" && !isMarketPulseRestCard(card)) {
       return false;
     }
 

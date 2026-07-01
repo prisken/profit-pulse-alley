@@ -103,8 +103,9 @@ describe("validateMarketPulseCardDraftSave", () => {
 });
 
 describe("validateCardPublishable", () => {
-  it("requires locked PPA", () => {
+  it("requires locked PPA for signal cards", () => {
     const error = validateCardPublishable({
+      cardType: "SIGNAL",
       headline: "News",
       companyName: "Acme",
       ticker: "ACME",
@@ -114,5 +115,86 @@ describe("validateCardPublishable", () => {
       ppaSignalLockedAt: null,
     });
     expect(error).toMatch(/locked/i);
+  });
+
+  it("allows rest cards to publish without ticker or PPA", () => {
+    const error = validateCardPublishable({
+      cardType: "REST",
+      headline: "Weekend rest",
+      companyName: "",
+      ticker: "",
+      summary: null,
+      newsBody: "Take a breather this weekend.",
+      ppaSignal: null,
+      ppaInsight: null,
+      ppaSignalLockedAt: null,
+    });
+    expect(error).toBeNull();
+  });
+
+  it("requires rest card title and body", () => {
+    expect(
+      validateCardPublishable({
+        cardType: "REST",
+        headline: "",
+        companyName: "",
+        ticker: "",
+        summary: null,
+        newsBody: "Body",
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
+      }),
+    ).toMatch(/title/i);
+
+    expect(
+      validateCardPublishable({
+        cardType: "REST",
+        headline: "Rest day",
+        companyName: "",
+        ticker: "",
+        summary: null,
+        newsBody: "",
+        ppaSignal: null,
+        ppaInsight: null,
+        ppaSignalLockedAt: null,
+      }),
+    ).toMatch(/body/i);
+  });
+});
+
+describe("REST card form validation", () => {
+  const restBase = {
+    ...DEFAULT_CARD_FORM_VALUES,
+    cycleId: "cycle-1",
+    dayIndex: 1,
+    cardType: "REST" as const,
+    headline: "Weekend rest",
+    newsBody: "Enjoy the break.",
+  };
+
+  it("does not require ticker, company, or PPA", () => {
+    const result = validateMarketPulseCardForm({
+      ...restBase,
+      status: "READY",
+      companyName: "",
+      ticker: "",
+      summary: "",
+      ppaSignal: "",
+      ppaInsight: "",
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it("requires headline and body for publish-ready form", () => {
+    const result = validateMarketPulseCardForm({
+      ...restBase,
+      headline: "",
+      newsBody: "",
+      summary: "",
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.headline).toBeTruthy();
+    expect(result.errors.newsBody).toBeTruthy();
   });
 });

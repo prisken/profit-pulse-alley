@@ -22,6 +22,9 @@ function computeBestStreakFromCards(cards: MarketPulseRevealCardRow[]): number {
   let best = 0;
   let current = 0;
   for (const card of cards) {
+    if (card.isRestCard) {
+      continue;
+    }
     if (card.isMatch) {
       current += 1;
       best = Math.max(best, current);
@@ -175,22 +178,27 @@ export async function getMarketPulseRevealPageData(
     });
   }
 
-  const cards: MarketPulseRevealCardRow[] = reveal.cards.map((card) => ({
-    cardId: card.cardId,
-    dayIndex: card.dayIndex,
-    sortOrder: card.sortOrder,
-    cardsOnDay: card.cardsOnDay,
-    companyName: card.companyName,
-    headline: card.headline,
-    userDecision: card.userDecision,
-    ppaSignal: card.ppaSignal,
-    ppaInsight: card.ppaInsight,
-    isMatch: card.userDecision === card.ppaSignal,
-    participationPoints: card.participationPoints,
-    matchBonus: card.matchBonus,
-    streakBonus: card.streakBonus,
-    totalPoints: card.totalPoints,
-  }));
+  const cards: MarketPulseRevealCardRow[] = reveal.cards.map((card) => {
+    const isRestCard = card.cardType === "REST";
+    return {
+      cardId: card.cardId,
+      dayIndex: card.dayIndex,
+      sortOrder: card.sortOrder,
+      cardsOnDay: card.cardsOnDay,
+      cardType: card.cardType,
+      companyName: card.companyName,
+      headline: card.headline,
+      userDecision: card.userDecision,
+      ppaSignal: card.ppaSignal,
+      ppaInsight: card.ppaInsight,
+      isRestCard,
+      isMatch: !isRestCard && card.userDecision === card.ppaSignal,
+      participationPoints: card.participationPoints,
+      matchBonus: card.matchBonus,
+      streakBonus: card.streakBonus,
+      totalPoints: card.totalPoints,
+    };
+  });
 
   const matchesCount = cards.filter((card) => card.isMatch).length;
   const bestStreak = Math.max(

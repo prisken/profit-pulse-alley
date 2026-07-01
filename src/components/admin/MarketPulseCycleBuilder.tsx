@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { CardStatusBadge } from "@/components/admin/AdminCardStatusBadge";
+import { CardStatusBadge, CardTypeBadge } from "@/components/admin/AdminCardStatusBadge";
 import MarketPulseBuilderBulkActions, {
   BuilderCardCheckbox,
 } from "@/components/admin/MarketPulseBuilderBulkActions";
@@ -19,6 +19,7 @@ import {
   duplicateMarketPulseCardAction,
   publishMarketPulseCardAction,
   quickCreateMarketPulseCardDraftAction,
+  quickCreateMarketPulseRestCardDraftAction,
   updateMarketPulseCycleAction,
   reorderMarketPulseCardAction,
   fillMissingCardSourceDatesAction,
@@ -39,6 +40,7 @@ import {
   deriveCycleCardCreationDefaults,
 } from "@/lib/market-pulse/cycle-card-defaults";
 import { isCardPublished } from "@/lib/market-pulse/admin-card-filter";
+import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
 import { isRevealWithinPpaWarningWindow } from "@/lib/market-pulse/admin-ppa-reveal-warning";
 import { evaluateCycleReadiness } from "@/lib/market-pulse/admin-cycle-readiness";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
@@ -341,6 +343,35 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
     });
   }
 
+  function handleAddRestCardDraft() {
+    setMessage(null);
+    setWarning(null);
+    setError(null);
+    setCreateCardOpen(false);
+    startTransition(async () => {
+      try {
+        const result = await quickCreateMarketPulseRestCardDraftAction(cycle.id);
+        if (!result.ok) {
+          setError(result.error ?? t("auth.admin.mp.actionFailed"));
+          return;
+        }
+
+        if (result.data?.cardId) {
+          setPendingFocusCardId(result.data.cardId);
+          setSelectedCardId(result.data.cardId);
+        }
+
+        setMessage(result.message ?? t("auth.admin.mp.done"));
+        setWarning(result.warning ?? null);
+        refresh();
+      } catch (actionError) {
+        console.error("[admin] add rest card draft failed:", actionError);
+        refresh();
+        setError(t("auth.admin.mp.actionFailed"));
+      }
+    });
+  }
+
   function handleAddAnother() {
     handleAddCardDraft();
   }
@@ -464,6 +495,14 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
             onClick={handleAddCardDraft}
           >
             {t("auth.admin.mp.builder.addCardDraft")}
+          </button>
+          <button
+            type="button"
+            className={buttonClass}
+            disabled={disabled}
+            onClick={handleAddRestCardDraft}
+          >
+            {t("auth.admin.mp.builder.addRestCardDraft")}
           </button>
           <button
             type="button"
@@ -684,10 +723,15 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
                             </div>
                           </td>
                           <td className="max-w-[200px] truncate px-3 py-2.5 text-zinc-200">
-                            {card.headline}
+                            <div className="flex flex-wrap items-center gap-2">
+                              {isMarketPulseRestCard(card) ? (
+                                <CardTypeBadge cardType={card.cardType} />
+                              ) : null}
+                              <span className="truncate">{card.headline}</span>
+                            </div>
                           </td>
                           <td className="px-3 py-2.5 whitespace-nowrap text-zinc-400">
-                            {card.ticker}
+                            {isMarketPulseRestCard(card) ? "—" : card.ticker}
                           </td>
                           <td className="px-3 py-2.5">
                             <CardStatusBadge status={card.status} />
@@ -790,6 +834,9 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
                           })}
                         </span>
                         <CardStatusBadge status={card.status} />
+                        {isMarketPulseRestCard(card) ? (
+                          <CardTypeBadge cardType={card.cardType} />
+                        ) : null}
                         <span
                           className={`rounded px-2 py-0.5 text-xs font-medium ${validationStatusBadge(validationStatus)}`}
                         >
@@ -802,7 +849,9 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
                         </p>
                       ) : null}
                       <p className="mt-2 font-medium text-zinc-100">{card.headline}</p>
-                      <p className="mt-1 text-sm text-zinc-400">{card.ticker}</p>
+                      <p className="mt-1 text-sm text-zinc-400">
+                        {isMarketPulseRestCard(card) ? "—" : card.ticker}
+                      </p>
                       <div className="mt-3 flex flex-wrap gap-1">
                         <button
                           type="button"

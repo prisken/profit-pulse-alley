@@ -53,10 +53,12 @@ export function getCardPublishBlockReason(
   }
 
   const contentReason = validateCardPublishable({
+    cardType: card.cardType,
     headline: card.headline,
     companyName: card.companyName,
     ticker: card.ticker,
     summary: card.summary,
+    newsBody: card.newsBody,
     ppaSignal: card.ppaSignal,
     ppaInsight: card.ppaInsight,
     ppaSignalLockedAt: card.ppaSignalLockedAt,

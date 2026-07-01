@@ -9,9 +9,12 @@ import {
   hasLegacyPublishedAtGatePassed,
   isCardReleasedForPlay,
 } from "@/lib/market-pulse/card-release-schedule";
-import { getTodayCardStatus } from "@/lib/market-pulse/admin-mp-status";
 import { getCardSchedulingConflictMessages } from "@/lib/market-pulse/admin-card-scheduling";
 import { getCyclePlayabilityIssue } from "@/lib/market-pulse/cycle-playability";
+import {
+  isMarketPulseRestCard,
+  isMarketPulseSignalCard,
+} from "@/lib/market-pulse/card-type";
 import {
   buildLeaderboardCycleOptions,
   getLeaderboardViewState,
@@ -22,7 +25,9 @@ import {
   MARKET_PULSE_PUBLIC_LAUNCH_AT,
 } from "@/lib/market-pulse/launch-config";
 import {
-  findPlayableCardForToday,
+  cardMatchesCycleDisplayDay,
+  findCardsForCycleDisplayDay,
+  findPlayableCardsForToday,
   getCycleDisplayDay,
 } from "@/lib/market-pulse/playable-card";
 import {
@@ -76,6 +81,8 @@ function toPlayableCard(card: MarketPulseAdminCardRow): MarketPulseCard {
     status: card.status,
     publishedAt: card.publishedAt ? new Date(card.publishedAt) : null,
     dayIndex: card.dayIndex,
+    sortOrder: card.sortOrder,
+    createdAt: new Date(card.createdAt),
   } as MarketPulseCard;
 }
 
@@ -84,6 +91,7 @@ function toMarketPulseCard(card: MarketPulseAdminCardRow): MarketPulseCard {
     id: card.id,
     cycleId: card.cycleId,
     dayIndex: card.dayIndex,
+    cardType: card.cardType,
     companyName: card.companyName,
     companyNameZh: card.companyNameZh,
     ticker: card.ticker,
@@ -122,15 +130,6 @@ function formatPublicLaunchLabel(): string {
   });
 }
 
-function findCardForDisplayDay(
-  cards: MarketPulseAdminCardRow[],
-  displayDay: number,
-): MarketPulseAdminCardRow | undefined {
-  return cards.find(
-    (card) => card.dayIndex === displayDay || card.dayIndex === displayDay - 1,
-  );
-}
-
 function isBlockingFailure(
   check: PlayerVisibilityCheck,
   now: Date,
@@ -149,7 +148,7 @@ function finalizeReadiness(
   input: {
     runtimeStatus: MarketPulseGameRuntimeStatus;
     playIssue: ReturnType<typeof getCyclePlayabilityIssue>;
-    playable: MarketPulseCard | null;
+    playableCount: number;
     now: Date;
   },
 ): PlayerVisibilityReadiness {
@@ -158,7 +157,7 @@ function finalizeReadiness(
   const playersCanSubmitToday =
     input.runtimeStatus === "OPEN" &&
     input.playIssue === null &&
-    input.playable != null &&
+    input.playableCount > 0 &&
     canAccessMarketPulsePlay("USER", input.now);
 
   const headline =
@@ -169,7 +168,7 @@ function finalizeReadiness(
     detail = "Players can submit today";
   } else if (blockingFails[0]) {
     detail = blockingFails[0].message;
-  } else if (isBeforePublicLaunch(input.now) && input.playable) {
+  } else if (isBeforePublicLaunch(input.now) && input.playableCount > 0) {
     detail = `Cycle is playable for verification. Public play opens on ${formatPublicLaunchLabel()} HKT.`;
   }
 
@@ -217,7 +216,7 @@ export function evaluatePlayerVisibilityReadiness(input: {
     return finalizeReadiness(checks, {
       runtimeStatus: input.runtimeStatus,
       playIssue: "not_open",
-      playable: null,
+      playableCount: 0,
       now,
     });
   }
@@ -233,6 +232,7 @@ export function evaluatePlayerVisibilityReadiness(input: {
   const startsAt = new Date(cycle.startsAt);
   const cycleRevealAt = new Date(cycle.revealAt);
   const displayDay = getCycleDisplayDay(startsAt, now);
+  const zeroBasedDay = displayDay - 1;
 
   if (cycle.status === "OPEN") {
     checks.push({
@@ -283,109 +283,148 @@ export function evaluatePlayerVisibilityReadiness(input: {
     });
   }
 
-  const playable = findPlayableCardForToday(
+  const playableCards = findPlayableCardsForToday(
     {
       startsAt,
+      revealAt: cycleRevealAt,
       cards: cards.map(toPlayableCard),
     },
     now,
   );
 
-  const cardForDay = findCardForDisplayDay(cards, displayDay);
-  const todayStatus = getTodayCardStatus(cycle, cards, now);
+  const cardsForDay = findCardsForCycleDisplayDay(
+    cards.map(toPlayableCard),
+    startsAt,
+    now,
+  );
 
-  if (todayStatus?.status === "missing" || !cardForDay) {
-    checks.push({
-      id: "today-card-exists",
-      status: "fail",
-      message: "No published card for today.",
-    });
-  } else {
+  if (playableCards.length > 0) {
     checks.push({
       id: "today-card-exists",
       status: "pass",
-      message: `Today's card (day ${displayDay}) exists.`,
+      message:
+        playableCards.length === 1
+          ? "Today's playable card exists."
+          : `Today's playable cards exist (${playableCards.length}).`,
     });
-  }
-
-  if (cardForDay?.status === "PUBLISHED") {
+  } else if (cardsForDay.length === 0) {
     checks.push({
-      id: "today-card-published",
-      status: "pass",
-      message: "Today's card is published.",
+      id: "today-card-exists",
+      status: "fail",
+      message: "No playable card for today.",
     });
   } else {
     checks.push({
-      id: "today-card-published",
+      id: "today-card-exists",
       status: "fail",
-      message: cardForDay
-        ? `Today's card is ${cardForDay.status}.`
-        : "No published card for today.",
+      message: "Today's playable card(s) are not available yet.",
     });
   }
 
-  if (playable) {
+  if (playableCards.length > 0) {
+    checks.push({
+      id: "today-card-published",
+      status: "pass",
+      message:
+        playableCards.length === 1
+          ? "Today's playable card is published."
+          : "Today's playable cards are published.",
+    });
+  } else {
+    const unpublishedForDay = cardsForDay.filter(
+      (card) => card.status !== "PUBLISHED",
+    );
+    checks.push({
+      id: "today-card-published",
+      status: "fail",
+      message:
+        unpublishedForDay.length > 0
+          ? `Today's card(s) include unpublished status (${unpublishedForDay[0]!.status}).`
+          : "No published playable card for today.",
+    });
+  }
+
+  if (playableCards.length > 0) {
     checks.push({
       id: "today-card-live",
       status: "pass",
-      message: "Today's card is live for play.",
+      message:
+        playableCards.length === 1
+          ? "Today's playable card is live for play."
+          : `Today's playable cards are live for play (${playableCards.length}).`,
     });
-  } else if (
-    cardForDay &&
-    !isCardReleasedForPlay(
-      {
-        status: cardForDay.status,
-        publishedAt: cardForDay.publishedAt
-          ? new Date(cardForDay.publishedAt)
-          : null,
-        dayIndex: cardForDay.dayIndex,
-      },
-      { startsAt },
-      now,
-    )
-  ) {
-    const derivedRelease = getCycleDayReleaseAt(startsAt, cardForDay.dayIndex);
-    const message =
-      now.getTime() < derivedRelease.getTime()
-        ? "Today's card is not live until 9:00 AM HKT on its cycle day."
-        : cardForDay.publishedAt &&
-            !hasLegacyPublishedAtGatePassed(
-              new Date(cardForDay.publishedAt),
-              now,
-            )
-          ? "Today's card published date is in the future."
-          : "Today's card is not live for play yet.";
+  } else if (cardsForDay.length > 0) {
+    const cardForDay = cards.find((card) => card.id === cardsForDay[0]!.id);
+    if (
+      cardForDay &&
+      !isCardReleasedForPlay(
+        {
+          status: cardForDay.status,
+          publishedAt: cardForDay.publishedAt
+            ? new Date(cardForDay.publishedAt)
+            : null,
+          dayIndex: cardForDay.dayIndex,
+        },
+        { startsAt },
+        now,
+      )
+    ) {
+      const derivedRelease = getCycleDayReleaseAt(startsAt, cardForDay.dayIndex);
+      const message =
+        now.getTime() < derivedRelease.getTime()
+          ? "Today's playable card(s) are not live until 9:00 AM HKT on their cycle day."
+          : cardForDay.publishedAt &&
+              !hasLegacyPublishedAtGatePassed(
+                new Date(cardForDay.publishedAt),
+                now,
+              )
+            ? "Today's playable card(s) have a future published date."
+            : "Today's playable card(s) are not live for play yet.";
 
-    checks.push({
-      id: "today-card-live",
-      status: "fail",
-      message,
-    });
+      checks.push({
+        id: "today-card-live",
+        status: "fail",
+        message,
+      });
+    } else {
+      checks.push({
+        id: "today-card-live",
+        status: "fail",
+        message: "Today's playable card(s) are not live for play yet.",
+      });
+    }
   } else {
     checks.push({
       id: "today-card-live",
       status: "fail",
-      message: "Today's card is not live for play yet.",
+      message: "Today's playable card(s) are not live for play yet.",
     });
   }
 
   const mappingIssues: string[] = [];
-  if (cardForDay) {
+  for (const card of cards.filter((row) =>
+    cardsForDay.some((dayCard) => dayCard.id === row.id),
+  )) {
     mappingIssues.push(
       ...getCardSchedulingConflictMessages(
-        cardForDay,
+        card,
         { startsAt: cycle.startsAt, endsAt: cycle.endsAt },
         cards,
       ),
     );
   }
-  if (playable && cardForDay && playable.id !== cardForDay.id) {
-    mappingIssues.push(
-      `Playable card does not match today's day ${displayDay} mapping.`,
-    );
+
+  for (const playable of playableCards) {
+    if (
+      !cardMatchesCycleDisplayDay(playable.dayIndex, displayDay, zeroBasedDay)
+    ) {
+      mappingIssues.push(
+        `Playable card ${playable.id} does not match today's day ${displayDay} mapping.`,
+      );
+    }
   }
 
-  if (mappingIssues.length === 0 && playable) {
+  if (mappingIssues.length === 0 && playableCards.length > 0) {
     checks.push({
       id: "card-day-mapping",
       status: "pass",
@@ -467,13 +506,19 @@ export function evaluatePlayerVisibilityReadiness(input: {
     });
   }
 
-  const sampleCard =
-    (playable ? cards.find((card) => card.id === playable.id) : undefined) ??
-    cardForDay;
+  const playableAdminCards = cards.filter((card) =>
+    playableCards.some((playable) => playable.id === card.id),
+  );
+  const signalPlayable = playableAdminCards.find((card) =>
+    isMarketPulseSignalCard(card),
+  );
+  const restOnlyPlayable =
+    playableAdminCards.length > 0 &&
+    playableAdminCards.every((card) => isMarketPulseRestCard(card));
 
-  if (sampleCard && !cycleRevealed) {
+  if (signalPlayable && !cycleRevealed) {
     const payload = getMarketPulseCardPublicPayload(
-      toMarketPulseCard(sampleCard),
+      toMarketPulseCard(signalPlayable),
       {
         cycle: { status: cycle.status, revealAt: cycleRevealAt },
         at: now,
@@ -492,6 +537,12 @@ export function evaluatePlayerVisibilityReadiness(input: {
         message: "PPA would be exposed to players before reveal.",
       });
     }
+  } else if (restOnlyPlayable && !cycleRevealed) {
+    checks.push({
+      id: "ppa-privacy",
+      status: "pass",
+      message: "PPA is not required on market rest days.",
+    });
   } else if (cycleRevealed) {
     checks.push({
       id: "ppa-privacy",
@@ -509,7 +560,7 @@ export function evaluatePlayerVisibilityReadiness(input: {
   return finalizeReadiness(checks, {
     runtimeStatus: input.runtimeStatus,
     playIssue,
-    playable,
+    playableCount: playableCards.length,
     now,
   });
 }

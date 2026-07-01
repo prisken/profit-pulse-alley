@@ -5,6 +5,7 @@ import type {
   MarketPulseAdminCycleRow,
 } from "@/lib/market-pulse/admin-data";
 import { MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
+import { MARKET_PULSE_CARD_TYPE_REST } from "@/lib/market-pulse/card-type";
 import {
   buildMarketPulsePlayabilityAlerts,
   buildMarketPulseStatusSnapshot,
@@ -33,6 +34,8 @@ const baseCycle: MarketPulseAdminCycleRow = {
   scoresGenerated: false,
   topWinnerName: null,
   topWinnerScore: null,
+  signalCardCount: 1,
+  restCardCount: 0,
 };
 
 function buildCard(
@@ -194,5 +197,92 @@ describe("getTodayCardStatus", () => {
 
     expect(status?.tone).toBe("ok");
     expect(status?.companyName).toBe("Acme");
+    expect(status?.shellMessage.key).toBe("auth.admin.mp.shell.todaySignalCardLive");
+  });
+
+  it("labels a live market rest card without implying missing PPA", () => {
+    const status = getTodayCardStatus(
+      baseCycle,
+      [
+        buildCard({
+          id: "rest-1",
+          cardType: MARKET_PULSE_CARD_TYPE_REST,
+          companyName: "",
+          ticker: "REST",
+          headline: "Market rest day",
+          ppaSignal: null,
+          ppaInsight: null,
+          ppaSignalLockedAt: null,
+        }),
+      ],
+      new Date("2026-06-01T12:00:00.000Z"),
+    );
+
+    expect(status?.tone).toBe("ok");
+    expect(status?.restCount).toBe(1);
+    expect(status?.signalCount).toBe(0);
+    expect(status?.shellMessage.key).toBe("auth.admin.mp.shell.todayRestCardLive");
+  });
+
+  it("labels multiple live cards for today", () => {
+    const status = getTodayCardStatus(
+      baseCycle,
+      [
+        buildCard({ id: "signal-1", dayIndex: 1 }),
+        buildCard({
+          id: "rest-1",
+          dayIndex: 1,
+          sortOrder: 1,
+          cardType: MARKET_PULSE_CARD_TYPE_REST,
+          companyName: "",
+          ticker: "REST",
+          headline: "Market rest day",
+          ppaSignal: null,
+          ppaInsight: null,
+          ppaSignalLockedAt: null,
+        }),
+      ],
+      new Date("2026-06-01T12:00:00.000Z"),
+    );
+
+    expect(status?.tone).toBe("ok");
+    expect(status?.liveCount).toBe(2);
+    expect(status?.shellMessage.key).toBe("auth.admin.mp.shell.todayMixedCardsLive");
+  });
+});
+
+describe("rest card admin alerts", () => {
+  const restCard = buildCard({
+    id: "rest-1",
+    cardType: MARKET_PULSE_CARD_TYPE_REST,
+    companyName: "",
+    ticker: "REST",
+    headline: "Market rest day",
+    ppaSignal: null,
+    ppaInsight: null,
+    ppaSignalLockedAt: null,
+  });
+
+  it("does not emit today-card-issue when a rest card is live", () => {
+    const alerts = buildMarketPulsePlayabilityAlerts({
+      runtimeStatus: "OPEN",
+      activeCycle: baseCycle,
+      activeCycleCards: [restCard],
+      now: new Date("2026-06-01T12:00:00.000Z"),
+    });
+
+    expect(alerts.some((alert) => alert.id === "today-card-issue")).toBe(false);
+  });
+
+  it("ignores rest cards for urgent PPA warnings", () => {
+    const alerts = buildMarketPulsePlayabilityAlerts({
+      runtimeStatus: "OPEN",
+      activeCycle: baseCycle,
+      activeCycleCards: [restCard],
+      now: new Date("2026-06-10T12:00:00.000Z"),
+    });
+
+    expect(alerts.some((alert) => alert.id === "ppa-urgent")).toBe(false);
+    expect(alerts.some((alert) => alert.id === "ppa-setup")).toBe(false);
   });
 });

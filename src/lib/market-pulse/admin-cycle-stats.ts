@@ -1,3 +1,6 @@
+import type { MarketPulseAdminCardRow } from "@/lib/market-pulse/admin-data";
+import { isMarketPulseRestCard, isMarketPulseSignalCard } from "@/lib/market-pulse/card-type";
+
 export type AdminCycleParticipationInput = {
   cardCount: number;
   participantCount: number;
@@ -9,10 +12,56 @@ export type AdminCycleParticipationStats = {
   completionRatePercent: number | null;
 };
 
+export type AdminCycleCardBreakdown = {
+  totalCards: number;
+  signalCards: number;
+  restCards: number;
+  missingPpaSignalCards: number;
+  unlockedSignalCards: number;
+};
+
 export type AdminCycleWinner = {
   userId: string;
   score: number;
 };
+
+export function computeAdminCycleCardBreakdown(
+  cards: Array<
+    Pick<MarketPulseAdminCardRow, "cardType" | "ppaSignal"> & {
+      ppaSignalLockedAt?: string | Date | null;
+    }
+  >,
+): AdminCycleCardBreakdown {
+  let signalCards = 0;
+  let restCards = 0;
+  let missingPpaSignalCards = 0;
+  let unlockedSignalCards = 0;
+
+  for (const card of cards) {
+    if (isMarketPulseRestCard(card)) {
+      restCards += 1;
+      continue;
+    }
+
+    if (isMarketPulseSignalCard(card)) {
+      signalCards += 1;
+      if (!card.ppaSignal) {
+        missingPpaSignalCards += 1;
+      }
+      if (!card.ppaSignalLockedAt) {
+        unlockedSignalCards += 1;
+      }
+    }
+  }
+
+  return {
+    totalCards: cards.length,
+    signalCards,
+    restCards,
+    missingPpaSignalCards,
+    unlockedSignalCards,
+  };
+}
 
 export function computeAdminCycleParticipationStats(
   input: AdminCycleParticipationInput,

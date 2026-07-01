@@ -89,9 +89,11 @@ export const marketPulseEnMessages = {
   "mp.play.backToHub": "Back to Market Pulse hub",
   "mp.play.chrome.day": "Day {current}/{total}",
   "mp.play.chrome.cardProgress": "Card {current} of {total}",
-  "mp.play.completion.allDone": "All of today's signals are locked in.",
-  "mp.play.completion.summary": "You completed {count} signals today.",
+  "mp.play.completion.allDone": "All of today's cards are complete.",
+  "mp.play.completion.summary": "You completed {count} cards today.",
   "mp.play.completion.cardLabel": "Signal {index}",
+  "mp.play.completion.restLabel": "Rest day {index}",
+  "mp.play.completion.acknowledged": "Participation claimed",
   "mp.play.chrome.showCycle": "Show cycle & reveal timer",
   "mp.play.chrome.hideCycle": "Hide cycle details",
   "mp.play.chrome.cycleName": "Cycle",
@@ -190,6 +192,29 @@ export const marketPulseEnMessages = {
   "mp.decision.aria.chooseBullish": "Choose Bullish — opens confirmation",
   "mp.decision.aria.chooseCautious": "Choose Cautious — opens confirmation",
   "mp.decision.success.locked": "Your call is locked in.",
+
+  "mp.rest.badge": "Market rest day",
+  "mp.rest.noSignalToday": "No market signal today",
+  "mp.rest.claimParticipation": "Claim participation",
+  "mp.rest.claiming": "Claiming participation…",
+  "mp.rest.participationOnlyNote": "Rest cards award +10 participation points only.",
+  "mp.rest.noPredictionRequired":
+    "No prediction or PPA insight is required for this card.",
+  "mp.rest.success.locked": "Participation claimed",
+  "mp.rest.locked.badge": "Participation claimed",
+  "mp.rest.locked.title": "Participation claimed",
+  "mp.rest.locked.choice": "Participation claimed",
+  "mp.rest.locked.nextCard": "Come back for the next card.",
+
+  "mp.scoring.signalParticipation": "+{points} signal card participation",
+  "mp.scoring.signalMatch": "+{points} correct signal match",
+  "mp.scoring.signalStreak": "+{points} streak bonus every {interval} correct signal matches",
+  "mp.scoring.restCard": "+{points} market rest card (participation only)",
+  "mp.scoring.note":
+    "Match and streak bonuses apply to signal cards only and unlock after PPA Insight is revealed.",
+
+  "mp.cardType.signal": "Market signal",
+  "mp.cardType.rest": "Market rest card",
 
   "mp.locked.badge": "Call locked",
   "mp.locked.title": "Your decision is locked.",
@@ -332,6 +357,7 @@ export const marketPulseEnMessages = {
   "mp.reveal.card.points": "{points} pts",
   "mp.reveal.card.showInsight": "Show PPA Insight",
   "mp.reveal.card.hideInsight": "Hide PPA Insight",
+  "mp.reveal.card.restParticipation": "Participation",
   "mp.reveal.cta.leaderboard": "View leaderboard",
   "mp.reveal.cta.hub": "Back to Market Pulse",
   "mp.reveal.cta.download": "Download PPA Report",
@@ -344,10 +370,10 @@ export const marketPulseEnMessages = {
 
   "mp.rules.title": "Market Pulse Rules",
   "mp.rules.intro":
-    "Market Pulse is Profit Pulse Ally's recurring investment challenge. Each cycle, members review daily market signal cards, choose Bullish or Cautious, and compete on the leaderboard until PPA Insight is revealed. Rules may be updated from time to time; this page describes how the challenge generally works today.",
+    "Market Pulse is Profit Pulse Ally's recurring investment challenge. Each cycle, members review daily market signal cards, choose Bullish or Cautious, and compete on the leaderboard until PPA Insight is revealed. Some days may be Market rest days — you can still check in and claim participation. Rules may be updated from time to time; this page describes how the challenge generally works today.",
   "mp.rules.section.whatIs": "What Market Pulse is",
   "mp.rules.section.whatIsBody":
-    "Market Pulse is an educational simulation. You review fictional startup deals, decide where to allocate virtual capital, and respond to themed market events over a multi-year in-game timeline. It is designed to practice judgment and portfolio thinking — not to recommend real investments.",
+    "Market Pulse is an educational daily challenge. You read published market signal cards, lock in a Bullish or Cautious view before the reveal window, and compare your calls with PPA Insight when the cycle ends. It is designed to practice disciplined market judgment — not to recommend real investments.",
   "mp.rules.section.howWorks": "How the {days}-day challenge works",
   "mp.rules.section.howWorksIntro":
     "Leaderboard competition runs in recurring {days}-day cycles (Hong Kong time). Each cycle has a fixed start and end; the homepage countdown shows time remaining in the current cycle.",
@@ -359,9 +385,33 @@ export const marketPulseEnMessages = {
     "When a new cycle begins, the leaderboard starts fresh for that cycle. Revealed results from earlier cycles stay available on the leaderboard archive selector.",
   "mp.rules.section.howWorks4":
     "Until PPA Insight is revealed for a cycle, public standings and personal scores stay hidden on the leaderboard page.",
+  "mp.rules.section.howWorks5":
+    "Some cycle days may publish a Market rest card instead of a signal card. Rest days still count toward your daily card progress when you claim participation.",
+  "mp.rules.section.restDays": "Market rest days",
+  "mp.rules.section.restDaysBody":
+    "On a Market rest day there is no Bullish/Cautious prediction. You can still stay in the challenge by claiming participation for that card.",
+  "mp.rules.section.restDays1":
+    "Rest cards appear in your daily playable list like any other published card.",
+  "mp.rules.section.restDays2": "Sign in and tap Claim participation to record your check-in for that day.",
+  "mp.rules.section.restDays3":
+    "Rest cards award +10 participation points only — no PPA match bonus and no streak bonus.",
+  "mp.rules.section.restDays4":
+    "Completing a rest card counts toward cards played and decisions submitted for the cycle.",
+  "mp.rules.section.restDays5":
+    "Rest cards are neutral for signal-match streaks: they do not count as correct or incorrect predictions, do not increment the streak, and do not reset or break it. Streak bonuses use consecutive correct SIGNAL cards only.",
   "mp.rules.section.scoring": "How scores are calculated",
-  "mp.rules.section.scoringBody":
-    "After PPA Insight is revealed, scores are calculated server-side: +10 participation per decision submitted, +50 when your call matches PPA's signal, and streak bonuses for consecutive matches. Match and streak points are not shown publicly until reveal.",
+  "mp.rules.section.scoringIntro":
+    "After PPA Insight is revealed, scores are calculated server-side from the cards you completed in that cycle:",
+  "mp.rules.section.scoringSignalParticipation":
+    "Signal card participation: +{points} for each Bullish or Cautious decision submitted.",
+  "mp.rules.section.scoringSignalMatch":
+    "Correct signal match: +{points} when your call matches PPA's signal on a signal card.",
+  "mp.rules.section.scoringSignalStreak":
+    "Streak bonus: +{points} every {interval} consecutive correct signal matches (rest cards are skipped and do not break the streak).",
+  "mp.rules.section.scoringRestCard":
+    "Market rest card: +{points} participation only when you claim participation on a rest day.",
+  "mp.rules.section.scoringNote":
+    "Match and streak points are not shown publicly until reveal. Rest cards never require PPA and are never matched against PPA.",
   "mp.rules.section.prize": "Leaderboard and cycle prize",
   "mp.rules.section.prizeIntro":
     "The Market Pulse Hub shows top scores for the current cycle when available. The full leaderboard page defaults to the active cycle and lets you browse archived standings from past revealed cycles. Sign in to see your personal score, participation summary, and per-card breakdown for the cycle you select.",
@@ -372,7 +422,7 @@ export const marketPulseEnMessages = {
     "Scores must come from normal play in the official Market Pulse game. Manipulating client data, automating play, sharing accounts, or attempting to bypass server checks may result in score removal or account restrictions. We may apply additional validation over time; this is not an exhaustive anti-cheat system.",
   "mp.rules.section.disclaimer": "Educational disclaimer",
   "mp.rules.section.disclaimerBody":
-    "Simulated outcomes do not predict real-world results. See our Investment Disclaimer and Contest Rules for eligibility, prizes, and fair play.",
+    "Educational outcomes do not predict real-world results. See our Investment Disclaimer and Contest Rules for eligibility, prizes, and fair play.",
   "mp.rules.section.account": "Account requirement",
   "mp.rules.section.accountBody":
     "You must sign in with a Profit Pulse Ally member account to play and appear on cycle leaderboards. Guest visitors can browse the hub and revealed standings but cannot see a personal score panel. One account per person is expected; profile history and the leaderboard archive show your past cycle results.",
@@ -486,9 +536,11 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.play.backToHub": "返回 Market Pulse 主頁",
   "mp.play.chrome.day": "第 {current}/{total} 日",
   "mp.play.chrome.cardProgress": "第 {current} / {total} 張卡片",
-  "mp.play.completion.allDone": "今日所有訊號均已鎖定。",
-  "mp.play.completion.summary": "你今日已完成 {count} 則訊號。",
+  "mp.play.completion.allDone": "今日所有卡片均已完成。",
+  "mp.play.completion.summary": "你今日已完成 {count} 張卡片。",
   "mp.play.completion.cardLabel": "訊號 {index}",
+  "mp.play.completion.restLabel": "休息日 {index}",
+  "mp.play.completion.acknowledged": "已領取參與分",
   "mp.play.chrome.showCycle": "顯示週期與揭曉倒數",
   "mp.play.chrome.hideCycle": "隱藏週期詳情",
   "mp.play.chrome.cycleName": "週期",
@@ -583,6 +635,27 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.decision.aria.chooseBullish": "選擇看升 — 開啟確認",
   "mp.decision.aria.chooseCautious": "選擇謹慎 — 開啟確認",
   "mp.decision.success.locked": "你的判斷已鎖定。",
+
+  "mp.rest.badge": "市場休息日",
+  "mp.rest.noSignalToday": "今日沒有市場信號",
+  "mp.rest.claimParticipation": "領取參與分",
+  "mp.rest.claiming": "正在領取參與分…",
+  "mp.rest.participationOnlyNote": "休息卡只會獲得 +10 參與分。",
+  "mp.rest.noPredictionRequired": "此卡無需預測或 PPA 見解。",
+  "mp.rest.success.locked": "已領取參與分",
+  "mp.rest.locked.badge": "已領取參與分",
+  "mp.rest.locked.title": "已領取參與分",
+  "mp.rest.locked.choice": "已領取參與分",
+  "mp.rest.locked.nextCard": "請稍後再來查看下一張卡片。",
+
+  "mp.scoring.signalParticipation": "+{points} 訊號卡參與分",
+  "mp.scoring.signalMatch": "+{points} 訊號配對正確",
+  "mp.scoring.signalStreak": "每 {interval} 次連續訊號配對正確 +{points} 連勝加分",
+  "mp.scoring.restCard": "+{points} 市場休息卡（僅參與分）",
+  "mp.scoring.note": "配對及連勝加分僅適用於訊號卡，並於 PPA 觀點揭曉後解鎖。",
+
+  "mp.cardType.signal": "市場訊號",
+  "mp.cardType.rest": "市場休息卡",
 
   "mp.locked.badge": "判斷已鎖定",
   "mp.locked.title": "你的判斷已鎖定。",
@@ -715,6 +788,7 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.reveal.card.points": "{points} 分",
   "mp.reveal.card.showInsight": "顯示 PPA 觀點",
   "mp.reveal.card.hideInsight": "隱藏 PPA 觀點",
+  "mp.reveal.card.restParticipation": "參與",
   "mp.reveal.cta.leaderboard": "查看排行榜",
   "mp.reveal.cta.hub": "返回 Market Pulse",
   "mp.reveal.cta.download": "下載 PPA 報告",
@@ -727,10 +801,10 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
 
   "mp.rules.title": "Market Pulse 規則",
   "mp.rules.intro":
-    "Market Pulse 是 Profit Pulse Ally 的定期投資挑戰。每期內，會員每日審閱市場訊號卡片，選擇看升或謹慎，並在 PPA 觀點揭曉前競逐排行榜。規則可能不時更新；本頁說明挑戰的一般運作方式。",
+    "Market Pulse 是 Profit Pulse Ally 的定期投資挑戰。每期內，會員每日審閱市場訊號卡片，選擇看升或謹慎，並在 PPA 觀點揭曉前競逐排行榜。部分日子可能是市場休息日 — 你仍可簽到並領取參與分。規則可能不時更新；本頁說明挑戰的一般運作方式。",
   "mp.rules.section.whatIs": "什麼是 Market Pulse",
   "mp.rules.section.whatIsBody":
-    "Market Pulse 是教育性模擬。你審閱虛構的初創交易、決定虛擬資本配置，並在多年遊戲時間軸上回應主題市場事件。旨在練習判斷與組合思維 — 並非推薦真實投資。",
+    "Market Pulse 是教育性每日挑戰。你閱讀已發布的市場訊號卡片，在揭曉窗口前鎖定看升或謹慎判斷，並於週期結束時對照 PPA 觀點檢視你的判斷。旨在練習有紀律的市場思維 — 並非推薦真實投資。",
   "mp.rules.section.howWorks": "{days} 日挑戰如何運作",
   "mp.rules.section.howWorksIntro":
     "排行榜競賽以定期 {days} 日為一週期（香港時間）。每期有固定開始與結束；主頁倒數顯示本期剩餘時間。",
@@ -740,9 +814,28 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
     "新一期開始時，該期排行榜重新計算；已揭曉的過往週期結果仍可在排行榜歷史選單查閱。",
   "mp.rules.section.howWorks4":
     "在 PPA 觀點揭曉前，排行榜頁面的公開排名與個人分數均不顯示。",
+  "mp.rules.section.howWorks5":
+    "部分週期日可能發布市場休息卡而非訊號卡。領取參與分後，休息日仍計入你當日的卡片進度。",
+  "mp.rules.section.restDays": "市場休息日",
+  "mp.rules.section.restDaysBody":
+    "市場休息日無需作出看升或謹慎預測。你仍可透過領取該卡的參與資格繼續參與挑戰。",
+  "mp.rules.section.restDays1": "休息卡會像其他已發布卡片一樣出現在你當日可玩列表中。",
+  "mp.rules.section.restDays2": "登入後點按「領取參與分」即可記錄當日簽到。",
+  "mp.rules.section.restDays3": "休息卡僅獲 +10 參與分 — 無 PPA 配對加分，亦無連勝加分。",
+  "mp.rules.section.restDays4": "完成休息卡會計入本期已玩卡片及已提交決定數量。",
+  "mp.rules.section.restDays5": "休息卡對訊號配對連勝為中性：不計入正確或錯誤預測、不增加連勝，亦不會重置或打斷連勝。連勝加分僅按連續正確的訊號卡計算。",
   "mp.rules.section.scoring": "分數如何計算",
-  "mp.rules.section.scoringBody":
-    "PPA 觀點揭曉後，伺服器計算分數：每項決定 +10 參與分、與 PPA 信號一致 +50 配對分，連續配對另有連勝加分。配對與連勝分數在揭曉前不會公開顯示。",
+  "mp.rules.section.scoringIntro": "PPA 觀點揭曉後，伺服器根據你於該週期完成的卡片計算分數：",
+  "mp.rules.section.scoringSignalParticipation":
+    "訊號卡參與：每次提交看升或謹慎判斷 +{points} 分。",
+  "mp.rules.section.scoringSignalMatch":
+    "訊號配對正確：訊號卡上你的判斷與 PPA 信號一致 +{points} 分。",
+  "mp.rules.section.scoringSignalStreak":
+    "連勝加分：每連續 {interval} 次訊號配對正確 +{points} 分（休息卡會跳過且不會打斷連勝）。",
+  "mp.rules.section.scoringRestCard":
+    "市場休息卡：於休息日領取參與分僅獲 +{points} 參與分。",
+  "mp.rules.section.scoringNote":
+    "配對與連勝分數在揭曉前不會公開顯示。休息卡無需 PPA，亦不會與 PPA 比對。",
   "mp.rules.section.prize": "排行榜與本期獎賞",
   "mp.rules.section.prizeIntro":
     "Market Pulse 主頁在可用時顯示本期最高分。完整排行榜頁面預設為進行中週期，並可瀏覽已揭曉週期的歷史排名。登入後可查看所選週期的個人分數、參與摘要及逐卡明細。",
@@ -753,7 +846,7 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
     "分數須來自官方 Market Pulse 的正常遊玩。篡改客戶端、自動化、共用帳戶或繞過伺服器檢查可能導致分數移除或帳戶限制。我們可能增設驗證；此非完整反作弊系統。",
   "mp.rules.section.disclaimer": "教育免責聲明",
   "mp.rules.section.disclaimerBody":
-    "模擬結果不代表真實世界表現。請參閱投資免責聲明及比賽規則了解資格、獎賞及公平競賽。",
+    "教育性結果不代表真實世界表現。請參閱投資免責聲明及比賽規則了解資格、獎賞及公平競賽。",
   "mp.rules.section.account": "帳戶要求",
   "mp.rules.section.accountBody":
     "須以 Profit Pulse Ally 會員帳戶登入方可參與並登上週期排行榜。訪客可瀏覽主頁及已揭曉排名，但無法查看個人分數面板。預期每人一個帳戶；個人檔案與排行榜歷史可查看過往週期結果。",

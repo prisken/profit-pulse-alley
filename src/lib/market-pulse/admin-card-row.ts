@@ -28,6 +28,7 @@ type CardWithDecisionCount = Pick<
   | "cycleId"
   | "dayIndex"
   | "sortOrder"
+  | "cardType"
   | "companyName"
   | "companyNameZh"
   | "ticker"
@@ -70,6 +71,7 @@ export function mapMarketPulseAdminCardRow(
     cycleId: card.cycleId,
     dayIndex: card.dayIndex,
     sortOrder: card.sortOrder,
+    cardType: card.cardType,
     companyName: card.companyName,
     companyNameZh: card.companyNameZh,
     ticker: card.ticker,

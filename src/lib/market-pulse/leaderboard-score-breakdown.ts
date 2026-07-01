@@ -1,11 +1,14 @@
 import "server-only";
 
+import type { MarketPulseCardType } from "@prisma/client";
+
 import {
   buildCardsOnDayCountMap,
   compareMarketPulseCardsByPlayOrder,
 } from "@/lib/market-pulse/card-play-order";
-import { PARTICIPATION_POINTS } from "@/lib/market-pulse/constants";
 import { localizeMarketPulseCardText } from "@/lib/market-pulse/card-localization";
+import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
+import { PARTICIPATION_POINTS } from "@/lib/market-pulse/constants";
 import type { SiteLocale } from "@/lib/i18n/locales";
 import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
 import { isMarketPulseCycleRevealed } from "@/lib/market-pulse/reveal-access";
@@ -17,6 +20,8 @@ export type LeaderboardViewerCardBreakdown = {
   dayIndex: number;
   sortOrder: number;
   cardsOnDay: number;
+  cardType: MarketPulseCardType;
+  isRestCard: boolean;
   ticker: string;
   headline: string;
   userDecision: string;
@@ -52,6 +57,7 @@ export async function getLeaderboardViewerScoreBreakdown(
             dayIndex: true,
             sortOrder: true,
             createdAt: true,
+            cardType: true,
             ticker: true,
             companyName: true,
             companyNameZh: true,
@@ -111,25 +117,28 @@ export async function getLeaderboardViewerScoreBreakdown(
   const rows: LeaderboardViewerCardBreakdown[] = [];
 
   for (const entry of sortedDecisions) {
-    if (!entry.card.ppaSignal) {
+    const isRestCard = isMarketPulseRestCard(entry.card);
+    if (!isRestCard && !entry.card.ppaSignal) {
       continue;
     }
 
     const scores = scoreByCard.get(entry.cardId);
-    const ppaSignal = entry.card.ppaSignal;
     const localizedHeadline = localizeMarketPulseCardText(entry.card, locale).headline;
     const sortOrder = entry.card.sortOrder ?? 0;
+    const ppaSignal = isRestCard ? null : entry.card.ppaSignal;
 
     rows.push({
       cardId: entry.cardId,
       dayIndex: entry.card.dayIndex,
       sortOrder,
       cardsOnDay: cardsOnDayByIndex.get(entry.card.dayIndex) ?? 1,
+      cardType: entry.card.cardType ?? "SIGNAL",
+      isRestCard,
       ticker: entry.card.ticker,
       headline: localizedHeadline,
       userDecision: entry.decision,
       ppaSignal,
-      isMatch: entry.decision === ppaSignal,
+      isMatch: !isRestCard && entry.decision === ppaSignal,
       participationPoints: scores?.participationPoints ?? PARTICIPATION_POINTS,
       matchBonus: scores?.matchBonus ?? 0,
       streakBonus: scores?.streakBonus ?? 0,
