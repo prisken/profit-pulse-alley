@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MarketPulseCard } from "@prisma/client";
 
 import { evaluatePlayerVisibilityReadiness } from "@/lib/market-pulse/admin-player-visibility-readiness";
+import { MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
 import { buildLeaderboardCycleOptions, getLeaderboardViewState } from "@/lib/market-pulse/leaderboard-cycle-select";
 import {
   canAccessMarketPulsePlay,
@@ -21,11 +22,14 @@ import type { MarketPulseLeaderboardEntryRow } from "@/lib/market-pulse/types";
 import { handleSubmitMarketPulseDecision } from "@/lib/market-pulse/player-handlers";
 import { getMarketPulseCardPublicPayload } from "@/lib/market-pulse/reveal-access";
 import { toMarketPulseSwipeCardData } from "@/lib/market-pulse/swipe-card";
+import { buildMarketPulseTestCard } from "@/lib/market-pulse/market-pulse-test-fixtures";
 
 /** 1 Jul 2026 00:00 HKT */
 const JUL_1_0000_HKT = new Date("2026-06-30T16:00:00.000Z");
 /** 1 Jul 2026 00:01 HKT */
 const JUL_1_0001_HKT = new Date("2026-06-30T16:01:00.000Z");
+/** 1 Jul 2026 09:00 HKT — standard card release */
+const JUL_1_0900_HKT = new Date("2026-07-01T01:00:00.000Z");
 
 const authMocks = vi.hoisted(() => ({
   requireAdminSession: vi.fn(),
@@ -56,36 +60,24 @@ const unrevealedCycle = {
 };
 
 function buildLaunchCard(): MarketPulseCard {
-  return {
+  return buildMarketPulseTestCard({
     id: "card-1",
     cycleId: "cycle-july",
     dayIndex: 1,
     companyName: "Example Co",
-    companyNameZh: null,
     ticker: "EX",
-    exchange: null,
-    logoUrl: null,
     logoInitials: "EX",
-    priceLabel: null,
-    priceDirection: null,
     headline: "Headline",
-    newsBody: null,
     sourceName: "Source",
-    sourceUrl: null,
     sourceDate: JUL_1_0000_HKT,
-    cardImageUrl: null,
-    cardImageAlt: null,
     summary: "Summary",
     userPrompt: "Prompt",
-    ppaSignal: "BULLISH",
     ppaInsight: "Hidden insight",
-    status: "PUBLISHED",
     publishedAt: JUL_1_0000_HKT,
-    revealAt: null,
     ppaSignalLockedAt: JUL_1_0000_HKT,
     createdAt: JUL_1_0000_HKT,
     updatedAt: JUL_1_0000_HKT,
-  };
+  });
 }
 
 describe("Launch smoke — public opening (1 Jul 2026 HKT)", () => {
@@ -264,9 +256,10 @@ describe("Launch smoke — admin access and readiness", () => {
           publishedAt: unrevealedCycle.startsAt,
           revealAt: null,
           decisionCount: 0,
+          ...MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS,
         },
       ],
-      now: JUL_1_0001_HKT,
+      now: JUL_1_0900_HKT,
     });
 
     expect(ready.overallStatus).toBe("ready");

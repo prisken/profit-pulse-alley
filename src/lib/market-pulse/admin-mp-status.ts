@@ -15,6 +15,9 @@ import {
   findPlayableCardForToday,
   getCycleDisplayDay,
 } from "@/lib/market-pulse/playable-card";
+import {
+  isCardReleasedForPlay,
+} from "@/lib/market-pulse/card-release-schedule";
 
 export type TodayCardStatus = {
   displayDay: number;
@@ -100,7 +103,19 @@ export function getTodayCardStatus(
     };
   }
 
-  if (!cardForDay.publishedAt || new Date(cardForDay.publishedAt) > now) {
+  if (
+    !isCardReleasedForPlay(
+      {
+        status: cardForDay.status,
+        publishedAt: cardForDay.publishedAt
+          ? new Date(cardForDay.publishedAt)
+          : null,
+        dayIndex: cardForDay.dayIndex,
+      },
+      { startsAt },
+      now,
+    )
+  ) {
     return {
       displayDay,
       companyName: cardForDay.companyName,

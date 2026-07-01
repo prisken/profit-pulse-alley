@@ -4,6 +4,7 @@ import type {
   MarketPulseAdminCardRow,
   MarketPulseAdminCycleRow,
 } from "@/lib/market-pulse/admin-data";
+import { MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
 import { PPA_REVEAL_WARNING_HOURS } from "@/lib/market-pulse/constants";
 import {
   evaluatePpaRevealWarning,
@@ -70,6 +71,7 @@ function buildCard(
     publishedAt: "2026-06-01T00:00:00.000Z",
     revealAt: null,
     decisionCount: 0,
+    ...MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS,
     ...overrides,
   };
 }

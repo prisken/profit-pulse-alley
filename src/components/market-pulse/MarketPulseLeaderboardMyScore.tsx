@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronDown, Lock, LogIn, UserRound } from "lucide-react";
 
+import { formatMarketPulseCardDayLabelLocalized } from "@/lib/market-pulse/card-play-order";
 import type { LeaderboardViewerScorePanel } from "@/lib/market-pulse/leaderboard-viewer-score";
 import type { LeaderboardViewerCardBreakdown } from "@/lib/market-pulse/leaderboard-score-breakdown";
 import {
@@ -11,6 +12,7 @@ import {
   type MarketPulseDecision,
 } from "@/lib/market-pulse/constants";
 import { useTranslations } from "@/components/providers/LocaleProvider";
+import type { MessageKey } from "@/lib/i18n/messages";
 
 import { MP_FOCUS_RING } from "@/components/market-pulse/MarketPulseVisualPrimitives";
 
@@ -83,6 +85,25 @@ function formatDecisionLabel(value: string): string {
   return value;
 }
 
+function formatBreakdownDayLabel(
+  card: LeaderboardViewerCardBreakdown,
+  t: (key: MessageKey) => string,
+): string {
+  return formatMarketPulseCardDayLabelLocalized(
+    card.dayIndex,
+    card.sortOrder,
+    card.cardsOnDay,
+    {
+      single: (day) =>
+        t("mp.leaderboard.myScore.breakdownDay").replace("{day}", String(day)),
+      multi: (day, cardNumber) =>
+        t("mp.leaderboard.myScore.breakdownDayMulti")
+          .replace("{day}", String(day))
+          .replace("{card}", String(cardNumber)),
+    },
+  );
+}
+
 function ScoreBreakdown({
   cards,
 }: Readonly<{ cards: LeaderboardViewerCardBreakdown[] }>) {
@@ -112,10 +133,7 @@ function ScoreBreakdown({
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400/90">
-                  {t("mp.leaderboard.myScore.breakdownDay").replace(
-                    "{day}",
-                    String(card.dayIndex + 1),
-                  )}
+                  {formatBreakdownDayLabel(card, t)}
                   <span className="ml-2 text-zinc-500">{card.ticker}</span>
                 </p>
                 <p className="mt-1 line-clamp-2 text-sm text-zinc-200">

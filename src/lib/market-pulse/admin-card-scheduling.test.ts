@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildFillMissingSourceDatesPreview,
+  deriveCardPublishedAtFromSchedule,
   findDuplicateDayIndexes,
   findDuplicateSourceDateKeys,
   getAdjacentCardInOrder,
@@ -9,7 +10,9 @@ import {
   getCycleDayCapacity,
   nextAvailableDayIndex,
   nextAvailableSourceDate,
+  nextSortOrderForDay,
   sourceDateHktDayKey,
+  suggestQuickDraftSlot,
 } from "@/lib/market-pulse/admin-card-scheduling";
 import { findPlayableCardForToday } from "@/lib/market-pulse/playable-card";
 import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config";
@@ -52,10 +55,23 @@ describe("nextAvailableSourceDate", () => {
 });
 
 describe("scheduling conflicts", () => {
-  it("detects duplicate day indexes", () => {
+  it("detects duplicate day indexes for reporting only", () => {
     expect(findDuplicateDayIndexes([{ dayIndex: 1 }, { dayIndex: 2 }, { dayIndex: 2 }])).toEqual(
       new Set([2]),
     );
+  });
+
+  it("does not block publish for duplicate day indexes", () => {
+    const reason = getCardSchedulingPublishBlockReason(
+      { id: "c1", dayIndex: 2, sourceDate: null, status: "DRAFT" },
+      { startsAt: CYCLE_START, endsAt: CYCLE_END },
+      [
+        { id: "c1", dayIndex: 2, sourceDate: null, status: "DRAFT" },
+        { id: "c2", dayIndex: 2, sourceDate: null, status: "DRAFT" },
+      ],
+    );
+
+    expect(reason).toBeNull();
   });
 
   it("detects duplicate source dates", () => {
@@ -82,17 +98,45 @@ describe("scheduling conflicts", () => {
 
 describe("reorder helpers", () => {
   const cards = [
-    { id: "a", dayIndex: 1, status: "DRAFT" },
-    { id: "b", dayIndex: 2, status: "DRAFT" },
-    { id: "c", dayIndex: 3, status: "DRAFT" },
+    { id: "a", dayIndex: 1, sortOrder: 0, status: "DRAFT" },
+    { id: "b", dayIndex: 1, sortOrder: 1, status: "DRAFT" },
+    { id: "c", dayIndex: 2, sortOrder: 0, status: "DRAFT" },
   ];
 
-  it("finds the next card when moving down", () => {
+  it("finds the next card when moving down within a day", () => {
     expect(getAdjacentCardInOrder(cards, "a", "down")?.id).toBe("b");
   });
 
   it("returns null at the list edge", () => {
     expect(getAdjacentCardInOrder(cards, "c", "down")).toBeNull();
+  });
+});
+
+describe("derived publish schedule", () => {
+  it("sets 9:00 AM HKT on the cycle day", () => {
+    const publishedAt = deriveCardPublishedAtFromSchedule(CYCLE_START, 1);
+    const hktHour = Number(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Hong_Kong",
+        hour: "numeric",
+        hour12: false,
+      }).format(publishedAt),
+    );
+    expect(hktHour).toBe(9);
+  });
+});
+
+describe("quick draft slot", () => {
+  it("assigns next sort order on the current cycle day", () => {
+    const slot = suggestQuickDraftSlot({
+      cycleStartsAt: CYCLE_START,
+      cycleEndsAt: CYCLE_END,
+      cards: [{ dayIndex: 1, sortOrder: 0 }],
+      now: new Date(CYCLE_START.getTime() + 12 * 60 * 60 * 1000),
+    });
+
+    expect(slot.sortOrder).toBe(1);
+    expect(nextSortOrderForDay([{ dayIndex: 1, sortOrder: 0 }], 1)).toBe(1);
   });
 });
 

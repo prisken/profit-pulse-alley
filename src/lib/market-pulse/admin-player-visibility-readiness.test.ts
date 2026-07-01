@@ -4,6 +4,7 @@ import type {
   MarketPulseAdminCardRow,
   MarketPulseAdminCycleRow,
 } from "@/lib/market-pulse/admin-data";
+import { MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
 import { evaluatePlayerVisibilityReadiness } from "@/lib/market-pulse/admin-player-visibility-readiness";
 import { canAccessMarketPulsePlay } from "@/lib/market-pulse/launch-config";
 
@@ -53,6 +54,7 @@ function buildCycle(
     scoresGenerated: false,
     topWinnerName: null,
     topWinnerScore: null,
+    ...MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS,
     ...overrides,
   };
 }
@@ -88,6 +90,7 @@ function buildCard(
     publishedAt: "2026-07-01T00:00:00.000Z",
     revealAt: null,
     decisionCount: 0,
+    ...MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS,
     ...overrides,
   };
 }

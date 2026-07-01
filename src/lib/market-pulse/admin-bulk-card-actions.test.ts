@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { MarketPulseAdminCardRow } from "@/lib/market-pulse/admin-data";
+import { MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
 import {
   getCardPublishBlockReason,
   getCardUnpublishBlockReason,
@@ -10,6 +11,9 @@ import {
 } from "@/lib/market-pulse/admin-bulk-card-actions";
 import { isCardLiveForPlayers } from "@/lib/market-pulse/admin-card-ppa-status";
 import { isCardPublished } from "@/lib/market-pulse/admin-card-filter";
+import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config";
+
+const CYCLE_START = MARKET_PULSE_PUBLIC_LAUNCH_AT;
 
 function baseCard(
   overrides: Partial<MarketPulseAdminCardRow> = {},
@@ -42,6 +46,7 @@ function baseCard(
     publishedAt: null,
     revealAt: null,
     decisionCount: 0,
+    ...MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS,
     ...overrides,
   };
 }
@@ -123,7 +128,7 @@ describe("publish visibility rules", () => {
     const draft = baseCard({ status: "DRAFT", publishedAt: null });
 
     expect(isCardPublished(draft)).toBe(false);
-    expect(isCardLiveForPlayers(draft)).toBe(false);
+    expect(isCardLiveForPlayers(draft, CYCLE_START)).toBe(false);
     expect(getCardPublishBlockReason(draft)).toBeNull();
   });
 
@@ -131,7 +136,7 @@ describe("publish visibility rules", () => {
     const invalid = baseCard({ summary: null });
 
     expect(getCardPublishBlockReason(invalid)).toBeTruthy();
-    expect(isCardLiveForPlayers(invalid)).toBe(false);
+    expect(isCardLiveForPlayers(invalid, CYCLE_START)).toBe(false);
   });
 
   it("allows unpublish only without decisions", () => {

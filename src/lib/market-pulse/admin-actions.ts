@@ -31,6 +31,7 @@ import {
   parseCycleDate,
   validateMarketPulseCycleDates,
 } from "@/lib/market-pulse/cycle-validation";
+import { mapMarketPulseAdminCardRow } from "@/lib/market-pulse/admin-card-row";
 import { marketPulseCycleBuilderPath } from "@/lib/market-pulse/admin-builder-paths";
 import {
   buildQuickCreateCycleDefaults,
@@ -43,9 +44,11 @@ import { buildDuplicateCardCreateData } from "@/lib/market-pulse/duplicate-card-
 import {
   buildFillMissingSourceDatesPreview,
   canReorderMarketPulseCards,
+  deriveCardPublishedAtFromSchedule,
   getAdjacentCardInOrder,
   getCardSchedulingPublishBlockReason,
   temporaryDayIndexForSwap,
+  temporarySortOrderForSwap,
 } from "@/lib/market-pulse/admin-card-scheduling";
 import {
   formatBulkPublishMessage,
@@ -109,21 +112,23 @@ function trimOrNull(value?: string | null): string | null {
   return trimmed || null;
 }
 
-async function assertUniqueDayIndex(input: {
+async function assertUniqueCardSlot(input: {
   cycleId: string;
   dayIndex: number;
+  sortOrder: number;
   excludeCardId?: string;
 }): Promise<string | null> {
   const existing = await prisma.marketPulseCard.findFirst({
     where: {
       cycleId: input.cycleId,
       dayIndex: input.dayIndex,
+      sortOrder: input.sortOrder,
       ...(input.excludeCardId ? { NOT: { id: input.excludeCardId } } : {}),
     },
     select: { id: true },
   });
   if (existing) {
-    return "Day index must be unique within the cycle.";
+    return "Another card on this cycle day already uses this order.";
   }
   return null;
 }
@@ -149,6 +154,7 @@ function cardPayloadFromInput(
   return {
     cycleId: input.cycleId,
     dayIndex: input.dayIndex,
+    sortOrder: input.sortOrder ?? 0,
     companyName: input.companyName.trim(),
     companyNameZh: trimOrNull(input.companyNameZh),
     ticker: input.ticker.trim(),
@@ -158,16 +164,22 @@ function cardPayloadFromInput(
     priceLabel: trimOrNull(input.priceLabel),
     priceDirection: trimOrNull(input.priceDirection),
     headline: input.headline.trim(),
+    headlineZhHant: trimOrNull(input.headlineZhHant),
     newsBody: trimOrNull(input.newsBody),
+    newsBodyZhHant: trimOrNull(input.newsBodyZhHant),
     sourceName: trimOrNull(input.sourceName),
     sourceUrl: trimOrNull(input.sourceUrl),
     sourceDate: parseCardDate(input.sourceDate),
     cardImageUrl: trimOrNull(input.cardImageUrl),
     cardImageAlt: trimOrNull(input.cardImageAlt),
+    cardImageAltZhHant: trimOrNull(input.cardImageAltZhHant),
     summary: trimOrNull(input.summary),
+    summaryZhHant: trimOrNull(input.summaryZhHant),
     userPrompt: trimOrNull(input.userPrompt),
+    userPromptZhHant: trimOrNull(input.userPromptZhHant),
     ppaSignal: input.ppaSignal,
     ppaInsight: trimOrNull(input.ppaInsight),
+    ppaInsightZhHant: trimOrNull(input.ppaInsightZhHant),
     status: input.status,
     publishedAt,
     revealAt: parseCardDate(input.revealAt),
@@ -752,9 +764,10 @@ export async function createMarketPulseCardAction(
     return adminFail(firstError, fieldErrorsFromRecord(validation.errors));
   }
 
-  const uniqueError = await assertUniqueDayIndex({
+  const uniqueError = await assertUniqueCardSlot({
     cycleId: input.cycleId,
     dayIndex: input.dayIndex,
+    sortOrder: input.sortOrder ?? 0,
   });
   if (uniqueError) {
     return adminFail(uniqueError);
@@ -812,6 +825,7 @@ export async function quickCreateMarketPulseCardDraftAction(
         select: {
           id: true,
           dayIndex: true,
+          sortOrder: true,
           sourceDate: true,
           userPrompt: true,
           exchange: true,
@@ -847,6 +861,7 @@ export async function quickCreateMarketPulseCardDraftAction(
       data: {
         cycleId: cycle.id,
         dayIndex: defaults.dayIndex,
+        sortOrder: defaults.sortOrder,
         companyName: defaults.companyName,
         ticker: defaults.ticker,
         headline: defaults.headline,
@@ -914,7 +929,7 @@ export async function duplicateMarketPulseCardAction(
       id: true,
       startsAt: true,
       endsAt: true,
-      cards: { select: { dayIndex: true, sourceDate: true } },
+      cards: { select: { dayIndex: true, sortOrder: true, sourceDate: true } },
     },
   });
   if (!targetCycle) {
@@ -1004,9 +1019,10 @@ export async function updateMarketPulseCardAction(
     return adminFail(firstError, fieldErrorsFromRecord(validation.errors));
   }
 
-  const uniqueError = await assertUniqueDayIndex({
+  const uniqueError = await assertUniqueCardSlot({
     cycleId: input.cycleId,
     dayIndex: input.dayIndex,
+    sortOrder: input.sortOrder ?? 0,
     excludeCardId: input.cardId,
   });
   if (uniqueError) {
@@ -1043,30 +1059,8 @@ export async function updateMarketPulseCardAction(
       where: { id: input.cardId },
       data: cardPayloadFromInput(
         {
-          cycleId: input.cycleId,
-          dayIndex: input.dayIndex,
-          companyName: input.companyName,
-          companyNameZh: input.companyNameZh,
-          ticker: input.ticker,
-          exchange: input.exchange,
-          logoUrl: input.logoUrl,
-          logoInitials: input.logoInitials,
-          priceLabel: input.priceLabel,
-          priceDirection: input.priceDirection,
-          headline: input.headline,
-          newsBody: input.newsBody,
-          sourceName: input.sourceName,
-          sourceUrl: input.sourceUrl,
-          sourceDate: input.sourceDate,
-          cardImageUrl: input.cardImageUrl,
-          cardImageAlt: input.cardImageAlt,
-          summary: input.summary,
-          userPrompt: input.userPrompt,
+          ...input,
           ppaSignal: nextSignal,
-          ppaInsight: input.ppaInsight,
-          status: input.status,
-          publishedAt: input.publishedAt,
-          revealAt: input.revealAt,
         },
         { existingPublishedAt: card.publishedAt },
       ),
@@ -1160,9 +1154,10 @@ export async function updateMarketPulseCardDraftAction(
     return adminFail(firstError, fieldErrorsFromRecord(validation.errors));
   }
 
-  const uniqueError = await assertUniqueDayIndex({
+  const uniqueError = await assertUniqueCardSlot({
     cycleId: draftInput.cycleId,
     dayIndex: draftInput.dayIndex,
+    sortOrder: draftInput.sortOrder ?? 0,
     excludeCardId: input.cardId,
   });
   if (uniqueError) {
@@ -1190,30 +1185,10 @@ export async function updateMarketPulseCardDraftAction(
       where: { id: input.cardId },
       data: cardPayloadFromInput(
         {
-          cycleId: draftInput.cycleId,
-          dayIndex: draftInput.dayIndex,
-          companyName: draftInput.companyName,
-          companyNameZh: draftInput.companyNameZh,
-          ticker: draftInput.ticker,
-          exchange: draftInput.exchange,
-          logoUrl: draftInput.logoUrl,
-          logoInitials: draftInput.logoInitials,
-          priceLabel: draftInput.priceLabel,
-          priceDirection: draftInput.priceDirection,
-          headline: draftInput.headline,
-          newsBody: draftInput.newsBody,
-          sourceName: draftInput.sourceName,
-          sourceUrl: draftInput.sourceUrl,
-          sourceDate: draftInput.sourceDate,
-          cardImageUrl: draftInput.cardImageUrl,
-          cardImageAlt: draftInput.cardImageAlt,
-          summary: draftInput.summary,
-          userPrompt: draftInput.userPrompt,
+          ...draftInput,
           ppaSignal: nextSignal,
-          ppaInsight: draftInput.ppaInsight,
           status: "DRAFT",
           publishedAt: "",
-          revealAt: draftInput.revealAt,
         },
         { existingPublishedAt: card.publishedAt },
       ),
@@ -1273,7 +1248,7 @@ export async function reorderMarketPulseCardAction(
 
   const card = await prisma.marketPulseCard.findUnique({
     where: { id: input.cardId },
-    select: { id: true, cycleId: true, dayIndex: true, status: true },
+    select: { id: true, cycleId: true, dayIndex: true, sortOrder: true, status: true },
   });
   if (!card) {
     return adminFail("Card not found.");
@@ -1281,8 +1256,8 @@ export async function reorderMarketPulseCardAction(
 
   const cycleCards = await prisma.marketPulseCard.findMany({
     where: { cycleId: card.cycleId },
-    select: { id: true, dayIndex: true, status: true },
-    orderBy: { dayIndex: "asc" },
+    select: { id: true, dayIndex: true, sortOrder: true, status: true, createdAt: true },
+    orderBy: [{ dayIndex: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
   });
 
   const neighbor = getAdjacentCardInOrder(cycleCards, card.id, input.direction);
@@ -1295,21 +1270,41 @@ export async function reorderMarketPulseCardAction(
     return adminFail(reorderBlock);
   }
 
+  const cardSortOrder = card.sortOrder ?? 0;
+  const neighborSortOrder = neighbor.sortOrder ?? 0;
+
   try {
-    await prisma.$transaction([
-      prisma.marketPulseCard.update({
-        where: { id: card.id },
-        data: { dayIndex: temporaryDayIndexForSwap(card.dayIndex) },
-      }),
-      prisma.marketPulseCard.update({
-        where: { id: neighbor.id },
-        data: { dayIndex: card.dayIndex },
-      }),
-      prisma.marketPulseCard.update({
-        where: { id: card.id },
-        data: { dayIndex: neighbor.dayIndex },
-      }),
-    ]);
+    if (card.dayIndex === neighbor.dayIndex) {
+      await prisma.$transaction([
+        prisma.marketPulseCard.update({
+          where: { id: card.id },
+          data: { sortOrder: temporarySortOrderForSwap(cardSortOrder) },
+        }),
+        prisma.marketPulseCard.update({
+          where: { id: neighbor.id },
+          data: { sortOrder: cardSortOrder },
+        }),
+        prisma.marketPulseCard.update({
+          where: { id: card.id },
+          data: { sortOrder: neighborSortOrder },
+        }),
+      ]);
+    } else {
+      await prisma.$transaction([
+        prisma.marketPulseCard.update({
+          where: { id: card.id },
+          data: { dayIndex: temporaryDayIndexForSwap(card.dayIndex) },
+        }),
+        prisma.marketPulseCard.update({
+          where: { id: neighbor.id },
+          data: { dayIndex: card.dayIndex, sortOrder: cardSortOrder },
+        }),
+        prisma.marketPulseCard.update({
+          where: { id: card.id },
+          data: { dayIndex: neighbor.dayIndex, sortOrder: neighborSortOrder },
+        }),
+      ]);
+    }
   } catch (error) {
     console.error("[admin] reorderMarketPulseCardAction failed:", error);
     return adminFail("Could not reorder cards. Please try again.");
@@ -1447,7 +1442,9 @@ export async function publishMarketPulseCardAction(
       where: { id: cardId },
       data: {
         status: "PUBLISHED",
-        publishedAt: card.publishedAt ?? new Date(),
+        publishedAt:
+          card.publishedAt ??
+          deriveCardPublishedAtFromSchedule(cycle.startsAt, card.dayIndex),
       },
     });
   } catch (error) {
@@ -1475,70 +1472,15 @@ export async function publishMarketPulseCardAction(
   ]);
 }
 
-function mapCardRowForBulkActions(card: {
-  id: string;
-  cycleId: string;
-  dayIndex: number;
-  companyName: string;
-  companyNameZh: string | null;
-  ticker: string;
-  exchange: string | null;
-  logoUrl: string | null;
-  logoInitials: string | null;
-  priceLabel: string | null;
-  priceDirection: string | null;
-  headline: string;
-  newsBody: string | null;
-  sourceName: string | null;
-  sourceUrl: string | null;
-  sourceDate: Date | null;
-  cardImageUrl: string | null;
-  cardImageAlt: string | null;
-  summary: string | null;
-  userPrompt: string | null;
-  status: MarketPulseAdminCardRow["status"];
-  ppaSignal: MarketPulseSignal | null;
-  ppaInsight: string | null;
-  ppaSignalLockedAt: Date | null;
-  publishedAt: Date | null;
-  revealAt: Date | null;
-  _count: { decisions: number };
-}): MarketPulseAdminCardRow {
-  return {
-    id: card.id,
-    cycleId: card.cycleId,
-    dayIndex: card.dayIndex,
-    companyName: card.companyName,
-    companyNameZh: card.companyNameZh,
-    ticker: card.ticker,
-    exchange: card.exchange,
-    logoUrl: card.logoUrl,
-    logoInitials: card.logoInitials,
-    priceLabel: card.priceLabel,
-    priceDirection: card.priceDirection,
-    headline: card.headline,
-    newsBody: card.newsBody,
-    sourceName: card.sourceName,
-    sourceUrl: card.sourceUrl,
-    sourceDate: card.sourceDate?.toISOString() ?? null,
-    cardImageUrl: card.cardImageUrl,
-    cardImageAlt: card.cardImageAlt,
-    summary: card.summary,
-    userPrompt: card.userPrompt,
-    status: card.status,
-    ppaSignal: card.ppaSignal,
-    ppaInsight: card.ppaInsight,
-    ppaSignalLockedAt: card.ppaSignalLockedAt?.toISOString() ?? null,
-    publishedAt: card.publishedAt?.toISOString() ?? null,
-    revealAt: card.revealAt?.toISOString() ?? null,
-    decisionCount: card._count.decisions,
-  };
+function mapCardRowForBulkActions(card: Parameters<typeof mapMarketPulseAdminCardRow>[0]): MarketPulseAdminCardRow {
+  return mapMarketPulseAdminCardRow(card);
 }
 
 const bulkCardSelect = {
   id: true,
   cycleId: true,
   dayIndex: true,
+  sortOrder: true,
   companyName: true,
   companyNameZh: true,
   ticker: true,
@@ -1548,20 +1490,27 @@ const bulkCardSelect = {
   priceLabel: true,
   priceDirection: true,
   headline: true,
+  headlineZhHant: true,
   newsBody: true,
+  newsBodyZhHant: true,
   sourceName: true,
   sourceUrl: true,
   sourceDate: true,
   cardImageUrl: true,
   cardImageAlt: true,
+  cardImageAltZhHant: true,
   summary: true,
+  summaryZhHant: true,
   userPrompt: true,
+  userPromptZhHant: true,
   status: true,
   ppaSignal: true,
   ppaInsight: true,
+  ppaInsightZhHant: true,
   ppaSignalLockedAt: true,
   publishedAt: true,
   revealAt: true,
+  createdAt: true,
   _count: { select: { decisions: true } },
 } as const;
 

@@ -3,11 +3,10 @@ import type { MarketPulseCardStatus, MarketPulseSignal } from "@prisma/client";
 import {
   collectUsedSourceDateKeys,
   nextAvailableSourceDate,
+  suggestQuickDraftSlot,
 } from "@/lib/market-pulse/admin-card-scheduling";
-import {
-  nextQuickDraftDayIndex,
-  QUICK_DRAFT_CARD_STATUS,
-} from "@/lib/market-pulse/cycle-card-defaults";
+
+import { QUICK_DRAFT_CARD_STATUS } from "@/lib/market-pulse/cycle-card-defaults";
 
 export const DUPLICATE_CARD_STATUS: MarketPulseCardStatus = QUICK_DRAFT_CARD_STATUS;
 
@@ -22,20 +21,27 @@ export type DuplicateCardSource = {
   priceLabel: string | null;
   priceDirection: string | null;
   headline: string;
+  headlineZhHant: string | null;
   newsBody: string | null;
+  newsBodyZhHant: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
   cardImageUrl: string | null;
   cardImageAlt: string | null;
+  cardImageAltZhHant: string | null;
   summary: string | null;
+  summaryZhHant: string | null;
   userPrompt: string | null;
+  userPromptZhHant: string | null;
   ppaSignal: MarketPulseSignal | null;
   ppaInsight: string | null;
+  ppaInsightZhHant: string | null;
 };
 
 export type DuplicateCardCreateData = {
   cycleId: string;
   dayIndex: number;
+  sortOrder: number;
   companyName: string;
   companyNameZh: string | null;
   ticker: string;
@@ -45,16 +51,22 @@ export type DuplicateCardCreateData = {
   priceLabel: string | null;
   priceDirection: string | null;
   headline: string;
+  headlineZhHant: string | null;
   newsBody: string | null;
+  newsBodyZhHant: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
   sourceDate: Date;
   cardImageUrl: string | null;
   cardImageAlt: string | null;
+  cardImageAltZhHant: string | null;
   summary: string | null;
+  summaryZhHant: string | null;
   userPrompt: string | null;
+  userPromptZhHant: string | null;
   ppaSignal: MarketPulseSignal | null;
   ppaInsight: string | null;
+  ppaInsightZhHant: string | null;
   status: typeof DUPLICATE_CARD_STATUS;
   publishedAt: null;
   revealAt: null;
@@ -66,10 +78,15 @@ export function buildDuplicateCardCreateData(input: {
   targetCycleId: string;
   targetCycleStartsAt: Date;
   targetCycleEndsAt?: Date;
-  existingCards: Array<{ dayIndex: number; sourceDate?: Date | null }>;
+  existingCards: Array<{ dayIndex: number; sortOrder?: number; sourceDate?: Date | null }>;
 }): DuplicateCardCreateData {
-  const existingDayIndexes = input.existingCards.map((card) => card.dayIndex);
-  const dayIndex = nextQuickDraftDayIndex(existingDayIndexes);
+  const slot = suggestQuickDraftSlot({
+    cycleStartsAt: input.targetCycleStartsAt,
+    cycleEndsAt: input.targetCycleEndsAt ?? input.targetCycleStartsAt,
+    cards: input.existingCards,
+  });
+  const dayIndex = slot.dayIndex;
+  const sortOrder = slot.sortOrder;
   const usedSourceDateKeys = collectUsedSourceDateKeys(
     input.existingCards.map((card) => ({ sourceDate: card.sourceDate ?? null })),
   );
@@ -83,6 +100,7 @@ export function buildDuplicateCardCreateData(input: {
   return {
     cycleId: input.targetCycleId,
     dayIndex,
+    sortOrder,
     companyName: input.source.companyName,
     companyNameZh: input.source.companyNameZh,
     ticker: input.source.ticker,
@@ -92,16 +110,22 @@ export function buildDuplicateCardCreateData(input: {
     priceLabel: input.source.priceLabel,
     priceDirection: input.source.priceDirection,
     headline: input.source.headline,
+    headlineZhHant: input.source.headlineZhHant,
     newsBody: input.source.newsBody,
+    newsBodyZhHant: input.source.newsBodyZhHant,
     sourceName: input.source.sourceName,
     sourceUrl: input.source.sourceUrl,
     sourceDate: sourceAssignment.sourceDate,
     cardImageUrl: input.source.cardImageUrl,
     cardImageAlt: input.source.cardImageAlt,
+    cardImageAltZhHant: input.source.cardImageAltZhHant,
     summary: input.source.summary,
+    summaryZhHant: input.source.summaryZhHant,
     userPrompt: input.source.userPrompt,
+    userPromptZhHant: input.source.userPromptZhHant,
     ppaSignal: input.source.ppaSignal,
     ppaInsight: input.source.ppaInsight,
+    ppaInsightZhHant: input.source.ppaInsightZhHant,
     status: DUPLICATE_CARD_STATUS,
     publishedAt: null,
     revealAt: null,

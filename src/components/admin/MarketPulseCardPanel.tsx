@@ -77,6 +77,7 @@ export function cardToFormValues(card: MarketPulseAdminCardRow): Partial<MarketP
   return {
     cycleId: card.cycleId,
     dayIndex: card.dayIndex,
+    sortOrder: card.sortOrder,
     companyName: card.companyName,
     companyNameZh: card.companyNameZh ?? "",
     ticker: card.ticker,
@@ -86,16 +87,22 @@ export function cardToFormValues(card: MarketPulseAdminCardRow): Partial<MarketP
     priceLabel: card.priceLabel ?? "",
     priceDirection: card.priceDirection ?? "",
     headline: card.headline,
+    headlineZhHant: card.headlineZhHant ?? "",
     newsBody: card.newsBody ?? "",
+    newsBodyZhHant: card.newsBodyZhHant ?? "",
     sourceName: card.sourceName ?? "",
     sourceUrl: card.sourceUrl ?? "",
     sourceDate: toCardDatetimeLocalValue(card.sourceDate),
     cardImageUrl: card.cardImageUrl ?? "",
     cardImageAlt: card.cardImageAlt ?? "",
+    cardImageAltZhHant: card.cardImageAltZhHant ?? "",
     summary: card.summary ?? "",
+    summaryZhHant: card.summaryZhHant ?? "",
     userPrompt: card.userPrompt ?? MARKET_PULSE_DEFAULT_USER_PROMPT,
+    userPromptZhHant: card.userPromptZhHant ?? "",
     ppaSignal: card.ppaSignal ?? "",
     ppaInsight: card.ppaInsight ?? "",
+    ppaInsightZhHant: card.ppaInsightZhHant ?? "",
     status: card.status,
     publishedAt: toCardDatetimeLocalValue(card.publishedAt),
     revealAt: toCardDatetimeLocalValue(card.revealAt),
@@ -107,6 +114,7 @@ export function buildCardPayload(values: MarketPulseCardFormValues) {
   return {
     cycleId: values.cycleId,
     dayIndex: values.dayIndex,
+    sortOrder: values.sortOrder,
     companyName: values.companyName,
     companyNameZh: values.companyNameZh,
     ticker: values.ticker,
@@ -116,16 +124,22 @@ export function buildCardPayload(values: MarketPulseCardFormValues) {
     priceLabel: values.priceLabel,
     priceDirection: values.priceDirection,
     headline: values.headline,
+    headlineZhHant: values.headlineZhHant,
     newsBody: values.newsBody,
+    newsBodyZhHant: values.newsBodyZhHant,
     sourceName: values.sourceName,
     sourceUrl: values.sourceUrl,
     sourceDate: values.sourceDate,
     cardImageUrl: values.cardImageUrl,
     cardImageAlt: values.cardImageAlt,
+    cardImageAltZhHant: values.cardImageAltZhHant,
     summary: values.summary,
+    summaryZhHant: values.summaryZhHant,
     userPrompt: values.userPrompt,
+    userPromptZhHant: values.userPromptZhHant,
     ppaSignal: values.ppaSignal || null,
     ppaInsight: values.ppaInsight,
+    ppaInsightZhHant: values.ppaInsightZhHant,
     status: values.status,
     publishedAt: values.publishedAt,
     revealAt: values.revealAt,
@@ -157,7 +171,13 @@ export function CreateCardSection({
   createPrefill?: Partial<
     Pick<
       MarketPulseCardFormValues,
-      "dayIndex" | "userPrompt" | "exchange" | "sourceName" | "sourceUrl" | "sourceDate"
+      | "dayIndex"
+      | "sortOrder"
+      | "userPrompt"
+      | "exchange"
+      | "sourceName"
+      | "sourceUrl"
+      | "sourceDate"
     >
   >;
 }) {
@@ -207,6 +227,7 @@ export function CreateCardSection({
         disabled={disabled}
         initialValues={{
           dayIndex: createPrefill?.dayIndex ?? nextDayIndex,
+          sortOrder: createPrefill?.sortOrder ?? 0,
           userPrompt: createPrefill?.userPrompt,
           exchange: createPrefill?.exchange,
           sourceName: createPrefill?.sourceName,
@@ -232,6 +253,7 @@ export function CreateCardSection({
 export function MarketPulseCardPanel({
   card,
   cycleName,
+  cycleStartsAt,
   existingDayIndexes,
   disabled,
   revealUrgent = false,
@@ -240,6 +262,7 @@ export function MarketPulseCardPanel({
 }: {
   card: MarketPulseAdminCardRow;
   cycleName?: string;
+  cycleStartsAt?: string;
   existingDayIndexes: number[];
   disabled: boolean;
   revealUrgent?: boolean;
@@ -255,7 +278,9 @@ export function MarketPulseCardPanel({
 
   const ppaStatus = getAdminCardPpaStatus(card);
   const published = isCardPublished(card);
-  const playerLive = isCardLiveForPlayers(card);
+  const playerLive = cycleStartsAt
+    ? isCardLiveForPlayers(card, cycleStartsAt)
+    : false;
   const imageMissing = isCardImageMissing(card);
   const busy = disabled || isPending;
   const preview = cardToPreview(card);

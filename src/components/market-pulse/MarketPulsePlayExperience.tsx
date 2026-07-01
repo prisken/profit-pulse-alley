@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -439,6 +440,7 @@ function PlayChromeHeader({
   challengeName,
   dayCurrent,
   dayTotal,
+  cardProgress,
   statusPanelData,
   locale,
 }: Readonly<{
@@ -446,6 +448,7 @@ function PlayChromeHeader({
   challengeName: string;
   dayCurrent: number;
   dayTotal: number;
+  cardProgress: { current: number; total: number } | null;
   statusPanelData: Pick<
     MarketPulsePlayPageData,
     | "challengeName"
@@ -506,6 +509,13 @@ function PlayChromeHeader({
                 .replace("{current}", String(dayCurrent))
                 .replace("{total}", String(dayTotal))}
             </span>
+            {cardProgress ? (
+              <span className="text-[11px] font-medium text-zinc-400">
+                {t("mp.play.chrome.cardProgress")
+                  .replace("{current}", String(cardProgress.current))
+                  .replace("{total}", String(cardProgress.total))}
+              </span>
+            ) : null}
             <p className="max-w-[16rem] line-clamp-2 text-balance text-center text-[11px] font-medium leading-snug text-zinc-400">
               {challengeName}
             </p>
@@ -547,9 +557,18 @@ function PlayChromeHeader({
             ) : null}
           </div>
           {showCycleChrome ? (
-            <p className="max-w-xs line-clamp-2 text-balance text-center text-xs font-medium leading-snug text-zinc-400">
-              {challengeName}
-            </p>
+            <div className="flex max-w-xs flex-col items-center gap-0.5">
+              {cardProgress ? (
+                <p className="text-[11px] font-medium text-zinc-500">
+                  {t("mp.play.chrome.cardProgress")
+                    .replace("{current}", String(cardProgress.current))
+                    .replace("{total}", String(cardProgress.total))}
+                </p>
+              ) : null}
+              <p className="max-w-xs line-clamp-2 text-balance text-center text-xs font-medium leading-snug text-zinc-400">
+                {challengeName}
+              </p>
+            </div>
           ) : null}
         </div>
 
@@ -588,10 +607,58 @@ function PlayChromeHeader({
   );
 }
 
+function TodayCompletionSummary({
+  cardsToday,
+}: Readonly<{
+  cardsToday: MarketPulsePlayPageData["cardsToday"];
+}>) {
+  const { t } = useTranslations();
+  const completedCount = cardsToday.filter((slot) => slot.userDecision).length;
+
+  if (cardsToday.length <= 1 || completedCount < cardsToday.length) {
+    return null;
+  }
+
+  return (
+    <section
+      className="mb-3 shrink-0 rounded-2xl border border-emerald-500/25 bg-emerald-500/5 px-4 py-3 text-center sm:px-5"
+      aria-labelledby="today-completion-heading"
+    >
+      <h2
+        id="today-completion-heading"
+        className="text-sm font-semibold text-emerald-100"
+      >
+        {t("mp.play.completion.allDone")}
+      </h2>
+      <p className="mt-1 text-xs text-emerald-200/80">
+        {t("mp.play.completion.summary").replace("{count}", String(completedCount))}
+      </p>
+      <ul className="mt-3 space-y-1.5 text-left">
+        {cardsToday.map((slot, index) => (
+          <li
+            key={slot.card.id}
+            className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-zinc-950/40 px-3 py-2 text-xs"
+          >
+            <span className="text-zinc-400">
+              {t("mp.play.completion.cardLabel").replace("{index}", String(index + 1))}
+            </span>
+            <span className="font-medium text-zinc-100">
+              {slot.userDecision
+                ? t(slot.userDecision === "BULLISH" ? "signal.bullish" : "signal.cautious")
+                : "—"}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default function MarketPulsePlayExperience({
   data,
 }: Readonly<{ data: MarketPulsePlayPageData }>) {
   const { t, locale } = useTranslations();
+  const router = useRouter();
   const reduceMotion = useReducedMotion() ?? false;
   const loginHref = `/login?callbackUrl=${encodeURIComponent("/market-pulse/play")}`;
 
@@ -608,14 +675,16 @@ export default function MarketPulsePlayExperience({
 
       if (!result.ok) {
         if (result.code === "ALREADY_SUBMITTED") {
+          router.refresh();
           return { ok: true };
         }
         return { ok: false, error: result.error };
       }
 
+      router.refresh();
       return { ok: true };
     },
-    [data.card, t],
+    [data.card, router, t],
   );
 
   const revealMessage = formatRevealMessage(locale, data.revealAtLabel || null);
@@ -675,6 +744,7 @@ export default function MarketPulsePlayExperience({
         challengeName={data.challengeName}
         dayCurrent={data.dayCurrent}
         dayTotal={data.dayTotal}
+        cardProgress={data.cardProgress}
         statusPanelData={{
           challengeName: data.challengeName,
           prizeLabel: data.prizeLabel,
@@ -728,6 +798,7 @@ export default function MarketPulsePlayExperience({
                   data.status === "locked" ? "overflow-y-auto" : "overflow-hidden"
                 }`}
               >
+                <TodayCompletionSummary cardsToday={data.cardsToday} />
                 <MarketPulseSwipeCard
                   card={data.card}
                   className="min-h-0 flex-1"

@@ -5,6 +5,10 @@ import type {
   MarketPulseSignal,
 } from "@prisma/client";
 
+import type { SiteLocale } from "@/lib/i18n/locales";
+import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
+import { localizeMarketPulseCardPublicPayload } from "@/lib/market-pulse/card-localization";
+
 export type MarketPulseCardPublicPayload = {
   id: string;
   cycleId: string;
@@ -64,9 +68,11 @@ export function getMarketPulseCardPublicPayload(
   options: {
     cycle: Pick<MarketPulseCycle, "status" | "revealAt">;
     at?: Date;
+    locale?: SiteLocale;
   },
 ): MarketPulseCardPublicPayload {
   const at = options.at ?? new Date();
+  const locale = options.locale ?? DEFAULT_SITE_LOCALE;
   const revealed = isMarketPulseCardRevealed(card, options.cycle, at);
 
   const payload: MarketPulseCardPublicPayload = {
@@ -105,5 +111,5 @@ export function getMarketPulseCardPublicPayload(
     }
   }
 
-  return payload;
+  return localizeMarketPulseCardPublicPayload(payload, card, locale);
 }

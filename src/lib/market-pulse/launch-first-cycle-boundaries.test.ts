@@ -25,6 +25,7 @@ import {
   getCycleDisplayDay,
 } from "@/lib/market-pulse/playable-card";
 import { getMarketPulseCardPublicPayload } from "@/lib/market-pulse/reveal-access";
+import { buildMarketPulseTestCard } from "@/lib/market-pulse/market-pulse-test-fixtures";
 
 /** 30 Jun 2026 23:59:59.999 HKT (UTC+8) */
 const JUN_30_235959_HKT = new Date("2026-06-30T15:59:59.999Z");
@@ -34,6 +35,9 @@ const JUL_1_0000_HKT = new Date("2026-06-30T16:00:00.000Z");
 
 /** 1 Jul 2026 00:01:00.000 HKT */
 const JUL_1_0001_HKT = new Date("2026-06-30T16:01:00.000Z");
+
+/** 1 Jul 2026 09:00:00.000 HKT — standard card release */
+const JUL_1_0900_HKT = new Date("2026-07-01T01:00:00.000Z");
 
 /** 10 Jul 2026 12:00 HKT */
 const JUL_10_NOON_HKT = new Date("2026-07-10T04:00:00.000Z");
@@ -54,36 +58,23 @@ const firstCycle = {
 };
 
 function firstCycleCard(dayIndex: number): MarketPulseCard {
-  return {
+  return buildMarketPulseTestCard({
     id: `card-day-${dayIndex}`,
     cycleId: "cycle-first",
     dayIndex,
     companyName: "Example Co",
-    companyNameZh: null,
     ticker: "EX",
-    exchange: null,
-    logoUrl: null,
     logoInitials: "EX",
-    priceLabel: null,
-    priceDirection: null,
     headline: "Headline",
-    newsBody: null,
-    sourceName: null,
-    sourceUrl: null,
-    sourceDate: MARKET_PULSE_FIRST_CYCLE_START_AT,
-    cardImageUrl: null,
-    cardImageAlt: null,
     summary: "Summary",
     userPrompt: "Prompt",
-    ppaSignal: "BULLISH",
+    sourceDate: MARKET_PULSE_FIRST_CYCLE_START_AT,
     ppaInsight: "Hidden before reveal",
-    status: "PUBLISHED",
     publishedAt: MARKET_PULSE_FIRST_CYCLE_START_AT,
-    revealAt: null,
     ppaSignalLockedAt: MARKET_PULSE_FIRST_CYCLE_START_AT,
     createdAt: MARKET_PULSE_FIRST_CYCLE_START_AT,
     updatedAt: MARKET_PULSE_FIRST_CYCLE_START_AT,
-  };
+  });
 }
 
 describe("Market Pulse launch gate (HKT boundaries)", () => {
@@ -140,7 +131,7 @@ describe("first public cycle dates (1–10 Jul 2026 HKT)", () => {
     );
   });
 
-  it("treats 1 Jul 00:00 and 00:01 HKT as day 1", () => {
+  it("treats 1 Jul 00:00 and 00:01 HKT as day 1 but releases cards at 9:00 AM HKT", () => {
     expect(getCycleDisplayDay(MARKET_PULSE_FIRST_CYCLE_START_AT, JUL_1_0000_HKT)).toBe(
       1,
     );
@@ -148,14 +139,26 @@ describe("first public cycle dates (1–10 Jul 2026 HKT)", () => {
       1,
     );
 
-    const playableAtOpen = findPlayableCardForToday(
+    expect(
+      findPlayableCardForToday(
+        {
+          startsAt: MARKET_PULSE_FIRST_CYCLE_START_AT,
+          revealAt: MARKET_PULSE_FIRST_CYCLE_END_AT,
+          cards: [firstCycleCard(1)],
+        },
+        JUL_1_0000_HKT,
+      ),
+    ).toBeNull();
+
+    const playableAtRelease = findPlayableCardForToday(
       {
         startsAt: MARKET_PULSE_FIRST_CYCLE_START_AT,
+        revealAt: MARKET_PULSE_FIRST_CYCLE_END_AT,
         cards: [firstCycleCard(1)],
       },
-      JUL_1_0000_HKT,
+      JUL_1_0900_HKT,
     );
-    expect(playableAtOpen?.dayIndex).toBe(1);
+    expect(playableAtRelease?.dayIndex).toBe(1);
   });
 
   it("treats 10 Jul during the window as day 10 and still playable before reveal", () => {

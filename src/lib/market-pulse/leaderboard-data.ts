@@ -1,6 +1,8 @@
 import "server-only";
 
 import { isDatabaseConfigured } from "@/lib/db-config";
+import type { SiteLocale } from "@/lib/i18n/locales";
+import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
 import { filterCyclesForPublicPlay } from "@/lib/market-pulse/demo-cycle-guards";
 import { prisma } from "@/lib/prisma";
 import {
@@ -66,6 +68,7 @@ async function listHistoricalCyclesForLeaderboard(now: Date) {
 export async function getMarketPulseLeaderboardPageData(
   requestedCycleId?: string | null,
   viewerUserId?: string | null,
+  locale: SiteLocale = DEFAULT_SITE_LOCALE,
 ): Promise<MarketPulseLeaderboardPageData> {
   if (!isDatabaseConfigured()) {
     return EMPTY_PAGE_DATA;
@@ -133,7 +136,7 @@ export async function getMarketPulseLeaderboardPageData(
 
   let viewerScore: LeaderboardViewerScorePanel = { state: "logged_out" };
   try {
-    viewerScore = await getLeaderboardViewerScore(viewerUserId, selectedCycle);
+    viewerScore = await getLeaderboardViewerScore(viewerUserId, selectedCycle, locale);
   } catch (error) {
     console.error(
       "[market-pulse/leaderboard-data] Viewer score failed:",

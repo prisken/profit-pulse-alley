@@ -3,6 +3,8 @@ import "server-only";
 import { auth } from "@/auth";
 import { isDatabaseConfigured } from "@/lib/db-config";
 import { isCyclePlayable } from "@/lib/market-pulse/cycle-playability";
+import type { SiteLocale } from "@/lib/i18n/locales";
+import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
 import { isMarketPulseCycleRevealed } from "@/lib/market-pulse/reveal-access";
 import {
   getActiveMarketPulseCycle,
@@ -73,7 +75,9 @@ const pendingBase = (
   results: null,
 });
 
-export async function getMarketPulseRevealPageData(): Promise<MarketPulseRevealPageData> {
+export async function getMarketPulseRevealPageData(
+  locale: SiteLocale = DEFAULT_SITE_LOCALE,
+): Promise<MarketPulseRevealPageData> {
   const session = await auth();
   const userId = session?.user?.id;
   const isAuthenticated = Boolean(userId);
@@ -129,7 +133,7 @@ export async function getMarketPulseRevealPageData(): Promise<MarketPulseRevealP
 
   let reveal = null;
   try {
-    reveal = await getMarketPulseRevealForUser(userId, revealedCycle.id);
+    reveal = await getMarketPulseRevealForUser(userId, revealedCycle.id, locale);
   } catch (error) {
     console.error(
       "[market-pulse/reveal-data] Failed to load user reveal:",
@@ -174,6 +178,8 @@ export async function getMarketPulseRevealPageData(): Promise<MarketPulseRevealP
   const cards: MarketPulseRevealCardRow[] = reveal.cards.map((card) => ({
     cardId: card.cardId,
     dayIndex: card.dayIndex,
+    sortOrder: card.sortOrder,
+    cardsOnDay: card.cardsOnDay,
     companyName: card.companyName,
     headline: card.headline,
     userDecision: card.userDecision,

@@ -129,6 +129,8 @@ export type MarketPulseSwipeSubmitResult =
 export type MarketPulseRevealCardRow = {
   cardId: string;
   dayIndex: number;
+  sortOrder: number;
+  cardsOnDay: number;
   companyName: string;
   headline: string;
   userDecision: string;

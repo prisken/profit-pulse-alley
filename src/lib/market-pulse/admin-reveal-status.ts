@@ -66,6 +66,7 @@ function toRevealPpaCardInput(card: MarketPulseAdminCardRow) {
     id: card.id,
     cycleId: card.cycleId,
     dayIndex: card.dayIndex,
+    sortOrder: card.sortOrder,
     headline: card.headline,
     companyName: card.companyName,
     status: card.status,

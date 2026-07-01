@@ -40,6 +40,7 @@ export default function MarketPulseCycleCardDefaultsPanel({
       cards.map((card) => ({
         id: card.id,
         dayIndex: card.dayIndex,
+        sortOrder: card.sortOrder,
         sourceDate: card.sourceDate,
         userPrompt: card.userPrompt,
         exchange: card.exchange,

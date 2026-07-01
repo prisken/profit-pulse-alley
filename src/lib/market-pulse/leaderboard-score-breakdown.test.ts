@@ -147,6 +147,73 @@ describe("getLeaderboardViewerScoreBreakdown", () => {
     expect(rows[0]).not.toHaveProperty("ppaInsight");
   });
 
+  it("includes both same-day cards in play order", async () => {
+    mocks.decisionFindMany.mockResolvedValue([
+      {
+        cardId: "card-b",
+        decision: "BULLISH",
+        card: {
+          id: "card-b",
+          dayIndex: 3,
+          sortOrder: 1,
+          createdAt: "2026-06-03T10:00:00.000Z",
+          ticker: "BETA",
+          headline: "Beta climbs",
+          ppaSignal: "BULLISH",
+        },
+      },
+      {
+        cardId: "card-a",
+        decision: "CAUTIOUS",
+        card: {
+          id: "card-a",
+          dayIndex: 3,
+          sortOrder: 0,
+          createdAt: "2026-06-03T09:00:00.000Z",
+          ticker: "ACME",
+          headline: "Acme dips",
+          ppaSignal: "BULLISH",
+        },
+      },
+    ]);
+    mocks.scoreEventFindMany.mockResolvedValue([
+      {
+        cardId: "card-a",
+        participationPoints: PARTICIPATION_POINTS,
+        matchBonus: 0,
+        streakBonus: 0,
+        totalPoints: PARTICIPATION_POINTS,
+      },
+      {
+        cardId: "card-b",
+        participationPoints: PARTICIPATION_POINTS,
+        matchBonus: 50,
+        streakBonus: 0,
+        totalPoints: 60,
+      },
+    ]);
+
+    const rows = await getLeaderboardViewerScoreBreakdown(
+      TEST_USER_ID,
+      TEST_CYCLE_ID,
+    );
+
+    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => row.cardId)).toEqual(["card-a", "card-b"]);
+    expect(rows[0]).toMatchObject({
+      sortOrder: 0,
+      cardsOnDay: 2,
+      ticker: "ACME",
+      isMatch: false,
+    });
+    expect(rows[1]).toMatchObject({
+      sortOrder: 1,
+      cardsOnDay: 2,
+      ticker: "BETA",
+      isMatch: true,
+    });
+  });
+
   it("scopes queries to the requested cycle id", async () => {
     mocks.decisionFindMany.mockResolvedValue([]);
     mocks.scoreEventFindMany.mockResolvedValue([]);

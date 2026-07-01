@@ -133,6 +133,7 @@ describe("getLeaderboardViewerScore", () => {
     expect(mocks.getLeaderboardViewerScoreBreakdown).toHaveBeenCalledWith(
       USER_ID,
       CYCLE_ID,
+      "en",
     );
     expect(mocks.getUserMarketPulseProgress).toHaveBeenCalledWith(
       USER_ID,

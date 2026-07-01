@@ -25,10 +25,9 @@ import {
   type AdminActionResult,
 } from "@/lib/market-pulse/admin-actions";
 import {
-  findDuplicateDayIndexes,
-  findDuplicateSourceDateKeys,
+  formatBuilderDayCardLabel,
   getCardSchedulingConflictMessages,
-  sourceDateHktDayKey,
+  sortMarketPulseBuilderCards,
 } from "@/lib/market-pulse/admin-card-scheduling";
 import {
   getBuilderCardValidationStatus,
@@ -152,16 +151,7 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
   );
 
   const sortedCards = useMemo(
-    () => [...cards].sort((a, b) => a.dayIndex - b.dayIndex),
-    [cards],
-  );
-
-  const duplicateDayIndexes = useMemo(
-    () => findDuplicateDayIndexes(cards),
-    [cards],
-  );
-  const duplicateSourceDates = useMemo(
-    () => findDuplicateSourceDateKeys(cards),
+    () => sortMarketPulseBuilderCards(cards),
     [cards],
   );
 
@@ -171,15 +161,6 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
   );
 
   function getCardScheduleWarning(card: (typeof cards)[number]): string | null {
-    if (duplicateDayIndexes.has(card.dayIndex)) {
-      return t("auth.admin.mp.builder.schedule.duplicateDay");
-    }
-    if (
-      card.sourceDate &&
-      duplicateSourceDates.has(sourceDateHktDayKey(card.sourceDate))
-    ) {
-      return t("auth.admin.mp.builder.schedule.duplicateSourceDate");
-    }
     const conflicts = getCardSchedulingConflictMessages(card, cycleSpan, cards);
     return conflicts[0] ?? null;
   }
@@ -240,6 +221,7 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
       cards.map((card) => ({
         id: card.id,
         dayIndex: card.dayIndex,
+        sortOrder: card.sortOrder,
         sourceDate: card.sourceDate,
         userPrompt: card.userPrompt,
         exchange: card.exchange,
@@ -280,6 +262,7 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
 
     return {
       dayIndex: draft.dayIndex,
+      sortOrder: draft.sortOrder,
       userPrompt: effectivePrompt,
       exchange: draft.exchange ?? "",
       sourceName: draft.sourceName ?? "",
@@ -666,9 +649,10 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
                                 }
                                 setSelectedCardIds(next);
                               }}
-                              label={translateWith(locale, "auth.admin.mp.cards.dayLabel", {
-                                day: card.dayIndex,
-                              })}
+                              label={formatBuilderDayCardLabel(
+                                card.dayIndex,
+                                card.sortOrder,
+                              )}
                             />
                           </td>
                           <td className="px-3 py-2.5">
@@ -694,9 +678,7 @@ export default function MarketPulseCycleBuilder({ initialData }: Readonly<Props>
                                 ↓
                               </button>
                               <span>
-                                {translateWith(locale, "auth.admin.mp.cards.dayLabel", {
-                                  day: card.dayIndex,
-                                })}
+                                {formatBuilderDayCardLabel(card.dayIndex, card.sortOrder)}
                               </span>
                             </div>
                           </td>

@@ -17,6 +17,7 @@ function decisionRow(
   decision: "BULLISH" | "CAUTIOUS",
   ppaSignal: "BULLISH" | "CAUTIOUS" | null,
   cardId = `card-day-${dayIndex}`,
+  options: { sortOrder?: number; createdAt?: string } = {},
 ) {
   return {
     userId: TEST_USER_ID,
@@ -25,6 +26,8 @@ function decisionRow(
     card: {
       id: cardId,
       dayIndex,
+      sortOrder: options.sortOrder ?? 0,
+      createdAt: options.createdAt ?? "2026-06-01T00:00:00.000Z",
       ppaSignal,
     },
   };
@@ -113,6 +116,50 @@ describe("buildScoreEventsForUser", () => {
       "card-0",
       "card-1",
       "card-2",
+    ]);
+    expect(events[2]?.streakBonus).toBe(STREAK_BONUS_POINTS);
+  });
+
+  it("scores two cards on the same day as separate events", () => {
+    const events = buildScoreEventsForUser(TEST_CYCLE_ID, [
+      decisionRow(3, "BULLISH", "BULLISH", "card-a", {
+        sortOrder: 0,
+        createdAt: "2026-06-01T09:00:00.000Z",
+      }),
+      decisionRow(3, "CAUTIOUS", "CAUTIOUS", "card-b", {
+        sortOrder: 1,
+        createdAt: "2026-06-01T10:00:00.000Z",
+      }),
+    ]);
+
+    expect(events).toHaveLength(2);
+    expect(events.map((event) => event.cardId)).toEqual(["card-a", "card-b"]);
+    expect(events[0]?.participationPoints).toBe(PARTICIPATION_POINTS);
+    expect(events[1]?.participationPoints).toBe(PARTICIPATION_POINTS);
+    expect(events[0]?.matchBonus).toBe(MATCH_BONUS_POINTS);
+    expect(events[1]?.matchBonus).toBe(MATCH_BONUS_POINTS);
+  });
+
+  it("orders same-day cards by sortOrder then createdAt for streaks", () => {
+    const events = buildScoreEventsForUser(TEST_CYCLE_ID, [
+      decisionRow(2, "BULLISH", "BULLISH", "card-late", {
+        sortOrder: 1,
+        createdAt: "2026-06-03T12:00:00.000Z",
+      }),
+      decisionRow(2, "BULLISH", "BULLISH", "card-early", {
+        sortOrder: 0,
+        createdAt: "2026-06-03T09:00:00.000Z",
+      }),
+      decisionRow(2, "BULLISH", "BULLISH", "card-third", {
+        sortOrder: 2,
+        createdAt: "2026-06-03T15:00:00.000Z",
+      }),
+    ]);
+
+    expect(events.map((event) => event.cardId)).toEqual([
+      "card-early",
+      "card-late",
+      "card-third",
     ]);
     expect(events[2]?.streakBonus).toBe(STREAK_BONUS_POINTS);
   });

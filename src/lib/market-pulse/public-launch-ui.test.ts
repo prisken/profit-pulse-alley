@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { MarketPulseCard } from "@prisma/client";
 
 import { buildLeaderboardCycleOptions, getLeaderboardViewState } from "@/lib/market-pulse/leaderboard-cycle-select";
 import { deriveHubLobbyStatus } from "@/lib/market-pulse/hub-lobby-state";
@@ -10,6 +9,7 @@ import {
 } from "@/lib/market-pulse/launch-config";
 import { getMarketPulseCardPublicPayload } from "@/lib/market-pulse/reveal-access";
 import { toMarketPulseSwipeCardData } from "@/lib/market-pulse/swipe-card";
+import { buildMarketPulseTestCard } from "@/lib/market-pulse/market-pulse-test-fixtures";
 
 const AFTER_PUBLIC_LAUNCH = new Date("2026-07-01T12:00:00.000Z");
 const BEFORE_PUBLIC_LAUNCH = new Date("2026-06-30T12:00:00.000Z");
@@ -60,36 +60,22 @@ describe("public launch UI (post 1 Jul 2026 HKT)", () => {
       status: "OPEN" as const,
       revealAt: new Date("2026-07-10T16:00:00.000Z"),
     };
-    const card = {
+    const card = buildMarketPulseTestCard({
       id: "card-1",
       cycleId: "cycle-1",
       dayIndex: 1,
       companyName: "Example Co",
-      companyNameZh: null,
       ticker: "EX",
-      exchange: null,
-      logoUrl: null,
       logoInitials: "EX",
-      priceLabel: null,
-      priceDirection: null,
       headline: "Headline",
-      newsBody: null,
-      sourceName: null,
-      sourceUrl: null,
-      sourceDate: new Date("2026-07-01T00:00:00.000Z"),
-      cardImageUrl: null,
-      cardImageAlt: null,
       summary: "Summary",
-      userPrompt: null,
-      ppaSignal: "BULLISH" as const,
+      sourceDate: new Date("2026-07-01T00:00:00.000Z"),
       ppaInsight: "Hidden insight",
-      status: "PUBLISHED" as const,
       publishedAt: new Date("2026-07-01T00:00:00.000Z"),
-      revealAt: null,
       ppaSignalLockedAt: new Date("2026-07-01T00:00:00.000Z"),
       createdAt: new Date("2026-07-01T00:00:00.000Z"),
       updatedAt: new Date("2026-07-01T00:00:00.000Z"),
-    } satisfies MarketPulseCard;
+    });
 
     const payload = getMarketPulseCardPublicPayload(card, {
       cycle,

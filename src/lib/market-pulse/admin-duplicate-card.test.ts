@@ -83,7 +83,10 @@ describe("duplicateMarketPulseCardAction", () => {
     prismaMocks.cycleFindUnique.mockResolvedValue({
       id: "cycle-1",
       startsAt: MARKET_PULSE_PUBLIC_LAUNCH_AT,
-      cards: [{ dayIndex: 1 }, { dayIndex: 2 }],
+      cards: [
+        { dayIndex: 1, sortOrder: 0 },
+        { dayIndex: 2, sortOrder: 0 },
+      ],
     });
     prismaMocks.cardCreate.mockResolvedValue({ id: "card-copy" });
   });
@@ -102,7 +105,7 @@ describe("duplicateMarketPulseCardAction", () => {
     expect(prismaMocks.cardCreate).not.toHaveBeenCalled();
   });
 
-  it("creates a draft duplicate in the target cycle with the next day index", async () => {
+  it("creates a draft duplicate in the target cycle on the current day with next sort order", async () => {
     const result = await duplicateMarketPulseCardAction({
       sourceCardId: "card-source",
       targetCycleId: "cycle-1",
@@ -116,7 +119,8 @@ describe("duplicateMarketPulseCardAction", () => {
     expect(prismaMocks.cardCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         cycleId: "cycle-1",
-        dayIndex: 3,
+        dayIndex: 1,
+        sortOrder: 1,
         headline: sourceCard.headline,
         ticker: sourceCard.ticker,
         status: "DRAFT",
@@ -142,10 +146,14 @@ describe("duplicateMarketPulseCardAction", () => {
 
     const createArgs = prismaMocks.cardCreate.mock.calls[0]?.[0];
     expect(
-      isCardLiveForPlayers({
-        status: createArgs.data.status,
-        publishedAt: createArgs.data.publishedAt,
-      }),
+      isCardLiveForPlayers(
+        {
+          status: createArgs.data.status,
+          publishedAt: createArgs.data.publishedAt,
+          dayIndex: createArgs.data.dayIndex,
+        },
+        MARKET_PULSE_PUBLIC_LAUNCH_AT,
+      ),
     ).toBe(false);
   });
 
@@ -158,7 +166,7 @@ describe("duplicateMarketPulseCardAction", () => {
         id: true,
         startsAt: true,
         endsAt: true,
-        cards: { select: { dayIndex: true, sourceDate: true } },
+        cards: { select: { dayIndex: true, sortOrder: true, sourceDate: true } },
       },
     });
   });

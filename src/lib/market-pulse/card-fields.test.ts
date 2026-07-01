@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  MARKET_PULSE_CARD_BILINGUAL_FIELD_PAIRS,
   MARKET_PULSE_CARD_LEGACY_FIELD_MAP,
+  MARKET_PULSE_CARD_SCHEDULING_FIELDS,
+  MARKET_PULSE_CARD_ZH_HANT_FIELDS,
   MARKET_PULSE_NEW_CARD_CONTENT_FIELDS,
 } from "@/lib/market-pulse/card-fields";
+import { MARKET_PULSE_CARD_TEST_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
 import {
   getMarketPulseCardPublicPayload,
   type MarketPulseCardPublicPayload,
@@ -48,6 +52,7 @@ function buildCard(
     revealAt: null,
     createdAt: new Date("2026-01-01T00:00:00.000Z"),
     updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    ...MARKET_PULSE_CARD_TEST_DEFAULTS,
     ...overrides,
   };
 }
@@ -67,6 +72,14 @@ describe("Market Pulse card field mapping", () => {
       "cardImageAlt",
       "userPrompt",
     ]);
+  });
+
+  it("documents zh-Hant and scheduling model fields", () => {
+    expect(MARKET_PULSE_CARD_ZH_HANT_FIELDS).toContain("headlineZhHant");
+    expect(MARKET_PULSE_CARD_BILINGUAL_FIELD_PAIRS.headline).toBe("headlineZhHant");
+    expect(MARKET_PULSE_CARD_BILINGUAL_FIELD_PAIRS.companyName).toBe("companyNameZh");
+    expect(MARKET_PULSE_CARD_SCHEDULING_FIELDS).toContain("sortOrder");
+    expect(MARKET_PULSE_CARD_SCHEDULING_FIELDS).toContain("publishedAt");
   });
 });
 

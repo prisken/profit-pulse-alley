@@ -19,8 +19,11 @@ const baseData: MarketPulsePlayPageData = {
   cycleId: "cycle-1",
   leaderboardEntries: [],
   leaderboardRevealed: false,
+  cardsToday: [],
+  activeCardIndex: 0,
   card: null,
   lockedDecision: null,
+  cardProgress: null,
   runtimeOpen: true,
 };
 

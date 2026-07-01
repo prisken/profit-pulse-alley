@@ -13,8 +13,8 @@ const mocks = vi.hoisted(() => ({
   isDatabaseConfigured: vi.fn(),
   getMarketPulseSettings: vi.fn(),
   getActiveMarketPulseCycle: vi.fn(),
-  getTodayMarketPulseCardSnapshot: vi.fn(),
-  getTodayMarketPulseCardForUser: vi.fn(),
+  getTodayMarketPulsePlaySessionSnapshot: vi.fn(),
+  getTodayMarketPulsePlaySession: vi.fn(),
   getMarketPulseLeaderboard: vi.fn(),
 }));
 
@@ -31,13 +31,14 @@ vi.mock("@/lib/db-config", () => ({
 vi.mock("@/lib/market-pulse/server", () => ({
   getMarketPulseSettings: mocks.getMarketPulseSettings,
   getActiveMarketPulseCycle: mocks.getActiveMarketPulseCycle,
-  getTodayMarketPulseCardSnapshot: mocks.getTodayMarketPulseCardSnapshot,
-  getTodayMarketPulseCardForUser: mocks.getTodayMarketPulseCardForUser,
+  getTodayMarketPulsePlaySessionSnapshot: mocks.getTodayMarketPulsePlaySessionSnapshot,
+  getTodayMarketPulsePlaySession: mocks.getTodayMarketPulsePlaySession,
   getMarketPulseLeaderboard: mocks.getMarketPulseLeaderboard,
   isMarketPulseCycleRevealed: vi.fn(() => false),
 }));
 
 import { getMarketPulsePlayPageData } from "@/lib/market-pulse/play-data";
+import { buildMarketPulseTestCard } from "@/lib/market-pulse/market-pulse-test-fixtures";
 
 const cycleStart = new Date("2026-06-30T16:00:00.000Z");
 const cycleEnd = new Date("2026-07-10T16:00:00.000Z");
@@ -55,36 +56,24 @@ const activeCycle = {
 };
 
 function buildDbCard() {
-  return {
+  return buildMarketPulseTestCard({
     id: "card-day-1",
     cycleId: activeCycle.id,
     dayIndex: 1,
     companyName: "Example Co",
-    companyNameZh: null,
     ticker: "EX",
-    exchange: null,
-    logoUrl: null,
     logoInitials: "EX",
-    priceLabel: null,
-    priceDirection: null,
     headline: "Headline",
-    newsBody: null,
     sourceName: "Source",
-    sourceUrl: null,
     sourceDate: cycleStart,
-    cardImageUrl: null,
-    cardImageAlt: null,
     summary: "Summary",
     userPrompt: "Prompt",
-    ppaSignal: "BULLISH" as const,
     ppaInsight: "Hidden insight",
-    status: "PUBLISHED" as const,
     publishedAt: cycleStart,
-    revealAt: null,
     ppaSignalLockedAt: cycleStart,
     createdAt: cycleStart,
     updatedAt: cycleStart,
-  };
+  });
 }
 
 function buildSnapshot() {
@@ -98,10 +87,15 @@ function buildSnapshot() {
       revealAt: activeCycle.revealAt,
       status: activeCycle.status,
     },
-    card: getMarketPulseCardPublicPayload(card, {
-      cycle: activeCycle,
-      at: AFTER_LAUNCH,
-    }),
+    cards: [
+      {
+        card: getMarketPulseCardPublicPayload(card, {
+          cycle: activeCycle,
+          at: AFTER_LAUNCH,
+        }),
+        userDecision: null,
+      },
+    ],
   };
 }
 
@@ -113,7 +107,7 @@ describe("Launch smoke — public play gates", () => {
     mocks.isDatabaseConfigured.mockReturnValue(true);
     mocks.getMarketPulseSettings.mockResolvedValue({ runtimeStatus: "OPEN" });
     mocks.getActiveMarketPulseCycle.mockResolvedValue(activeCycle);
-    mocks.getTodayMarketPulseCardSnapshot.mockResolvedValue(buildSnapshot());
+    mocks.getTodayMarketPulsePlaySessionSnapshot.mockResolvedValue(buildSnapshot());
     mocks.getMarketPulseLeaderboard.mockResolvedValue([]);
     mocks.auth.mockResolvedValue(null);
   });
@@ -126,10 +120,7 @@ describe("Launch smoke — public play gates", () => {
     mocks.auth.mockResolvedValue({
       user: { id: "user-1", role: "USER" },
     });
-    mocks.getTodayMarketPulseCardForUser.mockResolvedValue({
-      ...buildSnapshot(),
-      userDecision: null,
-    });
+    mocks.getTodayMarketPulsePlaySession.mockResolvedValue(buildSnapshot());
 
     const data = await getMarketPulsePlayPageData();
 
@@ -178,7 +169,7 @@ describe("Launch smoke — public play gates", () => {
   });
 
   it("is not playable when there is no published card for today", async () => {
-    mocks.getTodayMarketPulseCardSnapshot.mockResolvedValue(null);
+    mocks.getTodayMarketPulsePlaySessionSnapshot.mockResolvedValue(null);
     mocks.auth.mockResolvedValue({
       user: { id: "user-1", role: "USER" },
     });

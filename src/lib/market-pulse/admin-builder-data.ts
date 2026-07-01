@@ -7,6 +7,7 @@ import {
   buildAdminCycleWinnerMap,
 } from "@/lib/market-pulse/admin-cycle-stats";
 import { requireAdminSession } from "@/lib/market-pulse/admin-auth";
+import { mapMarketPulseAdminCardRow } from "@/lib/market-pulse/admin-card-row";
 import type {
   MarketPulseAdminCardRow,
   MarketPulseAdminCycleRow,
@@ -66,7 +67,11 @@ export async function getMarketPulseCycleBuilderData(
     }),
     prisma.marketPulseCard.findMany({
       where: { cycleId },
-      orderBy: { dayIndex: "asc" },
+      orderBy: [
+        { dayIndex: "asc" },
+        { sortOrder: "asc" },
+        { createdAt: "asc" },
+      ],
       include: { _count: { select: { decisions: true } } },
     }),
   ]);
@@ -128,35 +133,7 @@ export async function getMarketPulseCycleBuilderData(
     topWinnerScore: winner?.score ?? null,
   };
 
-  const cards: MarketPulseAdminCardRow[] = cardRows.map((card) => ({
-    id: card.id,
-    cycleId: card.cycleId,
-    dayIndex: card.dayIndex,
-    companyName: card.companyName,
-    companyNameZh: card.companyNameZh,
-    ticker: card.ticker,
-    exchange: card.exchange,
-    logoUrl: card.logoUrl,
-    logoInitials: card.logoInitials,
-    priceLabel: card.priceLabel,
-    priceDirection: card.priceDirection,
-    headline: card.headline,
-    newsBody: card.newsBody,
-    sourceName: card.sourceName,
-    sourceUrl: card.sourceUrl,
-    sourceDate: card.sourceDate?.toISOString() ?? null,
-    cardImageUrl: card.cardImageUrl,
-    cardImageAlt: card.cardImageAlt,
-    summary: card.summary,
-    userPrompt: card.userPrompt,
-    status: card.status,
-    ppaSignal: card.ppaSignal,
-    ppaInsight: card.ppaInsight,
-    ppaSignalLockedAt: card.ppaSignalLockedAt?.toISOString() ?? null,
-    publishedAt: card.publishedAt?.toISOString() ?? null,
-    revealAt: card.revealAt?.toISOString() ?? null,
-    decisionCount: card._count.decisions,
-  }));
+  const cards: MarketPulseAdminCardRow[] = cardRows.map(mapMarketPulseAdminCardRow);
 
   return {
     adminEmail: admin.email,

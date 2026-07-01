@@ -45,6 +45,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { getMarketPulseCycleBuilderData } from "@/lib/market-pulse/admin-builder-data";
+import { MARKET_PULSE_CARD_TEST_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
 
 const ADMIN = { userId: "admin-1", email: "admin@example.com" };
 
@@ -121,6 +122,8 @@ describe("getMarketPulseCycleBuilderData", () => {
         ppaSignalLockedAt: new Date("2026-01-01T00:00:00.000Z"),
         publishedAt: null,
         revealAt: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        ...MARKET_PULSE_CARD_TEST_DEFAULTS,
         _count: { decisions: 0 },
       },
     ]);

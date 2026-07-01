@@ -2,14 +2,13 @@ import type { MarketPulseCardStatus } from "@prisma/client";
 
 import type { MarketPulseAdminCardRow } from "@/lib/market-pulse/admin-data";
 import { MARKET_PULSE_DEFAULT_USER_PROMPT } from "@/lib/market-pulse/card-validation";
-import { addHktDays } from "@/lib/market-pulse/quick-create-cycle-defaults";
 import {
-  collectUsedSourceDateKeys,
   getCycleDayCapacity,
-  nextAvailableDayIndex,
   nextAvailableSourceDate,
-  type NextDayIndexResult,
+  suggestQuickDraftSlot,
+  type QuickDraftSlot,
 } from "@/lib/market-pulse/admin-card-scheduling";
+import { getCycleDayReleaseAt } from "@/lib/market-pulse/card-release-schedule";
 
 export const QUICK_DRAFT_CARD_HEADLINE = "Untitled signal";
 export const QUICK_DRAFT_CARD_COMPANY_NAME = "Untitled company";
@@ -28,6 +27,7 @@ export type CycleCardReference = Pick<
   | "companyName"
   | "ticker"
 > & {
+  sortOrder?: number;
   sourceDate?: string | Date | null;
 };
 
@@ -40,6 +40,7 @@ export type CycleCardDefaultsContext = {
 
 export type CycleCardCreationDefaults = {
   dayIndex: number;
+  sortOrder: number;
   sourceDate: Date;
   userPrompt: string;
   exchange: string | null;
@@ -55,6 +56,7 @@ export type CycleCardCreationDefaults = {
 
 export type QuickDraftCardDefaults = {
   dayIndex: number;
+  sortOrder: number;
   companyName: string;
   ticker: string;
   headline: string;
@@ -74,7 +76,12 @@ export function pickLatestCycleCardReference(
     return null;
   }
 
-  return [...cards].sort((a, b) => b.dayIndex - a.dayIndex)[0] ?? null;
+  return [...cards].sort((a, b) => {
+    if (a.dayIndex !== b.dayIndex) {
+      return b.dayIndex - a.dayIndex;
+    }
+    return (b.sortOrder ?? 0) - (a.sortOrder ?? 0);
+  })[0] ?? null;
 }
 
 export function formatCycleCardCategoryLabel(
@@ -85,24 +92,36 @@ export function formatCycleCardCategoryLabel(
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
+function schedulingWarningForSlot(
+  slot: QuickDraftSlot,
+  cycleDayCapacity: number,
+): string | null {
+  if (slot.exceedsCycleCapacity) {
+    return `Day ${slot.dayIndex} is beyond this cycle's ${cycleDayCapacity}-day span. Adjust before publishing.`;
+  }
+  return null;
+}
+
 export function deriveCycleCardCreationDefaults(input: {
   cycle: CycleCardDefaultsContext & { endsAt?: Date | string };
   cards: CycleCardReference[];
+  now?: Date;
 }): CycleCardCreationDefaults {
   const cycleStartsAt = new Date(input.cycle.startsAt);
   const cycleEndsAt = input.cycle.endsAt ? new Date(input.cycle.endsAt) : undefined;
-  const existingDayIndexes = input.cards.map((card) => card.dayIndex);
   const cycleDayCapacity = cycleEndsAt
     ? getCycleDayCapacity(cycleStartsAt, cycleEndsAt)
-    : undefined;
-  const dayAssignment: NextDayIndexResult = nextAvailableDayIndex(
-    existingDayIndexes,
-    cycleDayCapacity,
-  );
-  const usedSourceDateKeys = collectUsedSourceDateKeys(input.cards);
+    : 1;
+  const slot = suggestQuickDraftSlot({
+    cycleStartsAt,
+    cycleEndsAt: cycleEndsAt ?? cycleStartsAt,
+    cards: input.cards,
+    now: input.now,
+  });
+  const usedSourceDateKeys = new Set<string>();
   const sourceAssignment = nextAvailableSourceDate({
     cycleStartsAt,
-    preferredDayIndex: dayAssignment.dayIndex,
+    preferredDayIndex: slot.dayIndex,
     usedSourceDateKeys,
     cycleEndsAt,
   });
@@ -115,16 +134,14 @@ export function deriveCycleCardCreationDefaults(input: {
   const sourceUrl = reference?.sourceUrl?.trim() || null;
 
   const schedulingWarning =
-    dayAssignment.exceedsCycleCapacity || sourceAssignment.outsideCycleRange
-      ? dayAssignment.exceedsCycleCapacity
-        ? `Day ${dayAssignment.dayIndex} is beyond this cycle's ${cycleDayCapacity ?? "?"}-day span. Adjust before publishing.`
-        : "Assigned source date falls outside the cycle date range."
-      : sourceAssignment.skippedUsedDates
-        ? "Assigned the next unused source date because earlier dates are already taken."
-        : null;
+    schedulingWarningForSlot(slot, cycleDayCapacity) ??
+    (sourceAssignment.outsideCycleRange
+      ? "Assigned source date falls outside the cycle date range."
+      : null);
 
   return {
-    dayIndex: dayAssignment.dayIndex,
+    dayIndex: slot.dayIndex,
+    sortOrder: slot.sortOrder,
     sourceDate: sourceAssignment.sourceDate,
     userPrompt,
     exchange,
@@ -134,30 +151,39 @@ export function deriveCycleCardCreationDefaults(input: {
     cycleRevealAt: new Date(input.cycle.revealAt).toISOString(),
     referenceCardId: reference?.id ?? null,
     referenceDayIndex: reference?.dayIndex ?? null,
-    exceedsCycleCapacity: dayAssignment.exceedsCycleCapacity,
+    exceedsCycleCapacity: slot.exceedsCycleCapacity,
     schedulingWarning,
   };
 }
 
-export function nextQuickDraftDayIndex(existingDayIndexes: number[]): number {
-  return nextAvailableDayIndex(existingDayIndexes).dayIndex;
+export function nextQuickDraftDayIndex(
+  existingDayIndexes: number[],
+  cycleDayCapacity?: number,
+): number {
+  return suggestQuickDraftSlot({
+    cycleStartsAt: new Date(),
+    cycleEndsAt: new Date(Date.now() + (cycleDayCapacity ?? 10) * 24 * 60 * 60 * 1000),
+    cards: existingDayIndexes.map((dayIndex) => ({ dayIndex, sortOrder: 0 })),
+  }).dayIndex;
 }
 
 export function quickDraftCardSourceDate(
   cycleStartsAt: Date,
   dayIndex: number,
 ): Date {
-  return addHktDays(cycleStartsAt, Math.max(dayIndex - 1, 0));
+  return getCycleDayReleaseAt(cycleStartsAt, dayIndex);
 }
 
 export function buildQuickDraftCardDefaults(input: {
   cycle: CycleCardDefaultsContext;
   cards: CycleCardReference[];
+  now?: Date;
 }): QuickDraftCardDefaults {
   const derived = deriveCycleCardCreationDefaults(input);
 
   return {
     dayIndex: derived.dayIndex,
+    sortOrder: derived.sortOrder,
     companyName: QUICK_DRAFT_CARD_COMPANY_NAME,
     ticker: QUICK_DRAFT_CARD_TICKER,
     headline: QUICK_DRAFT_CARD_HEADLINE,

@@ -25,8 +25,16 @@ import {
   buildScoreEventsForUser,
   type ScoreCalculationDecision,
 } from "@/lib/market-pulse/score-calculation";
-import { findPlayableCardForToday } from "@/lib/market-pulse/playable-card";
+import { findPlayableCardsForToday } from "@/lib/market-pulse/playable-card";
 import { isCyclePlayable } from "@/lib/market-pulse/cycle-playability";
+import {
+  buildCardsOnDayCountMap,
+  compareMarketPulseCardsByPlayOrder,
+} from "@/lib/market-pulse/card-play-order";
+import { isCardReleasedForPlay } from "@/lib/market-pulse/card-release-schedule";
+import { localizeMarketPulseRevealCardFields } from "@/lib/market-pulse/card-localization";
+import type { SiteLocale } from "@/lib/i18n/locales";
+import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
 import {
   getMarketPulseCardPublicPayload,
   isMarketPulseCardRevealed,
@@ -87,6 +95,16 @@ export type TodayMarketPulseCardForUser = {
   userDecision: MarketPulseUserDecisionState | null;
 };
 
+export type TodayMarketPulseCardSlot = {
+  card: MarketPulseCardPublicPayload;
+  userDecision: MarketPulseUserDecisionState | null;
+};
+
+export type TodayMarketPulsePlaySession = {
+  cycle: TodayMarketPulseCardForUser["cycle"];
+  cards: TodayMarketPulseCardSlot[];
+};
+
 export type SubmitMarketPulseDecisionInput = {
   userId: string;
   cardId: string;
@@ -139,6 +157,8 @@ export type UserMarketPulseProgress = {
 export type MarketPulseRevealCardBreakdown = {
   cardId: string;
   dayIndex: number;
+  sortOrder: number;
+  cardsOnDay: number;
   companyName: string;
   headline: string;
   userDecision: MarketPulseSignal;
@@ -282,78 +302,129 @@ export async function getActiveMarketPulseCycle(
   return candidate;
 }
 
-/** Today's published card and cycle without user-specific decision data. */
-export async function getTodayMarketPulseCardSnapshot(): Promise<Omit<
-  TodayMarketPulseCardForUser,
-  "userDecision"
-> | null> {
+function mapCycleShell(
+  cycle: Pick<
+    MarketPulseCycle,
+    "id" | "name" | "startsAt" | "endsAt" | "revealAt" | "status"
+  >,
+): TodayMarketPulsePlaySession["cycle"] {
+  return {
+    id: cycle.id,
+    name: cycle.name,
+    startsAt: cycle.startsAt,
+    endsAt: cycle.endsAt,
+    revealAt: cycle.revealAt,
+    status: cycle.status,
+  };
+}
+
+/** All playable cards for today's cycle day without user-specific decision data. */
+export async function getTodayMarketPulsePlaySessionSnapshot(
+  locale: SiteLocale = DEFAULT_SITE_LOCALE,
+): Promise<Omit<TodayMarketPulsePlaySession, "cards"> & {
+  cards: Array<Omit<TodayMarketPulseCardSlot, "userDecision"> & { userDecision: null }>;
+} | null> {
   const cycle = await getActiveMarketPulseCycle();
   if (!cycle) {
     return null;
   }
 
-  const card = findPlayableCardForToday(cycle, currentTime());
-  if (!card) {
+  const playableCards = findPlayableCardsForToday(cycle, currentTime());
+  if (playableCards.length === 0) {
     return null;
   }
 
   return {
-    cycle: {
-      id: cycle.id,
-      name: cycle.name,
-      startsAt: cycle.startsAt,
-      endsAt: cycle.endsAt,
-      revealAt: cycle.revealAt,
-      status: cycle.status,
+    cycle: mapCycleShell(cycle),
+    cards: playableCards.map((card) => ({
+      card: getMarketPulseCardPublicPayload(card, { cycle, locale }),
+      userDecision: null,
+    })),
+  };
+}
+
+export async function getTodayMarketPulsePlaySession(
+  userId: string,
+  locale: SiteLocale = DEFAULT_SITE_LOCALE,
+): Promise<TodayMarketPulsePlaySession | null> {
+  const cycle = await getActiveMarketPulseCycle();
+  if (!cycle) {
+    return null;
+  }
+
+  const playableCards = findPlayableCardsForToday(cycle, currentTime());
+  if (playableCards.length === 0) {
+    return null;
+  }
+
+  const cardIds = playableCards.map((card) => card.id);
+  const userDecisions = await prisma.marketPulseDecision.findMany({
+    where: {
+      userId,
+      cardId: { in: cardIds },
     },
-    card: getMarketPulseCardPublicPayload(card, { cycle }),
+    select: {
+      id: true,
+      cardId: true,
+      decision: true,
+      decidedAt: true,
+    },
+  });
+  const decisionByCardId = new Map(
+    userDecisions.map((row) => [row.cardId, row]),
+  );
+
+  return {
+    cycle: mapCycleShell(cycle),
+    cards: playableCards.map((card) => {
+      const userDecision = decisionByCardId.get(card.id);
+      return {
+        card: getMarketPulseCardPublicPayload(card, { cycle, locale }),
+        userDecision: userDecision
+          ? {
+              id: userDecision.id,
+              decision: userDecision.decision,
+              decidedAt: userDecision.decidedAt,
+            }
+          : null,
+      };
+    }),
+  };
+}
+
+/** Today's published card and cycle without user-specific decision data. */
+export async function getTodayMarketPulseCardSnapshot(
+  locale: SiteLocale = DEFAULT_SITE_LOCALE,
+): Promise<Omit<
+  TodayMarketPulseCardForUser,
+  "userDecision"
+> | null> {
+  const session = await getTodayMarketPulsePlaySessionSnapshot(locale);
+  if (!session || session.cards.length === 0) {
+    return null;
+  }
+
+  const first = session.cards[0]!;
+  return {
+    cycle: session.cycle,
+    card: first.card,
   };
 }
 
 export async function getTodayMarketPulseCardForUser(
   userId: string,
+  locale: SiteLocale = DEFAULT_SITE_LOCALE,
 ): Promise<TodayMarketPulseCardForUser | null> {
-  const cycle = await getActiveMarketPulseCycle();
-  if (!cycle) {
+  const session = await getTodayMarketPulsePlaySession(userId, locale);
+  if (!session || session.cards.length === 0) {
     return null;
   }
 
-  const card = findPlayableCardForToday(cycle, currentTime());
-  if (!card) {
-    return null;
-  }
-
-  const userDecision = await prisma.marketPulseDecision.findUnique({
-    where: {
-      userId_cardId: {
-        userId,
-        cardId: card.id,
-      },
-    },
-    select: {
-      id: true,
-      decision: true,
-      decidedAt: true,
-    },
-  });
-
+  const first = session.cards[0]!;
   return {
-    cycle: {
-      id: cycle.id,
-      name: cycle.name,
-      startsAt: cycle.startsAt,
-      endsAt: cycle.endsAt,
-      revealAt: cycle.revealAt,
-      status: cycle.status,
-    },
-    card: getMarketPulseCardPublicPayload(card, { cycle }),
-    userDecision: userDecision
-      ? {
-          id: userDecision.id,
-          decision: userDecision.decision,
-          decidedAt: userDecision.decidedAt,
-        }
-      : null,
+    cycle: session.cycle,
+    card: first.card,
+    userDecision: first.userDecision,
   };
 }
 
@@ -436,8 +507,8 @@ export async function submitMarketPulseDecision(
     return { ok: false, error: "This card is not part of the active challenge." };
   }
 
-  const playableCard = findPlayableCardForToday(activeCycle, now);
-  if (!playableCard || playableCard.id !== card.id) {
+  const playableCards = findPlayableCardsForToday(activeCycle, now);
+  if (!playableCards.some((playable) => playable.id === card.id)) {
     return {
       ok: false,
       error: "This card is not available for decisions right now.",
@@ -447,10 +518,6 @@ export async function submitMarketPulseDecision(
   const revealDeadline = effectiveCardRevealAt(card, card.cycle);
   if (now >= revealDeadline) {
     return { ok: false, error: "The decision window for this card has closed." };
-  }
-
-  if (card.publishedAt && card.publishedAt > now) {
-    return { ok: false, error: "This card is not yet available." };
   }
 
   try {
@@ -542,6 +609,8 @@ export async function calculateAndPersistCycleScores(
         select: {
           id: true,
           dayIndex: true,
+          sortOrder: true,
+          createdAt: true,
           ppaSignal: true,
         },
       },
@@ -912,22 +981,38 @@ async function resolveProgressCycle(
 }
 
 function countPublishedCards(cycle: CycleWithCards, at: Date): number {
-  return cycle.cards.filter(
-    (card) =>
-      card.status === "PUBLISHED" &&
-      card.publishedAt != null &&
-      card.publishedAt <= at,
+  return cycle.cards.filter((card) =>
+    isCardReleasedForPlay(card, cycle, at),
   ).length;
 }
 
 function computeCurrentStreak(
   decisions: Array<{
     decision: MarketPulseSignal;
-    card: { dayIndex: number; ppaSignal: MarketPulseSignal | null };
+    card: {
+      id?: string;
+      dayIndex: number;
+      sortOrder?: number | null;
+      createdAt?: Date | string | null;
+      ppaSignal: MarketPulseSignal | null;
+    };
   }>,
 ): number {
-  const sorted = [...decisions].sort(
-    (a, b) => a.card.dayIndex - b.card.dayIndex,
+  const sorted = [...decisions].sort((a, b) =>
+    compareMarketPulseCardsByPlayOrder(
+      {
+        dayIndex: a.card.dayIndex,
+        sortOrder: a.card.sortOrder,
+        createdAt: a.card.createdAt,
+        id: a.card.id,
+      },
+      {
+        dayIndex: b.card.dayIndex,
+        sortOrder: b.card.sortOrder,
+        createdAt: b.card.createdAt,
+        id: b.card.id,
+      },
+    ),
   );
 
   let streak = 0;
@@ -1025,7 +1110,10 @@ export async function getUserMarketPulseProgress(
         decision: true,
         card: {
           select: {
+            id: true,
             dayIndex: true,
+            sortOrder: true,
+            createdAt: true,
             ppaSignal: true,
           },
         },
@@ -1104,6 +1192,7 @@ export async function getUserMarketPulseProgress(
 export async function getMarketPulseRevealForUser(
   userId: string,
   cycleId: string,
+  locale: SiteLocale = DEFAULT_SITE_LOCALE,
 ): Promise<MarketPulseRevealForUser | null> {
   const cycle = await prisma.marketPulseCycle.findUnique({
     where: { id: cycleId },
@@ -1142,14 +1231,26 @@ export async function getMarketPulseRevealForUser(
         select: {
           id: true,
           dayIndex: true,
+          sortOrder: true,
+          createdAt: true,
           companyName: true,
+          companyNameZh: true,
           headline: true,
+          headlineZhHant: true,
+          newsBody: true,
+          newsBodyZhHant: true,
+          summary: true,
+          summaryZhHant: true,
+          cardImageAlt: true,
+          cardImageAltZhHant: true,
+          userPrompt: true,
+          userPromptZhHant: true,
           ppaSignal: true,
           ppaInsight: true,
+          ppaInsightZhHant: true,
         },
       },
     },
-    orderBy: { card: { dayIndex: "asc" } },
   });
 
   const scoreEvents = await prisma.marketPulseScoreEvent.findMany({
@@ -1166,22 +1267,46 @@ export async function getMarketPulseRevealForUser(
     scoreEvents.map((event) => [event.cardId ?? "", event]),
   );
 
+  const sortedDecisions = [...decisions].sort((a, b) =>
+    compareMarketPulseCardsByPlayOrder(
+      {
+        dayIndex: a.card.dayIndex,
+        sortOrder: a.card.sortOrder,
+        createdAt: a.card.createdAt,
+        id: a.card.id,
+      },
+      {
+        dayIndex: b.card.dayIndex,
+        sortOrder: b.card.sortOrder,
+        createdAt: b.card.createdAt,
+        id: b.card.id,
+      },
+    ),
+  );
+  const cardsOnDayByIndex = buildCardsOnDayCountMap(
+    sortedDecisions.map((entry) => entry.card),
+  );
+
   const cards: MarketPulseRevealCardBreakdown[] = [];
 
-  for (const entry of decisions) {
+  for (const entry of sortedDecisions) {
     if (!entry.card.ppaSignal) {
       continue;
     }
 
     const scores = scoreByCard.get(entry.cardId);
+    const localized = localizeMarketPulseRevealCardFields(entry.card, locale);
+    const sortOrder = entry.card.sortOrder ?? 0;
     cards.push({
       cardId: entry.cardId,
       dayIndex: entry.card.dayIndex,
-      companyName: entry.card.companyName,
-      headline: entry.card.headline,
+      sortOrder,
+      cardsOnDay: cardsOnDayByIndex.get(entry.card.dayIndex) ?? 1,
+      companyName: localized.companyName,
+      headline: localized.headline,
       userDecision: entry.decision,
       ppaSignal: entry.card.ppaSignal,
-      ppaInsight: entry.card.ppaInsight,
+      ppaInsight: localized.ppaInsight,
       participationPoints: scores?.participationPoints ?? PARTICIPATION_POINTS,
       matchBonus: scores?.matchBonus ?? 0,
       streakBonus: scores?.streakBonus ?? 0,

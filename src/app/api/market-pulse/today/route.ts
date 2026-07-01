@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { getServerSiteLocale } from "@/lib/i18n/server";
 import { handleGetMarketPulseToday } from "@/lib/market-pulse/player-handlers";
 import {
   marketPulseErrorResponse,
@@ -9,7 +10,8 @@ import {
 
 export async function GET() {
   const session = await auth();
-  const result = await handleGetMarketPulseToday(session?.user?.id);
+  const locale = await getServerSiteLocale();
+  const result = await handleGetMarketPulseToday(session?.user?.id, locale);
 
   if (!result.ok) {
     return marketPulseErrorResponse(result);

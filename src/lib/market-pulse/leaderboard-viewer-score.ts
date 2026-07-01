@@ -1,6 +1,8 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import type { SiteLocale } from "@/lib/i18n/locales";
+import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
 import type { LeaderboardCycleOption } from "@/lib/market-pulse/leaderboard-cycle-select";
 import {
   getLeaderboardViewerScoreBreakdown,
@@ -42,6 +44,7 @@ export type LeaderboardViewerScorePanel =
 export async function getLeaderboardViewerScore(
   userId: string | null | undefined,
   selectedCycle: LeaderboardCycleOption | null,
+  locale: SiteLocale = DEFAULT_SITE_LOCALE,
 ): Promise<LeaderboardViewerScorePanel> {
   if (!userId) {
     return { state: "logged_out" };
@@ -113,6 +116,7 @@ export async function getLeaderboardViewerScore(
   const breakdown = await getLeaderboardViewerScoreBreakdown(
     userId,
     selectedCycle.id,
+    locale,
   );
 
   return {

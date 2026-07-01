@@ -1,10 +1,17 @@
 import type { MarketPulseCardStatus } from "@prisma/client";
 
+import {
+  buildCardsOnDayCountMap,
+  formatMarketPulseCardDayLabel,
+  formatMarketPulseDayDisplayNumber,
+} from "@/lib/market-pulse/card-play-order";
+
 export type RevealPpaMissingField = "ppaSignal" | "ppaInsight" | "ppaLocked";
 
 export type RevealPpaMissingCard = {
   id: string;
   dayIndex: number;
+  sortOrder?: number;
   headline: string;
   companyName: string;
   ticker?: string;
@@ -23,6 +30,7 @@ export type RevealPpaCardInput = {
   id: string;
   cycleId: string;
   dayIndex: number;
+  sortOrder?: number | null;
   headline: string;
   companyName: string;
   status: MarketPulseCardStatus;
@@ -59,15 +67,34 @@ export function getMissingPpaFields(
   return missing;
 }
 
+function formatMissingCardLabel(
+  card: RevealPpaMissingCard,
+  cardsOnDay: number,
+): string {
+  const day = formatMarketPulseDayDisplayNumber(card.dayIndex);
+  const sortOrder = card.sortOrder ?? 0;
+  if (cardsOnDay > 1) {
+    return formatMarketPulseCardDayLabel(card.dayIndex, sortOrder, cardsOnDay)
+      .replace(/^Day /, "day ")
+      .concat(` (${card.companyName})`);
+  }
+  return `day ${day} (${card.companyName})`;
+}
+
 export function formatRevealPpaBlockMessage(
   missingCards: RevealPpaMissingCard[],
+  allPublishedCards?: Pick<RevealPpaMissingCard, "dayIndex">[],
 ): string {
   if (missingCards.length === 0) {
     return "Cannot reveal yet. Published cards are missing locked PPA insight.";
   }
 
+  const dayCounts = buildCardsOnDayCountMap(allPublishedCards ?? missingCards);
+
   const labels = missingCards
-    .map((card) => `day ${card.dayIndex} (${card.companyName})`)
+    .map((card) =>
+      formatMissingCardLabel(card, dayCounts.get(card.dayIndex) ?? 1),
+    )
     .join(", ");
 
   return `Cannot reveal yet. ${missingCards.length} card(s) are missing locked PPA insight — ${labels}.`;
@@ -86,6 +113,7 @@ export function validatePublishedCardsPpaForReveal(
       missingCards.push({
         id: card.id,
         dayIndex: card.dayIndex,
+        sortOrder: card.sortOrder ?? 0,
         headline: card.headline,
         companyName: card.companyName,
         missing,
@@ -99,7 +127,7 @@ export function validatePublishedCardsPpaForReveal(
 
   return {
     ready: false,
-    message: formatRevealPpaBlockMessage(missingCards),
+    message: formatRevealPpaBlockMessage(missingCards, published),
     missingCards,
   };
 }

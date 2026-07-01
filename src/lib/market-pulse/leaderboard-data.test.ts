@@ -211,6 +211,7 @@ describe("getMarketPulseLeaderboardPageData", () => {
     expect(mocks.getLeaderboardViewerScore).toHaveBeenCalledWith(
       "viewer-1",
       expect.objectContaining({ id: "past" }),
+      "en",
     );
     expect(data.viewerScore).toMatchObject({
       state: "revealed_summary",
@@ -247,6 +248,7 @@ describe("getMarketPulseLeaderboardPageData", () => {
     expect(mocks.getLeaderboardViewerScore).toHaveBeenCalledWith(
       null,
       expect.objectContaining({ id: "past" }),
+      "en",
     );
     expect(data.viewerScore).toEqual({ state: "logged_out" });
   });

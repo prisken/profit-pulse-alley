@@ -47,6 +47,7 @@ import {
   updateMarketPulseCardDraftAction,
 } from "@/lib/market-pulse/admin-actions";
 import { isCardLiveForPlayers } from "@/lib/market-pulse/admin-card-ppa-status";
+import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config";
 
 const ADMIN = { userId: "admin-1", email: "admin@example.com" };
 
@@ -83,6 +84,7 @@ const draftSaveInput = {
   cardId: "card-1",
   cycleId: "cycle-1",
   dayIndex: 1,
+  sortOrder: 0,
   companyName: "Acme Corp",
   companyNameZh: "",
   ticker: "ACME",
@@ -92,16 +94,22 @@ const draftSaveInput = {
   priceLabel: "",
   priceDirection: "",
   headline: "Updated headline",
+  headlineZhHant: "",
   newsBody: "",
+  newsBodyZhHant: "",
   sourceName: "",
   sourceUrl: "",
   sourceDate: "",
   cardImageUrl: "",
   cardImageAlt: "",
+  cardImageAltZhHant: "",
   summary: "",
+  summaryZhHant: "",
   userPrompt: "Prompt",
+  userPromptZhHant: "",
   ppaSignal: null,
   ppaInsight: "",
+  ppaInsightZhHant: "",
   status: "PUBLISHED" as const,
   publishedAt: "",
   revealAt: "",
@@ -149,10 +157,14 @@ describe("updateMarketPulseCardDraftAction", () => {
     const updateArgs = prismaMocks.cardUpdate.mock.calls[0]?.[0];
     expect(updateArgs.data.status).toBe("DRAFT");
     expect(
-      isCardLiveForPlayers({
-        status: updateArgs.data.status,
-        publishedAt: updateArgs.data.publishedAt,
-      }),
+      isCardLiveForPlayers(
+        {
+          status: updateArgs.data.status,
+          publishedAt: updateArgs.data.publishedAt,
+          dayIndex: 1,
+        },
+        MARKET_PULSE_PUBLIC_LAUNCH_AT,
+      ),
     ).toBe(false);
   });
 });

@@ -71,10 +71,13 @@ function buildPlayableCard(overrides: Record<string, unknown> = {}) {
     id: TEST_CARD_ID,
     cycleId: TEST_CYCLE_ID,
     dayIndex: PLAYABLE_DAY_INDEX,
+    sortOrder: 0,
     status: "PUBLISHED",
     publishedAt: CYCLE_START,
     ppaSignalLockedAt: CYCLE_START,
     revealAt: null,
+    createdAt: CYCLE_START,
+    updatedAt: CYCLE_START,
     cycle: {
       id: TEST_CYCLE_ID,
       name: "Test Cycle",
@@ -402,6 +405,39 @@ describe("submitMarketPulseDecision", () => {
       expect(result.error).toContain("window for this card has closed");
     }
     expect(prismaMocks.decisionCreate).not.toHaveBeenCalled();
+  });
+
+  it("allows submission for another playable card on the same cycle day", async () => {
+    setupOpenRuntime();
+    const secondCardId = "card-second";
+    const firstCard = buildPlayableCard({
+      id: TEST_CARD_ID,
+      sortOrder: 0,
+    });
+    const secondCard = buildPlayableCard({
+      id: secondCardId,
+      sortOrder: 1,
+    });
+    prismaMocks.cardFindUnique.mockResolvedValue(secondCard);
+    prismaMocks.cycleFindUnique.mockResolvedValue(
+      buildActiveCycleWithCards([firstCard, secondCard]),
+    );
+
+    const result = await submitMarketPulseDecision({
+      userId: TEST_USER_ID,
+      cardId: secondCardId,
+      decision: "CAUTIOUS",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(prismaMocks.decisionCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          cardId: secondCardId,
+          decision: "CAUTIOUS",
+        }),
+      }),
+    );
   });
 });
 

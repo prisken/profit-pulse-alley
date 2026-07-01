@@ -41,9 +41,13 @@ import type {
 } from "@/lib/market-pulse/types";
 import { MARKET_PULSE_EASE } from "@/lib/market-pulse/motion";
 import {
+  formatMarketPulseCardDayLabelLocalized,
+} from "@/lib/market-pulse/card-play-order";
+import {
   MARKET_PULSE_ANALYTICS_EVENTS,
   trackMarketPulseEvent,
 } from "@/lib/market-pulse/analytics";
+import type { MessageKey } from "@/lib/i18n/messages";
 
 const focusRing = MP_FOCUS_RING;
 
@@ -133,6 +137,24 @@ function ScoreLine({
   );
 }
 
+function formatRevealCardDayLabel(
+  card: MarketPulseRevealCardRow,
+  t: (key: MessageKey) => string,
+): string {
+  return formatMarketPulseCardDayLabelLocalized(
+    card.dayIndex,
+    card.sortOrder,
+    card.cardsOnDay,
+    {
+      single: (day) => t("mp.reveal.card.day").replace("{day}", String(day)),
+      multi: (day, cardNumber) =>
+        t("mp.reveal.card.dayMulti")
+          .replace("{day}", String(day))
+          .replace("{card}", String(cardNumber)),
+    },
+  );
+}
+
 function RevealCardItem({
   card,
   index,
@@ -155,7 +177,7 @@ function RevealCardItem({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 sm:text-xs">
-                {t("mp.reveal.card.day").replace("{day}", String(card.dayIndex + 1))}
+                {formatRevealCardDayLabel(card, t)}
               </p>
               <MarketPulseProofChip
                 label={

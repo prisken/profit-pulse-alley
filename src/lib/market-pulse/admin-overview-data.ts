@@ -14,6 +14,7 @@ import { evaluateFirstPublicCycleSetup } from "@/lib/market-pulse/first-cycle-ad
 import { evaluateActiveCycleOperationalWarnings } from "@/lib/market-pulse/admin-operational-warnings";
 import { isBeforePublicLaunch } from "@/lib/market-pulse/launch-config";
 import type { MarketPulseAdminCycleRow } from "@/lib/market-pulse/admin-data";
+import { MARKET_PULSE_ADMIN_CARD_ROW_LOCALIZATION_DEFAULTS } from "@/lib/market-pulse/admin-card-row";
 import { getMarketPulseSettings } from "@/lib/market-pulse/server";
 import { prisma } from "@/lib/prisma";
 
@@ -158,6 +159,8 @@ export async function getAdminOverviewData(): Promise<AdminOverviewData> {
           publishedAt: null,
           revealAt: null,
           decisionCount: 0,
+          createdAt: cycle.startsAt.toISOString(),
+          ...MARKET_PULSE_ADMIN_CARD_ROW_LOCALIZATION_DEFAULTS,
         }));
 
         const guidanceInput = {

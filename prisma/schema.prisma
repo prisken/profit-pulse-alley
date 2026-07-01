@@ -128,8 +128,12 @@ model MarketPulseCycle {
 model MarketPulseCard {
   id                String                @id @default(cuid())
   cycleId           String
+  /// 1-based cycle calendar day (legacy rows may use 0-based). Multiple cards may share the same dayIndex; use sortOrder to order them.
   dayIndex          Int
+  /// Order within a cycle day (0 = first). Together with dayIndex identifies a card slot when multiple signals run on one day.
+  sortOrder         Int                   @default(0)
   companyName       String
+  /// Traditional Chinese company name (legacy zh field — English default is companyName).
   companyNameZh     String?
   ticker            String
   exchange          String?
@@ -137,20 +141,30 @@ model MarketPulseCard {
   priceLabel        String?
   priceDirection    String?
   headline          String
+  /// Traditional Chinese headline; players fall back to headline when empty.
+  headlineZhHant    String?
   sourceName        String?
   sourceUrl         String?
   sourceDate        DateTime?
   newsBody          String?               @db.Text
+  newsBodyZhHant    String?               @db.Text
   summary           String?
+  summaryZhHant     String?
   logoInitials      String?
   cardImageUrl      String?
   cardImageAlt      String?
+  cardImageAltZhHant String?
   userPrompt        String?
+  userPromptZhHant  String?
   ppaSignal         MarketPulseSignal?
   ppaInsight        String?
+  /// Post-reveal only — never exposed in public payloads before reveal (see reveal-access.ts).
+  ppaInsightZhHant  String?               @db.Text
   ppaSignalLockedAt DateTime?
   status            MarketPulseCardStatus @default(DRAFT)
+  /// Legacy per-card go-live override; new workflow may derive 9:00 AM HKT from cycle + dayIndex.
   publishedAt       DateTime?
+  /// Legacy per-card reveal override; defaults to cycle.revealAt when null.
   revealAt          DateTime?
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
@@ -159,8 +173,9 @@ model MarketPulseCard {
   decisions   MarketPulseDecision[]
   scoreEvents MarketPulseScoreEvent[]
 
-  @@unique([cycleId, dayIndex])
+  @@unique([cycleId, dayIndex, sortOrder])
   @@index([cycleId])
+  @@index([cycleId, dayIndex, sortOrder])
   @@index([status])
   @@index([publishedAt])
   @@index([revealAt])

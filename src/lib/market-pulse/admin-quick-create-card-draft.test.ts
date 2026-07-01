@@ -99,7 +99,8 @@ describe("quickCreateMarketPulseCardDraftAction", () => {
     expect(prismaMocks.cardCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         cycleId: "cycle-1",
-        dayIndex: 3,
+        dayIndex: 1,
+        sortOrder: 1,
         headline: QUICK_DRAFT_CARD_HEADLINE,
         companyName: QUICK_DRAFT_CARD_COMPANY_NAME,
         ticker: QUICK_DRAFT_CARD_TICKER,
@@ -134,10 +135,14 @@ describe("quickCreateMarketPulseCardDraftAction", () => {
 
     const createArgs = prismaMocks.cardCreate.mock.calls[0]?.[0];
     expect(
-      isCardLiveForPlayers({
-        status: createArgs.data.status,
-        publishedAt: createArgs.data.publishedAt,
-      }),
+      isCardLiveForPlayers(
+        {
+          status: createArgs.data.status,
+          publishedAt: createArgs.data.publishedAt,
+          dayIndex: createArgs.data.dayIndex,
+        },
+        MARKET_PULSE_PUBLIC_LAUNCH_AT,
+      ),
     ).toBe(false);
   });
 });

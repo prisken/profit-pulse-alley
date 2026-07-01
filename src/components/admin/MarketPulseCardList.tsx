@@ -69,7 +69,10 @@ export default function MarketPulseCardList({
       if (a.cycleId !== b.cycleId) {
         return a.cycleId.localeCompare(b.cycleId);
       }
-      return a.dayIndex - b.dayIndex;
+      if (a.dayIndex !== b.dayIndex) {
+        return a.dayIndex - b.dayIndex;
+      }
+      return a.sortOrder - b.sortOrder;
     });
   }, [cards, filters.cycleId]);
 
@@ -80,6 +83,11 @@ export default function MarketPulseCardList({
 
   const cycleNameById = useMemo(
     () => new Map(cycles.map((cycle) => [cycle.id, cycle.name])),
+    [cycles],
+  );
+
+  const cycleStartsAtById = useMemo(
+    () => new Map(cycles.map((cycle) => [cycle.id, cycle.startsAt])),
     [cycles],
   );
 
@@ -164,6 +172,7 @@ export default function MarketPulseCardList({
               <MarketPulseCardPanel
                 card={card}
                 cycleName={cycleNameById.get(card.cycleId)}
+                cycleStartsAt={cycleStartsAtById.get(card.cycleId)}
                 existingDayIndexes={dayIndexesForCycle(cards, card.cycleId)}
                 disabled={disabled}
                 revealUrgent={revealUrgentByCycleId.get(card.cycleId) ?? false}

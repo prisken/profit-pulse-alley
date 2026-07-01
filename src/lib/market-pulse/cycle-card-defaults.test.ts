@@ -11,7 +11,6 @@ import {
   formatCycleCardCategoryLabel,
   nextQuickDraftDayIndex,
   pickLatestCycleCardReference,
-  quickDraftCardSourceDate,
 } from "@/lib/market-pulse/cycle-card-defaults";
 
 const CYCLE = {
@@ -92,12 +91,12 @@ describe("nextQuickDraftDayIndex", () => {
     expect(nextQuickDraftDayIndex([])).toBe(1);
   });
 
-  it("fills the lowest gap before extending the range", () => {
-    expect(nextQuickDraftDayIndex([1, 3])).toBe(2);
+  it("returns the current cycle day even when lower day indexes are unused", () => {
+    expect(nextQuickDraftDayIndex([3])).toBe(1);
   });
 
-  it("extends after all lower indexes are used", () => {
-    expect(nextQuickDraftDayIndex([1, 2, 3])).toBe(4);
+  it("does not advance past the current cycle day when many days already have cards", () => {
+    expect(nextQuickDraftDayIndex([1, 2, 3])).toBe(1);
   });
 });
 
@@ -121,6 +120,7 @@ describe("buildQuickDraftCardDefaults", () => {
     });
 
     expect(defaults.dayIndex).toBe(1);
+    expect(defaults.sortOrder).toBe(0);
     expect(defaults.headline).toBe(QUICK_DRAFT_CARD_HEADLINE);
     expect(defaults.companyName).toBe(QUICK_DRAFT_CARD_COMPANY_NAME);
     expect(defaults.ticker).toBe(QUICK_DRAFT_CARD_TICKER);
@@ -129,8 +129,6 @@ describe("buildQuickDraftCardDefaults", () => {
     expect(defaults.sourceName).toBe("WSJ");
     expect(defaults.sourceUrl).toBe("https://wsj.com/story");
     expect(defaults.status).toBe("DRAFT");
-    expect(defaults.sourceDate.getTime()).toBe(
-      quickDraftCardSourceDate(MARKET_PULSE_PUBLIC_LAUNCH_AT, 1).getTime(),
-    );
+    expect(defaults.sourceDate.getTime()).toBe(MARKET_PULSE_PUBLIC_LAUNCH_AT.getTime());
   });
 });

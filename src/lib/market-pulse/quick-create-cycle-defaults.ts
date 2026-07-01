@@ -6,8 +6,17 @@ import {
   MARKET_PULSE_PUBLIC_LAUNCH_AT_MS,
 } from "@/lib/market-pulse/launch-config";
 
-const HKT_OFFSET_MS = 8 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
+import {
+  addHktCalendarDays,
+  addHktDays,
+  startOfHktCalendarDay,
+} from "@/lib/market-pulse/hkt-time";
+
+export {
+  addHktCalendarDays,
+  addHktDays,
+  startOfHktCalendarDay,
+} from "@/lib/market-pulse/hkt-time";
 
 export const QUICK_CREATE_CYCLE_PRIZE_LABEL = FIRST_CYCLE_GUIDANCE.prizeLabel;
 
@@ -92,15 +101,6 @@ export function resolveNextQuickCycleName(existingNames: string[]): string {
     suffix += 1;
   }
   return dateCandidate;
-}
-
-export function startOfHktCalendarDay(instant: Date): Date {
-  const hktDayIndex = Math.floor((instant.getTime() + HKT_OFFSET_MS) / DAY_MS);
-  return new Date(hktDayIndex * DAY_MS - HKT_OFFSET_MS);
-}
-
-export function addHktDays(instant: Date, days: number): Date {
-  return new Date(instant.getTime() + days * DAY_MS);
 }
 
 export function nextHktMidnightOnOrAfter(instant: Date): Date {

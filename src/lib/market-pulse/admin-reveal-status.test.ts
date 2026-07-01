@@ -4,6 +4,7 @@ import type {
   MarketPulseAdminCardRow,
   MarketPulseAdminCycleRow,
 } from "@/lib/market-pulse/admin-data";
+import { MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
 import {
   evaluateRevealReadiness,
   formatRevealBlockMessage,
@@ -65,6 +66,7 @@ function buildCard(
     publishedAt: "2026-06-01T00:00:00.000Z",
     revealAt: null,
     decisionCount: 2,
+    ...MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS,
     ...overrides,
   };
 }
@@ -102,6 +104,31 @@ describe("evaluateRevealReadiness", () => {
     expect(result.canReveal).toBe(false);
     expect(result.blockReason).toBe("incomplete_ppa");
     expect(result.missingPpaCards[0]?.missing).toContain("ppaSignal");
+  });
+
+  it("allows reveal when multiple published cards share a day index", () => {
+    const result = evaluateRevealReadiness(baseCycle, [
+      buildCard({ id: "card-a", dayIndex: 2, sortOrder: 0 }),
+      buildCard({ id: "card-b", dayIndex: 2, sortOrder: 1, companyName: "Beta" }),
+    ]);
+    expect(result.canReveal).toBe(true);
+    expect(result.blockReason).toBeNull();
+  });
+
+  it("blocks when one same-day published card lacks complete locked PPA", () => {
+    const result = evaluateRevealReadiness(baseCycle, [
+      buildCard({ id: "card-a", dayIndex: 2, sortOrder: 0 }),
+      buildCard({
+        id: "card-b",
+        dayIndex: 2,
+        sortOrder: 1,
+        companyName: "Beta",
+        ppaSignalLockedAt: null,
+      }),
+    ]);
+    expect(result.canReveal).toBe(false);
+    expect(result.blockReason).toBe("incomplete_ppa");
+    expect(result.missingPpaCards).toHaveLength(1);
   });
 
   it("allows reveal when ready and notes scheduled reveal", () => {

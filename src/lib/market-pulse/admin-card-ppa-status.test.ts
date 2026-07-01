@@ -5,6 +5,10 @@ import {
   getAdminCardPpaStatus,
   isCardLiveForPlayers,
 } from "@/lib/market-pulse/admin-card-ppa-status";
+import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config";
+import { getCycleDayReleaseAt } from "@/lib/market-pulse/card-release-schedule";
+
+const CYCLE_START = MARKET_PULSE_PUBLIC_LAUNCH_AT;
 
 describe("getAdminCardPpaStatus", () => {
   it("returns complete when signal, insight, and lock are set", () => {
@@ -86,18 +90,57 @@ describe("cardNeedsPpa", () => {
 });
 
 describe("isCardLiveForPlayers", () => {
-  it("is true for published cards with no future publish date", () => {
+  it("is true after derived release when publishedAt is in the past", () => {
     expect(
       isCardLiveForPlayers(
-        { status: "PUBLISHED", publishedAt: "2026-01-01T00:00:00.000Z" },
-        new Date("2026-06-01T00:00:00.000Z"),
+        {
+          status: "PUBLISHED",
+          publishedAt: "2026-01-01T00:00:00.000Z",
+          dayIndex: 1,
+        },
+        CYCLE_START,
+        new Date(getCycleDayReleaseAt(CYCLE_START, 1).getTime() + 60_000),
       ),
     ).toBe(true);
   });
 
+  it("is false before derived 9:00 AM HKT even with past publishedAt", () => {
+    expect(
+      isCardLiveForPlayers(
+        {
+          status: "PUBLISHED",
+          publishedAt: "2026-01-01T00:00:00.000Z",
+          dayIndex: 1,
+        },
+        CYCLE_START,
+        new Date(getCycleDayReleaseAt(CYCLE_START, 1).getTime() - 1),
+      ),
+    ).toBe(false);
+  });
+
+  it("is false when future publishedAt blocks after derived release", () => {
+    const derived = getCycleDayReleaseAt(CYCLE_START, 1);
+    const futurePublishedAt = new Date(derived.getTime() + 3_600_000);
+
+    expect(
+      isCardLiveForPlayers(
+        {
+          status: "PUBLISHED",
+          publishedAt: futurePublishedAt.toISOString(),
+          dayIndex: 1,
+        },
+        CYCLE_START,
+        new Date(derived.getTime() + 60_000),
+      ),
+    ).toBe(false);
+  });
+
   it("is false for draft cards", () => {
     expect(
-      isCardLiveForPlayers({ status: "DRAFT", publishedAt: null }),
+      isCardLiveForPlayers(
+        { status: "DRAFT", publishedAt: null, dayIndex: 1 },
+        CYCLE_START,
+      ),
     ).toBe(false);
   });
 });

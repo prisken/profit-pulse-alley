@@ -49,6 +49,8 @@ import {
   bulkUnpublishMarketPulseCardsAction,
 } from "@/lib/market-pulse/admin-actions";
 import { isCardLiveForPlayers } from "@/lib/market-pulse/admin-card-ppa-status";
+import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config";
+import { MARKET_PULSE_CARD_TEST_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
 
 const ADMIN = { userId: "admin-1", email: "admin@example.com" };
 
@@ -79,6 +81,8 @@ const readyCard = {
   ppaSignalLockedAt: new Date("2026-01-01T00:00:00.000Z"),
   publishedAt: null,
   revealAt: null,
+  createdAt: new Date("2026-01-01T00:00:00.000Z"),
+  ...MARKET_PULSE_CARD_TEST_DEFAULTS,
   _count: { decisions: 0 },
 };
 
@@ -204,10 +208,14 @@ describe("bulkUnpublishMarketPulseCardsAction", () => {
     });
 
     expect(
-      isCardLiveForPlayers({
-        status: "DRAFT",
-        publishedAt: null,
-      }),
+      isCardLiveForPlayers(
+        {
+          status: "DRAFT",
+          publishedAt: null,
+          dayIndex: 1,
+        },
+        MARKET_PULSE_PUBLIC_LAUNCH_AT,
+      ),
     ).toBe(false);
   });
 });

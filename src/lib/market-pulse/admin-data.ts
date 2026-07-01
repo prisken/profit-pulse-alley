@@ -12,6 +12,7 @@ import {
   buildAdminCycleWinnerMap,
 } from "@/lib/market-pulse/admin-cycle-stats";
 import { requireAdminSession } from "@/lib/market-pulse/admin-auth";
+import { mapMarketPulseAdminCardRow } from "@/lib/market-pulse/admin-card-row";
 import {
   describeCyclePlayabilityIssue,
   getCyclePlayabilityIssue,
@@ -24,6 +25,7 @@ export type MarketPulseAdminCardRow = {
   id: string;
   cycleId: string;
   dayIndex: number;
+  sortOrder: number;
   companyName: string;
   companyNameZh: string | null;
   ticker: string;
@@ -33,20 +35,27 @@ export type MarketPulseAdminCardRow = {
   priceLabel: string | null;
   priceDirection: string | null;
   headline: string;
+  headlineZhHant: string | null;
   newsBody: string | null;
+  newsBodyZhHant: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
   sourceDate: string | null;
   cardImageUrl: string | null;
   cardImageAlt: string | null;
+  cardImageAltZhHant: string | null;
   summary: string | null;
+  summaryZhHant: string | null;
   userPrompt: string | null;
+  userPromptZhHant: string | null;
   status: MarketPulseCardStatus;
   ppaSignal: MarketPulseSignal | null;
   ppaInsight: string | null;
+  ppaInsightZhHant: string | null;
   ppaSignalLockedAt: string | null;
   publishedAt: string | null;
   revealAt: string | null;
+  createdAt: string;
   decisionCount: number;
 };
 
@@ -201,39 +210,16 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
   });
 
   const cardRows = await prisma.marketPulseCard.findMany({
-    orderBy: [{ cycleId: "desc" }, { dayIndex: "asc" }],
+    orderBy: [
+      { cycleId: "desc" },
+      { dayIndex: "asc" },
+      { sortOrder: "asc" },
+      { createdAt: "asc" },
+    ],
     include: { _count: { select: { decisions: true } } },
   });
 
-  const cards: MarketPulseAdminCardRow[] = cardRows.map((card) => ({
-    id: card.id,
-    cycleId: card.cycleId,
-    dayIndex: card.dayIndex,
-    companyName: card.companyName,
-    companyNameZh: card.companyNameZh,
-    ticker: card.ticker,
-    exchange: card.exchange,
-    logoUrl: card.logoUrl,
-    logoInitials: card.logoInitials,
-    priceLabel: card.priceLabel,
-    priceDirection: card.priceDirection,
-    headline: card.headline,
-    newsBody: card.newsBody,
-    sourceName: card.sourceName,
-    sourceUrl: card.sourceUrl,
-    sourceDate: card.sourceDate?.toISOString() ?? null,
-    cardImageUrl: card.cardImageUrl,
-    cardImageAlt: card.cardImageAlt,
-    summary: card.summary,
-    userPrompt: card.userPrompt,
-    status: card.status,
-    ppaSignal: card.ppaSignal,
-    ppaInsight: card.ppaInsight,
-    ppaSignalLockedAt: card.ppaSignalLockedAt?.toISOString() ?? null,
-    publishedAt: card.publishedAt?.toISOString() ?? null,
-    revealAt: card.revealAt?.toISOString() ?? null,
-    decisionCount: card._count.decisions,
-  }));
+  const cards: MarketPulseAdminCardRow[] = cardRows.map(mapMarketPulseAdminCardRow);
 
   const [recentDecisions, recentAudits] = await Promise.all([
     prisma.marketPulseDecision.findMany({

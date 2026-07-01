@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { MarketPulseAdminCardRow } from "@/lib/market-pulse/admin-data";
+import { MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
 import { getBuilderCardValidationStatus } from "@/lib/market-pulse/admin-builder-card-status";
 
 function baseCard(
@@ -34,6 +35,7 @@ function baseCard(
     publishedAt: null,
     revealAt: null,
     decisionCount: 0,
+    ...MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS,
     ...overrides,
   };
 }

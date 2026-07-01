@@ -100,6 +100,8 @@ describe("Launch smoke — reveal page", () => {
         {
           cardId: "card-1",
           dayIndex: 1,
+          sortOrder: 0,
+          cardsOnDay: 1,
           companyName: "Example Co",
           headline: "Headline",
           userDecision: "BULLISH",

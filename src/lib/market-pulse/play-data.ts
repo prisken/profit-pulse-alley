@@ -15,8 +15,8 @@ import {
   getActiveMarketPulseCycle,
   getMarketPulseLeaderboard,
   getMarketPulseSettings,
-  getTodayMarketPulseCardForUser,
-  getTodayMarketPulseCardSnapshot,
+  getTodayMarketPulsePlaySession,
+  getTodayMarketPulsePlaySessionSnapshot,
   isMarketPulseCycleRevealed,
   type MarketPulseCardPublicPayload,
   type MarketPulseLeaderboardRow,
@@ -42,6 +42,11 @@ export type MarketPulsePlayPageStatus =
   | "locked"
   | "playable";
 
+export type MarketPulsePlayCardSlot = {
+  card: MarketPulseSwipeCardData;
+  userDecision: MarketPulseDecision | null;
+};
+
 export type MarketPulsePlayPageData = {
   status: MarketPulsePlayPageStatus;
   isAuthenticated: boolean;
@@ -58,8 +63,16 @@ export type MarketPulsePlayPageData = {
   cycleId: string | null;
   leaderboardEntries: MarketPulseLeaderboardRow[];
   leaderboardRevealed: boolean;
+  /** All playable cards for today's cycle day. */
+  cardsToday: MarketPulsePlayCardSlot[];
+  /** Index into cardsToday for the card the player should interact with. */
+  activeCardIndex: number;
+  /** Active card for the current step (guest preview or play/locked). */
   card: MarketPulseSwipeCardData | null;
+  /** Decision for the active card when locked or reviewing a completed card. */
   lockedDecision: MarketPulseDecision | null;
+  /** 1-based progress within today's card set; null when only one card. */
+  cardProgress: { current: number; total: number } | null;
 };
 
 function getDayProgress(
@@ -94,6 +107,74 @@ function serializeCard(
     ...card,
     sourceDate: card.sourceDate?.toISOString() ?? null,
   });
+}
+
+function emptyPlaySlots(): Pick<
+  MarketPulsePlayPageData,
+  "cardsToday" | "activeCardIndex" | "card" | "lockedDecision" | "cardProgress"
+> {
+  return {
+    cardsToday: [],
+    activeCardIndex: 0,
+    card: null,
+    lockedDecision: null,
+    cardProgress: null,
+  };
+}
+
+function buildCardProgress(
+  cardsToday: MarketPulsePlayCardSlot[],
+  activeCardIndex: number,
+): { current: number; total: number } | null {
+  if (cardsToday.length <= 1) {
+    return null;
+  }
+  return {
+    current: activeCardIndex + 1,
+    total: cardsToday.length,
+  };
+}
+
+function serializeSessionSlots(
+  slots: Array<{
+    card: MarketPulseCardPublicPayload;
+    userDecision: { decision: MarketPulseDecision } | null;
+  }>,
+): MarketPulsePlayCardSlot[] {
+  return slots.map((slot) => ({
+    card: serializeCard(slot.card),
+    userDecision: slot.userDecision?.decision ?? null,
+  }));
+}
+
+function resolveAuthenticatedPlayState(
+  cardsToday: MarketPulsePlayCardSlot[],
+): Pick<
+  MarketPulsePlayPageData,
+  "status" | "activeCardIndex" | "card" | "lockedDecision" | "cardProgress"
+> {
+  const firstUnplayedIndex = cardsToday.findIndex((slot) => !slot.userDecision);
+
+  if (firstUnplayedIndex >= 0) {
+    const active = cardsToday[firstUnplayedIndex]!;
+    return {
+      status: "playable",
+      activeCardIndex: firstUnplayedIndex,
+      card: active.card,
+      lockedDecision: null,
+      cardProgress: buildCardProgress(cardsToday, firstUnplayedIndex),
+    };
+  }
+
+  const activeIndex = Math.max(cardsToday.length - 1, 0);
+  const active = cardsToday[activeIndex] ?? null;
+  return {
+    status: "locked",
+    activeCardIndex: activeIndex,
+    card: active?.card ?? null,
+    lockedDecision: active?.userDecision ?? null,
+    cardProgress: buildCardProgress(cardsToday, activeIndex),
+  };
 }
 
 function buildCycleShell(
@@ -161,8 +242,7 @@ function buildPreLaunchPageData(
     cycleId: null,
     leaderboardEntries: [],
     leaderboardRevealed: false,
-    card: null,
-    lockedDecision: null,
+    ...emptyPlaySlots(),
   };
 }
 
@@ -225,8 +305,7 @@ export async function getMarketPulsePlayPageData(
       cycleId: null,
       leaderboardEntries: [],
       leaderboardRevealed: false,
-      card: null,
-      lockedDecision: null,
+      ...emptyPlaySlots(),
     });
   }
 
@@ -269,8 +348,7 @@ export async function getMarketPulsePlayPageData(
       cycleId: null,
       leaderboardEntries: [],
       leaderboardRevealed: false,
-      card: null,
-      lockedDecision: null,
+      ...emptyPlaySlots(),
     });
   }
 
@@ -279,59 +357,64 @@ export async function getMarketPulsePlayPageData(
 
   let snapshot = null;
   try {
-    snapshot = await getTodayMarketPulseCardSnapshot();
+    snapshot = await getTodayMarketPulsePlaySessionSnapshot(locale);
   } catch (error) {
     console.error("[market-pulse/play-data] Failed to load card snapshot:", error);
   }
 
-  if (!snapshot) {
+  if (!snapshot || snapshot.cards.length === 0) {
     return finalize({
       status: "no_card_today",
       isAuthenticated,
       ...cycleShell,
       leaderboardEntries,
-      card: null,
-      lockedDecision: null,
+      ...emptyPlaySlots(),
     });
   }
 
-  const card = serializeCard(snapshot.card);
+  const guestCardsToday = serializeSessionSlots(snapshot.cards);
 
   if (!isAuthenticated || !userId) {
+    const previewCard = guestCardsToday[0]?.card ?? null;
     return finalize({
       status: "sign_in_required",
       isAuthenticated: false,
       ...cycleShell,
       leaderboardEntries,
-      card,
+      cardsToday: guestCardsToday,
+      activeCardIndex: 0,
+      card: previewCard,
       lockedDecision: null,
+      cardProgress: buildCardProgress(guestCardsToday, 0),
     });
   }
 
-  let todayForUser = null;
+  let playSession = null;
   try {
-    todayForUser = await getTodayMarketPulseCardForUser(userId);
+    playSession = await getTodayMarketPulsePlaySession(userId, locale);
   } catch (error) {
-    console.error("[market-pulse/play-data] Failed to load user card:", error);
+    console.error("[market-pulse/play-data] Failed to load user cards:", error);
   }
 
-  if (todayForUser?.userDecision) {
+  const cardsToday = playSession
+    ? serializeSessionSlots(playSession.cards)
+    : guestCardsToday;
+
+  if (cardsToday.length === 0) {
     return finalize({
-      status: "locked",
+      status: "no_card_today",
       isAuthenticated: true,
       ...cycleShell,
       leaderboardEntries,
-      card: serializeCard(todayForUser.card),
-      lockedDecision: todayForUser.userDecision.decision as MarketPulseDecision,
+      ...emptyPlaySlots(),
     });
   }
 
   return finalize({
-    status: "playable",
     isAuthenticated: true,
     ...cycleShell,
     leaderboardEntries,
-    card,
-    lockedDecision: null,
+    cardsToday,
+    ...resolveAuthenticatedPlayState(cardsToday),
   });
 }

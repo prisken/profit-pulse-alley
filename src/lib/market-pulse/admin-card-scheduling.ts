@@ -1,11 +1,25 @@
 import { getCycleDayIndexZeroBased } from "@/lib/market-pulse/playable-card";
-import { addHktDays } from "@/lib/market-pulse/quick-create-cycle-defaults";
+import {
+  getCycleDayReleaseAt,
+  MARKET_PULSE_CARD_RELEASE_HKT_HOUR,
+} from "@/lib/market-pulse/card-release-schedule";
+import {
+  addHktDays,
+} from "@/lib/market-pulse/quick-create-cycle-defaults";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export {
+  deriveCardPublishedAtFromSchedule,
+  getCycleDayReleaseAt,
+  MARKET_PULSE_CARD_RELEASE_HKT_HOUR,
+} from "@/lib/market-pulse/card-release-schedule";
 
 export type CycleCardSchedulingRow = {
   id: string;
   dayIndex: number;
+  sortOrder?: number;
+  createdAt?: string | Date | null;
   sourceDate?: string | Date | null;
   status?: string;
 };
@@ -52,6 +66,105 @@ export function sourceDateHktDayKey(date: Date | string): string {
     month: "2-digit",
     day: "2-digit",
   }).format(new Date(date));
+}
+
+export function compareMarketPulseBuilderCards<
+  T extends Pick<CycleCardSchedulingRow, "dayIndex" | "sortOrder" | "createdAt" | "id">,
+>(a: T, b: T): number {
+  if (a.dayIndex !== b.dayIndex) {
+    return a.dayIndex - b.dayIndex;
+  }
+  const sortA = a.sortOrder ?? 0;
+  const sortB = b.sortOrder ?? 0;
+  if (sortA !== sortB) {
+    return sortA - sortB;
+  }
+  const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+  const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+  if (createdA !== createdB) {
+    return createdA - createdB;
+  }
+  return (a.id ?? "").localeCompare(b.id ?? "");
+}
+
+export function sortMarketPulseBuilderCards<
+  T extends Pick<CycleCardSchedulingRow, "dayIndex" | "sortOrder" | "createdAt" | "id">,
+>(cards: T[]): T[] {
+  return [...cards].sort(compareMarketPulseBuilderCards);
+}
+
+export function nextSortOrderForDay(
+  cards: Pick<CycleCardSchedulingRow, "dayIndex" | "sortOrder">[],
+  dayIndex: number,
+): number {
+  const orders = cards
+    .filter((card) => card.dayIndex === dayIndex)
+    .map((card) => card.sortOrder ?? 0);
+  if (orders.length === 0) {
+    return 0;
+  }
+  return Math.max(...orders) + 1;
+}
+
+export function getCurrentCycleDayIndex(
+  cycleStartsAt: Date | string,
+  cycleEndsAt: Date | string,
+  now: Date = new Date(),
+): number {
+  const startsAt = new Date(cycleStartsAt);
+  const capacity = getCycleDayCapacity(startsAt, cycleEndsAt);
+  if (now.getTime() < startsAt.getTime()) {
+    return 1;
+  }
+  const elapsedMs = now.getTime() - startsAt.getTime();
+  const day = Math.floor(elapsedMs / MS_PER_DAY) + 1;
+  return Math.min(Math.max(1, day), capacity);
+}
+
+export type QuickDraftSlot = {
+  dayIndex: number;
+  sortOrder: number;
+  exceedsCycleCapacity: boolean;
+};
+
+export function suggestQuickDraftSlot(input: {
+  cycleStartsAt: Date | string;
+  cycleEndsAt: Date | string;
+  cards: Pick<CycleCardSchedulingRow, "dayIndex" | "sortOrder">[];
+  now?: Date;
+}): QuickDraftSlot {
+  const capacity = getCycleDayCapacity(input.cycleStartsAt, input.cycleEndsAt);
+  const dayIndex = getCurrentCycleDayIndex(
+    input.cycleStartsAt,
+    input.cycleEndsAt,
+    input.now,
+  );
+  return {
+    dayIndex,
+    sortOrder: nextSortOrderForDay(input.cards, dayIndex),
+    exceedsCycleCapacity: dayIndex > capacity,
+  };
+}
+
+/** 1-based card label within a cycle day (Card 1, Card 2, …). */
+export function formatBuilderDayCardLabel(
+  dayIndex: number,
+  sortOrder: number,
+): string {
+  return `Day ${dayIndex} — Card ${sortOrder + 1}`;
+}
+
+export function cardOrdinalWithinDay(
+  card: Pick<CycleCardSchedulingRow, "dayIndex" | "sortOrder">,
+  cardsOnDay: Pick<CycleCardSchedulingRow, "sortOrder">[],
+): number {
+  const sorted = [...cardsOnDay].sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+  );
+  const index = sorted.findIndex(
+    (row) => (row.sortOrder ?? 0) === (card.sortOrder ?? 0),
+  );
+  return index >= 0 ? index + 1 : (card.sortOrder ?? 0) + 1;
 }
 
 export function collectUsedSourceDateKeys(
@@ -194,21 +307,8 @@ export function formatSchedulingWarning(input: {
 export function getCardSchedulingPublishBlockReason(
   card: CycleCardSchedulingRow,
   cycle: { startsAt: Date | string; endsAt: Date | string },
-  allCards: CycleCardSchedulingRow[],
+  _allCards: CycleCardSchedulingRow[],
 ): string | null {
-  const duplicateDays = findDuplicateDayIndexes(allCards);
-  if (duplicateDays.has(card.dayIndex)) {
-    return "Day index must be unique within the cycle.";
-  }
-
-  if (card.sourceDate) {
-    const duplicateSourceDates = findDuplicateSourceDateKeys(allCards);
-    const key = sourceDateHktDayKey(card.sourceDate);
-    if (duplicateSourceDates.has(key)) {
-      return "Another card in this cycle already uses this news published date.";
-    }
-  }
-
   const capacity = getCycleDayCapacity(cycle.startsAt, cycle.endsAt);
   if (card.dayIndex > capacity) {
     return `Day index ${card.dayIndex} exceeds the cycle length (${capacity} day(s)).`;
@@ -250,7 +350,7 @@ export function getAdjacentCardInOrder(
   cardId: string,
   direction: "up" | "down",
 ): CycleCardSchedulingRow | null {
-  const sorted = [...cards].sort((a, b) => a.dayIndex - b.dayIndex);
+  const sorted = sortMarketPulseBuilderCards(cards);
   const index = sorted.findIndex((card) => card.id === cardId);
   if (index < 0) {
     return null;
@@ -302,6 +402,13 @@ export function buildFillMissingSourceDatesPreview(input: {
   };
 }
 
+export const CARD_SORT_ORDER_SWAP_TEMP_OFFSET = 1_000_000;
+
+export function temporarySortOrderForSwap(sortOrder: number): number {
+  return CARD_SORT_ORDER_SWAP_TEMP_OFFSET + sortOrder;
+}
+
+/** @deprecated Used when swapping cards across different cycle days. */
 export const CARD_DAY_INDEX_SWAP_TEMP_OFFSET = 1_000_000;
 
 export function temporaryDayIndexForSwap(dayIndex: number): number {

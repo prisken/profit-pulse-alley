@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { buildDuplicateCardCreateData } from "@/lib/market-pulse/duplicate-card-data";
 import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config";
-import { quickDraftCardSourceDate } from "@/lib/market-pulse/quick-create-card-defaults";
 
 const source = {
   cycleId: "cycle-1",
@@ -24,19 +23,29 @@ const source = {
   userPrompt: "What is your read?",
   ppaSignal: "BULLISH" as const,
   ppaInsight: "Strong momentum",
+  headlineZhHant: null,
+  newsBodyZhHant: null,
+  cardImageAltZhHant: null,
+  summaryZhHant: null,
+  userPromptZhHant: null,
+  ppaInsightZhHant: null,
 };
 
 describe("buildDuplicateCardCreateData", () => {
-  it("copies editable content and assigns the next day in the target cycle", () => {
+  it("copies editable content and assigns the current cycle day with next sort order", () => {
     const duplicate = buildDuplicateCardCreateData({
       source,
       targetCycleId: "cycle-1",
       targetCycleStartsAt: MARKET_PULSE_PUBLIC_LAUNCH_AT,
-      existingCards: [{ dayIndex: 1 }, { dayIndex: 2 }],
+      existingCards: [
+        { dayIndex: 1, sortOrder: 0 },
+        { dayIndex: 2, sortOrder: 0 },
+      ],
     });
 
     expect(duplicate.cycleId).toBe("cycle-1");
-    expect(duplicate.dayIndex).toBe(3);
+    expect(duplicate.dayIndex).toBe(1);
+    expect(duplicate.sortOrder).toBe(1);
     expect(duplicate.headline).toBe(source.headline);
     expect(duplicate.ticker).toBe(source.ticker);
     expect(duplicate.newsBody).toBe(source.newsBody);
@@ -44,9 +53,7 @@ describe("buildDuplicateCardCreateData", () => {
     expect(duplicate.userPrompt).toBe(source.userPrompt);
     expect(duplicate.ppaSignal).toBe(source.ppaSignal);
     expect(duplicate.ppaInsight).toBe(source.ppaInsight);
-    expect(duplicate.sourceDate.getTime()).toBe(
-      quickDraftCardSourceDate(MARKET_PULSE_PUBLIC_LAUNCH_AT, 3).getTime(),
-    );
+    expect(duplicate.sourceDate.getTime()).toBe(MARKET_PULSE_PUBLIC_LAUNCH_AT.getTime());
   });
 
   it("resets publish, reveal, and lock fields to draft-safe values", () => {

@@ -33,6 +33,7 @@ import {
   getAdminCardPpaStatus,
   isCardLiveForPlayers,
 } from "@/lib/market-pulse/admin-card-ppa-status";
+import { formatBuilderDayCardLabel, sortMarketPulseBuilderCards } from "@/lib/market-pulse/admin-card-scheduling";
 import { isCardPublished } from "@/lib/market-pulse/admin-card-filter";
 import type { MarketPulseCardFormValues } from "@/lib/market-pulse/card-validation";
 import { cardFormValuesToPreview } from "@/lib/market-pulse/card-validation";
@@ -100,7 +101,7 @@ export default function MarketPulseBuilderCardEditor({
   const [actionIsError, setActionIsError] = useState(false);
 
   const sortedCards = useMemo(
-    () => [...cards].sort((a, b) => a.dayIndex - b.dayIndex),
+    () => sortMarketPulseBuilderCards(cards),
     [cards],
   );
   const cardIndex = sortedCards.findIndex((row) => row.id === card.id);
@@ -112,7 +113,7 @@ export default function MarketPulseBuilderCardEditor({
 
   const ppaStatus = getAdminCardPpaStatus(card);
   const published = isCardPublished(card);
-  const playerLive = isCardLiveForPlayers(card);
+  const playerLive = isCardLiveForPlayers(card, cycleStartsAt);
   const busy = disabled || isPending;
   const preview = useMemo(
     () => cardFormValuesToPreview(formValues, card.ppaSignalLockedAt),
@@ -237,7 +238,7 @@ export default function MarketPulseBuilderCardEditor({
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex min-w-[3.5rem] items-center justify-center rounded-lg bg-zinc-800 px-2 py-1 text-xs font-bold tabular-nums text-zinc-100">
-            {t("auth.admin.mp.cards.dayLabel").replace("{day}", String(card.dayIndex))}
+            {formatBuilderDayCardLabel(card.dayIndex, card.sortOrder)}
           </span>
           <CardStatusBadge status={card.status} />
           <IndicatorBadge
@@ -306,6 +307,11 @@ export default function MarketPulseBuilderCardEditor({
           cycleName={cycleName}
           cardId={card.id}
           existingDayIndexes={existingDayIndexes}
+          siblingCards={cards.map((row) => ({
+            id: row.id,
+            dayIndex: row.dayIndex,
+            sortOrder: row.sortOrder,
+          }))}
           ppaSignalLockedAt={card.ppaSignalLockedAt}
           disabled={busy}
           initialValues={cardToFormValues(card)}

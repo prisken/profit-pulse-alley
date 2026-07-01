@@ -29,12 +29,20 @@ describe("validateMarketPulseCardForm", () => {
     expect(result.errors.companyName).toBeTruthy();
   });
 
-  it("requires unique day index within cycle", () => {
+  it("allows duplicate day index within cycle", () => {
     const result = validateMarketPulseCardForm(baseValues, {
       existingDayIndexes: [1, 2],
     });
+    expect(result.valid).toBe(true);
+    expect(result.errors.dayIndex).toBeUndefined();
+  });
+
+  it("requires unique sort order on the same cycle day", () => {
+    const result = validateMarketPulseCardForm(baseValues, {
+      existingSortOrdersOnDay: [{ sortOrder: 0 }],
+    });
     expect(result.valid).toBe(false);
-    expect(result.errors.dayIndex).toMatch(/unique/i);
+    expect(result.errors.sortOrder).toMatch(/already uses this order/i);
   });
 
   it("requires PPA for READY status", () => {

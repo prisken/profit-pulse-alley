@@ -2,6 +2,8 @@ import "server-only";
 
 import type { MarketPulseLeaderboardType } from "@prisma/client";
 
+import type { SiteLocale } from "@/lib/i18n/locales";
+import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
 import type { MarketPulseRequestMeta } from "@/lib/market-pulse/request-meta";
 import { stripPpaFromCardPayload } from "@/lib/market-pulse/swipe-card";
 import {
@@ -161,6 +163,7 @@ export function parseLeaderboardMode(
 
 export async function handleGetMarketPulseToday(
   userId: string | undefined,
+  locale: SiteLocale = DEFAULT_SITE_LOCALE,
 ): Promise<GetMarketPulseTodayResult> {
   if (!userId) {
     return {
@@ -170,7 +173,7 @@ export async function handleGetMarketPulseToday(
     };
   }
 
-  const data = await getTodayMarketPulseCardForUser(userId);
+  const data = await getTodayMarketPulseCardForUser(userId, locale);
 
   if (!data) {
     return {
@@ -268,6 +271,7 @@ export async function handleGetMarketPulseLeaderboard(
 export async function handleGetMarketPulseReveal(
   userId: string | undefined,
   cycleId: string | null | undefined,
+  locale: SiteLocale = DEFAULT_SITE_LOCALE,
 ): Promise<GetMarketPulseRevealResult> {
   if (!userId) {
     return {
@@ -286,7 +290,7 @@ export async function handleGetMarketPulseReveal(
     };
   }
 
-  const data = await getMarketPulseRevealForUser(userId, normalizedCycleId);
+  const data = await getMarketPulseRevealForUser(userId, normalizedCycleId, locale);
 
   if (!data) {
     return {

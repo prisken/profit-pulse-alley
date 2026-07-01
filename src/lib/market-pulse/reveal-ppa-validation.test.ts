@@ -115,6 +115,34 @@ describe("validatePublishedCardsPpaForReveal", () => {
     expect(result).toEqual({ ready: true });
   });
 
+  it("accepts multiple published cards on the same day when PPA is complete", () => {
+    const result = validatePublishedCardsPpaForReveal(CYCLE_ID, [
+      buildCard({ id: "card-a", dayIndex: 3, sortOrder: 0 }),
+      buildCard({ id: "card-b", dayIndex: 3, sortOrder: 1, companyName: "Beta" }),
+    ]);
+
+    expect(result).toEqual({ ready: true });
+  });
+
+  it("blocks reveal when one same-day card is missing PPA", () => {
+    const result = validatePublishedCardsPpaForReveal(CYCLE_ID, [
+      buildCard({ id: "card-a", dayIndex: 3, sortOrder: 0 }),
+      buildCard({
+        id: "card-b",
+        dayIndex: 3,
+        sortOrder: 1,
+        companyName: "Beta",
+        ppaInsight: "",
+      }),
+    ]);
+
+    expect(result.ready).toBe(false);
+    if (!result.ready) {
+      expect(result.missingCards).toHaveLength(1);
+      expect(result.message).toMatch(/day 3 · card 2 \(Beta\)/i);
+    }
+  });
+
   it("formats a clear admin error message", () => {
     const message = formatRevealPpaBlockMessage([
       {

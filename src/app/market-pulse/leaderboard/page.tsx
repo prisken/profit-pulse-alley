@@ -21,9 +21,11 @@ export default async function MarketPulseLeaderboardPage({
 }) {
   const { cycleId } = await searchParams;
   const session = await auth();
+  const locale = await getServerSiteLocale();
   const data = await getMarketPulseLeaderboardPageData(
     cycleId,
     session?.user?.id,
+    locale,
   );
 
   return <MarketPulseLeaderboard data={data} />;

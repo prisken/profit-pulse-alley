@@ -38,6 +38,8 @@ type SubmitValues = MarketPulseCardFormValues & { cardId?: string };
 
 type SaveSuccessIntent = "default" | "add_another" | "duplicate";
 
+type ContentLocaleTab = "en" | "zh-Hant";
+
 type MarketPulseCardFormProps = {
   mode: "create" | "edit";
   cycleId: string;
@@ -45,6 +47,7 @@ type MarketPulseCardFormProps = {
   cardId?: string;
   initialValues?: Partial<MarketPulseCardFormValues>;
   existingDayIndexes: number[];
+  siblingCards?: Array<{ id: string; dayIndex: number; sortOrder: number }>;
   ppaSignalLockedAt?: string | null;
   disabled?: boolean;
   variant?: "default" | "builder";
@@ -114,6 +117,7 @@ export default function MarketPulseCardForm({
   cardId,
   initialValues,
   existingDayIndexes,
+  siblingCards = [],
   ppaSignalLockedAt = null,
   disabled = false,
   variant = "default",
@@ -132,6 +136,7 @@ export default function MarketPulseCardForm({
   const excludeDayIndex =
     mode === "edit" ? initialValues?.dayIndex : undefined;
 
+  const [contentLocale, setContentLocale] = useState<ContentLocaleTab>("en");
   const [values, setValues] = useState<MarketPulseCardFormValues>(() =>
     mergeInitialValues(cycleId, initialValues),
   );
@@ -142,6 +147,18 @@ export default function MarketPulseCardForm({
   const [statusIsError, setStatusIsError] = useState(false);
 
   const locked = Boolean(ppaSignalLockedAt);
+
+  const existingSortOrdersOnDay = useMemo(
+    () =>
+      siblingCards
+        .filter(
+          (row) => row.dayIndex === values.dayIndex && row.id !== cardId,
+        )
+        .map((row) => ({ sortOrder: row.sortOrder })),
+    [siblingCards, values.dayIndex, cardId],
+  );
+
+  const optionalZhHint = t("auth.admin.mp.cards.optionalZhFallback");
 
   const preview = useMemo(
     () => cardFormValuesToPreview(values, ppaSignalLockedAt),
@@ -207,15 +224,15 @@ export default function MarketPulseCardForm({
       Boolean(onSaveDraft);
     const createAnother = saveIntent === "create_another";
 
+    const validationOptions = {
+      existingDayIndexes,
+      excludeDayIndex,
+      existingSortOrdersOnDay,
+    };
+
     const validation = draftSave
-      ? validateMarketPulseCardDraftSave(values, {
-          existingDayIndexes,
-          excludeDayIndex,
-        })
-      : validateMarketPulseCardForm(values, {
-          existingDayIndexes,
-          excludeDayIndex,
-        });
+      ? validateMarketPulseCardDraftSave(values, validationOptions)
+      : validateMarketPulseCardForm(values, validationOptions);
     if (!validation.valid) {
       setFieldErrors(validation.errors);
       setStatusIsError(true);
@@ -319,70 +336,168 @@ export default function MarketPulseCardForm({
       <div className={isBuilder ? "space-y-8" : "grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]"}>
         <div className="space-y-8">
           <section className="grid gap-4 sm:grid-cols-2">
-            <h3 className="sm:col-span-2">
+            <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3">
               <SectionHeading>{t("auth.admin.mp.cards.sectionContent")}</SectionHeading>
-            </h3>
-            <label className="block sm:col-span-2" htmlFor={cardFieldId("headline")}>
-              <FieldLabel
-                error={fieldErrors.headline}
-                errorId={cardFieldErrorId("headline")}
-                required
+              <div
+                className="inline-flex rounded-lg border border-zinc-700 p-0.5"
+                role="tablist"
+                aria-label={t("auth.admin.mp.cards.contentLocaleTabs")}
               >
-                {t("auth.admin.mp.cards.fieldHeadline")}
-              </FieldLabel>
-              <input
-                id={cardFieldId("headline")}
-                className={`${fieldClass} ${fieldErrors.headline ? fieldErrorClass : ""}`}
-                value={values.headline}
-                onChange={(event) => updateField("headline", event.target.value)}
-                disabled={busy}
-                aria-invalid={Boolean(fieldErrors.headline)}
-                aria-describedby={
-                  fieldErrors.headline ? cardFieldErrorId("headline") : undefined
-                }
-              />
-            </label>
-            <label className="block sm:col-span-2" htmlFor={cardFieldId("newsBody")}>
-              <FieldLabel>{t("auth.admin.mp.cards.fieldNewsBody")}</FieldLabel>
-              <textarea
-                id={cardFieldId("newsBody")}
-                className={`${fieldClass} min-h-[5rem]`}
-                value={values.newsBody}
-                onChange={(event) => updateField("newsBody", event.target.value)}
-                disabled={busy}
-              />
-            </label>
-            <label className="block sm:col-span-2" htmlFor={cardFieldId("summary")}>
-              <FieldLabel
-                error={fieldErrors.summary}
-                errorId={cardFieldErrorId("summary")}
-                required={!isBuilder}
-              >
-                {t("auth.admin.mp.cards.fieldSummary")}
-              </FieldLabel>
-              <textarea
-                id={cardFieldId("summary")}
-                className={`${fieldClass} min-h-[5rem] ${fieldErrors.summary ? fieldErrorClass : ""}`}
-                value={values.summary}
-                onChange={(event) => updateField("summary", event.target.value)}
-                disabled={busy}
-                aria-invalid={Boolean(fieldErrors.summary)}
-                aria-describedby={
-                  fieldErrors.summary ? cardFieldErrorId("summary") : undefined
-                }
-              />
-            </label>
-            <label className="block sm:col-span-2" htmlFor={cardFieldId("userPrompt")}>
-              <FieldLabel>{t("auth.admin.mp.cards.fieldUserPrompt")}</FieldLabel>
-              <input
-                id={cardFieldId("userPrompt")}
-                className={fieldClass}
-                value={values.userPrompt}
-                onChange={(event) => updateField("userPrompt", event.target.value)}
-                disabled={busy}
-                placeholder={MARKET_PULSE_DEFAULT_USER_PROMPT}
-              />
-            </label>
+                {(["en", "zh-Hant"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="tab"
+                    aria-selected={contentLocale === tab}
+                    className={`min-h-8 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                      contentLocale === tab
+                        ? "bg-emerald-600 text-white"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    } ${focusRing}`}
+                    onClick={() => setContentLocale(tab)}
+                  >
+                    {tab === "en"
+                      ? t("auth.admin.mp.cards.contentTabEnglish")
+                      : t("auth.admin.mp.cards.contentTabZhHant")}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {contentLocale === "en" ? (
+              <>
+                <label className="block sm:col-span-2" htmlFor={cardFieldId("headline")}>
+                  <FieldLabel
+                    error={fieldErrors.headline}
+                    errorId={cardFieldErrorId("headline")}
+                    required
+                  >
+                    {t("auth.admin.mp.cards.fieldHeadline")}
+                  </FieldLabel>
+                  <input
+                    id={cardFieldId("headline")}
+                    className={`${fieldClass} ${fieldErrors.headline ? fieldErrorClass : ""}`}
+                    value={values.headline}
+                    onChange={(event) => updateField("headline", event.target.value)}
+                    disabled={busy}
+                    aria-invalid={Boolean(fieldErrors.headline)}
+                    aria-describedby={
+                      fieldErrors.headline ? cardFieldErrorId("headline") : undefined
+                    }
+                  />
+                </label>
+                <label className="block sm:col-span-2" htmlFor={cardFieldId("newsBody")}>
+                  <FieldLabel>{t("auth.admin.mp.cards.fieldNewsBody")}</FieldLabel>
+                  <textarea
+                    id={cardFieldId("newsBody")}
+                    className={`${fieldClass} min-h-[5rem]`}
+                    value={values.newsBody}
+                    onChange={(event) => updateField("newsBody", event.target.value)}
+                    disabled={busy}
+                  />
+                </label>
+                <label className="block sm:col-span-2" htmlFor={cardFieldId("summary")}>
+                  <FieldLabel
+                    error={fieldErrors.summary}
+                    errorId={cardFieldErrorId("summary")}
+                    required={!isBuilder}
+                  >
+                    {t("auth.admin.mp.cards.fieldSummary")}
+                  </FieldLabel>
+                  <textarea
+                    id={cardFieldId("summary")}
+                    className={`${fieldClass} min-h-[5rem] ${fieldErrors.summary ? fieldErrorClass : ""}`}
+                    value={values.summary}
+                    onChange={(event) => updateField("summary", event.target.value)}
+                    disabled={busy}
+                    aria-invalid={Boolean(fieldErrors.summary)}
+                    aria-describedby={
+                      fieldErrors.summary ? cardFieldErrorId("summary") : undefined
+                    }
+                  />
+                </label>
+                <label className="block sm:col-span-2" htmlFor={cardFieldId("userPrompt")}>
+                  <FieldLabel>{t("auth.admin.mp.cards.fieldUserPrompt")}</FieldLabel>
+                  <input
+                    id={cardFieldId("userPrompt")}
+                    className={fieldClass}
+                    value={values.userPrompt}
+                    onChange={(event) => updateField("userPrompt", event.target.value)}
+                    disabled={busy}
+                    placeholder={MARKET_PULSE_DEFAULT_USER_PROMPT}
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <label className="block sm:col-span-2">
+                  <FieldLabel hint={optionalZhHint}>
+                    {t("auth.admin.mp.cards.fieldHeadlineZhHant")}
+                  </FieldLabel>
+                  <input
+                    className={fieldClass}
+                    value={values.headlineZhHant}
+                    onChange={(event) => updateField("headlineZhHant", event.target.value)}
+                    disabled={busy}
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <FieldLabel hint={optionalZhHint}>
+                    {t("auth.admin.mp.cards.fieldNewsBodyZhHant")}
+                  </FieldLabel>
+                  <textarea
+                    className={`${fieldClass} min-h-[5rem]`}
+                    value={values.newsBodyZhHant}
+                    onChange={(event) => updateField("newsBodyZhHant", event.target.value)}
+                    disabled={busy}
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <FieldLabel hint={optionalZhHint}>
+                    {t("auth.admin.mp.cards.fieldSummaryZhHant")}
+                  </FieldLabel>
+                  <textarea
+                    className={`${fieldClass} min-h-[5rem]`}
+                    value={values.summaryZhHant}
+                    onChange={(event) => updateField("summaryZhHant", event.target.value)}
+                    disabled={busy}
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <FieldLabel hint={optionalZhHint}>
+                    {t("auth.admin.mp.cards.fieldUserPromptZhHant")}
+                  </FieldLabel>
+                  <input
+                    className={fieldClass}
+                    value={values.userPromptZhHant}
+                    onChange={(event) => updateField("userPromptZhHant", event.target.value)}
+                    disabled={busy}
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <FieldLabel hint={optionalZhHint}>
+                    {t("auth.admin.mp.cards.fieldCompanyZh")}
+                  </FieldLabel>
+                  <input
+                    className={fieldClass}
+                    value={values.companyNameZh}
+                    onChange={(event) => updateField("companyNameZh", event.target.value)}
+                    disabled={busy}
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <FieldLabel hint={optionalZhHint}>
+                    {t("auth.admin.mp.cards.fieldImageAltZhHant")}
+                  </FieldLabel>
+                  <input
+                    className={fieldClass}
+                    value={values.cardImageAltZhHant}
+                    onChange={(event) => updateField("cardImageAltZhHant", event.target.value)}
+                    disabled={busy}
+                  />
+                </label>
+              </>
+            )}
           </section>
 
           <section className="grid gap-4 sm:grid-cols-2">
@@ -407,15 +522,6 @@ export default function MarketPulseCardForm({
                 aria-describedby={
                   fieldErrors.companyName ? cardFieldErrorId("companyName") : undefined
                 }
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <FieldLabel>{t("auth.admin.mp.cards.fieldCompanyZh")}</FieldLabel>
-              <input
-                className={fieldClass}
-                value={values.companyNameZh}
-                onChange={(event) => updateField("companyNameZh", event.target.value)}
-                disabled={busy}
               />
             </label>
             <label className="block" htmlFor={cardFieldId("ticker")}>
@@ -623,6 +729,17 @@ export default function MarketPulseCardForm({
                 disabled={busy}
               />
             </label>
+            <label className="block sm:col-span-2">
+              <FieldLabel hint={optionalZhHint}>
+                {t("auth.admin.mp.cards.fieldPpaInsightZhHant")}
+              </FieldLabel>
+              <textarea
+                className={`${fieldClass} min-h-[5rem]`}
+                value={values.ppaInsightZhHant}
+                onChange={(event) => updateField("ppaInsightZhHant", event.target.value)}
+                disabled={busy}
+              />
+            </label>
             {locked ? (
               <label className="block sm:col-span-2">
                 <FieldLabel>{t("auth.admin.mp.cards.fieldChangeReason")}</FieldLabel>
@@ -665,6 +782,25 @@ export default function MarketPulseCardForm({
               />
             </label>
             <label className="block">
+              <FieldLabel
+                error={fieldErrors.sortOrder}
+                required
+                hint={t("auth.admin.mp.cards.fieldSortOrderHint")}
+              >
+                {t("auth.admin.mp.cards.fieldSortOrder")}
+              </FieldLabel>
+              <input
+                type="number"
+                min={0}
+                className={`${fieldClass} ${fieldErrors.sortOrder ? fieldErrorClass : ""}`}
+                value={values.sortOrder}
+                onChange={(event) =>
+                  updateField("sortOrder", Number(event.target.value))
+                }
+                disabled={busy}
+              />
+            </label>
+            <label className="block">
               <FieldLabel>{t("auth.admin.mp.cards.fieldStatus")}</FieldLabel>
               <select
                 className={fieldClass}
@@ -681,30 +817,9 @@ export default function MarketPulseCardForm({
                 ))}
               </select>
             </label>
-            <label className="block">
-              <FieldLabel error={fieldErrors.publishedAt}>
-                {t("auth.admin.mp.cards.fieldPublishedAt")}
-              </FieldLabel>
-              <input
-                type="datetime-local"
-                className={`${fieldClass} ${fieldErrors.publishedAt ? fieldErrorClass : ""}`}
-                value={values.publishedAt}
-                onChange={(event) => updateField("publishedAt", event.target.value)}
-                disabled={busy}
-              />
-            </label>
-            <label className="block">
-              <FieldLabel error={fieldErrors.revealAt}>
-                {t("auth.admin.mp.cards.fieldRevealAt")}
-              </FieldLabel>
-              <input
-                type="datetime-local"
-                className={`${fieldClass} ${fieldErrors.revealAt ? fieldErrorClass : ""}`}
-                value={values.revealAt}
-                onChange={(event) => updateField("revealAt", event.target.value)}
-                disabled={busy}
-              />
-            </label>
+            <div className="sm:col-span-2 rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-3 text-sm text-zinc-400">
+              <p>{t("auth.admin.mp.cards.scheduleDerivedHint")}</p>
+            </div>
             <div className="sm:col-span-2 rounded-lg border border-zinc-700 bg-zinc-950/60 px-3 py-3 text-sm text-zinc-400">
               <p className="font-medium text-zinc-300">
                 {t("auth.admin.mp.cards.publishNotesTitle")}

@@ -6,7 +6,6 @@ import type {
 } from "@/lib/market-pulse/admin-data";
 import {
   evaluateCycleReadiness,
-  findDuplicateDayIndexes,
   getCycleReadinessCardStatus,
 } from "@/lib/market-pulse/admin-cycle-readiness";
 
@@ -46,6 +45,7 @@ function baseCard(
     id: "card-1",
     cycleId: "cycle-1",
     dayIndex: 1,
+    sortOrder: 0,
     companyName: "Acme",
     companyNameZh: null,
     ticker: "ACME",
@@ -55,36 +55,31 @@ function baseCard(
     priceLabel: null,
     priceDirection: null,
     headline: "Headline",
+    headlineZhHant: null,
     newsBody: "Body copy",
+    newsBodyZhHant: null,
     sourceName: null,
     sourceUrl: null,
     sourceDate: null,
     cardImageUrl: null,
     cardImageAlt: null,
+    cardImageAltZhHant: null,
     summary: "Summary",
+    summaryZhHant: null,
     userPrompt: "What is your read on this signal?",
+    userPromptZhHant: null,
     status: "DRAFT",
     ppaSignal: "BULLISH",
     ppaInsight: "Insight",
+    ppaInsightZhHant: null,
     ppaSignalLockedAt: "2026-01-01T00:00:00.000Z",
     publishedAt: null,
     revealAt: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
     decisionCount: 0,
     ...overrides,
   };
 }
-
-describe("findDuplicateDayIndexes", () => {
-  it("detects duplicate day indexes", () => {
-    expect(
-      findDuplicateDayIndexes([
-        { dayIndex: 1 },
-        { dayIndex: 2 },
-        { dayIndex: 2 },
-      ]),
-    ).toEqual(new Set([2]));
-  });
-});
 
 describe("evaluateCycleReadiness", () => {
   it("marks an empty cycle as not ready", () => {
@@ -115,17 +110,16 @@ describe("evaluateCycleReadiness", () => {
     expect(report.cards[0]?.status).toBe("draft_missing_fields");
   });
 
-  it("detects duplicate day/order conflicts", () => {
+  it("allows multiple cards on the same cycle day", () => {
     const report = evaluateCycleReadiness(baseCycle(), [
-      baseCard({ id: "card-1", dayIndex: 2 }),
-      baseCard({ id: "card-2", dayIndex: 2, headline: "Second card" }),
+      baseCard({ id: "card-1", dayIndex: 2, sortOrder: 0 }),
+      baseCard({ id: "card-2", dayIndex: 2, sortOrder: 1, headline: "Second card" }),
     ]);
 
-    expect(report.overallStatus).toBe("needs_attention");
     expect(report.cycleIssues.some((issue) => issue.code === "cycle_duplicate_days")).toBe(
-      true,
+      false,
     );
-    expect(report.cards.every((row) => row.status === "conflict")).toBe(true);
+    expect(report.cards).toHaveLength(2);
   });
 
   it("marks a valid draft cycle ready without published cards", () => {
@@ -200,18 +194,14 @@ describe("evaluateCycleReadiness", () => {
 });
 
 describe("getCycleReadinessCardStatus", () => {
-  it("returns conflict before published status", () => {
-    const duplicateDays = new Set([1]);
-
+  it("returns conflict when scheduling conflicts exist", () => {
     expect(
       getCycleReadinessCardStatus(
         baseCard({
           status: "PUBLISHED",
           publishedAt: "2026-03-02T00:00:00.000Z",
         }),
-        duplicateDays,
-        new Set(),
-        false,
+        true,
       ),
     ).toBe("conflict");
   });

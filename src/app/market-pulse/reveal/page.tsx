@@ -14,7 +14,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function MarketPulseRevealPage() {
-  const data = await getMarketPulseRevealPageData();
+  const locale = await getServerSiteLocale();
+  const data = await getMarketPulseRevealPageData(locale);
 
   return <MarketPulseRevealExperience data={data} />;
 }

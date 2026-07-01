@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { MarketPulseCard } from "@prisma/client";
 
 import type { MarketPulseAdminCardRow } from "@/lib/market-pulse/admin-data";
 import { isCardLiveForPlayers } from "@/lib/market-pulse/admin-card-ppa-status";
+import { MARKET_PULSE_PUBLIC_LAUNCH_AT } from "@/lib/market-pulse/launch-config";
 import {
   adminPreviewDataToSwipeCard,
   adminPreviewIsReadOnly,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/market-pulse/admin-card-preview-data";
 import type { MarketPulseAdminCardPreviewData } from "@/lib/market-pulse/card-validation";
 import { getMarketPulseCardPublicPayload } from "@/lib/market-pulse/reveal-access";
+import { buildMarketPulseTestCard } from "@/lib/market-pulse/market-pulse-test-fixtures";
 
 const previewCard: MarketPulseAdminCardPreviewData = {
   companyName: "Acme Corp",
@@ -51,36 +52,20 @@ describe("adminPreviewDataToSwipeCard", () => {
 
 describe("admin preview privacy", () => {
   it("does not expose PPA on unrevealed public card payloads", () => {
-    const card = {
+    const card = buildMarketPulseTestCard({
       id: "card-1",
       cycleId: "cycle-1",
       dayIndex: 1,
       companyName: "Acme",
-      companyNameZh: null,
       ticker: "ACME",
-      exchange: null,
-      logoUrl: null,
-      logoInitials: null,
-      priceLabel: null,
-      priceDirection: null,
       headline: "Headline",
-      newsBody: null,
-      sourceName: null,
-      sourceUrl: null,
-      sourceDate: null,
-      cardImageUrl: null,
-      cardImageAlt: null,
-      summary: null,
-      userPrompt: null,
-      status: "PUBLISHED" as const,
       publishedAt: new Date("2026-03-01T00:00:00.000Z"),
-      revealAt: null,
-      ppaSignal: "BULLISH" as const,
+      ppaSignal: "BULLISH",
       ppaInsight: "Secret",
       ppaSignalLockedAt: new Date("2026-03-01T00:00:00.000Z"),
       createdAt: new Date("2026-03-01T00:00:00.000Z"),
       updatedAt: new Date("2026-03-01T00:00:00.000Z"),
-    } satisfies MarketPulseCard;
+    });
 
     const payload = getMarketPulseCardPublicPayload(card, {
       cycle: {
@@ -100,8 +85,9 @@ describe("draft card preview does not make card playable", () => {
     const draftCard = {
       status: "DRAFT",
       publishedAt: null,
-    } satisfies Pick<MarketPulseAdminCardRow, "status" | "publishedAt">;
+      dayIndex: 1,
+    } satisfies Pick<MarketPulseAdminCardRow, "status" | "publishedAt" | "dayIndex">;
 
-    expect(isCardLiveForPlayers(draftCard)).toBe(false);
+    expect(isCardLiveForPlayers(draftCard, MARKET_PULSE_PUBLIC_LAUNCH_AT)).toBe(false);
   });
 });

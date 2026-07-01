@@ -24,6 +24,7 @@ export const MARKET_PULSE_CARD_IMAGE_GUIDANCE =
 export type MarketPulseCardFormValues = {
   cycleId: string;
   dayIndex: number;
+  sortOrder: number;
   companyName: string;
   companyNameZh: string;
   ticker: string;
@@ -33,16 +34,22 @@ export type MarketPulseCardFormValues = {
   priceLabel: string;
   priceDirection: string;
   headline: string;
+  headlineZhHant: string;
   newsBody: string;
+  newsBodyZhHant: string;
   sourceName: string;
   sourceUrl: string;
   sourceDate: string;
   cardImageUrl: string;
   cardImageAlt: string;
+  cardImageAltZhHant: string;
   summary: string;
+  summaryZhHant: string;
   userPrompt: string;
+  userPromptZhHant: string;
   ppaSignal: MarketPulseSignal | "";
   ppaInsight: string;
+  ppaInsightZhHant: string;
   status: MarketPulseCardStatus;
   publishedAt: string;
   revealAt: string;
@@ -100,6 +107,7 @@ export function validateMarketPulseCardForm(
   options?: {
     existingDayIndexes?: number[];
     excludeDayIndex?: number;
+    existingSortOrdersOnDay?: Array<{ sortOrder: number; exclude?: boolean }>;
   },
 ): { valid: boolean; errors: CardFormFieldErrors } {
   const errors: CardFormFieldErrors = {};
@@ -110,11 +118,12 @@ export function validateMarketPulseCardForm(
 
   if (!Number.isInteger(values.dayIndex) || values.dayIndex < 1) {
     errors.dayIndex = "Day index must be a positive integer.";
-  } else if (
-    options?.existingDayIndexes?.includes(values.dayIndex) &&
-    values.dayIndex !== options.excludeDayIndex
-  ) {
-    errors.dayIndex = "Day index must be unique within the cycle.";
+  }
+
+  if (!Number.isInteger(values.sortOrder) || values.sortOrder < 0) {
+    errors.sortOrder = "Order within day must be zero or greater.";
+  } else if (options?.existingSortOrdersOnDay?.some((row) => !row.exclude && row.sortOrder === values.sortOrder)) {
+    errors.sortOrder = "Another card on this cycle day already uses this order.";
   }
 
   if (!values.companyName.trim()) {
@@ -171,6 +180,7 @@ export function validateMarketPulseCardDraftSave(
   options?: {
     existingDayIndexes?: number[];
     excludeDayIndex?: number;
+    existingSortOrdersOnDay?: Array<{ sortOrder: number; exclude?: boolean }>;
   },
 ): { valid: boolean; errors: CardFormFieldErrors } {
   const errors: CardFormFieldErrors = {};
@@ -181,11 +191,12 @@ export function validateMarketPulseCardDraftSave(
 
   if (!Number.isInteger(values.dayIndex) || values.dayIndex < 1) {
     errors.dayIndex = "Day index must be a positive integer.";
-  } else if (
-    options?.existingDayIndexes?.includes(values.dayIndex) &&
-    values.dayIndex !== options.excludeDayIndex
-  ) {
-    errors.dayIndex = "Day index must be unique within the cycle.";
+  }
+
+  if (!Number.isInteger(values.sortOrder) || values.sortOrder < 0) {
+    errors.sortOrder = "Order within day must be zero or greater.";
+  } else if (options?.existingSortOrdersOnDay?.some((row) => !row.exclude && row.sortOrder === values.sortOrder)) {
+    errors.sortOrder = "Another card on this cycle day already uses this order.";
   }
 
   if (!values.companyName.trim()) {
@@ -277,6 +288,7 @@ export function validateCardStatusPpa(input: {
 export const DEFAULT_CARD_FORM_VALUES: MarketPulseCardFormValues = {
   cycleId: "",
   dayIndex: 1,
+  sortOrder: 0,
   companyName: "",
   companyNameZh: "",
   ticker: "",
@@ -286,16 +298,22 @@ export const DEFAULT_CARD_FORM_VALUES: MarketPulseCardFormValues = {
   priceLabel: "",
   priceDirection: "",
   headline: "",
+  headlineZhHant: "",
   newsBody: "",
+  newsBodyZhHant: "",
   sourceName: "",
   sourceUrl: "",
   sourceDate: "",
   cardImageUrl: "",
   cardImageAlt: "",
+  cardImageAltZhHant: "",
   summary: "",
+  summaryZhHant: "",
   userPrompt: MARKET_PULSE_DEFAULT_USER_PROMPT,
+  userPromptZhHant: "",
   ppaSignal: "",
   ppaInsight: "",
+  ppaInsightZhHant: "",
   status: "DRAFT",
   publishedAt: "",
   revealAt: "",

@@ -7,6 +7,7 @@ import {
   isMarketPulseCycleRevealed,
 } from "@/lib/market-pulse/reveal-access";
 import { stripPpaFromCardPayload, toMarketPulseSwipeCardData } from "@/lib/market-pulse/swipe-card";
+import { MARKET_PULSE_CARD_TEST_DEFAULTS } from "@/lib/market-pulse/market-pulse-test-fixtures";
 
 const baseCard = {
   id: "card-1",
@@ -37,6 +38,7 @@ const baseCard = {
   ppaSignalLockedAt: new Date("2026-01-01T00:00:00.000Z"),
   createdAt: new Date("2026-01-01T00:00:00.000Z"),
   updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+  ...MARKET_PULSE_CARD_TEST_DEFAULTS,
 } satisfies MarketPulseCard;
 
 const baseCycle = {
@@ -88,6 +90,20 @@ describe("getMarketPulseCardPublicPayload", () => {
     expect(payload.isRevealed).toBe(true);
     expect(payload.ppaSignal).toBe("BULLISH");
     expect(payload.ppaInsight).toBe("Hidden insight");
+  });
+
+  it("defaults to English when locale is omitted", () => {
+    const payload = getMarketPulseCardPublicPayload(
+      {
+        ...baseCard,
+        headlineZhHant: "繁體標題",
+      },
+      {
+        cycle: baseCycle,
+      },
+    );
+
+    expect(payload.headline).toBe("Acme expands");
   });
 });
 

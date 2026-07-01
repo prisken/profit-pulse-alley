@@ -8,7 +8,6 @@ import {
   QUICK_DRAFT_CARD_TICKER,
   buildQuickDraftCardDefaults,
   nextQuickDraftDayIndex,
-  quickDraftCardSourceDate,
 } from "@/lib/market-pulse/quick-create-card-defaults";
 
 describe("quick-create-card-defaults re-exports", () => {
@@ -30,8 +29,6 @@ describe("quick-create-card-defaults re-exports", () => {
     expect(defaults.ticker).toBe(QUICK_DRAFT_CARD_TICKER);
     expect(defaults.userPrompt).toBe(MARKET_PULSE_DEFAULT_USER_PROMPT);
     expect(defaults.status).toBe("DRAFT");
-    expect(defaults.sourceDate.getTime()).toBe(
-      quickDraftCardSourceDate(MARKET_PULSE_PUBLIC_LAUNCH_AT, 1).getTime(),
-    );
+    expect(defaults.sourceDate.getTime()).toBe(MARKET_PULSE_PUBLIC_LAUNCH_AT.getTime());
   });
 });

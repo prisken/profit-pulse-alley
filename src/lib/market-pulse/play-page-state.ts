@@ -30,7 +30,12 @@ export function gateRuntimeClosedPageData(
     ...data,
     runtimeOpen: false,
     status: "runtime_closed",
-    card: null,
-    lockedDecision: null,
+    ...{
+      cardsToday: [],
+      activeCardIndex: 0,
+      card: null,
+      lockedDecision: null,
+      cardProgress: null,
+    },
   };
 }

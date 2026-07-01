@@ -1,4 +1,5 @@
 import type { MarketPulseAdminCardRow } from "@/lib/market-pulse/admin-data";
+import { isCardReleasedForPlay } from "@/lib/market-pulse/card-release-schedule";
 import { getMissingPpaFields } from "@/lib/market-pulse/reveal-ppa-validation";
 
 export type AdminCardPpaStatusKind =
@@ -47,14 +48,17 @@ export function getAdminCardPpaStatus(card: AdminCardPpaCardInput): AdminCardPpa
 }
 
 export function isCardLiveForPlayers(
-  card: Pick<MarketPulseAdminCardRow, "status" | "publishedAt">,
+  card: Pick<MarketPulseAdminCardRow, "status" | "publishedAt" | "dayIndex">,
+  cycleStartsAt: Date | string,
   now: Date = new Date(),
 ): boolean {
-  if (card.status !== "PUBLISHED") {
-    return false;
-  }
-  if (!card.publishedAt) {
-    return true;
-  }
-  return new Date(card.publishedAt) <= now;
+  return isCardReleasedForPlay(
+    {
+      status: card.status,
+      publishedAt: card.publishedAt ? new Date(card.publishedAt) : null,
+      dayIndex: card.dayIndex,
+    },
+    { startsAt: new Date(cycleStartsAt) },
+    now,
+  );
 }

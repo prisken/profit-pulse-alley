@@ -14,18 +14,13 @@ import {
   validateMarketPulseCycleDates,
 } from "@/lib/market-pulse/cycle-validation";
 import {
-  findDuplicateDayIndexes,
-  findDuplicateSourceDateKeys,
   getCardSchedulingConflictMessages,
   getCycleDayCapacity,
-  sourceDateHktDayKey,
 } from "@/lib/market-pulse/admin-card-scheduling";
 import {
   getMissingPpaFields,
   type RevealPpaMissingField,
 } from "@/lib/market-pulse/reveal-ppa-validation";
-
-export { findDuplicateDayIndexes } from "@/lib/market-pulse/admin-card-scheduling";
 
 export type CycleReadinessOverallStatus = "ready" | "needs_attention";
 
@@ -76,21 +71,8 @@ function formatRevealPpaIssue(field: RevealPpaMissingField): string {
 
 export function getCycleReadinessCardStatus(
   card: MarketPulseAdminCardRow,
-  duplicateDays: Set<number>,
-  duplicateSourceDates: Set<string>,
   hasSchedulingConflict = false,
 ): CycleReadinessCardStatus {
-  if (duplicateDays.has(card.dayIndex)) {
-    return "conflict";
-  }
-
-  if (
-    card.sourceDate &&
-    duplicateSourceDates.has(sourceDateHktDayKey(card.sourceDate))
-  ) {
-    return "conflict";
-  }
-
   if (hasSchedulingConflict) {
     return "conflict";
   }
@@ -144,6 +126,10 @@ function collectCardContentIssues(
     issues.push("Day index must be a positive integer.");
   }
 
+  if (!Number.isInteger(card.sortOrder) || card.sortOrder < 0) {
+    issues.push("Order within day must be zero or greater.");
+  }
+
   if (!card.userPrompt?.trim()) {
     issues.push("Player prompt is required.");
   }
@@ -174,8 +160,6 @@ export function evaluateCycleReadiness(
 ): CycleReadinessReport {
   const cycleIssues: CycleReadinessIssue[] = [];
   const cardIssues: CycleReadinessIssue[] = [];
-  const duplicateDays = findDuplicateDayIndexes(cards);
-  const duplicateSourceDates = findDuplicateSourceDateKeys(cards);
   const allDayIndexes = cards.map((card) => card.dayIndex);
   const cycleSpan = { startsAt: cycle.startsAt, endsAt: cycle.endsAt };
 
@@ -220,26 +204,6 @@ export function evaluateCycleReadiness(
     });
   }
 
-  if (duplicateDays.size > 0) {
-    const labels = [...duplicateDays]
-      .sort((a, b) => a - b)
-      .map((dayIndex) => `day ${dayIndex}`)
-      .join(", ");
-    cycleIssues.push({
-      scope: "cycle",
-      code: "cycle_duplicate_days",
-      message: `Duplicate day indexes within this cycle: ${labels}.`,
-    });
-  }
-
-  if (duplicateSourceDates.size > 0) {
-    cycleIssues.push({
-      scope: "cycle",
-      code: "cycle_duplicate_source_dates",
-      message: `Duplicate news published dates within this cycle: ${[...duplicateSourceDates].join(", ")}.`,
-    });
-  }
-
   const capacity = getCycleDayCapacity(cycle.startsAt, cycle.endsAt);
   const cardsBeyondCapacity = cards.filter((card) => card.dayIndex > capacity);
   if (cardsBeyondCapacity.length > 0) {
@@ -260,26 +224,9 @@ export function evaluateCycleReadiness(
       cards,
     );
 
-    if (duplicateDays.has(card.dayIndex)) {
-      const conflictMessage = "Day index must be unique within the cycle.";
-      if (!issues.includes(conflictMessage)) {
-        issues.unshift(conflictMessage);
-      }
-    }
-
     for (const message of schedulingIssues) {
       if (!issues.includes(message)) {
         issues.push(message);
-      }
-    }
-
-    if (
-      card.sourceDate &&
-      duplicateSourceDates.has(sourceDateHktDayKey(card.sourceDate))
-    ) {
-      const dateConflict = "Another card in this cycle already uses this news published date.";
-      if (!issues.includes(dateConflict)) {
-        issues.push(dateConflict);
       }
     }
 
@@ -299,8 +246,6 @@ export function evaluateCycleReadiness(
       headline: card.headline,
       status: getCycleReadinessCardStatus(
         card,
-        duplicateDays,
-        duplicateSourceDates,
         schedulingIssues.length > 0,
       ),
       issues,

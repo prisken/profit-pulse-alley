@@ -1,5 +1,6 @@
 import type { MarketPulseSignal } from "@prisma/client";
 
+import { compareMarketPulseCardsByPlayOrder } from "@/lib/market-pulse/card-play-order";
 import {
   MATCH_BONUS_POINTS,
   PARTICIPATION_POINTS,
@@ -14,6 +15,8 @@ export type ScoreCalculationDecision = {
   card: {
     id: string;
     dayIndex: number;
+    sortOrder?: number | null;
+    createdAt?: Date | string | null;
     ppaSignal: MarketPulseSignal | null;
   };
 };
@@ -33,13 +36,23 @@ export function scoreEventReason(cardId: string, dayIndex: number): string {
   return `cycle_score:card:${cardId}:day:${dayIndex}`;
 }
 
-/** Pure scoring for one player's decisions in a cycle (sorted by dayIndex). */
+/** Pure scoring for one player's decisions in a cycle (sorted by play order). */
 export function buildScoreEventsForUser(
   cycleId: string,
   decisions: ScoreCalculationDecision[],
 ): ScoreCalculationEvent[] {
-  const sorted = [...decisions].sort(
-    (a, b) => a.card.dayIndex - b.card.dayIndex,
+  const sorted = [...decisions].sort((a, b) =>
+    compareMarketPulseCardsByPlayOrder({
+      dayIndex: a.card.dayIndex,
+      sortOrder: a.card.sortOrder,
+      createdAt: a.card.createdAt,
+      id: a.card.id,
+    }, {
+      dayIndex: b.card.dayIndex,
+      sortOrder: b.card.sortOrder,
+      createdAt: b.card.createdAt,
+      id: b.card.id,
+    }),
   );
 
   let consecutiveMatches = 0;

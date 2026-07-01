@@ -1,6 +1,13 @@
 import "server-only";
 
+import {
+  buildCardsOnDayCountMap,
+  compareMarketPulseCardsByPlayOrder,
+} from "@/lib/market-pulse/card-play-order";
 import { PARTICIPATION_POINTS } from "@/lib/market-pulse/constants";
+import { localizeMarketPulseCardText } from "@/lib/market-pulse/card-localization";
+import type { SiteLocale } from "@/lib/i18n/locales";
+import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
 import { isMarketPulseCycleRevealed } from "@/lib/market-pulse/reveal-access";
 import { prisma } from "@/lib/prisma";
 
@@ -8,6 +15,8 @@ import { prisma } from "@/lib/prisma";
 export type LeaderboardViewerCardBreakdown = {
   cardId: string;
   dayIndex: number;
+  sortOrder: number;
+  cardsOnDay: number;
   ticker: string;
   headline: string;
   userDecision: string;
@@ -22,6 +31,7 @@ export type LeaderboardViewerCardBreakdown = {
 export async function getLeaderboardViewerScoreBreakdown(
   userId: string,
   cycleId: string,
+  locale: SiteLocale = DEFAULT_SITE_LOCALE,
 ): Promise<LeaderboardViewerCardBreakdown[]> {
   const cycle = await prisma.marketPulseCycle.findUnique({
     where: { id: cycleId },
@@ -40,13 +50,27 @@ export async function getLeaderboardViewerScoreBreakdown(
           select: {
             id: true,
             dayIndex: true,
+            sortOrder: true,
+            createdAt: true,
             ticker: true,
+            companyName: true,
+            companyNameZh: true,
             headline: true,
+            headlineZhHant: true,
+            newsBody: true,
+            newsBodyZhHant: true,
+            summary: true,
+            summaryZhHant: true,
+            cardImageAlt: true,
+            cardImageAltZhHant: true,
+            userPrompt: true,
+            userPromptZhHant: true,
             ppaSignal: true,
+            ppaInsight: true,
+            ppaInsightZhHant: true,
           },
         },
       },
-      orderBy: { card: { dayIndex: "asc" } },
     }),
     prisma.marketPulseScoreEvent.findMany({
       where: { userId, cycleId },
@@ -64,21 +88,45 @@ export async function getLeaderboardViewerScoreBreakdown(
     scoreEvents.map((event) => [event.cardId ?? "", event]),
   );
 
+  const sortedDecisions = [...decisions].sort((a, b) =>
+    compareMarketPulseCardsByPlayOrder(
+      {
+        dayIndex: a.card.dayIndex,
+        sortOrder: a.card.sortOrder,
+        createdAt: a.card.createdAt,
+        id: a.card.id,
+      },
+      {
+        dayIndex: b.card.dayIndex,
+        sortOrder: b.card.sortOrder,
+        createdAt: b.card.createdAt,
+        id: b.card.id,
+      },
+    ),
+  );
+  const cardsOnDayByIndex = buildCardsOnDayCountMap(
+    sortedDecisions.map((entry) => entry.card),
+  );
+
   const rows: LeaderboardViewerCardBreakdown[] = [];
 
-  for (const entry of decisions) {
+  for (const entry of sortedDecisions) {
     if (!entry.card.ppaSignal) {
       continue;
     }
 
     const scores = scoreByCard.get(entry.cardId);
     const ppaSignal = entry.card.ppaSignal;
+    const localizedHeadline = localizeMarketPulseCardText(entry.card, locale).headline;
+    const sortOrder = entry.card.sortOrder ?? 0;
 
     rows.push({
       cardId: entry.cardId,
       dayIndex: entry.card.dayIndex,
+      sortOrder,
+      cardsOnDay: cardsOnDayByIndex.get(entry.card.dayIndex) ?? 1,
       ticker: entry.card.ticker,
-      headline: entry.card.headline,
+      headline: localizedHeadline,
       userDecision: entry.decision,
       ppaSignal,
       isMatch: entry.decision === ppaSignal,

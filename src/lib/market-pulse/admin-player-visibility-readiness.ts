@@ -5,10 +5,12 @@ import type {
   MarketPulseAdminCycleRow,
 } from "@/lib/market-pulse/admin-data";
 import {
-  findDuplicateDayIndexes,
-  getCardSchedulingConflictMessages,
-} from "@/lib/market-pulse/admin-card-scheduling";
+  getCycleDayReleaseAt,
+  hasLegacyPublishedAtGatePassed,
+  isCardReleasedForPlay,
+} from "@/lib/market-pulse/card-release-schedule";
 import { getTodayCardStatus } from "@/lib/market-pulse/admin-mp-status";
+import { getCardSchedulingConflictMessages } from "@/lib/market-pulse/admin-card-scheduling";
 import { getCyclePlayabilityIssue } from "@/lib/market-pulse/cycle-playability";
 import {
   buildLeaderboardCycleOptions,
@@ -328,11 +330,36 @@ export function evaluatePlayerVisibilityReadiness(input: {
       status: "pass",
       message: "Today's card is live for play.",
     });
-  } else if (cardForDay?.publishedAt && new Date(cardForDay.publishedAt) > now) {
+  } else if (
+    cardForDay &&
+    !isCardReleasedForPlay(
+      {
+        status: cardForDay.status,
+        publishedAt: cardForDay.publishedAt
+          ? new Date(cardForDay.publishedAt)
+          : null,
+        dayIndex: cardForDay.dayIndex,
+      },
+      { startsAt },
+      now,
+    )
+  ) {
+    const derivedRelease = getCycleDayReleaseAt(startsAt, cardForDay.dayIndex);
+    const message =
+      now.getTime() < derivedRelease.getTime()
+        ? "Today's card is not live until 9:00 AM HKT on its cycle day."
+        : cardForDay.publishedAt &&
+            !hasLegacyPublishedAtGatePassed(
+              new Date(cardForDay.publishedAt),
+              now,
+            )
+          ? "Today's card published date is in the future."
+          : "Today's card is not live for play yet.";
+
     checks.push({
       id: "today-card-live",
       status: "fail",
-      message: "Today's card published date is in the future.",
+      message,
     });
   } else {
     checks.push({
@@ -342,11 +369,7 @@ export function evaluatePlayerVisibilityReadiness(input: {
     });
   }
 
-  const duplicateDays = findDuplicateDayIndexes(cards);
   const mappingIssues: string[] = [];
-  if (duplicateDays.has(displayDay)) {
-    mappingIssues.push(`Duplicate cards assigned to day ${displayDay}.`);
-  }
   if (cardForDay) {
     mappingIssues.push(
       ...getCardSchedulingConflictMessages(
