@@ -211,15 +211,21 @@ function CardImage({
   companyInitialsLabel?: string;
 }>) {
   const { t } = useTranslations();
+  const frameClass =
+    "relative w-full shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-zinc-900 to-black shadow-inner shadow-black/40 ring-1 ring-emerald-500/10 aspect-[16/10] sm:aspect-video";
 
-  if (imageUrl) {
+  const trimmedUrl = imageUrl?.trim();
+
+  if (trimmedUrl) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-zinc-900 to-black shadow-inner shadow-black/40 ring-1 ring-emerald-500/10">
+      <div className={frameClass}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={imageUrl}
+          src={trimmedUrl}
           alt={imageAlt?.trim() || t("mp.card.imageAlt")}
-          className="aspect-[16/10] w-full max-w-full object-cover sm:aspect-video"
+          className="h-full w-full object-cover"
+          loading="lazy"
+          decoding="async"
         />
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/70 to-transparent"
@@ -231,7 +237,7 @@ function CardImage({
 
   return (
     <div
-      className="relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-2xl border border-dashed border-white/15 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black sm:aspect-video"
+      className={`${frameClass} flex items-center justify-center border-dashed`}
       role="img"
       aria-label={t("mp.card.noImage")}
     >

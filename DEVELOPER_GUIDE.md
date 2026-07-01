@@ -14,7 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
-| **Recent `main`** | Hub **“No active cycle”** chip; **Market Pulse card scheduling** (9:00 AM HKT release, multi-card per day, bilingual admin/player cards); **527** Vitest tests (82 files) |
+| **Recent `main`** | **Admin cycle datetime fix** — Starts/Ends/Reveal saved as HKT wall clock on client + server (`66b3855`); **Market Pulse card scheduling** (9:00 AM HKT release, multi-card per day, bilingual cards); **530** Vitest tests (82 files) |
 
 ---
 
@@ -124,17 +124,18 @@ Google OAuth redirect URIs (must match exactly):
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
 
-### Verification — last run 29 Jun 2026 (527 tests)
+### Verification — last run 1 Jul 2026 (530 tests)
 
 | Check | Result |
 |-------|--------|
 | **Lint** | `npm run lint` — pass (0 errors; pre-existing warnings in legacy/admin) |
 | **Typecheck** | `npm run typecheck` — pass |
 | **Build** | `npm run build` — pass (`prisma db push && next build`; first deploy may need schema migration for `sortOrder` + `@@unique([cycleId, dayIndex, sortOrder])`) |
-| **Tests** | `npm test` — **527** Vitest tests (82 files) |
+| **Tests** | `npm test` — **530** Vitest tests (82 files) |
 | **Hub lobby chip** | `hub-lobby-state.test.ts` — `no_active_cycle` when runtime OPEN + no DB cycle; `closed` when runtime paused |
 | **Launch smoke** | `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts` |
 | **Card release (HKT)** | `hkt-time.test.ts`, `card-release-schedule.test.ts` — fixed UTC+8 math; Day 1 = `2026-07-01T01:00:00.000Z` when cycle starts `2026-06-30T16:00:00.000Z`; dual gate (derived release + `publishedAt`) |
+| **Admin cycle datetimes (HKT)** | `cycle-validation.test.ts`, `hkt-time.test.ts` — `parseHktDatetimeLocal` / `toHktDatetimeLocalValue` round-trip; TZ-independent on Vercel UTC |
 | **Multi-card play** | `play-data-multi-card.test.ts`, `playable-card.test.ts`, `score-calculation.test.ts` — same-day cards, streak order by `sortOrder` |
 | **Card localization** | `card-localization.test.ts` — zh-Hant + EN fallback; PPA stripped pre-reveal |
 | **Reveal / leaderboard multi-card** | `leaderboard-score-breakdown.test.ts`, `reveal-ppa-validation.test.ts` — duplicate `dayIndex` OK; per-card breakdown labels |
@@ -507,6 +508,23 @@ Hong Kong Time is treated as **fixed UTC+8** (no DST). All scheduling uses UTC e
 
 Admin builder **does not** expose manual card open/reveal datetime fields in the normal workflow; legacy `publishedAt` on existing rows is still respected.
 
+#### Admin cycle dates (Starts / Ends / Reveal)
+
+Cycle create/edit forms (`MarketPulseCycleForm` on `/admin/market-pulse` and the cycle builder) treat all **Starts**, **Ends**, and **Reveal** datetime-local values as **Hong Kong wall-clock time (UTC+8, no DST)** — not browser local time and not Vercel server UTC.
+
+| Module | Role |
+|--------|------|
+| `hkt-time.ts` | `parseHktDatetimeLocal`, `toHktDatetimeLocalValue` — TZ-independent parse/format |
+| `cycle-validation.ts` | `parseCycleDate`, `toDatetimeLocalValue` — thin wrappers used by form + server actions |
+| `admin-actions.ts` | `updateMarketPulseCycleAction` / `createMarketPulseCycleAction` persist parsed UTC instants |
+| `MarketPulseCycleForm.tsx` | Helper text “All times are Hong Kong (HKT, UTC+8)”; resyncs on prop change; awaits `router.refresh()` after save |
+
+**Example:** admin enters `2026-07-01T00:00` → stored as `2026-06-30T16:00:00.000Z` (= 1 Jul 2026 00:00 HKT).
+
+**After save:** `updateMarketPulseCycleAction` revalidates `/admin/market-pulse` and the cycle builder path; the form uses a `key` tied to saved timestamps so reopened edits show fresh values.
+
+**Common pitfall (pre-fix):** datetime-local strings were parsed with `new Date(value)` on the server (UTC on Vercel) while the admin UI displayed browser-local time — cycle saves could appear to revert or not stick. Fixed in `66b3855`.
+
 **Multiple cards per day:** Players can play all published cards for today's cycle day (`findPlayableCardsForToday`). Order: `dayIndex → sortOrder → createdAt`. Submitting one card does not lock the rest. Scoring, reveal, and leaderboard breakdowns use the same sort order.
 
 #### PPA privacy (admin vs public)
@@ -540,6 +558,7 @@ Key test files for the fast builder journey:
 | Draft save | `admin-card-draft-save.test.ts` |
 | Duplicate | `duplicate-card-data.test.ts`, `admin-duplicate-card.test.ts` |
 | Scheduling / release | `admin-card-scheduling.test.ts`, `card-release-schedule.test.ts`, `hkt-time.test.ts` |
+| Cycle admin datetimes | `cycle-validation.test.ts`, `first-cycle-admin-guidance.test.ts` |
 | Multi-card play | `play-data-multi-card.test.ts`, `playable-card.test.ts` |
 | Card localization | `card-localization.test.ts` |
 | Play order / reveal labels | `card-play-order.test.ts`, `leaderboard-score-breakdown.test.ts` |
@@ -548,7 +567,7 @@ Key test files for the fast builder journey:
 | PPA / public privacy | `server-security.test.ts`, `admin-card-preview.test.ts` |
 | Non-admin rejection | `admin-builder-data.test.ts`, `admin-duplicate-card.test.ts`, `admin-quick-create-cycle.test.ts` |
 
-**Last CI (29 Jun 2026):** lint pass (0 errors), typecheck pass, **527 tests** (82 files), build pass.
+**Last CI (1 Jul 2026):** lint pass (0 errors), typecheck pass, **530 tests** (82 files), build pass.
 
 ### Making Market Pulse visible to players (go-live)
 
@@ -573,7 +592,7 @@ Cards can look correct in admin but still be **hidden** on `/market-pulse/play` 
 
 **Admin PPA warning:** When `revealAt` is within **72 hours** (`PPA_REVEAL_WARNING_HOURS`), `/admin/market-pulse` shows an urgent banner and per-card emphasis for published cards missing locked PPA (`admin-ppa-reveal-warning.ts`, `MarketPulseCardPanel`).
 
-**Common pitfall:** Demo seed cycle `[DEMO] Market Pulse Local Seed` uses **2025** dates — after `revealAt` passes, admin still shows “Active” but players see no challenge. Edit cycle dates to the current window or create a new 2026 cycle.
+**Common pitfall:** Demo seed cycle `[DEMO] Market Pulse Local Seed` uses **2025** dates — after `revealAt` passes, admin still shows “Active” but players see no challenge. Edit cycle dates to the current window or create a new 2026 cycle. Cycle times in the edit form are **HKT** — e.g. 1 Jul 2026 00:00 HKT is `2026-07-01T00:00` in the picker, not UTC.
 
 Playability issues (runtime, cycle dates, unpublished cards — **not** missing PPA) appear in the **alert panel** on `/admin/market-pulse` (`admin-mp-status.ts`, `cycle-playability.ts`). PPA setup notes appear when reveal is **>72h** away; urgent PPA warnings when **≤72h**.
 
@@ -762,7 +781,7 @@ npm run dev
 | `npm run build` | **`prisma db push && next build`** (Vercel uses this) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript (`tsc --noEmit`) |
-| `npm test` | Vitest unit tests (`vitest run`) — **527 tests** (82 files) |
+| `npm test` | Vitest unit tests (`vitest run`) — **530 tests** (82 files) |
 | `npm run db:migrate` | Prisma migrate dev (when using migration files) |
 | `npm run db:push` | Push schema without migration files |
 | `npm run db:seed` | Seed **demo Market Pulse** data (dev only — see [§4.1](#41-market-pulse-demo-seed)) |
@@ -1220,7 +1239,7 @@ Admin uses a **zinc command-center** shell on both `/admin` and `/admin/market-p
 | **Overview** | `MarketPulsePlayerVisibilityReadinessCard`, stat grid, `MarketPulsePpaCompleteBadge` | 11-check launch readiness; cards/decisions/users/PPA gap stats |
 | **Setup guide** | `FirstCycleGuidancePanel` (collapsible) | **Hidden after 1 Jul 2026 HKT**; Jul 2026 first-cycle prefill for create-cycle form |
 | **Runtime** | Runtime `<select>` + Save | `updateMarketPulseRuntimeStatusAction` — master switch for submissions |
-| **Advanced cycles** | `MarketPulseCycleForm`, cycle rows, `RevealCycleButton`, export | Create/edit; **Set as active cycle**; close cycle; CSV export |
+| **Advanced cycles** | `MarketPulseCycleForm`, cycle rows, `RevealCycleButton`, export | Create/edit; **Starts/Ends/Reveal in HKT**; **Set as active cycle**; close cycle; CSV export |
 | **Legacy cards** | `MarketPulseCardList`, `MarketPulseCardFilters`, `MarketPulseCardPanel`, `MarketPulseCardForm` | Per-card PPA badges; **Needs PPA** filter; lock/publish; prefer builder for bulk work |
 | **Reveal & scoring** | `MarketPulseRevealScoringSection`, `evaluateRevealReadiness` | Blocked until all published cards have locked PPA; confirm modal; top-5 preview |
 | **Prize claims** | `MarketPulsePrizeReview` | Review claims; contact number; empty states |
@@ -1246,7 +1265,7 @@ Create card → fill **English + zh-Hant** content (builder tabs) → set **PPA 
 
 | Module | Role |
 |--------|------|
-| `hkt-time.ts` | Fixed UTC+8 HKT calendar math (no DST, no server TZ) |
+| `hkt-time.ts` | Fixed UTC+8 HKT calendar math + admin datetime-local parse/format (no DST, no server TZ) |
 | `card-release-schedule.ts` | Derived 9 AM HKT release + dual playability gate |
 | `card-play-order.ts` | Sort + day labels (“Day 3 · Card 2”) for play/reveal/leaderboard |
 | `card-localization.ts` | Player-facing EN/zh-Hant card text; PPA insight post-reveal only |
@@ -1533,10 +1552,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 - **Languages:** EN + Traditional Chinese (`ppa_locale` cookie); MP launch messages in `launch-config.ts`
 - **Data stores:** Postgres (users, Market Pulse, auth), KV (legacy theme), Markdown (blog)
-- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (527), `npm run build`
+- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (530), `npm run build`
 - **Production smoke:** [`docs/market-pulse-deploy-checklist.md`](docs/market-pulse-deploy-checklist.md) § Launch smoke test; automated suites listed in [Production smoke test](#production-smoke-test)
 - **Lint warnings:** Legacy castle-siege; TanStack Table in admin members table
 
 ---
 
-*Last updated: 29 Jun 2026 — Market Pulse card scheduling (9 AM HKT UTC+8, multi-card per day, bilingual cards); 527 tests pass; scoring/launch/PPA privacy unchanged.*
+*Last updated: 1 Jul 2026 — Admin cycle Starts/Ends/Reveal saved as HKT wall clock (`66b3855`); 530 tests pass; scoring/launch/PPA privacy unchanged.*
