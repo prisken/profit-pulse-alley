@@ -138,6 +138,18 @@ function OnboardingForm({
           </p>
         ) : null}
       </form>
+
+      <div className="mt-5 space-y-2 text-center sm:mt-6">
+        <Link
+          href="/"
+          className={`inline-flex min-h-10 items-center justify-center text-sm font-medium text-gray-400 underline-offset-4 transition-colors hover:text-gray-200 hover:underline ${focusRing}`}
+        >
+          {t("auth.onboarding.backHome")}
+        </Link>
+        <p className="text-xs leading-relaxed text-gray-500">
+          {t("auth.onboarding.deferHint")}
+        </p>
+      </div>
     </div>
   );
 }

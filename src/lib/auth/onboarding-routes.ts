@@ -1,3 +1,12 @@
+const ONBOARDING_REQUIRED_PATH_PREFIXES = ["/market-pulse/play"] as const;
+
+/** Routes where contact collection is required before the player can proceed. */
+export function requiresOnboardingForPath(pathname: string): boolean {
+  return ONBOARDING_REQUIRED_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 /** Safe in-app redirect targets for post-onboarding navigation. */
 export function resolveOnboardingCallbackUrl(raw: string | undefined): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {

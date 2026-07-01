@@ -13,6 +13,10 @@ import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { isRemovedAccountLoginReason } from "@/lib/auth/invalid-session";
 import { isMarketPulseAuthCallback } from "@/lib/auth/market-pulse-auth-context";
+import {
+  requiresOnboardingForPath,
+  resolveOnboardingCallbackUrl,
+} from "@/lib/auth/onboarding-routes";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 
 const focusRing =
@@ -84,11 +88,16 @@ function LoginForm() {
       return;
     }
 
-    const onboardingTarget = callbackUrl.startsWith("/auth/onboarding")
-      ? callbackUrl
-      : callbackUrl === "/" || callbackUrl === "/login"
-        ? "/auth/onboarding"
-        : `/auth/onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+    const destination = resolveOnboardingCallbackUrl(callbackUrl);
+
+    if (!requiresOnboardingForPath(destination)) {
+      router.replace(destination);
+      return;
+    }
+
+    const onboardingTarget = destination.startsWith("/auth/onboarding")
+      ? destination
+      : `/auth/onboarding?callbackUrl=${encodeURIComponent(destination)}`;
 
     router.replace(onboardingTarget);
   }, [status, session, callbackUrl, router]);

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildOnboardingLoginUrl,
+  requiresOnboardingForPath,
   resolveOnboardingCallbackUrl,
 } from "@/lib/auth/onboarding-routes";
 
@@ -25,6 +26,17 @@ describe("resolveOnboardingCallbackUrl", () => {
     expect(
       resolveOnboardingCallbackUrl("/auth/onboarding?callbackUrl=%2Fprofile"),
     ).toBe("/");
+  });
+});
+
+describe("requiresOnboardingForPath", () => {
+  it("requires contact only for Market Pulse play", () => {
+    expect(requiresOnboardingForPath("/market-pulse/play")).toBe(true);
+    expect(requiresOnboardingForPath("/market-pulse/play/")).toBe(true);
+    expect(requiresOnboardingForPath("/")).toBe(false);
+    expect(requiresOnboardingForPath("/market-pulse")).toBe(false);
+    expect(requiresOnboardingForPath("/profile")).toBe(false);
+    expect(requiresOnboardingForPath("/auth/onboarding")).toBe(false);
   });
 });
 

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import authConfig from "@/auth.config";
 import { buildInvalidSessionSignOutRedirect } from "@/lib/auth/invalid-session";
+import { requiresOnboardingForPath } from "@/lib/auth/onboarding-routes";
 
 const { auth } = NextAuth(authConfig);
 
@@ -21,12 +22,10 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  if (req.auth?.user?.needsOnboarding) {
+  if (req.auth?.user?.needsOnboarding && requiresOnboardingForPath(pathname)) {
     const url = req.nextUrl.clone();
     url.pathname = "/auth/onboarding";
-    if (pathname !== "/") {
-      url.searchParams.set("callbackUrl", pathname);
-    }
+    url.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(url);
   }
 

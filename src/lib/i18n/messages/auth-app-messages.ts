@@ -100,6 +100,8 @@ export const authAppEnMessages = {
     "Taking too long? Try signing in again or return home.",
   "auth.onboarding.signInAgain": "Sign in again",
   "auth.onboarding.backHome": "Back to home",
+  "auth.onboarding.deferHint":
+    "You can complete this later. A contact number is required before you submit Market Pulse picks.",
   "auth.onboarding.finishingSetup": "Finishing setup…",
   "auth.onboarding.finishingSetupBody":
     "Your contact number is saved. Updating your session before we continue.",
@@ -789,6 +791,8 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.onboarding.stuckHint": "等太久？請重新登入或返回主頁。",
   "auth.onboarding.signInAgain": "重新登入",
   "auth.onboarding.backHome": "返回主頁",
+  "auth.onboarding.deferHint":
+    "你可稍後再完成。提交 Market Pulse 判斷前需要提供聯絡電話。",
   "auth.onboarding.finishingSetup": "正在完成設定…",
   "auth.onboarding.finishingSetupBody":
     "聯絡電話已儲存。正在更新你的工作階段，然後繼續。",
