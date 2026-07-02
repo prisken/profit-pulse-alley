@@ -431,8 +431,8 @@ On success, client navigates to `redirectPath` = builder URL for the new cycle.
 | `headline` | `"Untitled signal"` |
 | `companyName` | `"Untitled company"` |
 | `ticker` | `"TBD"` |
-| `dayIndex` | Lowest unused index in cycle (gap-fill); **multiple cards may share the same day** via distinct `sortOrder` |
-| `sortOrder` | Next slot on the target day (0 = first card that day) |
+| `dayIndex` | **Current cycle calendar day** (`getCurrentCycleDayIndex` from `startsAt` / `now`); before cycle start defaults to **1** |
+| `sortOrder` | Next free slot on that day (`nextSortOrderForDay`) — **0 = first card that day**; repeated quick-add on the same day stacks Card 1, Card 2, … |
 | `sourceDate` | HKT calendar day for that index; skips dates already used in cycle |
 | `userPrompt` | `MARKET_PULSE_DEFAULT_USER_PROMPT` (or copied from latest card in cycle) |
 | PPA | Empty / unlocked — must lock before publish |
@@ -527,6 +527,35 @@ Cycle create/edit forms (`MarketPulseCycleForm` on `/admin/market-pulse` and the
 **Common pitfall (pre-fix):** datetime-local strings were parsed with `new Date(value)` on the server (UTC on Vercel) while the admin UI displayed browser-local time — cycle saves could appear to revert or not stick. Fixed in `66b3855`.
 
 **Multiple cards per day:** Players can play all published cards for today's cycle day (`findPlayableCardsForToday`). Order: `dayIndex → sortOrder → createdAt`. Submitting one card does not lock the rest. Scoring, reveal, and leaderboard breakdowns use the same sort order.
+
+#### Builder card list — day labels vs form fields
+
+The cycle builder table **Day** column (`MarketPulseCycleBuilder.tsx`) shows labels from saved database fields only:
+
+| UI label | Source | Example |
+|----------|--------|---------|
+| `Day {N}` | `MarketPulseCard.dayIndex` (1-based cycle day) | Form **天數 / Day number** `5` → list **Day 5** |
+| `Card {M}` | `sortOrder + 1` (display is 1-based; storage is 0-based) | Form **當日順序 / Order within day** `0` → list **Card 1** |
+
+**Formatter:** `formatBuilderDayCardLabel(dayIndex, sortOrder)` in `admin-card-scheduling.ts` → ``Day ${dayIndex} — Card ${sortOrder + 1}``.
+
+**Common admin confusion (not a DB bug):** The side editor can show **Day 5 / order 0** while the table still reads **Day 1 — Card 4** when:
+
+1. **Changes are unsaved** — the table reflects committed rows; the form holds local state until **Save draft**.
+2. **Quick-add stacked cards on one day** — `suggestQuickDraftSlot()` assigns the current cycle day and the next `sortOrder` on that day, so multiple **Add card draft** / **Add rest card draft** clicks often produce **Day 1 — Card 1 … Card 4** until you change **天數** and save.
+
+**Saving scheduling in the builder:**
+
+| Action | Server handler | Notes |
+|--------|----------------|-------|
+| **Save draft** (and save-and-add/duplicate intents) | `updateMarketPulseCardDraftAction` | Persists `dayIndex` + `sortOrder`; forces `status: DRAFT` and clears `publishedAt` |
+| **Publish** | `publishMarketPulseCardAction` | Does not apply unsaved form fields — save first |
+
+After a successful save, `router.refresh()` reloads builder data; the **Day** column should match the form. Unique constraint: `@@unique([cycleId, dayIndex, sortOrder])` — duplicate day + order on the same cycle returns a validation error.
+
+**Player-facing labels** use `formatMarketPulseCardDayLabel` in `card-play-order.ts` (may omit “Card N” when only one card exists on that day). Admin builder always shows both day and card number when multiple cards share a day.
+
+**Known gap:** Published cards have no separate “save without unpublishing” path in the builder — scheduling edits require **Save draft** (which unpublishes) or editing before first publish. See [§16](#16-known-inconsistencies).
 
 #### Market rest cards (`REST`)
 
@@ -1522,6 +1551,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 8. **No migration files** — Production uses `prisma db push` in build; adopt `migrate deploy` when ready.
 9. **Legacy GameScore** — Profile may still show old arcade scores alongside swipe challenge history.
 10. **Admin MP UI** — Operational labels mostly English; enums (`OPEN`, `PUBLISHED`, `SIGNAL`, `REST`) intentionally untranslated.
+11. **Builder save on published cards** — Cycle builder **Save draft** persists scheduling via `updateMarketPulseCardDraftAction`, which sets `status: DRAFT` and clears `publishedAt`. There is no builder button that calls `updateMarketPulseCardAction` while keeping a card `PUBLISHED`; admins may see form day/order differ from the table until they save (and accept unpublish) or edit before publish.
 
 ---
 
@@ -1539,7 +1569,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | MP admin shell | `MarketPulseAdminShell.tsx`, `admin-mp-status.ts`, `MarketPulseAdminDashboard.tsx` |
 | MP admin cards | `MarketPulseCardList.tsx`, `MarketPulseCardForm.tsx`, `MarketPulseAdminCardPreview.tsx`, `admin-card-filter.ts` |
 | MP reveal/prize | `MarketPulseRevealScoringSection.tsx`, `RevealCycleButton.tsx`, `admin-reveal-status.ts`, `reveal-ppa-validation.ts`, `admin-ppa-reveal-warning.ts`, `MarketPulsePrizeReview.tsx` |
-| MP card admin | `MarketPulseCardPanel.tsx`, `admin-card-ppa-status.ts`, `admin-card-filter.ts` |
+| MP card admin | `MarketPulseCardPanel.tsx`, `admin-card-ppa-status.ts`, `admin-card-filter.ts`, `admin-card-scheduling.ts` (`formatBuilderDayCardLabel`, `suggestQuickDraftSlot`) |
 | Launch / pre-launch | `launch-config.ts`, `MarketPulseLaunchAnnouncement.tsx`, `shouldShowMarketPulseLaunchSetupUi` |
 | Launch smoke / regression | `launch-smoke.test.ts`, `launch-regression-audit.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts` |
 | Demo/seed production guards | `demo-cycle-guards.ts`, `seed-guards.ts`, `hub-data.ts` (production-safe fallback) |
@@ -1578,4 +1608,4 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 ---
 
-*Last updated: 29 Jun 2026 — Market rest cards (`REST` / `ACKNOWLEDGED`); streak-neutral scoring via `computeSignalMatchStreak`; 597 tests pass.*
+*Last updated: 1 Jul 2026 — Builder day/sortOrder list labels vs form save workflow documented; Market rest cards; 597 tests pass.*
