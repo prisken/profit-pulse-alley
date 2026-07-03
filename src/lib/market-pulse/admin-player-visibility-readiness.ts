@@ -232,7 +232,6 @@ export function evaluatePlayerVisibilityReadiness(input: {
   const startsAt = new Date(cycle.startsAt);
   const cycleRevealAt = new Date(cycle.revealAt);
   const displayDay = getCycleDisplayDay(startsAt, now);
-  const zeroBasedDay = displayDay - 1;
 
   if (cycle.status === "OPEN") {
     checks.push({
@@ -415,9 +414,7 @@ export function evaluatePlayerVisibilityReadiness(input: {
   }
 
   for (const playable of playableCards) {
-    if (
-      !cardMatchesCycleDisplayDay(playable.dayIndex, displayDay, zeroBasedDay)
-    ) {
+    if (!cardMatchesCycleDisplayDay(playable.dayIndex, displayDay)) {
       mappingIssues.push(
         `Playable card ${playable.id} does not match today's day ${displayDay} mapping.`,
       );

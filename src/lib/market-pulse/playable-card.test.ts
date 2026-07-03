@@ -139,6 +139,41 @@ describe("findPlayableCardsForToday", () => {
       ),
     ).toHaveLength(0);
   });
+
+  it("does not match prior-day cards via zero-based day index", () => {
+    const day2Morning = new Date("2026-06-02T12:00:00.000Z");
+
+    const result = findPlayableCardsForToday(
+      {
+        startsAt: CYCLE_START,
+        revealAt: CYCLE_REVEAL,
+        cards: [
+          card({ dayIndex: 1, headline: "Yesterday" }),
+          card({ dayIndex: 2, headline: "Today" }),
+        ],
+      },
+      day2Morning,
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.dayIndex).toBe(2);
+    expect(result[0]?.headline).toBe("Today");
+  });
+
+  it("returns empty when only prior-day cards are published", () => {
+    const day2Morning = new Date("2026-06-02T12:00:00.000Z");
+
+    expect(
+      findPlayableCardsForToday(
+        {
+          startsAt: CYCLE_START,
+          revealAt: CYCLE_REVEAL,
+          cards: [card({ dayIndex: 1, headline: "Yesterday only" })],
+        },
+        day2Morning,
+      ),
+    ).toHaveLength(0);
+  });
 });
 
 describe("findPlayableCardForToday", () => {

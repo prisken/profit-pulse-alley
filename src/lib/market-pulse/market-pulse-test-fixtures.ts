@@ -17,8 +17,8 @@ export const CYCLE_END = new Date("2026-01-11T00:00:00.000Z");
 export const CYCLE_REVEAL_FUTURE = new Date("2026-01-10T00:00:00.000Z");
 export const CYCLE_REVEAL_PAST = new Date("2026-01-02T00:00:00.000Z");
 
-/** Day index 2 for FIXED_NOW against CYCLE_START. */
-export const PLAYABLE_DAY_INDEX = 2;
+/** HKT cycle day index for FIXED_NOW against CYCLE_START. */
+export const PLAYABLE_DAY_INDEX = 3;
 
 /**
  * Default nullable model fields for MarketPulseCard test fixtures.

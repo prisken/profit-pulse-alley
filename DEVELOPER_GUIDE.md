@@ -14,7 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
-| **Recent `main`** | **Market rest cards** — `REST` card type + `ACKNOWLEDGED` decisions; +10 participation only; streak-neutral scoring (`computeSignalMatchStreak`); admin builder/filters; rules + i18n; **597** Vitest tests (86 files) |
+| **Recent `main`** | **Today-only playability** — `findPlayableCardsForToday()` strict HKT `dayIndex` matching; prior-day cards no longer carry over; `findPlayableCardForToday()` fallback removed; **`today-only-playability.test.ts`**; **610** Vitest tests (87 files) |
 
 ---
 
@@ -124,19 +124,20 @@ Google OAuth redirect URIs (must match exactly):
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
 
-### Verification — last run 29 Jun 2026 (597 tests)
+### Verification — last run 3 Jul 2026 (610 tests)
 
 | Check | Result |
 |-------|--------|
 | **Lint** | `npm run lint` — pass (0 errors; pre-existing warnings in legacy/admin) |
 | **Typecheck** | `npm run typecheck` — pass |
 | **Build** | `npm run build` — pass (`prisma db push && next build`) |
-| **Tests** | `npm test` — **597** Vitest tests (86 files) |
+| **Tests** | `npm test` — **610** Vitest tests (87 files) |
 | **Hub lobby chip** | `hub-lobby-state.test.ts` — `no_active_cycle` when runtime OPEN + no DB cycle; `closed` when runtime paused |
 | **Launch smoke** | `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts` |
 | **Card release (HKT)** | `hkt-time.test.ts`, `card-release-schedule.test.ts` — fixed UTC+8 math; Day 1 = `2026-07-01T01:00:00.000Z` when cycle starts `2026-06-30T16:00:00.000Z`; dual gate (derived release + `publishedAt`) |
 | **Admin cycle datetimes (HKT)** | `cycle-validation.test.ts`, `hkt-time.test.ts` — `parseHktDatetimeLocal` / `toHktDatetimeLocalValue` round-trip; TZ-independent on Vercel UTC |
 | **Multi-card play** | `play-data-multi-card.test.ts`, `playable-card.test.ts`, `score-calculation.test.ts` — same-day cards, streak order by `sortOrder` |
+| **Today-only playability** | `today-only-playability.test.ts`, `playable-card.test.ts`, `server-core.test.ts` — HKT `dayIndex` strict match; no prior-day carry-over; no cross-day fallback; submit rejects wrong-day cards |
 | **Market rest cards** | `card-type.test.ts`, `play-rest-card.test.ts`, `player-handlers.test.ts`, `score-calculation.test.ts` — `ACKNOWLEDGED` on REST; +10 only; REST skipped in `computeSignalMatchStreak`; reveal/leaderboard participation-only rows |
 | **Card localization** | `card-localization.test.ts` — zh-Hant + EN fallback; PPA stripped pre-reveal |
 | **Reveal / leaderboard multi-card** | `leaderboard-score-breakdown.test.ts`, `reveal-ppa-validation.test.ts` — duplicate `dayIndex` OK; per-card breakdown labels |
@@ -349,7 +350,7 @@ Admin UI uses a **zinc command-center** shell on both routes. Non-`ADMIN` sessio
 | `cycle-play-window` | Now is within `startsAt` … `revealAt` |
 | `today-card-exists` | A card exists for today's display day |
 | `today-card-published` | That card is `PUBLISHED` |
-| `today-card-live` | `findPlayableCardForToday()` resolves it |
+| `today-card-live` | `findPlayableCardsForToday()` / `findPlayableCardForToday()` resolves today's HKT day only |
 | `card-day-mapping` | No duplicate day index / scheduling conflict |
 | `public-launch-gate` | Public play open (info only pre-launch) |
 | `leaderboard-locked` | Expected locked state pre-reveal (info) |
@@ -507,6 +508,24 @@ Hong Kong Time is treated as **fixed UTC+8** (no DST). All scheduling uses UTC e
 1. `now >= derivedReleaseAtUtc` (9 AM HKT for the card's cycle day)
 2. `publishedAt == null || publishedAt <= now` (future manual `publishedAt` defers release; early `publishedAt` never bypasses 9 AM HKT)
 
+**Today's playable cards** (`findPlayableCardsForToday` in `playable-card.ts`) — used by `/market-pulse/play`, `/api/market-pulse/today`, and `submitMarketPulseDecision`:
+
+1. Compute current cycle day with `getCycleDayForDate(cycle.startsAt, now)` (HKT calendar days; exported as `getCurrentCycleDayIndex`).
+2. Include only cards where `scheduleDayIndexForCard(card.dayIndex) === todayDayIndex` (legacy 0-based rows normalize to 1-based).
+3. Require `status === PUBLISHED` and `isCardReleasedForPlay` (dual release gate above).
+4. Require `isCardWithinRevealWindow` (decision window still open).
+5. Sort by `dayIndex → sortOrder → createdAt`.
+6. **No carry-over:** unplayed prior-day cards are excluded on later days; before today's 9 AM HKT release, show `no_card_today` — not yesterday's card.
+7. `findPlayableCardForToday()` returns the first of today's set only (no fallback to latest released card in cycle).
+
+**Manual QA (Jul 2026 cycle start `2026-07-01 00:00 HKT`):**
+
+| Time (HKT) | Expected `/market-pulse/play` |
+|------------|-------------------------------|
+| 2026-07-01 09:05 | Day 1 card |
+| 2026-07-02 08:59 | No playable card — Day 1 must **not** appear |
+| 2026-07-02 09:00 | Day 2 card — Day 1 must **not** appear even if unplayed |
+
 Admin builder **does not** expose manual card open/reveal datetime fields in the normal workflow; legacy `publishedAt` on existing rows is still respected.
 
 #### Admin cycle dates (Starts / Ends / Reveal)
@@ -609,6 +628,7 @@ Key test files for the fast builder journey:
 | Scheduling / release | `admin-card-scheduling.test.ts`, `card-release-schedule.test.ts`, `hkt-time.test.ts` |
 | Cycle admin datetimes | `cycle-validation.test.ts`, `first-cycle-admin-guidance.test.ts` |
 | Multi-card play | `play-data-multi-card.test.ts`, `playable-card.test.ts` |
+| Today-only playability | `today-only-playability.test.ts`, `playable-card.test.ts`, `server-core.test.ts` |
 | Market rest cards | `card-type.test.ts`, `play-rest-card.test.ts`, `player-handlers.test.ts`, `score-calculation.test.ts` |
 | Card localization | `card-localization.test.ts` |
 | Play order / reveal labels | `card-play-order.test.ts`, `leaderboard-score-breakdown.test.ts` |
@@ -617,7 +637,7 @@ Key test files for the fast builder journey:
 | PPA / public privacy | `server-security.test.ts`, `admin-card-preview.test.ts` |
 | Non-admin rejection | `admin-builder-data.test.ts`, `admin-duplicate-card.test.ts`, `admin-quick-create-cycle.test.ts` |
 
-**Last CI (29 Jun 2026):** lint pass (0 errors), typecheck pass, **597 tests** (86 files), build pass.
+**Last CI (3 Jul 2026):** lint pass (0 errors), typecheck pass, **610 tests** (87 files), build pass.
 
 ### Making Market Pulse visible to players (go-live)
 
@@ -831,7 +851,7 @@ npm run dev
 | `npm run build` | **`prisma db push && next build`** (Vercel uses this) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript (`tsc --noEmit`) |
-| `npm test` | Vitest unit tests (`vitest run`) — **597 tests** (86 files) |
+| `npm test` | Vitest unit tests (`vitest run`) — **610 tests** (87 files) |
 | `npm run db:migrate` | Prisma migrate dev (when using migration files) |
 | `npm run db:push` | Push schema without migration files |
 | `npm run db:seed` | Seed **demo Market Pulse** data (dev only — see [§4.1](#41-market-pulse-demo-seed)) |
@@ -1602,10 +1622,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 - **Languages:** EN + Traditional Chinese (`ppa_locale` cookie); MP launch messages in `launch-config.ts`
 - **Data stores:** Postgres (users, Market Pulse, auth), KV (legacy theme), Markdown (blog)
-- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (597), `npm run build`
+- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (610), `npm run build`
 - **Production smoke:** [`docs/market-pulse-deploy-checklist.md`](docs/market-pulse-deploy-checklist.md) § Launch smoke test; automated suites listed in [Production smoke test](#production-smoke-test)
 - **Lint warnings:** Legacy castle-siege; TanStack Table in admin members table
 
 ---
 
-*Last updated: 1 Jul 2026 — Builder day/sortOrder list labels vs form save workflow documented; Market rest cards; 597 tests pass.*
+*Last updated: 3 Jul 2026 — Today-only HKT playability fix (`findPlayableCardsForToday` strict dayIndex; no prior-day carry-over); 610 tests pass.*
