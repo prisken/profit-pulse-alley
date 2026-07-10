@@ -27,7 +27,7 @@ import {
   computeSignalMatchStreak,
   type ScoreCalculationDecision,
 } from "@/lib/market-pulse/score-calculation";
-import { findPlayableCardsForToday } from "@/lib/market-pulse/playable-card";
+import { findPlayableCardsForToday, isCardWithinActivePlayWindow } from "@/lib/market-pulse/playable-card";
 import { isCyclePlayable } from "@/lib/market-pulse/cycle-playability";
 import {
   buildCardsOnDayCountMap,
@@ -514,6 +514,11 @@ export async function submitMarketPulseDecision(
     return { ok: false, error: "This challenge cycle has not started yet." };
   }
 
+  const revealDeadline = effectiveCardRevealAt(card, card.cycle);
+  if (now >= revealDeadline) {
+    return { ok: false, error: "The decision window for this card has closed." };
+  }
+
   const activeCycle = await getActiveMarketPulseCycle();
   if (!activeCycle || activeCycle.id !== card.cycleId) {
     return { ok: false, error: "This card is not part of the active challenge." };
@@ -527,9 +532,13 @@ export async function submitMarketPulseDecision(
     };
   }
 
-  const revealDeadline = effectiveCardRevealAt(card, card.cycle);
-  if (now >= revealDeadline) {
-    return { ok: false, error: "The decision window for this card has closed." };
+  if (
+    !isCardWithinActivePlayWindow(card, card.cycle, activeCycle.cards, now)
+  ) {
+    return {
+      ok: false,
+      error: "This card is not available for decisions right now.",
+    };
   }
 
   try {

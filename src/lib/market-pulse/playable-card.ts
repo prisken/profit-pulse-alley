@@ -89,13 +89,106 @@ export function isCardPlayableForCycleDay(
   return isCardWithinRevealWindow(card, cycle, now);
 }
 
+/** Canonical player availability instant (derived 9 AM HKT schedule + optional publishedAt deferral). */
+export function getCardAvailableAt(
+  card: Pick<MarketPulseCard, "publishedAt" | "dayIndex">,
+  cycleStartsAt: Date | string,
+): Date {
+  return getEffectiveCardReleaseAt(card, cycleStartsAt);
+}
+
+/**
+ * When the next scheduled card day begins (earliest future-day release), or null if none.
+ * Used to close the active window for the current card batch.
+ */
+export function getCardActiveWindowEnd(
+  card: Pick<MarketPulseCard, "dayIndex" | "status" | "publishedAt">,
+  cycleStartsAt: Date | string,
+  allCards: Pick<MarketPulseCard, "dayIndex" | "status" | "publishedAt">[],
+): Date | null {
+  const cardScheduleDay = scheduleDayIndexForCard(card.dayIndex);
+  let nextReleaseMs: number | null = null;
+
+  for (const other of allCards) {
+    if (other.status !== "PUBLISHED") {
+      continue;
+    }
+    const otherScheduleDay = scheduleDayIndexForCard(other.dayIndex);
+    if (otherScheduleDay <= cardScheduleDay) {
+      continue;
+    }
+    const releaseMs = getEffectiveCardReleaseAt(other, cycleStartsAt).getTime();
+    if (nextReleaseMs === null || releaseMs < nextReleaseMs) {
+      nextReleaseMs = releaseMs;
+    }
+  }
+
+  return nextReleaseMs === null ? null : new Date(nextReleaseMs);
+}
+
+/**
+ * Whether `card` is inside its active play window: released, before the next card
+ * day's release, and before reveal cutoff.
+ */
+export function isCardWithinActivePlayWindow(
+  card: MarketPulseCard,
+  cycle: Pick<MarketPulseCycle, "startsAt" | "revealAt">,
+  allCards: MarketPulseCard[],
+  now: Date,
+): boolean {
+  if (!isCardReleasedForPlay(card, cycle, now)) {
+    return false;
+  }
+
+  const windowEnd = getCardActiveWindowEnd(card, cycle.startsAt, allCards);
+  if (windowEnd !== null && now.getTime() >= windowEnd.getTime()) {
+    return false;
+  }
+
+  return isCardWithinRevealWindow(card, cycle, now);
+}
+
+/**
+ * Highest schedule day (1-based) with at least one card currently released for play.
+ * Cards remain active overnight until the next day's 9:00 AM HKT release.
+ */
+export function findActiveScheduleDayIndex(
+  cards: MarketPulseCard[],
+  cycle: Pick<MarketPulseCycle, "startsAt" | "revealAt">,
+  now: Date,
+): number | null {
+  const cycleRevealAt =
+    cycle.revealAt ?? new Date(cycle.startsAt.getTime() + 365 * MS_PER_DAY);
+  const cycleContext = { startsAt: cycle.startsAt, revealAt: cycleRevealAt };
+
+  let activeDay: number | null = null;
+
+  for (const card of cards) {
+    if (!isCardReleasedForPlay(card, cycle, now)) {
+      continue;
+    }
+    if (!isCardWithinRevealWindow(card, cycleContext, now)) {
+      continue;
+    }
+    const scheduleDay = scheduleDayIndexForCard(card.dayIndex);
+    if (activeDay === null || scheduleDay > activeDay) {
+      activeDay = scheduleDay;
+    }
+  }
+
+  return activeDay;
+}
+
 export function comparePlayableCards(a: MarketPulseCard, b: MarketPulseCard): number {
   return compareMarketPulseCardsByPlayOrder(a, b);
 }
 
 /**
- * All cards playable for the current HKT cycle day, sorted by dayIndex → sortOrder → createdAt.
- * Admin day index is 1-based (1 = first day); legacy/seed rows may use 0-based.
+ * All cards in the active schedule-day batch, sorted by dayIndex → sortOrder → createdAt.
+ *
+ * Active batch = highest schedule day with a released card at `now`. A card stays playable
+ * from its `availableAt` until the next planned card day's release (typically 09:00 HKT),
+ * including overnight gaps before the next morning release.
  */
 export function findPlayableCardsForToday(
   cycle: {
@@ -108,11 +201,15 @@ export function findPlayableCardsForToday(
   const cycleRevealAt =
     cycle.revealAt ?? new Date(cycle.startsAt.getTime() + 365 * MS_PER_DAY);
   const cycleContext = { startsAt: cycle.startsAt, revealAt: cycleRevealAt };
-  const todayDayIndex = getCycleDayForDate(cycle.startsAt, now);
+  const activeScheduleDay = findActiveScheduleDayIndex(cycle.cards, cycleContext, now);
+
+  if (activeScheduleDay === null) {
+    return [];
+  }
 
   return cycle.cards
     .filter((card) =>
-      isCardPlayableForCycleDay(card, cycleContext, todayDayIndex, now),
+      isCardPlayableForCycleDay(card, cycleContext, activeScheduleDay, now),
     )
     .sort(comparePlayableCards);
 }

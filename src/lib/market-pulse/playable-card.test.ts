@@ -140,7 +140,27 @@ describe("findPlayableCardsForToday", () => {
     ).toHaveLength(0);
   });
 
-  it("does not match prior-day cards via zero-based day index", () => {
+  it("carries prior-day cards forward until the next schedule day releases", () => {
+    const day2Morning = new Date("2026-06-02T00:59:00.000Z");
+
+    const result = findPlayableCardsForToday(
+      {
+        startsAt: CYCLE_START,
+        revealAt: CYCLE_REVEAL,
+        cards: [
+          card({ dayIndex: 1, headline: "Yesterday" }),
+          card({ dayIndex: 2, headline: "Today" }),
+        ],
+      },
+      day2Morning,
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.dayIndex).toBe(1);
+    expect(result[0]?.headline).toBe("Yesterday");
+  });
+
+  it("switches to the new schedule day once its release passes", () => {
     const day2Morning = new Date("2026-06-02T12:00:00.000Z");
 
     const result = findPlayableCardsForToday(
@@ -158,21 +178,6 @@ describe("findPlayableCardsForToday", () => {
     expect(result).toHaveLength(1);
     expect(result[0]?.dayIndex).toBe(2);
     expect(result[0]?.headline).toBe("Today");
-  });
-
-  it("returns empty when only prior-day cards are published", () => {
-    const day2Morning = new Date("2026-06-02T12:00:00.000Z");
-
-    expect(
-      findPlayableCardsForToday(
-        {
-          startsAt: CYCLE_START,
-          revealAt: CYCLE_REVEAL,
-          cards: [card({ dayIndex: 1, headline: "Yesterday only" })],
-        },
-        day2Morning,
-      ),
-    ).toHaveLength(0);
   });
 });
 

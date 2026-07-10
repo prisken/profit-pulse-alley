@@ -14,7 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
-| **Recent `main`** | **Homepage visual revamp (Jul 2026)** — premium dark terminal aesthetic; hero + **Pulse Simulator** (demo only, no API/submit); **Pipeline** (4-step game flow); **Pulse Board** widget (privacy-safe leaderboard preview); **Rewards** showcase (Ocean Park ticket + events + post-reveal PPA framing); **Today-only playability** — `findPlayableCardsForToday()` strict HKT `dayIndex` matching; **`homepage-compose.test.ts`**, **`homepage-pulse-preview.test.ts`**, **`home-market-pulse-simulator.safety.test.ts`**; **630** Vitest tests (90 files) |
+| **Recent `main`** | **Active-window playability** — cards stay playable overnight until the next 9 AM HKT release; `findActiveScheduleDayIndex`, `getCardActiveWindowEnd`, `isCardWithinActivePlayWindow` in `playable-card.ts`; **`today-only-playability.test.ts`** updated; **583** market-pulse Vitest tests |
 
 ---
 
@@ -24,7 +24,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 
 The public site centers on **Market Pulse** — a recurring multi-day investment challenge where members swipe **Bullish** or **Cautious** on daily market signal cards (or **claim participation** on **Market rest cards**), earn participation points, and compete on leaderboards until **PPA Insight** is revealed at cycle end. Supporting pillars: **fireside events**, **membership**, and **expert-led philosophy** (PPA Take).
 
-**Homepage (Jul 2026 terminal revamp):** premium dark **obsidian terminal** layout (`bg-mp-obsidian`, pulse green accents, JetBrains Mono metrics) with a **Market Pulse hero** (headline *“Read the Market Rhythm. Build Your Zero-Cost Life.”*, proof chips, launch-aware CTAs, interactive **Pulse Simulator** — clearly labeled Demo, local state only, no API/decision writes), **Pipeline** (4-step Signal → Lock In → Reveal → Reward + scoring chips + Ocean Park prize note), **Pulse Board** widget (locked / revealed / sample states — no unrevealed scores, no PPA, no email/phone), **Rewards** showcase (confirmed Ocean Park ticket per cycle winner; events; PPA framed as post-reveal), then Live Events Hub, philosophy, and final CTA. **Bilingual** copy via `ppa_locale` cookie. Blog is nav/footer only. **Game logic unchanged** — scoring, today-only playability, launch gating, PPA privacy, reveal gating, leaderboard locks.
+**Homepage (Jul 2026 terminal revamp):** premium dark **obsidian terminal** layout (`bg-mp-obsidian`, pulse green accents, JetBrains Mono metrics) with a **Market Pulse hero** (headline *“Read the Market Rhythm. Build Your Zero-Cost Life.”*, proof chips, launch-aware CTAs, interactive **Pulse Simulator** — clearly labeled Demo, local state only, no API/decision writes), **Pipeline** (4-step Signal → Lock In → Reveal → Reward + scoring chips + Ocean Park prize note), **Pulse Board** widget (locked / revealed / sample states — no unrevealed scores, no PPA, no email/phone), **Rewards** showcase (confirmed Ocean Park ticket per cycle winner; events; PPA framed as post-reveal), then Live Events Hub, philosophy, and final CTA. **Bilingual** copy via `ppa_locale` cookie. Blog is nav/footer only. **Game logic unchanged** — scoring, active-window playability, launch gating, PPA privacy, reveal gating, leaderboard locks.
 
 **Player journey UX:** Hub is a **game lobby** (cycle status chip, journey steps, prize + locked leaderboard preview). Play uses an upgraded **signal card** with Bullish/Cautious **confirmation step** before submit. Leaderboard and reveal pages use polished **locked / revealed / archive** state panels. **Scoring, launch gating, PPA privacy, and auth rules are unchanged** — see [Player journey revamp — safety unchanged](#player-journey-revamp-jun-2026--safety-unchanged).
 
@@ -137,7 +137,7 @@ Google OAuth redirect URIs (must match exactly):
 | **Card release (HKT)** | `hkt-time.test.ts`, `card-release-schedule.test.ts` — fixed UTC+8 math; Day 1 = `2026-07-01T01:00:00.000Z` when cycle starts `2026-06-30T16:00:00.000Z`; dual gate (derived release + `publishedAt`) |
 | **Admin cycle datetimes (HKT)** | `cycle-validation.test.ts`, `hkt-time.test.ts` — `parseHktDatetimeLocal` / `toHktDatetimeLocalValue` round-trip; TZ-independent on Vercel UTC |
 | **Multi-card play** | `play-data-multi-card.test.ts`, `playable-card.test.ts`, `score-calculation.test.ts` — same-day cards, streak order by `sortOrder` |
-| **Today-only playability** | `today-only-playability.test.ts`, `playable-card.test.ts`, `server-core.test.ts` — HKT `dayIndex` strict match; no prior-day carry-over; no cross-day fallback; submit rejects wrong-day cards |
+| **Active-window playability** | `today-only-playability.test.ts`, `playable-card.test.ts`, `server-core.test.ts` — seamless card windows across overnight gaps; HKT 9 AM handoff; submit rejects stale/future cards |
 | **Market rest cards** | `card-type.test.ts`, `play-rest-card.test.ts`, `player-handlers.test.ts`, `score-calculation.test.ts` — `ACKNOWLEDGED` on REST; +10 only; REST skipped in `computeSignalMatchStreak`; reveal/leaderboard participation-only rows |
 | **Card localization** | `card-localization.test.ts` — zh-Hant + EN fallback; PPA stripped pre-reveal |
 | **Reveal / leaderboard multi-card** | `leaderboard-score-breakdown.test.ts`, `reveal-ppa-validation.test.ts` — duplicate `dayIndex` OK; per-card breakdown labels |
@@ -510,20 +510,22 @@ Hong Kong Time is treated as **fixed UTC+8** (no DST). All scheduling uses UTC e
 
 **Today's playable cards** (`findPlayableCardsForToday` in `playable-card.ts`) — used by `/market-pulse/play`, `/api/market-pulse/today`, and `submitMarketPulseDecision`:
 
-1. Compute current cycle day with `getCycleDayForDate(cycle.startsAt, now)` (HKT calendar days; exported as `getCurrentCycleDayIndex`).
-2. Include only cards where `scheduleDayIndexForCard(card.dayIndex) === todayDayIndex` (legacy 0-based rows normalize to 1-based).
-3. Require `status === PUBLISHED` and `isCardReleasedForPlay` (dual release gate above).
-4. Require `isCardWithinRevealWindow` (decision window still open).
-5. Sort by `dayIndex → sortOrder → createdAt`.
-6. **No carry-over:** unplayed prior-day cards are excluded on later days; before today's 9 AM HKT release, show `no_card_today` — not yesterday's card.
-7. `findPlayableCardForToday()` returns the first of today's set only (no fallback to latest released card in cycle).
+1. Find the **active schedule day** with `findActiveScheduleDayIndex`: highest 1-based schedule day among `PUBLISHED` cards where `isCardReleasedForPlay` and `isCardWithinRevealWindow` pass at `now` (derived 9 AM HKT release + `publishedAt` deferral gate).
+2. Include only cards on that schedule day (`scheduleDayIndexForCard(card.dayIndex) === activeDay`).
+3. Require `status === PUBLISHED`, `isCardReleasedForPlay`, and `isCardWithinRevealWindow` per card.
+4. Sort by `dayIndex → sortOrder → createdAt`.
+5. **Seamless windows:** the active card batch stays playable from its `availableAt` (`getCardAvailableAt` / `getEffectiveCardReleaseAt`) until the **next** planned card day's release — including overnight before the next 9 AM HKT drop. Example: Day 10 card at 22:00 HKT Jul 10 stays active; at 08:59 HKT Jul 11 still Day 10; at 09:00 HKT Jul 11 switches to Day 11.
+6. **No future cards:** a card is never playable before its `availableAt`.
+7. **No stale cards:** `isCardWithinActivePlayWindow` + submit validation reject cards after the next day's release (`getCardActiveWindowEnd`).
+8. `findPlayableCardForToday()` returns the first card in the active batch only.
 
 **Manual QA (Jul 2026 cycle start `2026-07-01 00:00 HKT`):**
 
 | Time (HKT) | Expected `/market-pulse/play` |
 |------------|-------------------------------|
 | 2026-07-01 09:05 | Day 1 card |
-| 2026-07-02 08:59 | No playable card — Day 1 must **not** appear |
+| 2026-07-01 22:00 | Day 1 card (still active overnight) |
+| 2026-07-02 08:59 | Day 1 card — Day 2 must **not** appear yet |
 | 2026-07-02 09:00 | Day 2 card — Day 1 must **not** appear even if unplayed |
 
 Admin builder **does not** expose manual card open/reveal datetime fields in the normal workflow; legacy `publishedAt` on existing rows is still respected.
@@ -628,7 +630,7 @@ Key test files for the fast builder journey:
 | Scheduling / release | `admin-card-scheduling.test.ts`, `card-release-schedule.test.ts`, `hkt-time.test.ts` |
 | Cycle admin datetimes | `cycle-validation.test.ts`, `first-cycle-admin-guidance.test.ts` |
 | Multi-card play | `play-data-multi-card.test.ts`, `playable-card.test.ts` |
-| Today-only playability | `today-only-playability.test.ts`, `playable-card.test.ts`, `server-core.test.ts` |
+| Active-window playability | `today-only-playability.test.ts`, `playable-card.test.ts`, `server-core.test.ts` |
 | Market rest cards | `card-type.test.ts`, `play-rest-card.test.ts`, `player-handlers.test.ts`, `score-calculation.test.ts` |
 | Card localization | `card-localization.test.ts` |
 | Play order / reveal labels | `card-play-order.test.ts`, `leaderboard-score-breakdown.test.ts` |
@@ -649,9 +651,9 @@ Cards can look correct in admin but still be **hidden** on `/market-pulse/play` 
 | Cycle `OPEN` + **active** | Create/edit cycle, check “Set as active cycle” | “No active challenge…” |
 | **Date window** | `startsAt ≤ now ≤ revealAt` | “No active challenge…” or “not open right now” (expired demo cycles) |
 | Card **PUBLISHED** | **Publish** button (not just status dropdown) | “Today’s card is coming soon…” |
-| **Release time** | Automatic — 9:00 AM HKT per cycle day (`card-release-schedule.ts`) | Card not live before 9 AM HKT on its day |
+| **Release time** | Automatic — 9:00 AM HKT per cycle day (`card-release-schedule.ts`) | Card not live before 9 AM HKT on its day; prior day's card stays active overnight until the next release |
 | Legacy **`publishedAt`** | Optional; set only for manual deferral on legacy rows | Future `publishedAt` blocks even after derived release |
-| Day number | Day 1 = first HKT calendar day of cycle (1-based in admin form) | Wrong or missing card for today |
+| Active card batch | `findActiveScheduleDayIndex` in `playable-card.ts` | Wrong or missing card; overnight gap before next 9 AM HKT release |
 | **Multiple cards / day** | Add another card on same day in builder (distinct `sortOrder`) | Player sees “Card X of Y”; must play all today's cards |
 
 **Not a player gate:** PPA signal/insight/lock. Players can submit and lock decisions on published cards even when PPA is incomplete. PPA remains hidden until reveal (`reveal-access.ts`).
@@ -1621,7 +1623,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | Homepage journey | `src/app/page.tsx`, `MarketPulseHero.tsx`, `HomeMarketPulseSimulator.tsx`, `MarketPulsePipelineSection.tsx`, `HomePulseBoardWidget.tsx`, `HomeRewardsShowcase.tsx`, `homepage-pulse-preview.ts` |
 | MP visual / analytics | `MarketPulseVisualPrimitives.tsx`, `MarketPulseTrackedLink.tsx`, `analytics.ts` |
 | Admin cycle stats | `admin-cycle-stats.ts`, `admin-data.ts` (`MarketPulseAdminCycleRow` participation fields) |
-| Market Pulse domain | `server.ts`, `cycle-playability.ts`, `playable-card.ts`, `reveal-access.ts`, `admin-actions.ts`, `card-validation.ts`, `score-calculation.ts`, `card-type.ts` |
+| Market Pulse domain | `server.ts`, `cycle-playability.ts`, `playable-card.ts` (`findActiveScheduleDayIndex`, `getCardActiveWindowEnd`, `isCardWithinActivePlayWindow`), `reveal-access.ts`, `admin-actions.ts`, `card-validation.ts`, `score-calculation.ts`, `card-type.ts` |
 | Market Pulse APIs | `src/app/api/market-pulse/*`, `player-handlers.ts` |
 | Deploy checklist | `docs/market-pulse-deploy-checklist.md` |
 | Fortify (QR) | `FortifyYourFutureSurvey.tsx`, `fortify-your-future.ts`, `fortify-sales-marketing.ts` |
@@ -1644,4 +1646,4 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 ---
 
-*Last updated: 3 Jul 2026 — Today-only HKT playability fix (`findPlayableCardsForToday` strict dayIndex; no prior-day carry-over); 610 tests pass.*
+*Last updated: 10 Jul 2026 — Active-window playability (seamless overnight card windows until next 9 AM HKT release).*
