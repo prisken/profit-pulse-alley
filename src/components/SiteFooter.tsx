@@ -8,7 +8,7 @@ import { useTranslations } from "@/components/providers/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
 
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mp-pulse/80 focus-visible:ring-offset-2 focus-visible:ring-offset-mp-obsidian";
 
 const footerLinkClass =
   `flex min-h-11 items-center text-sm text-zinc-400 transition-colors hover:text-white ${focusRing}`;
@@ -220,7 +220,7 @@ function StayConnectedBlock({
           placeholder={t("footer.newsletter.placeholder")}
           value={email}
           onChange={(event) => onEmailChange(event.target.value)}
-          className={`w-full rounded-lg border border-white/15 bg-zinc-900 px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 ${focusRing}`}
+          className={`w-full rounded-lg border border-white/10 bg-mp-obsidian-panel px-3.5 py-2.5 text-sm text-white placeholder:text-mp-muted ${focusRing}`}
         />
         <button
           type="submit"
@@ -283,7 +283,7 @@ export default function SiteFooter() {
   }
 
   return (
-    <footer className="border-t border-white/10 bg-zinc-950 pb-[env(safe-area-inset-bottom,0px)] text-zinc-50">
+    <footer className="border-t border-white/[0.08] bg-mp-obsidian pb-[env(safe-area-inset-bottom,0px)] text-zinc-50">
       <div className="mx-auto w-full max-w-6xl px-[max(0.75rem,env(safe-area-inset-left))] py-8 pr-[max(0.75rem,env(safe-area-inset-right))] sm:px-[max(1.5rem,env(safe-area-inset-left))] sm:py-12 sm:pr-[max(1.5rem,env(safe-area-inset-right))] md:py-14">
         <div className="sm:hidden">
           <FooterAccordionSection title={t("footer.column.ppa")} defaultOpen>

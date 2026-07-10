@@ -4,7 +4,11 @@ import { ArrowRight, Brain, Lock, Sparkles } from "lucide-react";
 import { getServerTranslations } from "@/lib/i18n/server";
 import {
   MP_FOCUS_RING,
+  MP_HOME_SECTION,
+  MP_PRIMARY_BTN,
+  MP_PULSE_ACCENT_BADGE,
   MP_SURFACE_STYLES,
+  MP_TICKER_TEXT,
   mergeMpClasses,
 } from "@/lib/market-pulse/visual-primitives";
 
@@ -20,15 +24,10 @@ export default async function MarketPulsePpaInsightSection() {
 
   return (
     <section
-      className="relative overflow-hidden border-t border-sky-500/10 bg-gradient-to-b from-zinc-900/80 via-zinc-950 to-zinc-950 px-3 py-8 sm:px-6 sm:py-12 md:py-14"
+      className={mergeMpClasses(MP_HOME_SECTION, "border-sky-500/10")}
       aria-labelledby="ppa-insight-heading"
     >
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_20%_0%,rgba(56,189,248,0.08),transparent_55%),radial-gradient(ellipse_60%_40%_at_90%_80%,rgba(16,185,129,0.08),transparent_50%)]"
-        aria-hidden="true"
-      />
-
-      <div className="relative mx-auto w-full max-w-6xl">
+      <div className="mx-auto w-full max-w-6xl">
         <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-200">
@@ -42,7 +41,7 @@ export default async function MarketPulsePpaInsightSection() {
             >
               {t("home.ppaInsight.title")}
             </h2>
-            <p className="mt-3 max-w-xl text-pretty text-sm leading-relaxed text-zinc-300 sm:text-base">
+            <p className="mt-3 max-w-xl text-pretty text-sm leading-relaxed text-mp-muted sm:text-base">
               {t("home.ppaInsight.body")}
             </p>
 
@@ -51,7 +50,8 @@ export default async function MarketPulsePpaInsightSection() {
                 href="/market-pulse"
                 aria-label={t("home.ppaInsight.cta.exploreAria")}
                 className={mergeMpClasses(
-                  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-bold text-zinc-950 transition-colors hover:bg-emerald-300 sm:px-6",
+                  MP_PRIMARY_BTN,
+                  "min-h-11 px-5 py-2.5 text-sm sm:px-6",
                   MP_FOCUS_RING,
                 )}
               >
@@ -74,7 +74,7 @@ export default async function MarketPulsePpaInsightSection() {
           <div
             className={mergeMpClasses(
               MP_SURFACE_STYLES.outline,
-              "border-sky-500/20 bg-zinc-950/70 p-4 sm:p-6",
+              "border-sky-500/20 bg-mp-obsidian-panel p-4 sm:p-6",
             )}
             role="img"
             aria-label={t("home.ppaInsight.comparison.ariaLabel")}
@@ -87,11 +87,11 @@ export default async function MarketPulsePpaInsightSection() {
             </div>
 
             <div className="mt-4 grid gap-3 sm:gap-4">
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-300/80 sm:text-xs">
+              <div className={`rounded-xl px-4 py-3 ${MP_PULSE_ACCENT_BADGE}`}>
+                <p className={`text-mp-pulse/80 ${MP_TICKER_TEXT}`}>
                   {t("home.ppaInsight.comparison.yourCallLabel")}
                 </p>
-                <p className="mt-1 text-base font-bold text-emerald-200 sm:text-lg">
+                <p className="mt-1 text-base font-bold text-mp-pulse sm:text-lg">
                   {t("home.ppaInsight.comparison.yourCallValue")}
                 </p>
               </div>

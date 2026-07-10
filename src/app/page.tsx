@@ -1,9 +1,9 @@
 import FinalCtaSection from "@/components/home/FinalCtaSection";
 import LiveEventsHubSection from "@/components/home/LiveEventsHubSection";
+import HomePulseBoardWidget from "@/components/home/HomePulseBoardWidget";
+import HomeRewardsShowcase from "@/components/home/HomeRewardsShowcase";
 import MarketPulseHero from "@/components/home/MarketPulseHero";
-import MarketPulseCycleLoopSection from "@/components/home/MarketPulseCycleLoopSection";
-import MarketPulseHowItWorksSection from "@/components/home/MarketPulseHowItWorksSection";
-import MarketPulsePpaInsightSection from "@/components/home/MarketPulsePpaInsightSection";
+import MarketPulsePipelineSection from "@/components/home/MarketPulsePipelineSection";
 import PhilosophySection from "@/components/home/PhilosophySection";
 import { getPastEventsShowcase } from "@/lib/events/home-events-hub";
 import { getServerTranslations } from "@/lib/i18n/server";
@@ -17,11 +17,11 @@ export default async function Home() {
       : t("home.events.upcoming.salesMarketing.title");
 
   return (
-    <main className="flex min-w-0 flex-col overflow-x-hidden bg-zinc-950 text-zinc-50">
+    <main className="flex min-w-0 flex-col overflow-x-hidden bg-mp-obsidian text-white">
       <MarketPulseHero />
-      <MarketPulseHowItWorksSection />
-      <MarketPulseCycleLoopSection />
-      <MarketPulsePpaInsightSection />
+      <MarketPulsePipelineSection />
+      <HomePulseBoardWidget />
+      <HomeRewardsShowcase />
       <LiveEventsHubSection
         upcomingEvent={{
           kind: "event",

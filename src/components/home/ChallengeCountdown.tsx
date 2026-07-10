@@ -6,6 +6,12 @@ import { Clock } from "lucide-react";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { getHomeHeroCountdown } from "@/lib/market-pulse/challenge-cycle";
 import { isBeforePublicLaunch } from "@/lib/market-pulse/launch-config";
+import {
+  MP_METRIC_TEXT,
+  MP_PULSE_TEXT_SOFT,
+  MP_TERMINAL_PANEL,
+  MP_TICKER_TEXT,
+} from "@/lib/market-pulse/visual-primitives";
 import type { ChallengeCountdown } from "@/lib/market-pulse/types";
 
 function padUnit(value: number): string {
@@ -17,11 +23,17 @@ function CountdownUnit({
   value,
 }: Readonly<{ label: string; value: number }>) {
   return (
-    <div className="flex min-w-[2.75rem] flex-col items-center rounded-lg border border-white/10 bg-zinc-950/70 px-1.5 py-1.5 sm:min-w-[3.5rem] sm:rounded-xl sm:px-2.5 sm:py-2.5 md:min-w-[4.25rem] md:px-3 md:py-3">
-      <span className="text-lg font-bold tabular-nums tracking-tight text-white sm:text-2xl md:text-3xl">
+    <div
+      className={`flex min-w-[2.75rem] flex-col items-center px-1.5 py-1.5 sm:min-w-[3.5rem] sm:px-2.5 sm:py-2.5 md:min-w-[4.25rem] md:px-3 md:py-3 ${MP_TERMINAL_PANEL}`}
+    >
+      <span
+        className={`text-lg font-bold text-white sm:text-2xl md:text-3xl ${MP_METRIC_TEXT}`}
+      >
         {padUnit(value)}
       </span>
-      <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-400 sm:text-[11px]">
+      <span
+        className={`mt-0.5 text-[10px] font-medium uppercase tracking-wider text-mp-muted sm:text-[11px] ${MP_TICKER_TEXT}`}
+      >
         {label}
       </span>
     </div>
@@ -53,7 +65,7 @@ export default function ChallengeCountdown({
 
   return (
     <div className={`space-y-2 sm:space-y-2.5 ${className}`}>
-      <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.14em] text-emerald-300/90 sm:text-xs sm:tracking-[0.16em]">
+      <div className={`flex items-center gap-2 ${MP_TICKER_TEXT} ${MP_PULSE_TEXT_SOFT}`}>
         <Clock className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden="true" />
         <span>{opensIn ? t("home.countdown.opensIn") : t("home.countdown.cycleEndsIn")}</span>
       </div>

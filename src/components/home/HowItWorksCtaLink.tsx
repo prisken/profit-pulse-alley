@@ -8,6 +8,7 @@ import {
 } from "@/lib/market-pulse/analytics";
 import {
   MP_FOCUS_RING,
+  MP_PRIMARY_BTN,
   mergeMpClasses,
 } from "@/lib/market-pulse/visual-primitives";
 
@@ -31,7 +32,8 @@ export default function HowItWorksCtaLink({
       event={MARKET_PULSE_ANALYTICS_EVENTS.how_it_works_cta_clicked}
       payload={{ surface: "home", status, cta: "play_today" }}
       className={mergeMpClasses(
-        "inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 py-2.5 text-balance text-sm font-bold text-zinc-950 shadow-md shadow-emerald-900/30 transition-colors hover:bg-emerald-300 sm:min-h-12 sm:px-8 sm:text-base",
+        MP_PRIMARY_BTN,
+        "min-h-11 max-w-full px-6 py-2.5 text-balance text-sm sm:min-h-12 sm:px-8 sm:text-base",
         MP_FOCUS_RING,
       )}
     >

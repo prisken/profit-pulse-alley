@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, TrendingUp } from "lucide-react";
 
-import HomeHeroSignalPreview from "@/components/home/HomeHeroSignalPreview";
+import HomeMarketPulseSimulator from "@/components/home/HomeMarketPulseSimulator";
 import MarketPulseLogo from "@/components/market-pulse/MarketPulseLogo";
 import MarketPulseTrackedLink from "@/components/market-pulse/MarketPulseTrackedLink";
 import {
@@ -11,10 +11,10 @@ import {
   MarketPulseProofChip,
   MarketPulseStatusChip,
   MP_FOCUS_RING,
+  MP_PRIMARY_BTN,
   mergeMpClasses,
 } from "@/components/market-pulse/MarketPulseVisualPrimitives";
 import { useTranslations } from "@/components/providers/LocaleProvider";
-import { getHomeHeroCountdown } from "@/lib/market-pulse/challenge-cycle";
 import { MARKET_PULSE_ANALYTICS_EVENTS } from "@/lib/market-pulse/analytics";
 import { isBeforePublicLaunch } from "@/lib/market-pulse/launch-config";
 
@@ -34,7 +34,6 @@ const PROOF_VARIANTS = [
 
 export default function MarketPulseHero() {
   const { t } = useTranslations();
-  const initialCountdown = getHomeHeroCountdown();
   const preLaunch = isBeforePublicLaunch();
 
   const primaryHref = preLaunch ? "/market-pulse" : "/market-pulse/play";
@@ -49,14 +48,14 @@ export default function MarketPulseHero() {
 
   return (
     <MarketPulseGlowBackground
-      accent="dual"
+      accent="neutral"
       showGrid
-      className="px-3 py-8 sm:px-6 sm:py-14 lg:py-16"
+      className="px-3 py-6 sm:px-6 sm:py-10 lg:py-12"
       innerClassName="mx-auto w-full max-w-6xl"
     >
       <section aria-labelledby="market-pulse-heading">
-        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-12">
-          <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+        <div className="grid min-w-0 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-10">
+          <div className="flex min-w-0 flex-col items-center text-center lg:items-start lg:text-left">
             <MarketPulseStatusChip
               variant={preLaunch ? "preLaunch" : "live"}
               label={preLaunch ? t("home.hero.badgePreLaunch") : t("home.hero.badgeLive")}
@@ -65,24 +64,24 @@ export default function MarketPulseHero() {
               className="motion-reduce:[&_span]:animate-none"
             />
 
-            <div className="mt-4 sm:mt-5">
+            <div className="mt-3 sm:mt-4">
               <MarketPulseLogo
                 variant="header"
                 priority
-                className="mx-auto h-8 w-auto sm:h-9 lg:mx-0"
+                className="mx-auto h-7 w-auto sm:h-8 lg:mx-0"
               />
               <h1
                 id="market-pulse-heading"
-                className="mt-3 text-balance text-2xl font-bold leading-tight tracking-tight text-white sm:mt-4 sm:text-3xl md:text-4xl lg:text-[2.5rem] lg:leading-[1.15]"
+                className="mt-2.5 text-balance text-2xl font-bold leading-tight tracking-tight text-white sm:mt-3 sm:text-3xl md:text-[2rem] lg:text-[2.25rem] lg:leading-[1.15]"
               >
                 {t("home.hero.headline")}
               </h1>
-              <p className="mx-auto mt-3 max-w-xl text-pretty text-sm leading-relaxed text-zinc-300 sm:text-base md:text-lg lg:mx-0">
+              <p className="mx-auto mt-2.5 max-w-lg text-pretty text-sm leading-relaxed text-mp-muted sm:text-base lg:mx-0">
                 {t("home.hero.subheadline")}
               </p>
             </div>
 
-            <div className="mt-5 flex w-full flex-col gap-2.5 sm:mt-6 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start">
+            <div className="mt-4 flex w-full flex-col gap-2 sm:mt-5 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start">
               <MarketPulseTrackedLink
                 href={primaryHref}
                 aria-label={primaryAria}
@@ -93,7 +92,8 @@ export default function MarketPulseHero() {
                   status: heroStatus,
                 }}
                 className={mergeMpClasses(
-                  "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-emerald-400 px-6 py-3 text-base font-bold text-zinc-950 shadow-lg shadow-emerald-900/40 transition-colors hover:bg-emerald-300 active:bg-emerald-500 sm:w-auto sm:min-w-[12rem] sm:px-8",
+                  MP_PRIMARY_BTN,
+                  "min-h-12 w-full px-6 py-3 text-base sm:w-auto sm:min-w-[12rem] sm:px-8",
                   MP_FOCUS_RING,
                 )}
               >
@@ -101,10 +101,10 @@ export default function MarketPulseHero() {
                 <ArrowRight className="h-5 w-5" aria-hidden="true" />
               </MarketPulseTrackedLink>
               <Link
-                href="/market-pulse/rules"
+                href="/market-pulse/leaderboard"
                 aria-label={t("home.hero.ctaSecondaryAria")}
                 className={mergeMpClasses(
-                  "inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/20 bg-white/5 px-6 py-3 text-base font-semibold text-zinc-100 transition-colors hover:border-white/30 hover:bg-white/10 sm:w-auto sm:px-8",
+                  "inline-flex min-h-12 w-full items-center justify-center rounded-full border border-white/10 bg-mp-obsidian-panel px-6 py-3 text-base font-semibold text-zinc-100 transition-colors hover:border-white/15 hover:bg-mp-obsidian-elevated sm:w-auto sm:px-8",
                   MP_FOCUS_RING,
                 )}
               >
@@ -112,7 +112,7 @@ export default function MarketPulseHero() {
               </Link>
             </div>
 
-            <ul className="mt-5 flex max-w-xl flex-wrap justify-center gap-2 sm:mt-6 lg:justify-start">
+            <ul className="mt-4 flex max-w-lg flex-wrap justify-center gap-1.5 sm:mt-5 lg:justify-start">
               {PROOF_CHIP_KEYS.map((key, index) => (
                 <li key={key} className="max-w-full">
                   <MarketPulseProofChip
@@ -124,7 +124,7 @@ export default function MarketPulseHero() {
             </ul>
           </div>
 
-          <HomeHeroSignalPreview initialCountdown={initialCountdown} />
+          <HomeMarketPulseSimulator />
         </div>
       </section>
     </MarketPulseGlowBackground>

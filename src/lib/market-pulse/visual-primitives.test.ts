@@ -17,11 +17,11 @@ describe("visual-primitives", () => {
   it("defines surface variants with glass and prize styles", () => {
     expect(MP_SURFACE_STYLES.glass).toContain("backdrop-blur");
     expect(MP_SURFACE_STYLES.prize).toContain("amber");
-    expect(MP_SURFACE_STYLES.elevated).toContain("emerald");
+    expect(MP_SURFACE_STYLES.elevated).toContain("mp-obsidian-elevated");
   });
 
   it("maps status chip variants including live and locked", () => {
-    expect(MP_STATUS_CHIP_STYLES.live.container).toContain("emerald");
+    expect(MP_STATUS_CHIP_STYLES.live.container).toContain("mp-pulse");
     expect(MP_STATUS_CHIP_STYLES.locked.container).toContain("amber");
     expect(MP_STATUS_CHIP_STYLES.revealed.container).toContain("sky");
   });

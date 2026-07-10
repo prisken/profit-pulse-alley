@@ -31,8 +31,7 @@ export default function HomeHeroSignalPreview({
       <MarketPulseSurface
         variant="glass"
         density="compact"
-        showOrbs
-        className="border-emerald-500/15 shadow-2xl shadow-black/40"
+        className="border-mp-pulse/15 shadow-xl shadow-black/30"
       >
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -53,7 +52,7 @@ export default function HomeHeroSignalPreview({
             <p className="mt-1.5 text-balance text-sm font-bold leading-snug text-white sm:text-base">
               {t("home.hero.preview.headline")}
             </p>
-            <p className="mt-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="mt-3 text-[11px] font-semibold uppercase tracking-wider text-mp-muted">
               {t("home.hero.preview.yourCall")}
             </p>
             <MarketPulseDecisionPreviewPair
@@ -72,7 +71,7 @@ export default function HomeHeroSignalPreview({
           </div>
 
           <div>
-            <div className="mb-2 flex items-center gap-1.5 text-emerald-300/90">
+            <div className="mb-2 flex items-center gap-1.5 text-mp-pulse/90">
               <Trophy className="h-4 w-4 shrink-0" aria-hidden="true" />
               <p className="text-xs font-semibold text-white sm:text-sm">
                 {t("home.hero.preview.leaderboard")}
@@ -92,7 +91,7 @@ function StatusModule({ countdown }: Readonly<{ countdown: ReactNode }>) {
   const { t } = useTranslations();
 
   return (
-    <div className="rounded-xl border border-white/10 bg-zinc-950/50 px-3 py-3 sm:px-4 sm:py-3.5">
+    <div className="rounded-xl border border-white/[0.08] bg-mp-obsidian-panel px-3 py-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] sm:px-4 sm:py-3.5">
       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
         {t("home.hero.preview.statusLabel")}
       </p>

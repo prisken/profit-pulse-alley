@@ -8,12 +8,14 @@ import {
 } from "@/lib/i18n/messages/market-pulse-messages";
 import { MARKET_PULSE_LAUNCH_MESSAGES } from "@/lib/market-pulse/launch-config";
 
+const BANNED_DEMO_PATTERN = /\bdemo\b/i;
+
 const BANNED_PUBLIC_COPY = [
   /launching soon/i,
   /coming soon/i,
   /\bpre-launch\b/i,
   /admin test/i,
-  /\bdemo\b/i,
+  BANNED_DEMO_PATTERN,
   /\bseed\b/i,
   /\bplaceholder\b/i,
   /\bdevelopment\b/i,
@@ -59,16 +61,51 @@ const REQUIRED_SCORING_COPY_KEYS = [
 function isMarketPulseHomeKey(key: string): boolean {
   return (
     key.startsWith("home.hero.") ||
-    key.startsWith("home.howItWorks.") ||
+    key.startsWith("home.pipeline.") ||
+    key.startsWith("home.pulseBoard.") ||
+    key.startsWith("home.rewards.") ||
     key.startsWith("home.finalCta.") ||
     key.startsWith("home.countdown.") ||
-    key.startsWith("home.cycleLoop.") ||
     key.startsWith("home.ppaInsight.") ||
     key.startsWith("home.playLearnWin.prize.") ||
     key.startsWith("announcement.") ||
     key.startsWith("legal.contest.prizes")
   );
 }
+
+function isSimulatorHomeKey(key: string): boolean {
+  return key.startsWith("home.hero.simulator.");
+}
+
+function matchesBannedPublicCopy(key: string, value: string): boolean {
+  for (const pattern of BANNED_PUBLIC_COPY) {
+    if (pattern === BANNED_DEMO_PATTERN && isSimulatorHomeKey(key)) {
+      continue;
+    }
+    if (pattern.test(value)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const REQUIRED_HOMEPAGE_COPY_KEYS = [
+  "home.pipeline.step1.body",
+  "home.pipeline.step4.body",
+  "home.pipeline.prize.body",
+  "home.pulseBoard.locked.message",
+  "home.pulseBoard.sample.badge",
+  "home.pulseBoard.sample.note",
+  "home.rewards.prize.body",
+  "home.rewards.ppa.lockedNote",
+  "home.finalCta.exploreHub",
+] as const;
+
+const REMOVED_HOMEPAGE_COPY_KEYS = [
+  "home.howItWorks.title",
+  "home.cycleLoop.title",
+  "home.finalCta.playGuest",
+] as const;
 
 function pickMarketPulseHomeMessages(
   source: Record<string, string>,
@@ -97,11 +134,8 @@ describe("public Market Pulse production copy", () => {
       const offenders: string[] = [];
 
       for (const [key, value] of Object.entries(messages)) {
-        for (const pattern of BANNED_PUBLIC_COPY) {
-          if (pattern.test(value)) {
-            offenders.push(`${key}: ${value}`);
-            break;
-          }
+        if (matchesBannedPublicCopy(key, value)) {
+          offenders.push(`${key}: ${value}`);
         }
       }
 
@@ -109,10 +143,58 @@ describe("public Market Pulse production copy", () => {
     });
   }
 
+  it("keeps homepage simulator copy clearly labeled and non-submitting", () => {
+    expect(enMessages["home.hero.simulator.title"]).toMatch(/simulator/i);
+    expect(enMessages["home.hero.simulator.badgeDemo"]).toMatch(/demo/i);
+    expect(enMessages["home.hero.simulator.feedbackLocked"]).toMatch(
+      /demo stance locked/i,
+    );
+    expect(enMessages["home.hero.simulator.disclaimer"]).toMatch(
+      /not saved|not scored/i,
+    );
+    expect(zhHantMessages["home.hero.simulator.disclaimer"]).toMatch(
+      /不會儲存|不會計分/,
+    );
+  });
+
+  it("keeps revamp homepage copy keys present in EN and zh-Hant", () => {
+    for (const key of REQUIRED_HOMEPAGE_COPY_KEYS) {
+      expect(enMessages[key]).toBeTruthy();
+      expect(zhHantMessages[key]).toBeTruthy();
+    }
+  });
+
+  it("removes deprecated homepage section copy keys", () => {
+    for (const key of REMOVED_HOMEPAGE_COPY_KEYS) {
+      expect(enMessages).not.toHaveProperty(key);
+      expect(zhHantMessages).not.toHaveProperty(key);
+    }
+  });
+
+  it("keeps pulse board privacy copy for locked and sample states", () => {
+    expect(enMessages["home.pulseBoard.locked.message"]).toMatch(/reveal/i);
+    expect(enMessages["home.pulseBoard.sample.badge"]).toMatch(/sample/i);
+    expect(enMessages["home.pulseBoard.sample.note"]).toMatch(/not live/i);
+    expect(enMessages["home.pulseBoard.sample.player1"]).toMatch(/sample/i);
+    expect(zhHantMessages["home.pulseBoard.sample.player1"]).toMatch(/示範/);
+    expect(zhHantMessages["home.pulseBoard.locked.message"]).toMatch(/公布/);
+  });
+
+  it("describes PPA as post-reveal without exposing insight content on homepage", () => {
+    expect(enMessages["home.rewards.ppa.lockedNote"]).toMatch(/unlock/i);
+    expect(enMessages["home.rewards.ppa.body"]).toMatch(/after reveal/i);
+    expect(enMessages["home.rewards.ppa.body"]).not.toMatch(
+      /momentum|risk|valuation|bullish|cautious/i,
+    );
+    expect(zhHantMessages["home.rewards.ppa.lockedNote"]).toMatch(/解鎖/);
+  });
+
   it("keeps One Ocean Park ticket prize copy in EN and zh-Hant", () => {
     expect(marketPulseEnMessages["mp.prize.heading"]).toBeTruthy();
-    expect(enMessages["home.cycleLoop.prize.body"]).toContain("One Ocean Park ticket");
+    expect(enMessages["home.pipeline.prize.body"]).toContain("One Ocean Park ticket");
+    expect(enMessages["home.rewards.prize.body"]).toContain("One Ocean Park ticket");
     expect(zhHantMessages["home.playLearnWin.prize.text"]).toContain("海洋公園");
+    expect(zhHantMessages["home.rewards.prize.body"]).toContain("海洋公園");
     expect(MARKET_PULSE_LAUNCH_MESSAGES.en.prize).toContain("One Ocean Park ticket");
     expect(MARKET_PULSE_LAUNCH_MESSAGES["zh-HK"].prize).toContain("海洋公園");
   });
@@ -147,7 +229,7 @@ describe("public Market Pulse production copy", () => {
       expect(marketPulseZhHantMessages[key]).toBeTruthy();
     }
 
-    expect(enMessages["home.cycleLoop.scoring.rest"]).toMatch(/rest card/i);
-    expect(zhHantMessages["home.cycleLoop.scoring.rest"]).toMatch(/休息卡/);
+    expect(enMessages["home.pipeline.scoring.rest"]).toMatch(/rest card/i);
+    expect(zhHantMessages["home.pipeline.scoring.rest"]).toMatch(/休息卡/);
   });
 });

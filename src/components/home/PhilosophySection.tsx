@@ -3,7 +3,7 @@ import { Layers, Shield, TrendingUp, type LucideIcon } from "lucide-react";
 
 import { getExpertsShowcase } from "@/lib/home/proof-of-concept";
 import { getServerTranslations } from "@/lib/i18n/server";
-import { mergeMpClasses } from "@/lib/market-pulse/visual-primitives";
+import { MP_HOME_SECTION, MP_PULSE_ACCENT_ICON, MP_TERMINAL_PANEL, mergeMpClasses } from "@/lib/market-pulse/visual-primitives";
 
 const PILLARS = [
   {
@@ -30,7 +30,7 @@ const PILLARS = [
 ] as const;
 
 const accentStyles = {
-  emerald: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
+  emerald: MP_PULSE_ACCENT_ICON,
   amber: "border-amber-500/25 bg-amber-500/10 text-amber-300",
   sky: "border-sky-500/25 bg-sky-500/10 text-sky-300",
 } as const;
@@ -48,7 +48,7 @@ function PhilosophyPillar({
 }>) {
   return (
     <li>
-      <article className="flex h-full flex-col rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:rounded-2xl sm:p-5">
+      <article className={mergeMpClasses("flex h-full flex-col p-4 sm:p-5", MP_TERMINAL_PANEL)}>
         <div
           className={mergeMpClasses(
             "flex h-10 w-10 items-center justify-center rounded-lg border sm:h-11 sm:w-11 sm:rounded-xl",
@@ -60,7 +60,7 @@ function PhilosophyPillar({
         <h3 className="mt-3 text-base font-semibold text-white sm:mt-4 sm:text-lg">
           {title}
         </h3>
-        <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{body}</p>
+        <p className="mt-1.5 text-sm leading-relaxed text-mp-muted">{body}</p>
       </article>
     </li>
   );
@@ -73,18 +73,18 @@ export default async function PhilosophySection() {
   return (
     <section
       id="philosophy"
-      className="border-t border-white/10 bg-zinc-950 px-3 py-8 sm:px-6 sm:py-12 md:py-14"
+      className={MP_HOME_SECTION}
       aria-labelledby="philosophy-heading"
     >
       <div className="mx-auto w-full max-w-6xl">
         <header className="mx-auto max-w-3xl text-center">
           <h2
             id="philosophy-heading"
-            className="text-xl font-bold tracking-tight text-white sm:text-3xl"
+            className="text-xl font-bold tracking-tight text-white sm:text-2xl"
           >
             {t("home.philosophy.heading")}
           </h2>
-          <p className="mt-3 text-pretty text-sm leading-relaxed text-zinc-400 sm:text-base">
+          <p className="mt-2 text-pretty text-sm text-mp-muted sm:text-base">
             {t("home.philosophy.intro")}
           </p>
         </header>

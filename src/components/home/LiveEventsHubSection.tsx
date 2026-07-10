@@ -5,8 +5,9 @@ import { Calendar, MapPin, Users } from "lucide-react";
 import type { PastEventShowcase } from "@/lib/events/home-events-hub";
 import { getServerTranslations } from "@/lib/i18n/server";
 
-const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900";
+import { MP_FOCUS_RING, MP_HOME_SECTION, MP_PRIMARY_BTN, MP_TERMINAL_PANEL, MP_TICKER_TEXT, mergeMpClasses } from "@/lib/market-pulse/visual-primitives";
+
+const focusRing = MP_FOCUS_RING;
 
 export type LiveUpcomingEvent =
   | {
@@ -53,12 +54,12 @@ export default async function LiveEventsHubSection({
   return (
     <section
       id="live-events-hub"
-      className="border-t border-white/10 bg-zinc-950 px-3 py-8 sm:px-6 sm:py-12 md:py-14"
+      className={MP_HOME_SECTION}
       aria-labelledby="live-events-heading"
     >
       <div className="mx-auto w-full max-w-6xl">
         <header className="max-w-2xl">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500 sm:text-xs sm:tracking-[0.18em]">
+          <p className={mergeMpClasses(MP_TICKER_TEXT, "text-zinc-500")}>
             {t("home.events.eyebrow")}
           </p>
           <h2
@@ -73,7 +74,7 @@ export default async function LiveEventsHubSection({
         </header>
 
         <article
-          className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/60 shadow-md sm:mt-8 sm:rounded-2xl sm:shadow-lg"
+          className={`mt-5 overflow-hidden sm:mt-8 ${MP_TERMINAL_PANEL}`}
           aria-labelledby="upcoming-fireside-heading"
         >
           <div className="grid gap-0 md:grid-cols-2 md:gap-0">
@@ -141,7 +142,11 @@ export default async function LiveEventsHubSection({
                     ? upcomingEvent.registerHref
                     : upcomingEvent.registerHref
                 }
-                className={`mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-white/20 bg-white/95 px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200 sm:mt-6 sm:w-auto sm:border-0 sm:bg-white sm:px-8 sm:py-3.5 ${focusRing}`}
+                className={mergeMpClasses(
+                  MP_PRIMARY_BTN,
+                  "mt-4 min-h-11 w-full px-5 py-2.5 text-sm sm:mt-6 sm:w-auto sm:px-8",
+                  focusRing,
+                )}
               >
                 {ctaLabel}
               </Link>
@@ -175,12 +180,15 @@ export default async function LiveEventsHubSection({
                   {event.archiveHref ? (
                     <Link
                       href={event.archiveHref}
-                      className={`group flex h-full flex-col rounded-xl border border-white/10 bg-zinc-950/60 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/30 hover:bg-zinc-950 hover:shadow-lg hover:shadow-amber-950/20 sm:rounded-2xl sm:p-6 ${focusRing}`}
+                      className={mergeMpClasses(
+                        "group flex h-full flex-col rounded-xl border border-white/10 bg-mp-obsidian-panel p-4 transition-colors hover:border-white/15 hover:bg-mp-obsidian-elevated motion-safe:hover:-translate-y-0.5 motion-reduce:transform-none sm:rounded-2xl sm:p-6",
+                        focusRing,
+                      )}
                     >
                       {cardBody}
                     </Link>
                   ) : (
-                    <article className="flex h-full flex-col rounded-xl border border-white/10 bg-zinc-950/60 p-4 sm:rounded-2xl sm:p-6">
+                    <article className={mergeMpClasses("flex h-full flex-col rounded-xl border border-white/10 bg-mp-obsidian-panel p-4 sm:rounded-2xl sm:p-6", MP_TERMINAL_PANEL)}>
                       {cardBody}
                     </article>
                   )}

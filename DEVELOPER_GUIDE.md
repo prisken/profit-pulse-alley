@@ -14,7 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
-| **Recent `main`** | **Today-only playability** — `findPlayableCardsForToday()` strict HKT `dayIndex` matching; prior-day cards no longer carry over; `findPlayableCardForToday()` fallback removed; **`today-only-playability.test.ts`**; **610** Vitest tests (87 files) |
+| **Recent `main`** | **Homepage visual revamp (Jul 2026)** — premium dark terminal aesthetic; hero + **Pulse Simulator** (demo only, no API/submit); **Pipeline** (4-step game flow); **Pulse Board** widget (privacy-safe leaderboard preview); **Rewards** showcase (Ocean Park ticket + events + post-reveal PPA framing); **Today-only playability** — `findPlayableCardsForToday()` strict HKT `dayIndex` matching; **`homepage-compose.test.ts`**, **`homepage-pulse-preview.test.ts`**, **`home-market-pulse-simulator.safety.test.ts`**; **630** Vitest tests (90 files) |
 
 ---
 
@@ -24,7 +24,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 
 The public site centers on **Market Pulse** — a recurring multi-day investment challenge where members swipe **Bullish** or **Cautious** on daily market signal cards (or **claim participation** on **Market rest cards**), earn participation points, and compete on leaderboards until **PPA Insight** is revealed at cycle end. Supporting pillars: **fireside events**, **membership**, and **expert-led philosophy** (PPA Take).
 
-**Homepage (Jun 2026 player journey revamp):** visual-first dark zinc layout with a **Market Pulse hero** (decorative signal preview, proof chips, launch-aware CTAs), **How it works**, **cycle loop / scoring explainer**, **PPA Insight teaser** (locked sample — no live PPA data), then events, philosophy, and final CTA. **Bilingual** copy via `ppa_locale` cookie. Blog is nav/footer only.
+**Homepage (Jul 2026 terminal revamp):** premium dark **obsidian terminal** layout (`bg-mp-obsidian`, pulse green accents, JetBrains Mono metrics) with a **Market Pulse hero** (headline *“Read the Market Rhythm. Build Your Zero-Cost Life.”*, proof chips, launch-aware CTAs, interactive **Pulse Simulator** — clearly labeled Demo, local state only, no API/decision writes), **Pipeline** (4-step Signal → Lock In → Reveal → Reward + scoring chips + Ocean Park prize note), **Pulse Board** widget (locked / revealed / sample states — no unrevealed scores, no PPA, no email/phone), **Rewards** showcase (confirmed Ocean Park ticket per cycle winner; events; PPA framed as post-reveal), then Live Events Hub, philosophy, and final CTA. **Bilingual** copy via `ppa_locale` cookie. Blog is nav/footer only. **Game logic unchanged** — scoring, today-only playability, launch gating, PPA privacy, reveal gating, leaderboard locks.
 
 **Player journey UX:** Hub is a **game lobby** (cycle status chip, journey steps, prize + locked leaderboard preview). Play uses an upgraded **signal card** with Bullish/Cautious **confirmation step** before submit. Leaderboard and reveal pages use polished **locked / revealed / archive** state panels. **Scoring, launch gating, PPA privacy, and auth rules are unchanged** — see [Player journey revamp — safety unchanged](#player-journey-revamp-jun-2026--safety-unchanged).
 
@@ -62,7 +62,7 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 
 | Feature | Route | Auth | Status |
 |---------|-------|------|--------|
-| **Homepage** | `/` | Public | MP hero + journey sections (How it works, cycle loop, PPA Insight teaser); Live Events Hub; philosophy; final CTA; **i18n** |
+| **Homepage** | `/` | Public | MP hero + Pulse Simulator (demo) + Pipeline + Pulse Board + Rewards; Live Events Hub; philosophy; final CTA; **i18n** |
 | Brand concept | `/concept` | Public | “Our Philosophy” in nav |
 | Blog (EN + zh-HK) | `/blog`, `/blog/{lang}/[slug]` | Public | 3 paired articles |
 | Events hub | `/events` | Public | Upcoming: Sales & Marketing; past: Fortify + Wo Leung; **i18n** |
@@ -167,7 +167,7 @@ Visual/UX pass across homepage and Market Pulse player routes. **No regressions*
 
 | Area | Changed (UI) | Unchanged (logic) |
 |------|--------------|-------------------|
-| **Scoring** | Homepage cycle-loop copy references +10/+50/+100 | `score-calculation.ts`, `constants.ts`, admin reveal scoring |
+| **Scoring** | Homepage pipeline copy references +10/+50/+100 | `score-calculation.ts`, `constants.ts`, admin reveal scoring |
 | **Launch gating** | Pre-launch CTAs route to hub vs play | `launch-config.ts`, `canSubmitMarketPulseDecision`, ADMIN bypass |
 | **PPA privacy** | Home/hub/reveal use locked **decorative** previews | `reveal-access.ts`, `stripPpaFromCardPayload`, API stripping |
 | **Leaderboard scores** | `LeaderboardStatePanel` locked UI | `leaderboard-data.ts` query gating; `leaderboard-viewer-score.ts` |
@@ -219,13 +219,13 @@ Automated tests cover server rules below. Live browser sign-in was not re-run in
 | 16 | Market Pulse brand logo | **Pass** | `MarketPulseLogo.tsx` on homepage hero, hub hero, play header (`public/images/market-pulse-logo.png`) |
 | 17 | Per-cycle leaderboard + personal score | **Pass** | `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `MarketPulseScore` model |
 | 18 | Admin member Tel column | **Pass** | `AdminMembersTable` — `contactNumber` column; searchable via `user-member-filter.ts` |
-| 19 | Homepage + player journey visual revamp | **Pass** | Hero, How it works, cycle loop, PPA teaser; hub lobby; play confirmation; leaderboard/reveal state panels; responsive pass — **security unchanged** |
+| 19 | Homepage + player journey visual revamp | **Pass** | Jul 2026 terminal homepage: hero + Pulse Simulator, Pipeline, Pulse Board, Rewards; hub lobby; play confirmation; leaderboard/reveal state panels; responsive + reduced-motion pass — **security unchanged** |
 
 ### Production smoke test
 
 **Primary checklist:** [`docs/market-pulse-deploy-checklist.md`](../docs/market-pulse-deploy-checklist.md) § **Launch smoke test (1 Jul 2026 HKT)** — pass/fail tables for environment, player flows, and automated preflight.
 
-**Automated coverage:** `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts`, plus `launch-first-cycle-boundaries.test.ts`, `admin-player-visibility-readiness.test.ts`, `public-launch-ui.test.ts`, `public-market-pulse-copy.test.ts`, `server-security.test.ts`, `leaderboard-data.test.ts`, `demo-cycle-guards.test.ts`, `hub-data.production.test.ts`, `seed-guards.test.ts`.
+**Automated coverage:** `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts`, plus `launch-first-cycle-boundaries.test.ts`, `admin-player-visibility-readiness.test.ts`, `public-launch-ui.test.ts`, `public-market-pulse-copy.test.ts`, `server-security.test.ts`, `leaderboard-data.test.ts`, `demo-cycle-guards.test.ts`, `hub-data.production.test.ts`, `seed-guards.test.ts`, `homepage-compose.test.ts`, `homepage-pulse-preview.test.ts`, `home-market-pulse-simulator.safety.test.ts`, `today-only-playability.test.ts`.
 
 <details>
 <summary>Historical — pre-launch manual notes (before 1 Jul 2026 00:00 HKT)</summary>
@@ -236,7 +236,7 @@ Automated tests cover server rules below. Live browser sign-in was not re-run in
 
 </details>
 
-**Player journey:** Homepage journey sections load; hub lobby status/CTA correct; play confirmation step; leaderboard locked panel; reveal pending vs ceremony states.
+**Player journey:** Homepage sections load (hero simulator, pipeline, pulse board locked/sample/revealed, rewards); hub lobby status/CTA correct; play confirmation step; leaderboard locked panel; reveal pending vs ceremony states.
 
 ### Rollback
 
@@ -811,7 +811,7 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 │   │   ├── layout/
 │   │   │   ├── MobileNav.tsx
 │   │   │   └── ContentPageLayout.tsx
-│   │   ├── home/               ← Hero, HowItWorks, CycleLoop, PpaInsight, events, philosophy
+│   │   ├── home/               ← Hero, Simulator, Pipeline, PulseBoard, Rewards, events, philosophy
 │   │   ├── market-pulse/       ← Hub lobby, SwipeCard, PlayExperience, Leaderboard, Reveal, VisualPrimitives, …
 │   │   ├── admin/              ← MarketPulseCyclesHub, MarketPulseCycleBuilder, legacy panels, …
 │   │   └── auth/               ← LoginPage, OnboardingPage, OnboardingRecoveryPanel
@@ -1028,7 +1028,7 @@ Responsive and accessibility improvements across public routes and the Market Pu
 | **Route chrome** | `src/lib/layout/route-chrome.ts` | `FULL_PAGE_ROUTES`, `IMMERSIVE_ROUTES`, `isMarketPulseRoute()` |
 | **Mobile nav** | `src/components/layout/MobileNav.tsx` | Drawer portaled to `document.body`; elevated header z-index on Market Pulse routes (see §9) |
 | **Shell** | `LayoutShell.tsx`, `globals.css`, `layout.tsx` | Safe-area insets; `overflow-x-clip`; sticky leaderboard offset under header |
-| **Homepage journey** | `MarketPulseHero`, `MarketPulseHowItWorksSection`, `MarketPulseCycleLoopSection`, `MarketPulsePpaInsightSection` | Decorative previews only; zh-Hant text wrapping |
+| **Homepage journey** | `MarketPulseHero`, `HomeMarketPulseSimulator`, `MarketPulsePipelineSection`, `HomePulseBoardWidget`, `HomeRewardsShowcase`, `homepage-pulse-preview.ts` | Simulator is demo-only (no API); Pulse Board respects reveal privacy; zh-Hant text wrapping |
 | **Hub lobby** | `MarketPulseHubPage.tsx`, `hub-lobby-state.ts` | Status chip incl. `no_active_cycle` vs `closed`; journey steps; locked score labels |
 | **Play** | `MarketPulseSwipeCard`, `DecisionLockedCard`, `MarketPulsePlayExperience` | Confirmation step; mobile card height; reduced-motion on swipe |
 | **Leaderboard / reveal** | `LeaderboardStatePanel`, `RevealStatePanel`, `MarketPulseLeaderboard`, `MarketPulseRevealExperience` | Locked/revealed/archive ceremony UX |
@@ -1158,31 +1158,46 @@ Bottom bar: logo left; `© 2026 Profit Pulse Ally. All Rights Reserved.` right.
 
 ### 10.1 Homepage (`src/app/page.tsx`)
 
-Dark zinc layout (`bg-zinc-950`). Composes seven sections in order — **no blog preview** on homepage. Shared visual primitives: `MarketPulseVisualPrimitives.tsx` (glow background, status/proof chips, surfaces).
+Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes seven sections in order — **no blog preview** on homepage. Shared visual primitives: `MarketPulseVisualPrimitives.tsx` (glow background, status/proof chips) + `visual-primitives.ts` (terminal panels, pulse tokens, focus rings).
 
 | # | Component | Purpose | Primary CTAs |
 |---|-----------|---------|--------------|
-| 1 | `MarketPulseHero` | Brand logo, pre-launch/live status chip, headline, **decorative** `HomeHeroSignalPreview`, proof chips, launch-aware primary CTA | Pre-launch → hub; post-launch → play; secondary → rules |
-| 2 | `MarketPulseHowItWorksSection` | 3-step player journey (read → decide → reveal) | `HowItWorksCtaLink` → hub or play |
-| 3 | `MarketPulseCycleLoopSection` | Cycle leaderboard explainer; scoring pillars (+10/+50/+100 copy); **sample** locked leaderboard preview | → leaderboard, contest rules |
-| 4 | `MarketPulsePpaInsightSection` | PPA feedback-loop teaser — **static locked comparison** (no live PPA from DB) | → hub, rules |
+| 1 | `MarketPulseHero` | Brand logo, pre-launch/live status chip, headline, proof chips, launch-aware primary CTA; mounts **`HomeMarketPulseSimulator`** | Pre-launch → hub; post-launch → play; secondary → leaderboard |
+| 2 | `MarketPulsePipelineSection` | 4-step game flow (Signal → Lock In → Reveal → Reward); scoring chips (+10/+50/+100 copy); Ocean Park prize note | Text links → leaderboard, contest rules |
+| 3 | `HomePulseBoardWidget` | Mini leaderboard preview — **privacy-safe** via `getHomePulseBoardPreview()` | → `/market-pulse/leaderboard` |
+| 4 | `HomeRewardsShowcase` | Confirmed prize (Ocean Park ticket), events community, PPA post-reveal framing | → contest rules, events, rules |
 | 5 | `LiveEventsHubSection` | Upcoming Sales & Marketing; past Fortify + placeholders (`home-events-hub.ts`) | → `/events/fortify-sales-marketing` |
 | 6 | `PhilosophySection` | PPA philosophy; expert headshots | — |
-| 7 | `FinalCtaSection` | Ready to Test Your Instincts? | **Become a Member** → `/login` |
+| 7 | `FinalCtaSection` | Ready to Test Your Instincts? | **Become a Member** → `/login`; secondary → Market Pulse hub |
 
-**Removed from homepage compose (legacy, still in repo):** `PlayLearnWinSection.tsx` — superseded by How it works + cycle loop sections.
+**Pulse Simulator (`HomeMarketPulseSimulator.tsx`):** Client-only demo. Clearly labeled **PULSE SIMULATOR** + Demo badge. Bullish/Cautious buttons update local `useState` only — **no `fetch`, no decision API, no DB writes**. Disclaimer copy states choices are not saved or scored. Link to real play is launch-aware (`/market-pulse` vs `/market-pulse/play`).
+
+**Pulse Board privacy (`homepage-pulse-preview.ts`):**
+
+| State | When | Data exposed |
+|-------|------|--------------|
+| **locked** | Active unrevealed cycle (`pendingActiveCycle`) | Cycle name + reveal time; placeholder rows — **no ranks, no scores**; does **not** call `getMarketPulseLeaderboard` |
+| **revealed** | Cycle revealed | Top rows with `isRevealed: true` only; strips `userId`, email, phone, PPA fields |
+| **sample** | No DB / no revealed rows | i18n sample player names (`Sample · Player A`, …); **no scores**; sample badge + note |
+
+**Removed from homepage compose (deleted or legacy):** `MarketPulseHowItWorksSection.tsx`, `MarketPulseCycleLoopSection.tsx` (deleted); `MarketPulsePpaInsightSection.tsx`, `PlayLearnWinSection.tsx`, `HomeHeroSignalPreview.tsx` — **not imported** by `page.tsx`.
 
 **i18n copy locations**
 
 | Namespace | File(s) | Keys |
 |-----------|---------|------|
-| Hero, How it works, cycle loop, PPA teaser | `src/lib/i18n/messages/en.ts`, `zh-Hant.ts` | `home.hero.*`, `home.howItWorks.*`, `home.cycleLoop.*`, `home.ppaInsight.*` |
+| Hero + simulator | `src/lib/i18n/messages/en.ts`, `zh-Hant.ts` | `home.hero.*`, `home.hero.simulator.*` |
+| Pipeline | same | `home.pipeline.*` |
+| Pulse Board | same | `home.pulseBoard.*` |
+| Rewards | same | `home.rewards.*` |
 | Events showcase | same + `home-events-hub.ts` | `home.events.*` |
 | Philosophy / final CTA | same | `home.philosophy.*`, `home.finalCta.*` |
 
-**Analytics:** `MarketPulseTrackedLink` + `HowItWorksCtaLink` fire `hero_cta_clicked` / `how_it_works_cta_clicked` (`analytics.ts` strips PPA/email).
+**Analytics:** `MarketPulseTrackedLink` fires `hero_cta_clicked` (`analytics.ts` strips PPA/email).
 
 **Market Pulse cycle epoch:** **1 Jul 2026 00:00 HKT** (`CHALLENGE_CYCLE_EPOCH_MS` in `challenge-cycle.ts` / `launch-config.ts`). Pre-launch badge via `isBeforePublicLaunch()` in hero.
+
+**Accessibility / motion:** `MP_FOCUS_RING` on interactive elements; simulator uses `aria-pressed`, `role="status"`, `aria-live`; `motion-reduce` on hero pulse chip, simulator trendline, event card hovers; `min-w-0` + `overflow-x-hidden` for mobile overflow guard.
 
 ### 10.2 Fortify registration (`/fortify-survey`)
 
@@ -1525,8 +1540,8 @@ Edit only with approval — update `FortifyYourFutureSurvey.tsx` `content` + for
 
 ### Update homepage copy or events showcase
 
-- **Market Pulse hero:** `MarketPulseHero.tsx`, `HomeHeroSignalPreview.tsx`, `MarketPulseLogo.tsx`, `launch-config.ts` — keys under `home.hero.*` in `en.ts` / `zh-Hant.ts`
-- **How it works / cycle loop / PPA teaser:** `MarketPulseHowItWorksSection.tsx`, `MarketPulseCycleLoopSection.tsx`, `MarketPulsePpaInsightSection.tsx` — keys `home.howItWorks.*`, `home.cycleLoop.*`, `home.ppaInsight.*`
+- **Market Pulse hero:** `MarketPulseHero.tsx`, `HomeMarketPulseSimulator.tsx`, `MarketPulseLogo.tsx`, `launch-config.ts` — keys under `home.hero.*`, `home.hero.simulator.*` in `en.ts` / `zh-Hant.ts`
+- **Pipeline / Pulse Board / Rewards:** `MarketPulsePipelineSection.tsx`, `HomePulseBoardWidget.tsx`, `HomeRewardsShowcase.tsx`, `homepage-pulse-preview.ts` — keys `home.pipeline.*`, `home.pulseBoard.*`, `home.rewards.*`
 - **Past events grid:** `getPastEventsShowcase(locale)` in `src/lib/events/home-events-hub.ts`
 - **Upcoming event:** `getFortifySalesMarketingShowcase(locale)` in `upcoming-event-display.ts`; wired in `page.tsx` + `/events`
 - **Past Fortify:** `fortify-your-future.ts` (archived)
@@ -1552,7 +1567,8 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | `src/components/game/GameHub.tsx` | **Legacy** — superseded by `MarketPulseHubPage` |
 | `src/components/market-pulse/MarketPulseGame.tsx` | **Legacy** arcade game — not used by `/play` |
 | `src/lib/market-pulse/actions.ts` (`saveMarketPulseScore`) | **Legacy** `GameScore` writer |
-| `HomeHero.tsx`, `HomeEventsHub.tsx`, `HomeProofOfConcept.tsx`, `HomeTestimonials.tsx`, `PlayLearnWinSection.tsx` | Superseded homepage components — **not imported** by `page.tsx` |
+| `HomeHero.tsx`, `HomeEventsHub.tsx`, `HomeProofOfConcept.tsx`, `HomeTestimonials.tsx`, `PlayLearnWinSection.tsx`, `HomeHeroSignalPreview.tsx`, `MarketPulsePpaInsightSection.tsx` | Superseded homepage components — **not imported** by `page.tsx` |
+| `MarketPulseHowItWorksSection.tsx`, `MarketPulseCycleLoopSection.tsx` | **Removed** (Jul 2026) — replaced by `MarketPulsePipelineSection`, `HomePulseBoardWidget`, `HomeRewardsShowcase` |
 | `NEXT_PUBLIC_ADMIN_PASSWORD` | Removed — admin uses DB role |
 | Old inline footer in `LayoutShell` | Replaced by `SiteFooter.tsx` |
 | `/images/fortify-hero-*.png`, `/hero.png` | No longer used on homepage |
@@ -1602,7 +1618,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | Market Pulse Hub | `src/app/market-pulse/page.tsx`, `MarketPulseHubPage.tsx`, `hub-lobby-state.ts`, `hub-data.ts` |
 | Market Pulse play | `src/app/market-pulse/play/page.tsx`, `MarketPulsePlayExperience.tsx`, `MarketPulseSwipeCard.tsx`, `MarketPulseRestCard.tsx`, `DecisionLockedCard.tsx`, `play-page-state.ts`, `play-data.ts`, `card-type.ts` |
 | Leaderboard / reveal | `leaderboard/page.tsx`, `reveal/page.tsx`, `leaderboard-data.ts`, `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `LeaderboardStatePanel.tsx`, `MarketPulseLeaderboardMyScore.tsx`, `RevealStatePanel.tsx`, `reveal-data.ts` |
-| Homepage journey | `src/app/page.tsx`, `MarketPulseHero.tsx`, `MarketPulseHowItWorksSection.tsx`, `MarketPulseCycleLoopSection.tsx`, `MarketPulsePpaInsightSection.tsx`, `HomeHeroSignalPreview.tsx` |
+| Homepage journey | `src/app/page.tsx`, `MarketPulseHero.tsx`, `HomeMarketPulseSimulator.tsx`, `MarketPulsePipelineSection.tsx`, `HomePulseBoardWidget.tsx`, `HomeRewardsShowcase.tsx`, `homepage-pulse-preview.ts` |
 | MP visual / analytics | `MarketPulseVisualPrimitives.tsx`, `MarketPulseTrackedLink.tsx`, `analytics.ts` |
 | Admin cycle stats | `admin-cycle-stats.ts`, `admin-data.ts` (`MarketPulseAdminCycleRow` participation fields) |
 | Market Pulse domain | `server.ts`, `cycle-playability.ts`, `playable-card.ts`, `reveal-access.ts`, `admin-actions.ts`, `card-validation.ts`, `score-calculation.ts`, `card-type.ts` |

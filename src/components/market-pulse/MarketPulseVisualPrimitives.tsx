@@ -10,10 +10,13 @@ import {
   mergeMpClasses,
   MP_GLOW_RADIAL_STYLES,
   MP_GRID_OVERLAY_STYLE,
+  MP_METRIC_TEXT,
   MP_MOCK_LEADERBOARD_ROWS,
   MP_PROOF_CHIP_STYLES,
   MP_STATUS_CHIP_STYLES,
   MP_SURFACE_STYLES,
+  MP_TERMINAL_PANEL,
+  MP_TICKER_TEXT,
   mpSurfacePadding,
   type MpGlowAccent,
   type MpMockLeaderboardRow,
@@ -26,7 +29,17 @@ export {
   mergeMpClasses,
   MP_FOCUS_RING,
   MP_FOCUS_RING_AMBER,
+  MP_HOME_SECTION,
+  MP_METRIC_TEXT,
   MP_MOCK_LEADERBOARD_ROWS,
+  MP_OBSIDIAN_BG,
+  MP_PRIMARY_BTN,
+  MP_PULSE_ACCENT_BADGE,
+  MP_PULSE_ACCENT_ICON,
+  MP_PULSE_TEXT,
+  MP_PULSE_TEXT_SOFT,
+  MP_TERMINAL_PANEL,
+  MP_TICKER_TEXT,
   type MpGlowAccent,
   type MpMockLeaderboardRow,
   type MpProofChipVariant,
@@ -54,7 +67,7 @@ export function MarketPulseGlowBackground({
   return (
     <div
       className={mergeMpClasses(
-        "relative isolate overflow-x-hidden bg-zinc-950 text-white",
+        "relative isolate overflow-x-hidden bg-mp-obsidian text-white",
         className,
       )}
     >
@@ -68,7 +81,7 @@ export function MarketPulseGlowBackground({
       {showGrid ? (
         <div
           className={mergeMpClasses(
-            "pointer-events-none absolute inset-0 opacity-40",
+            "pointer-events-none absolute inset-0 opacity-40 motion-reduce:opacity-25",
             MP_GRID_OVERLAY_STYLE,
           )}
           aria-hidden="true"
@@ -107,16 +120,10 @@ export function MarketPulseSurface({
       )}
     >
       {showOrbs ? (
-        <>
-          <div
-            className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-emerald-400/10 blur-3xl motion-reduce:opacity-70"
-            aria-hidden="true"
-          />
-          <div
-            className="pointer-events-none absolute -bottom-20 -left-12 h-48 w-48 rounded-full bg-amber-400/8 blur-3xl motion-reduce:opacity-70"
-            aria-hidden="true"
-          />
-        </>
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(0,230,118,0.06),transparent)] motion-reduce:opacity-80"
+          aria-hidden="true"
+        />
       ) : null}
       <div className="relative">{children}</div>
     </article>
@@ -243,7 +250,9 @@ export function MarketPulseMockLeaderboardRows({
   return (
     <ol
       className={mergeMpClasses(
-        "divide-y divide-zinc-800 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 shadow-xl shadow-black/20",
+        "divide-y divide-white/[0.06] overflow-hidden",
+        MP_TERMINAL_PANEL,
+        "shadow-lg shadow-black/20",
         className,
       )}
       aria-label={ariaLabel}
@@ -258,7 +267,8 @@ export function MarketPulseMockLeaderboardRows({
         >
           <span
             className={mergeMpClasses(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums sm:h-9 sm:w-9 sm:text-sm",
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold sm:h-9 sm:w-9 sm:text-sm",
+              MP_METRIC_TEXT,
               mockRankStyles(row.rank, row.highlighted ?? false),
             )}
             aria-hidden="true"
@@ -275,7 +285,8 @@ export function MarketPulseMockLeaderboardRows({
           </span>
           <span
             className={mergeMpClasses(
-              "shrink-0 font-semibold tabular-nums text-emerald-300",
+              "shrink-0 font-semibold text-mp-pulse/80",
+              MP_METRIC_TEXT,
               compact ? "text-sm" : "text-sm sm:text-base",
             )}
             aria-hidden="true"
@@ -422,7 +433,7 @@ export function MarketPulseSectionHeader({
     >
       <div className={mergeMpClasses("min-w-0", centered ? "max-w-2xl" : "max-w-3xl")}>
         {eyebrow ? (
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-400/90 sm:text-xs sm:tracking-[0.2em]">
+          <p className={mergeMpClasses(MP_TICKER_TEXT, "text-mp-pulse/90 sm:text-xs sm:tracking-[0.2em]")}>
             {eyebrow}
           </p>
         ) : null}

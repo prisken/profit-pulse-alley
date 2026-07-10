@@ -24,7 +24,7 @@ const navLinkClass =
   "rounded-md px-2.5 py-1.5 text-foreground/70 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 sm:px-3 sm:py-2";
 
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mp-pulse/80 focus-visible:ring-offset-2 focus-visible:ring-offset-mp-obsidian";
 
 export default function LayoutShell({
   children,
@@ -62,7 +62,7 @@ export default function LayoutShell({
   return (
     <>
       <header
-        className={`site-header sticky top-0 ${headerZIndexClass} border-b border-foreground/10 bg-background/90 pt-[env(safe-area-inset-top,0px)] backdrop-blur supports-[backdrop-filter]:bg-background/80`}
+        className={`site-header sticky top-0 ${headerZIndexClass} border-b border-white/[0.08] bg-mp-obsidian/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur supports-[backdrop-filter]:bg-mp-obsidian/90`}
       >
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] md:h-[3.75rem]">
           <div
