@@ -14,7 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
-| **Recent `main`** | **Leaderboard → reveal link** — **View cycle review** under My score for this cycle → `/market-pulse/reveal`; prior: post-cycle reveal review, next-cycle TBC, `between_cycles` play state |
+| **Recent `main`** | **Reveal after admin scoring** — cycle review loads cards with status `PUBLISHED` **or** `REVEALED` (admin reveal flips card rows); fixes false “You did not play this cycle” when leaderboard has scores |
 
 ---
 
@@ -143,7 +143,7 @@ Google OAuth redirect URIs (must match exactly):
 | **Market rest cards** | `card-type.test.ts`, `play-rest-card.test.ts`, `player-handlers.test.ts`, `score-calculation.test.ts` — `ACKNOWLEDGED` on REST; +10 only; REST skipped in `computeSignalMatchStreak`; reveal/leaderboard participation-only rows |
 | **Card localization** | `card-localization.test.ts` — zh-Hant + EN fallback; PPA stripped pre-reveal |
 | **Reveal / leaderboard multi-card** | `leaderboard-score-breakdown.test.ts`, `reveal-ppa-validation.test.ts` — duplicate `dayIndex` OK; per-card breakdown labels |
-| **Post-cycle reveal review** | `reveal-cycle-review.test.ts`, `reveal-data.launch.test.ts` — full published card list (played + skipped); zero/partial participation; missing score events stay null; pre-reveal empty `cards` |
+| **Post-cycle reveal review** | `reveal-cycle-review.test.ts`, `reveal-data.launch.test.ts` — full card list (played + skipped); cards with `PUBLISHED` or `REVEALED` status after admin reveal/scoring; zero/partial participation; pre-reveal empty `cards` |
 | **Leaderboard → reveal CTA** | `public-market-pulse-copy.test.ts` — `mp.leaderboard.myScore.viewCycleReview` EN/zh; `MarketPulseLeaderboardMyScore.tsx` links to `/market-pulse/reveal` |
 | **Next-cycle TBC** | `next-cycle.test.ts`, `hub-data.production.test.ts`, `hub-lobby-state.test.ts`, `play-data.launch.test.ts` — nearest future `OPEN` cycle or `{ status: "tbc" }`; demo filtered in prod; hub rules CTA when TBC |
 | **Public copy** | `public-market-pulse-copy.test.ts` — no stale pre-launch/dev terms in MP i18n |
@@ -1308,7 +1308,7 @@ Admin must run **Reveal & score** in `/admin/market-pulse` `#reveal-scoring` for
 
 ##### Post-cycle reveal data model (Jul 2026)
 
-**Server:** `getMarketPulseRevealForUser()` in `server.ts` loads **all `PUBLISHED` cards** in the revealed cycle (play order: `dayIndex → sortOrder → createdAt`), joins viewer decisions and score events, and returns **one row per card**.
+**Server:** `getMarketPulseRevealForUser()` in `server.ts` loads **all cycle cards** with status **`PUBLISHED` or `REVEALED`** (admin **Reveal & score** sets published rows to `REVEALED`; both must be included or the reveal page shows an empty list and a false “You did not play this cycle” banner while leaderboard scores still exist). Play order: `dayIndex → sortOrder → createdAt`. Joins viewer decisions and score events; returns **one row per card**.
 
 | Field | Played | Skipped |
 |-------|--------|---------|
@@ -1691,4 +1691,4 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 ---
 
-*Last updated: 11 Jul 2026 — Leaderboard My score links to reveal cycle review; post-cycle reveal review, next-cycle TBC, `between_cycles` play state.*
+*Last updated: 12 Jul 2026 — Reveal cycle review includes `REVEALED` cards after admin scoring; leaderboard My score → reveal link; post-cycle review, next-cycle TBC.*

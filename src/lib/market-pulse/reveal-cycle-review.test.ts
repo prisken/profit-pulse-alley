@@ -206,6 +206,54 @@ describe("getMarketPulseRevealForUser — cycle review", () => {
     expect(prismaMocks.cardFindMany).not.toHaveBeenCalled();
   });
 
+  it("includes cards after admin reveal flips status to REVEALED", async () => {
+    const cards = [
+      {
+        ...buildPublishedSignalCard("card-1", 1, { ppaSignal: "BULLISH" }),
+        status: "REVEALED" as const,
+      },
+      {
+        ...buildPublishedSignalCard("card-2", 2, { ppaSignal: "CAUTIOUS" }),
+        status: "REVEALED" as const,
+      },
+    ];
+
+    prismaMocks.cardFindMany.mockResolvedValue(cards);
+    prismaMocks.decisionFindMany.mockResolvedValue([
+      {
+        cardId: "card-1",
+        decision: "BULLISH",
+        decidedAt: new Date("2026-01-02T00:00:00.000Z"),
+      },
+    ]);
+    prismaMocks.scoreEventFindMany.mockResolvedValue([
+      {
+        cardId: "card-1",
+        participationPoints: 10,
+        matchBonus: 50,
+        streakBonus: 0,
+        totalPoints: 60,
+      },
+    ]);
+
+    const result = await getMarketPulseRevealForUser(TEST_USER_ID, TEST_CYCLE_ID);
+
+    expect(prismaMocks.cardFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          cycleId: TEST_CYCLE_ID,
+          status: { in: ["PUBLISHED", "REVEALED"] },
+        },
+      }),
+    );
+    expect(result?.cards).toHaveLength(2);
+    expect(result?.cards.filter((card) => card.played)).toHaveLength(1);
+    expect(result?.cards[0]).toMatchObject({
+      played: true,
+      totalPoints: 60,
+    });
+  });
+
   it("nulls PPA and match fields for REST cards", async () => {
     const restCard = {
       ...buildMarketPulseTestCard({ id: "rest-1", dayIndex: 2, cardType: "REST" }),

@@ -1248,7 +1248,10 @@ export async function getMarketPulseRevealForUser(
 
   const [publishedCards, decisions, scoreEvents] = await Promise.all([
     prisma.marketPulseCard.findMany({
-      where: { cycleId, status: "PUBLISHED" },
+      where: {
+        cycleId,
+        status: { in: ["PUBLISHED", "REVEALED"] },
+      },
       select: publishedCardSelect,
     }),
     prisma.marketPulseDecision.findMany({
