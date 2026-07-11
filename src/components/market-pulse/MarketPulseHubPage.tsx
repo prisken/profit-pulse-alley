@@ -224,6 +224,16 @@ function HubCycleStatusPanel({
   const showCycleDetails = data.hasDatabaseCycle || lobbyStatus === "pre_launch";
 
   if (!showCycleDetails) {
+    const nextCycleLabel =
+      data.nextCycle.status === "available"
+        ? t("mp.hub.lobby.nextCycle.scheduled")
+            .replace("{name}", data.nextCycle.name)
+            .replace(
+              "{date}",
+              formatHubDate(data.nextCycle.startsAtIso, locale, true),
+            )
+        : t("mp.hub.lobby.nextCycle.tbc");
+
     return (
       <section className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/40 p-4 sm:p-6">
         <h2 className="text-base font-semibold text-white">
@@ -232,6 +242,12 @@ function HubCycleStatusPanel({
         <p className="mt-2 text-sm leading-relaxed text-zinc-400">
           {t("mp.hub.lobby.noCycle.body")}
         </p>
+        <p className="mt-3 text-sm font-medium text-zinc-200">{nextCycleLabel}</p>
+        {data.nextCycle.status === "tbc" ? (
+          <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+            {t("mp.hub.lobby.nextCycle.tbcBody")}
+          </p>
+        ) : null}
       </section>
     );
   }
@@ -461,6 +477,7 @@ export default function MarketPulseHubPage({
   const primaryCta = deriveHubPrimaryCta(lobbyStatus, {
     isAuthenticated,
     runtimeOpen: data.runtimeOpen,
+    nextCycleTbc: data.nextCycle.status === "tbc",
   });
 
   useEffect(() => {

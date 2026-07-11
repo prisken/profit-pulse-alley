@@ -4,7 +4,7 @@ const RUNTIME_GATED_STATUSES: MarketPulsePlayPageStatus[] = [
   "playable",
   "sign_in_required",
   "no_card_today",
-  "no_active_cycle",
+  "between_cycles",
   "cycle_unavailable",
 ];
 

@@ -55,6 +55,7 @@ export function deriveHubPrimaryCta(
   options: Readonly<{
     isAuthenticated: boolean;
     runtimeOpen: boolean;
+    nextCycleTbc?: boolean;
   }>,
 ): HubPrimaryCta {
   const playHref = "/market-pulse/play";
@@ -95,8 +96,14 @@ export function deriveHubPrimaryCta(
     case "closed":
     default:
       return {
-        kind: "view_leaderboard",
-        href: "/market-pulse/leaderboard",
+        kind:
+          status === "no_active_cycle" && options.nextCycleTbc
+            ? "view_rules"
+            : "view_leaderboard",
+        href:
+          status === "no_active_cycle" && options.nextCycleTbc
+            ? "/market-pulse/rules"
+            : "/market-pulse/leaderboard",
         disabled: false,
       };
   }

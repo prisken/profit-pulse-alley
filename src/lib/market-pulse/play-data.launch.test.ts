@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   getTodayMarketPulsePlaySessionSnapshot: vi.fn(),
   getTodayMarketPulsePlaySession: vi.fn(),
   getMarketPulseLeaderboard: vi.fn(),
+  loadMarketPulseNextCycleStatus: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -26,6 +27,10 @@ vi.mock("@/auth", () => ({
 
 vi.mock("@/lib/db-config", () => ({
   isDatabaseConfigured: mocks.isDatabaseConfigured,
+}));
+
+vi.mock("@/lib/market-pulse/next-cycle", () => ({
+  loadMarketPulseNextCycleStatus: mocks.loadMarketPulseNextCycleStatus,
 }));
 
 vi.mock("@/lib/market-pulse/server", () => ({
@@ -109,6 +114,7 @@ describe("Launch smoke — public play gates", () => {
     mocks.getActiveMarketPulseCycle.mockResolvedValue(activeCycle);
     mocks.getTodayMarketPulsePlaySessionSnapshot.mockResolvedValue(buildSnapshot());
     mocks.getMarketPulseLeaderboard.mockResolvedValue([]);
+    mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({ status: "tbc" });
     mocks.auth.mockResolvedValue(null);
   });
 
@@ -154,18 +160,42 @@ describe("Launch smoke — public play gates", () => {
     expect(data.card).toBeNull();
   });
 
-  it("is not playable when no active cycle exists", async () => {
+  it("shows between-cycles state with TBC when no active cycle or future cycle exists", async () => {
     mocks.getActiveMarketPulseCycle.mockResolvedValue(null);
     mocks.getMarketPulseSettings.mockResolvedValue({
       runtimeStatus: "OPEN",
       activeCycle: null,
     });
+    mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({ status: "tbc" });
 
     const data = await getMarketPulsePlayPageData();
 
-    expect(data.status).toBe("no_active_cycle");
+    expect(data.status).toBe("between_cycles");
     expect(data.cycleId).toBeNull();
     expect(data.card).toBeNull();
+    expect(data.nextCycle).toEqual({ status: "tbc" });
+  });
+
+  it("shows between-cycles state with the next scheduled challenge when available", async () => {
+    mocks.getActiveMarketPulseCycle.mockResolvedValue(null);
+    mocks.getMarketPulseSettings.mockResolvedValue({
+      runtimeStatus: "OPEN",
+      activeCycle: null,
+    });
+    mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({
+      status: "available",
+      cycleId: "cycle-aug",
+      name: "August 2026 Market Pulse",
+      startsAtIso: "2026-07-11T16:00:00.000Z",
+      endsAtIso: "2026-07-21T16:00:00.000Z",
+      revealAtIso: "2026-07-21T16:00:00.000Z",
+      firstCardReleaseAtIso: "2026-07-11T01:00:00.000Z",
+    });
+
+    const data = await getMarketPulsePlayPageData();
+
+    expect(data.status).toBe("between_cycles");
+    expect(data.nextCycle.status).toBe("available");
   });
 
   it("is not playable when there is no published card for today", async () => {

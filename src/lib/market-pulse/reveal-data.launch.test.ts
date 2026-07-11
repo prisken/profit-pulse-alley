@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   getRevealedMarketPulseCycleForPage: vi.fn(),
   getMarketPulseRevealForUser: vi.fn(),
   getUserMarketPulseProgress: vi.fn(),
+  loadMarketPulseNextCycleStatus: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -22,6 +23,10 @@ vi.mock("@/auth", () => ({
 
 vi.mock("@/lib/db-config", () => ({
   isDatabaseConfigured: mocks.isDatabaseConfigured,
+}));
+
+vi.mock("@/lib/market-pulse/next-cycle", () => ({
+  loadMarketPulseNextCycleStatus: mocks.loadMarketPulseNextCycleStatus,
 }));
 
 vi.mock("@/lib/market-pulse/server", () => ({
@@ -49,6 +54,7 @@ describe("Launch smoke — reveal page", () => {
     mocks.isDatabaseConfigured.mockReturnValue(true);
     mocks.getMarketPulseSettings.mockResolvedValue({ runtimeStatus: "OPEN" });
     mocks.getActiveMarketPulseCycle.mockResolvedValue(pendingCycle);
+    mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({ status: "tbc" });
     mocks.auth.mockResolvedValue(null);
   });
 
@@ -105,9 +111,17 @@ describe("Launch smoke — reveal page", () => {
           cardType: "SIGNAL",
           companyName: "Example Co",
           headline: "Headline",
-          userDecision: "BULLISH",
+          ticker: null,
+          summary: null,
+          newsBody: null,
+          cardImageUrl: null,
+          cardImageAlt: null,
+          played: true,
+          viewerDecision: "BULLISH",
+          decidedAt: new Date("2026-07-01T00:00:00.000Z"),
           ppaSignal: "BULLISH",
           ppaInsight: "Insight text",
+          isMatch: true,
           participationPoints: 10,
           matchBonus: 50,
           streakBonus: 0,
@@ -118,6 +132,7 @@ describe("Launch smoke — reveal page", () => {
     mocks.getUserMarketPulseProgress.mockResolvedValue({
       rank: 1,
       currentStreak: 1,
+      totalPoints: 150,
     });
 
     const data = await getMarketPulseRevealPageData();
@@ -154,12 +169,20 @@ describe("Launch smoke — reveal page", () => {
           cardType: "REST",
           companyName: "Market rest",
           headline: "Market rest day",
-          userDecision: "ACKNOWLEDGED",
+          ticker: null,
+          summary: null,
+          newsBody: null,
+          cardImageUrl: null,
+          cardImageAlt: null,
+          played: true,
+          viewerDecision: "ACKNOWLEDGED",
+          decidedAt: new Date("2026-07-02T00:00:00.000Z"),
           ppaSignal: null,
           ppaInsight: null,
+          isMatch: null,
           participationPoints: 10,
-          matchBonus: 0,
-          streakBonus: 0,
+          matchBonus: null,
+          streakBonus: null,
           totalPoints: 10,
         },
       ],
@@ -174,13 +197,16 @@ describe("Launch smoke — reveal page", () => {
     expect(data.results?.cards[0]).toMatchObject({
       cardType: "REST",
       isRestCard: true,
-      isMatch: false,
+      played: true,
+      isMatch: null,
       ppaSignal: null,
       ppaInsight: null,
       totalPoints: 10,
     });
     expect(data.results?.matchesCount).toBe(0);
     expect(data.results?.totalPlayed).toBe(1);
+    expect(data.results?.totalSkipped).toBe(0);
+    expect(data.results?.totalPublished).toBe(1);
   });
 
   it("falls back to pending when reveal payload is not yet valid for the user", async () => {
@@ -193,7 +219,12 @@ describe("Launch smoke — reveal page", () => {
       cycleId: pendingCycle.id,
       cycleName: pendingCycle.name,
       isRevealed: false,
-      totals: null,
+      totals: {
+        participationPoints: 0,
+        matchBonus: 0,
+        streakBonus: 0,
+        totalPoints: 0,
+      },
       cards: [],
     });
 
@@ -202,5 +233,36 @@ describe("Launch smoke — reveal page", () => {
     expect(data.status).toBe("pending");
     expect(data.results).toBeNull();
     expect(data.pendingCycle?.name).toBe("July 2026 Market Pulse");
+  });
+
+  it("includes next cycle TBC when no future cycle is scheduled after reveal", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "user-1" } });
+    mocks.getRevealedMarketPulseCycleForPage.mockResolvedValue({
+      revealedCycle: { ...pendingCycle, status: "REVEALED" as const },
+      pendingActiveCycle: null,
+    });
+    mocks.getMarketPulseRevealForUser.mockResolvedValue({
+      cycleId: pendingCycle.id,
+      cycleName: pendingCycle.name,
+      isRevealed: true,
+      totals: {
+        participationPoints: 0,
+        matchBonus: 0,
+        streakBonus: 0,
+        totalPoints: 0,
+      },
+      cards: [],
+    });
+    mocks.getUserMarketPulseProgress.mockResolvedValue({
+      rank: null,
+      currentStreak: 0,
+      totalPoints: 0,
+    });
+    mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({ status: "tbc" });
+
+    const data = await getMarketPulseRevealPageData();
+
+    expect(data.status).toBe("revealed");
+    expect(data.nextCycle).toEqual({ status: "tbc" });
   });
 });

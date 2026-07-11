@@ -34,7 +34,7 @@ import {
   compareMarketPulseCardsByPlayOrder,
 } from "@/lib/market-pulse/card-play-order";
 import { isCardReleasedForPlay } from "@/lib/market-pulse/card-release-schedule";
-import { localizeMarketPulseRevealCardFields } from "@/lib/market-pulse/card-localization";
+import { localizeMarketPulseCardText } from "@/lib/market-pulse/card-localization";
 import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
 import type { SiteLocale } from "@/lib/i18n/locales";
 import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
@@ -168,13 +168,21 @@ export type MarketPulseRevealCardBreakdown = {
   cardType: MarketPulseCardType;
   companyName: string;
   headline: string;
-  userDecision: MarketPulseSignal;
+  ticker: string | null;
+  summary: string | null;
+  newsBody: string | null;
+  cardImageUrl: string | null;
+  cardImageAlt: string | null;
+  played: boolean;
+  viewerDecision: MarketPulseSignal | null;
+  decidedAt: Date | null;
   ppaSignal: MarketPulseSignal | null;
   ppaInsight: string | null;
-  participationPoints: number;
-  matchBonus: number;
-  streakBonus: number;
-  totalPoints: number;
+  isMatch: boolean | null;
+  participationPoints: number | null;
+  matchBonus: number | null;
+  streakBonus: number | null;
+  totalPoints: number | null;
 };
 
 export type MarketPulseRevealForUser = {
@@ -1213,107 +1221,123 @@ export async function getMarketPulseRevealForUser(
     };
   }
 
-  const decisions = await prisma.marketPulseDecision.findMany({
-    where: { userId, cycleId },
-    include: {
-      card: {
-        select: {
-          id: true,
-          dayIndex: true,
-          sortOrder: true,
-          createdAt: true,
-          cardType: true,
-          companyName: true,
-          companyNameZh: true,
-          headline: true,
-          headlineZhHant: true,
-          newsBody: true,
-          newsBodyZhHant: true,
-          summary: true,
-          summaryZhHant: true,
-          cardImageAlt: true,
-          cardImageAltZhHant: true,
-          userPrompt: true,
-          userPromptZhHant: true,
-          ppaSignal: true,
-          ppaInsight: true,
-          ppaInsightZhHant: true,
-        },
-      },
-    },
-  });
+  const publishedCardSelect = {
+    id: true,
+    dayIndex: true,
+    sortOrder: true,
+    createdAt: true,
+    cardType: true,
+    companyName: true,
+    companyNameZh: true,
+    ticker: true,
+    headline: true,
+    headlineZhHant: true,
+    newsBody: true,
+    newsBodyZhHant: true,
+    summary: true,
+    summaryZhHant: true,
+    cardImageUrl: true,
+    cardImageAlt: true,
+    cardImageAltZhHant: true,
+    userPrompt: true,
+    userPromptZhHant: true,
+    ppaSignal: true,
+    ppaInsight: true,
+    ppaInsightZhHant: true,
+  } as const;
 
-  const scoreEvents = await prisma.marketPulseScoreEvent.findMany({
-    where: { userId, cycleId },
-    select: {
-      cardId: true,
-      participationPoints: true,
-      matchBonus: true,
-      streakBonus: true,
-      totalPoints: true,
-    },
-  });
+  const [publishedCards, decisions, scoreEvents] = await Promise.all([
+    prisma.marketPulseCard.findMany({
+      where: { cycleId, status: "PUBLISHED" },
+      select: publishedCardSelect,
+    }),
+    prisma.marketPulseDecision.findMany({
+      where: { userId, cycleId },
+      select: {
+        cardId: true,
+        decision: true,
+        decidedAt: true,
+      },
+    }),
+    prisma.marketPulseScoreEvent.findMany({
+      where: { userId, cycleId },
+      select: {
+        cardId: true,
+        participationPoints: true,
+        matchBonus: true,
+        streakBonus: true,
+        totalPoints: true,
+      },
+    }),
+  ]);
+
+  const decisionByCardId = new Map(
+    decisions.map((entry) => [entry.cardId, entry]),
+  );
   const scoreByCard = new Map(
     scoreEvents.map((event) => [event.cardId ?? "", event]),
   );
 
-  const sortedDecisions = [...decisions].sort((a, b) =>
-    compareMarketPulseCardsByPlayOrder(
-      {
-        dayIndex: a.card.dayIndex,
-        sortOrder: a.card.sortOrder,
-        createdAt: a.card.createdAt,
-        id: a.card.id,
-      },
-      {
-        dayIndex: b.card.dayIndex,
-        sortOrder: b.card.sortOrder,
-        createdAt: b.card.createdAt,
-        id: b.card.id,
-      },
-    ),
+  const sortedPublishedCards = [...publishedCards].sort((a, b) =>
+    compareMarketPulseCardsByPlayOrder(a, b),
   );
-  const cardsOnDayByIndex = buildCardsOnDayCountMap(
-    sortedDecisions.map((entry) => entry.card),
-  );
+  const cardsOnDayByIndex = buildCardsOnDayCountMap(sortedPublishedCards);
 
   const cards: MarketPulseRevealCardBreakdown[] = [];
 
-  for (const entry of sortedDecisions) {
-    const isRestCard = isMarketPulseRestCard(entry.card);
-    if (!isRestCard && !entry.card.ppaSignal) {
-      continue;
+  for (const card of sortedPublishedCards) {
+    const isRestCard = isMarketPulseRestCard(card);
+    const decision = decisionByCardId.get(card.id);
+    const played = decision != null;
+    const scores = played ? scoreByCard.get(card.id) : undefined;
+    const localized = localizeMarketPulseCardText(card, locale);
+    const sortOrder = card.sortOrder ?? 0;
+
+    let isMatch: boolean | null = null;
+    if (!isRestCard && played && card.ppaSignal) {
+      isMatch = decision!.decision === card.ppaSignal;
     }
 
-    const scores = scoreByCard.get(entry.cardId);
-    const localized = localizeMarketPulseRevealCardFields(entry.card, locale);
-    const sortOrder = entry.card.sortOrder ?? 0;
     cards.push({
-      cardId: entry.cardId,
-      dayIndex: entry.card.dayIndex,
+      cardId: card.id,
+      dayIndex: card.dayIndex,
       sortOrder,
-      cardsOnDay: cardsOnDayByIndex.get(entry.card.dayIndex) ?? 1,
-      cardType: entry.card.cardType ?? "SIGNAL",
+      cardsOnDay: cardsOnDayByIndex.get(card.dayIndex) ?? 1,
+      cardType: card.cardType ?? "SIGNAL",
       companyName: localized.companyName,
       headline: localized.headline,
-      userDecision: entry.decision,
-      ppaSignal: isRestCard ? null : entry.card.ppaSignal,
+      ticker: card.ticker?.trim() ? card.ticker : null,
+      summary: localized.summary ?? null,
+      newsBody: localized.newsBody ?? null,
+      cardImageUrl: card.cardImageUrl,
+      cardImageAlt: localized.cardImageAlt ?? null,
+      played,
+      viewerDecision: played ? decision!.decision : null,
+      decidedAt: played ? decision!.decidedAt : null,
+      ppaSignal: isRestCard ? null : card.ppaSignal,
       ppaInsight: isRestCard ? null : localized.ppaInsight,
-      participationPoints: scores?.participationPoints ?? PARTICIPATION_POINTS,
-      matchBonus: scores?.matchBonus ?? 0,
-      streakBonus: scores?.streakBonus ?? 0,
-      totalPoints:
-        scores?.totalPoints ??
-        PARTICIPATION_POINTS + (scores?.matchBonus ?? 0) + (scores?.streakBonus ?? 0),
+      isMatch,
+      participationPoints: played ? (scores?.participationPoints ?? null) : null,
+      matchBonus: played && !isRestCard ? (scores?.matchBonus ?? null) : null,
+      streakBonus: played && !isRestCard ? (scores?.streakBonus ?? null) : null,
+      totalPoints: played ? (scores?.totalPoints ?? null) : null,
     });
   }
 
   const totals = cards.reduce(
     (acc, card) => {
-      acc.participationPoints += card.participationPoints;
-      acc.matchBonus += card.matchBonus;
-      acc.streakBonus += card.streakBonus;
-      acc.totalPoints += card.totalPoints;
+      if (card.participationPoints != null) {
+        acc.participationPoints += card.participationPoints;
+      }
+      if (card.matchBonus != null) {
+        acc.matchBonus += card.matchBonus;
+      }
+      if (card.streakBonus != null) {
+        acc.streakBonus += card.streakBonus;
+      }
+      if (card.totalPoints != null) {
+        acc.totalPoints += card.totalPoints;
+      }
       return acc;
     },
     {

@@ -7,6 +7,10 @@ import type { SiteLocale } from "@/lib/i18n/locales";
 import { DEFAULT_SITE_LOCALE } from "@/lib/i18n/locales";
 import { isMarketPulseCycleRevealed } from "@/lib/market-pulse/reveal-access";
 import {
+  loadMarketPulseNextCycleStatus,
+  type MarketPulseNextCycleStatus,
+} from "@/lib/market-pulse/next-cycle";
+import {
   getActiveMarketPulseCycle,
   getMarketPulseRevealForUser,
   getMarketPulseSettings,
@@ -22,13 +26,13 @@ function computeBestStreakFromCards(cards: MarketPulseRevealCardRow[]): number {
   let best = 0;
   let current = 0;
   for (const card of cards) {
-    if (card.isRestCard) {
+    if (card.isRestCard || !card.played) {
       continue;
     }
-    if (card.isMatch) {
+    if (card.isMatch === true) {
       current += 1;
       best = Math.max(best, current);
-    } else {
+    } else if (card.isMatch === false) {
       current = 0;
     }
   }
@@ -69,12 +73,14 @@ const pendingBase = (
   isAuthenticated: boolean,
   playNextAvailable: boolean,
   pendingCycle: MarketPulseRevealPageData["pendingCycle"],
+  nextCycle: MarketPulseNextCycleStatus = { status: "tbc" },
 ): MarketPulseRevealPageData => ({
   status: "pending",
   isAuthenticated,
   pendingCycle,
   revealedCycle: null,
   playNextAvailable,
+  nextCycle,
   results: null,
 });
 
@@ -85,9 +91,12 @@ export async function getMarketPulseRevealPageData(
   const userId = session?.user?.id;
   const isAuthenticated = Boolean(userId);
   const playNextAvailable = await resolvePlayNextAvailable();
+  const nextCycle = isDatabaseConfigured()
+    ? await loadMarketPulseNextCycleStatus()
+    : { status: "tbc" as const };
 
   if (!isDatabaseConfigured()) {
-    return pendingBase(isAuthenticated, playNextAvailable, null);
+    return pendingBase(isAuthenticated, playNextAvailable, null, nextCycle);
   }
 
   let revealedCycle: Awaited<
@@ -105,7 +114,7 @@ export async function getMarketPulseRevealPageData(
       "[market-pulse/reveal-data] Failed to load reveal cycle:",
       error,
     );
-    return pendingBase(isAuthenticated, playNextAvailable, null);
+    return pendingBase(isAuthenticated, playNextAvailable, null, nextCycle);
   }
 
   if (!revealedCycle) {
@@ -118,6 +127,7 @@ export async function getMarketPulseRevealPageData(
             revealAtIso: pendingActiveCycle.revealAt.toISOString(),
           }
         : null,
+      nextCycle,
     );
   }
 
@@ -130,6 +140,7 @@ export async function getMarketPulseRevealPageData(
       pendingCycle: null,
       revealedCycle: revealedCycleSummary,
       playNextAvailable,
+      nextCycle,
       results: null,
     };
   }
@@ -145,7 +156,7 @@ export async function getMarketPulseRevealPageData(
     return pendingBase(isAuthenticated, playNextAvailable, {
       name: revealedCycle.name,
       revealAtIso: revealedCycle.revealAt.toISOString(),
-    });
+    }, nextCycle);
   }
 
   if (!reveal?.isRevealed) {
@@ -161,6 +172,7 @@ export async function getMarketPulseRevealPageData(
             name: revealedCycle.name,
             revealAtIso: revealedCycle.revealAt.toISOString(),
           },
+      nextCycle,
     );
   }
 
@@ -175,7 +187,7 @@ export async function getMarketPulseRevealPageData(
     return pendingBase(isAuthenticated, playNextAvailable, {
       name: revealedCycle.name,
       revealAtIso: revealedCycle.revealAt.toISOString(),
-    });
+    }, nextCycle);
   }
 
   const cards: MarketPulseRevealCardRow[] = reveal.cards.map((card) => {
@@ -188,11 +200,18 @@ export async function getMarketPulseRevealPageData(
       cardType: card.cardType,
       companyName: card.companyName,
       headline: card.headline,
-      userDecision: card.userDecision,
+      ticker: card.ticker,
+      summary: card.summary,
+      newsBody: card.newsBody,
+      cardImageUrl: card.cardImageUrl,
+      cardImageAlt: card.cardImageAlt,
+      played: card.played,
+      viewerDecision: card.viewerDecision,
+      decidedAtIso: card.decidedAt?.toISOString() ?? null,
       ppaSignal: card.ppaSignal,
       ppaInsight: card.ppaInsight,
       isRestCard,
-      isMatch: !isRestCard && card.userDecision === card.ppaSignal,
+      isMatch: card.isMatch,
       participationPoints: card.participationPoints,
       matchBonus: card.matchBonus,
       streakBonus: card.streakBonus,
@@ -200,11 +219,16 @@ export async function getMarketPulseRevealPageData(
     };
   });
 
-  const matchesCount = cards.filter((card) => card.isMatch).length;
+  const matchesCount = cards.filter((card) => card.isMatch === true).length;
+  const totalPlayed = cards.filter((card) => card.played).length;
+  const totalSkipped = cards.filter((card) => !card.played).length;
   const bestStreak = Math.max(
     progress.currentStreak ?? 0,
     computeBestStreakFromCards(cards),
   );
+
+  const totalPoints =
+    progress.totalPoints ?? reveal.totals.totalPoints ?? null;
 
   return {
     status: "revealed",
@@ -212,13 +236,16 @@ export async function getMarketPulseRevealPageData(
     pendingCycle: null,
     revealedCycle: revealedCycleSummary,
     playNextAvailable,
+    nextCycle,
     results: {
       cycleId: reveal.cycleId,
       cycleName: reveal.cycleName,
-      totalPoints: reveal.totals.totalPoints,
+      totalPoints: totalPoints ?? 0,
       rank: progress.rank,
       matchesCount,
-      totalPlayed: cards.length,
+      totalPlayed,
+      totalSkipped,
+      totalPublished: cards.length,
       bestStreak,
       totals: reveal.totals,
       cards,

@@ -135,15 +135,22 @@ export type MarketPulseRevealCardRow = {
   cardType: import("@prisma/client").MarketPulseCardType;
   companyName: string;
   headline: string;
-  userDecision: string;
+  ticker: string | null;
+  summary: string | null;
+  newsBody: string | null;
+  cardImageUrl: string | null;
+  cardImageAlt: string | null;
+  played: boolean;
+  viewerDecision: string | null;
+  decidedAtIso: string | null;
   ppaSignal: string | null;
   ppaInsight: string | null;
-  isMatch: boolean;
+  isMatch: boolean | null;
   isRestCard: boolean;
-  participationPoints: number;
-  matchBonus: number;
-  streakBonus: number;
-  totalPoints: number;
+  participationPoints: number | null;
+  matchBonus: number | null;
+  streakBonus: number | null;
+  totalPoints: number | null;
 };
 
 export type MarketPulseRevealPageData = {
@@ -158,6 +165,7 @@ export type MarketPulseRevealPageData = {
     name: string;
   } | null;
   playNextAvailable: boolean;
+  nextCycle: import("@/lib/market-pulse/next-cycle").MarketPulseNextCycleStatus;
   results: {
     cycleId: string;
     cycleName: string;
@@ -165,6 +173,8 @@ export type MarketPulseRevealPageData = {
     rank: number | null;
     matchesCount: number;
     totalPlayed: number;
+    totalSkipped: number;
+    totalPublished: number;
     bestStreak: number;
     totals: {
       participationPoints: number;

@@ -25,6 +25,7 @@ const baseData: MarketPulsePlayPageData = {
   lockedDecision: null,
   cardProgress: null,
   runtimeOpen: true,
+  nextCycle: { status: "tbc" },
 };
 
 describe("play-page-state", () => {

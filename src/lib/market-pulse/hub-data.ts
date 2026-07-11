@@ -4,6 +4,10 @@ import { isDatabaseConfigured } from "@/lib/db-config";
 import { getCurrentMarketPulseCycle as getSyntheticChallengeCycle } from "@/lib/market-pulse/challenge-cycle";
 import { shouldUseMarketPulseDevelopmentFallback } from "@/lib/market-pulse/demo-cycle-guards";
 import {
+  loadMarketPulseNextCycleStatus,
+  type MarketPulseNextCycleStatus,
+} from "@/lib/market-pulse/next-cycle";
+import {
   getActiveMarketPulseCycle,
   getMarketPulseLeaderboard,
   getMarketPulseSettings,
@@ -31,6 +35,7 @@ export type MarketPulseHubPageData = {
   leaderboardEntries: MarketPulseLeaderboardRow[];
   leaderboardRevealed: boolean;
   hasDatabaseCycle: boolean;
+  nextCycle: MarketPulseNextCycleStatus;
 };
 
 function getDayProgress(
@@ -49,6 +54,14 @@ function getDayProgress(
   return { dayCurrent, dayTotal };
 }
 
+async function loadHubNextCycle(now: Date): Promise<MarketPulseNextCycleStatus> {
+  if (!isDatabaseConfigured()) {
+    return { status: "tbc" };
+  }
+
+  return loadMarketPulseNextCycleStatus({ now });
+}
+
 export async function getMarketPulseHubPageData(): Promise<MarketPulseHubPageData> {
   const now = new Date();
   const synthetic = getSyntheticChallengeCycle();
@@ -62,11 +75,13 @@ export async function getMarketPulseHubPageData(): Promise<MarketPulseHubPageDat
 
   let settings;
   let prismaCycle = null;
+  let nextCycle: MarketPulseNextCycleStatus = { status: "tbc" };
 
   try {
-    [settings, prismaCycle] = await Promise.all([
+    [settings, prismaCycle, nextCycle] = await Promise.all([
       getMarketPulseSettings(),
       getActiveMarketPulseCycle(),
+      loadHubNextCycle(now),
     ]);
   } catch (error) {
     console.error("[market-pulse/hub-data] Failed to load Prisma hub data:", error);
@@ -81,6 +96,7 @@ export async function getMarketPulseHubPageData(): Promise<MarketPulseHubPageDat
       return buildProductionSafeEmptyHubData(
         now,
         settings.runtimeStatus === "OPEN",
+        nextCycle,
       );
     }
     return buildFallbackHubData(
@@ -124,12 +140,14 @@ export async function getMarketPulseHubPageData(): Promise<MarketPulseHubPageDat
     leaderboardEntries,
     leaderboardRevealed,
     hasDatabaseCycle: true,
+    nextCycle,
   };
 }
 
 function buildProductionSafeEmptyHubData(
   now: Date,
   runtimeOpen: boolean,
+  nextCycle: MarketPulseNextCycleStatus = { status: "tbc" },
 ): MarketPulseHubPageData {
   return {
     challengeName: DEFAULT_CHALLENGE_NAME,
@@ -145,6 +163,7 @@ function buildProductionSafeEmptyHubData(
     leaderboardEntries: [],
     leaderboardRevealed: false,
     hasDatabaseCycle: false,
+    nextCycle,
   };
 }
 
@@ -173,5 +192,6 @@ function buildFallbackHubData(
     leaderboardEntries: [],
     leaderboardRevealed: false,
     hasDatabaseCycle: false,
+    nextCycle: { status: "tbc" },
   };
 }

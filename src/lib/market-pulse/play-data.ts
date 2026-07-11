@@ -12,6 +12,10 @@ import {
 } from "@/lib/market-pulse/cycle-playability";
 import type { SiteLocale } from "@/lib/i18n/locales";
 import {
+  loadMarketPulseNextCycleStatus,
+  type MarketPulseNextCycleStatus,
+} from "@/lib/market-pulse/next-cycle";
+import {
   getActiveMarketPulseCycle,
   getMarketPulseLeaderboard,
   getMarketPulseSettings,
@@ -35,7 +39,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export type MarketPulsePlayPageStatus =
   | "pre_launch"
-  | "no_active_cycle"
+  | "between_cycles"
   | "cycle_unavailable"
   | "runtime_closed"
   | "no_card_today"
@@ -74,6 +78,7 @@ export type MarketPulsePlayPageData = {
   lockedDecision: MarketPulsePlayerChoice | null;
   /** 1-based progress within today's card set; null when only one card. */
   cardProgress: { current: number; total: number } | null;
+  nextCycle: MarketPulseNextCycleStatus;
 };
 
 function getDayProgress(
@@ -243,6 +248,42 @@ function buildPreLaunchPageData(
     cycleId: null,
     leaderboardEntries: [],
     leaderboardRevealed: false,
+    nextCycle: { status: "tbc" },
+    ...emptyPlaySlots(),
+  };
+}
+
+async function loadPlayNextCycle(now: Date): Promise<MarketPulseNextCycleStatus> {
+  return loadMarketPulseNextCycleStatus({ now });
+}
+
+function buildBetweenCyclesPageData(
+  isAuthenticated: boolean,
+  now: Date,
+  nextCycle: MarketPulseNextCycleStatus,
+  extras: Partial<
+    Pick<
+      MarketPulsePlayPageData,
+      "unavailableReason" | "unavailableIssue" | "leaderboardEntries"
+    >
+  > = {},
+): Omit<MarketPulsePlayPageData, "runtimeOpen"> {
+  return {
+    status: "between_cycles",
+    isAuthenticated,
+    unavailableReason: extras.unavailableReason ?? null,
+    unavailableIssue: extras.unavailableIssue ?? null,
+    challengeName: "Market Pulse",
+    prizeLabel: "",
+    dayCurrent: 0,
+    dayTotal: 0,
+    revealAtIso: now.toISOString(),
+    revealRemainingMs: 0,
+    revealAtLabel: "",
+    cycleId: null,
+    leaderboardEntries: extras.leaderboardEntries ?? [],
+    leaderboardRevealed: false,
+    nextCycle,
     ...emptyPlaySlots(),
   };
 }
@@ -291,23 +332,14 @@ export async function getMarketPulsePlayPageData(
   ): MarketPulsePlayPageData =>
     gateRuntimeClosedPageData({ ...data, runtimeOpen }, runtimeOpen);
 
+  const nextCycle = isDatabaseConfigured()
+    ? await loadPlayNextCycle(now)
+    : { status: "tbc" as const };
+
   if (!isDatabaseConfigured()) {
-    return finalize({
-      status: "no_active_cycle",
-      isAuthenticated,
-      unavailableReason: null,
-      challengeName: "Market Pulse",
-      prizeLabel: "",
-      dayCurrent: 0,
-      dayTotal: 0,
-      revealAtIso: now.toISOString(),
-      revealRemainingMs: 0,
-      revealAtLabel: "",
-      cycleId: null,
-      leaderboardEntries: [],
-      leaderboardRevealed: false,
-      ...emptyPlaySlots(),
-    });
+    return finalize(
+      buildBetweenCyclesPageData(isAuthenticated, now, nextCycle),
+    );
   }
 
   let activeCycle = null;
@@ -334,23 +366,28 @@ export async function getMarketPulsePlayPageData(
       // ignore — fall through to generic empty state
     }
 
-    return finalize({
-      status: unavailableReason ? "cycle_unavailable" : "no_active_cycle",
-      isAuthenticated,
-      unavailableReason,
-      unavailableIssue,
-      challengeName: "Market Pulse",
-      prizeLabel: "",
-      dayCurrent: 0,
-      dayTotal: 0,
-      revealAtIso: now.toISOString(),
-      revealRemainingMs: 0,
-      revealAtLabel: "",
-      cycleId: null,
-      leaderboardEntries: [],
-      leaderboardRevealed: false,
-      ...emptyPlaySlots(),
-    });
+    return finalize(
+      unavailableReason
+        ? {
+            status: "cycle_unavailable",
+            isAuthenticated,
+            unavailableReason,
+            unavailableIssue,
+            challengeName: "Market Pulse",
+            prizeLabel: "",
+            dayCurrent: 0,
+            dayTotal: 0,
+            revealAtIso: now.toISOString(),
+            revealRemainingMs: 0,
+            revealAtLabel: "",
+            cycleId: null,
+            leaderboardEntries: [],
+            leaderboardRevealed: false,
+            nextCycle,
+            ...emptyPlaySlots(),
+          }
+        : buildBetweenCyclesPageData(isAuthenticated, now, nextCycle),
+    );
   }
 
   const cycleShell = buildCycleShell(activeCycle, now, locale);
@@ -369,6 +406,7 @@ export async function getMarketPulsePlayPageData(
       isAuthenticated,
       ...cycleShell,
       leaderboardEntries,
+      nextCycle,
       ...emptyPlaySlots(),
     });
   }
@@ -382,6 +420,7 @@ export async function getMarketPulsePlayPageData(
       isAuthenticated: false,
       ...cycleShell,
       leaderboardEntries,
+      nextCycle,
       cardsToday: guestCardsToday,
       activeCardIndex: 0,
       card: previewCard,
@@ -407,6 +446,7 @@ export async function getMarketPulsePlayPageData(
       isAuthenticated: true,
       ...cycleShell,
       leaderboardEntries,
+      nextCycle,
       ...emptyPlaySlots(),
     });
   }
@@ -415,6 +455,7 @@ export async function getMarketPulsePlayPageData(
     isAuthenticated: true,
     ...cycleShell,
     leaderboardEntries,
+    nextCycle,
     cardsToday,
     ...resolveAuthenticatedPlayState(cardsToday),
   });

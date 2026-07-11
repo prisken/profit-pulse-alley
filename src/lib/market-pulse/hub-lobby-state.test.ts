@@ -94,6 +94,16 @@ describe("hub-lobby-state", () => {
     expect(cta.href).toBe("/market-pulse/leaderboard");
   });
 
+  it("returns view rules when there is no active cycle and next cycle is TBC", () => {
+    const cta = deriveHubPrimaryCta("no_active_cycle", {
+      isAuthenticated: false,
+      runtimeOpen: true,
+      nextCycleTbc: true,
+    });
+    expect(cta.kind).toBe("view_rules");
+    expect(cta.href).toBe("/market-pulse/rules");
+  });
+
   it("returns view reveal when reveal is pending", () => {
     const cta = deriveHubPrimaryCta("reveal_pending", {
       isAuthenticated: true,

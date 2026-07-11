@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   getTodayMarketPulsePlaySessionSnapshot: vi.fn(),
   getTodayMarketPulsePlaySession: vi.fn(),
   getMarketPulseLeaderboard: vi.fn(),
+  loadMarketPulseNextCycleStatus: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -22,6 +23,10 @@ vi.mock("@/auth", () => ({
 
 vi.mock("@/lib/db-config", () => ({
   isDatabaseConfigured: mocks.isDatabaseConfigured,
+}));
+
+vi.mock("@/lib/market-pulse/next-cycle", () => ({
+  loadMarketPulseNextCycleStatus: mocks.loadMarketPulseNextCycleStatus,
 }));
 
 vi.mock("@/lib/market-pulse/server", () => ({
@@ -114,6 +119,7 @@ describe("getMarketPulsePlayPageData — multiple cards per day", () => {
     });
     mocks.getActiveMarketPulseCycle.mockResolvedValue(activeCycle);
     mocks.getMarketPulseLeaderboard.mockResolvedValue([]);
+    mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({ status: "tbc" });
     mocks.getTodayMarketPulsePlaySessionSnapshot.mockResolvedValue(buildSessionSnapshot());
   });
 

@@ -5,12 +5,17 @@ const mocks = vi.hoisted(() => ({
   getActiveMarketPulseCycle: vi.fn(),
   getMarketPulseSettings: vi.fn(),
   getMarketPulseLeaderboard: vi.fn(),
+  loadMarketPulseNextCycleStatus: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/db-config", () => ({
   isDatabaseConfigured: mocks.isDatabaseConfigured,
+}));
+
+vi.mock("@/lib/market-pulse/next-cycle", () => ({
+  loadMarketPulseNextCycleStatus: mocks.loadMarketPulseNextCycleStatus,
 }));
 
 vi.mock("@/lib/market-pulse/server", () => ({
@@ -28,6 +33,7 @@ describe("getMarketPulseHubPageData production hardening", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("VERCEL_ENV", "");
     mocks.getMarketPulseLeaderboard.mockResolvedValue([]);
+    mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({ status: "tbc" });
   });
 
   afterEach(() => {
@@ -58,6 +64,29 @@ describe("getMarketPulseHubPageData production hardening", () => {
     expect(data.cycleId).toBeNull();
     expect(data.hasDatabaseCycle).toBe(false);
     expect(data.challengeName).not.toMatch(/\[DEMO\]/i);
+    expect(data.nextCycle).toEqual({ status: "tbc" });
+  });
+
+  it("includes next cycle metadata when a future cycle is scheduled", async () => {
+    mocks.isDatabaseConfigured.mockReturnValue(true);
+    mocks.getMarketPulseSettings.mockResolvedValue({ runtimeStatus: "OPEN" });
+    mocks.getActiveMarketPulseCycle.mockResolvedValue(null);
+    mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({
+      status: "available",
+      cycleId: "cycle-aug",
+      name: "August 2026 Market Pulse",
+      startsAtIso: "2026-07-11T16:00:00.000Z",
+      endsAtIso: "2026-07-21T16:00:00.000Z",
+      revealAtIso: "2026-07-21T16:00:00.000Z",
+      firstCardReleaseAtIso: "2026-07-11T01:00:00.000Z",
+    });
+
+    const data = await getMarketPulseHubPageData();
+
+    expect(data.nextCycle.status).toBe("available");
+    if (data.nextCycle.status === "available") {
+      expect(data.nextCycle.name).toBe("August 2026 Market Pulse");
+    }
   });
 
   it("shows real production cycle data unchanged", async () => {

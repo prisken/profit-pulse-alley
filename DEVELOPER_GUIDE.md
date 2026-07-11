@@ -14,7 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
-| **Recent `main`** | **Active-window playability** — cards stay playable overnight until the next 9 AM HKT release; `findActiveScheduleDayIndex`, `getCardActiveWindowEnd`, `isCardWithinActivePlayWindow` in `playable-card.ts`; **`today-only-playability.test.ts`** updated; **583** market-pulse Vitest tests |
+| **Recent `main`** | **Post-cycle reveal review** — full published card list (played + skipped), next-cycle TBC on hub/play/reveal, `between_cycles` play state; **`reveal-cycle-review.test.ts`**, **`next-cycle.test.ts`**; **601** market-pulse Vitest tests |
 
 ---
 
@@ -34,13 +34,15 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 
 | What players see | When | Hub status chip | Primary CTA |
 |------------------|------|-----------------|-------------|
-| **No active cycle** | Runtime `OPEN`, no playable pinned cycle (or demo cycle hidden in prod) | **No active cycle** (soft emerald) | View leaderboard |
+| **No active cycle** | Runtime `OPEN`, no playable pinned cycle (or demo cycle hidden in prod) | **No active cycle** (soft emerald) | **Explore rules** when next cycle is TBC; otherwise view leaderboard / play when next cycle is scheduled |
 | **Closed** | Runtime `CLOSED` / `MAINTENANCE`, or cycle exists but runtime off | **Closed** (gray) | View leaderboard |
 | **Open** | Runtime `OPEN`, active cycle in window, today's card published | **Open** (green pulse) | Play today / Sign in |
 | **Reveal pending** | Cycle ended, reveal time passed, not yet revealed | **Reveal pending** (amber) | View reveal |
 | **Revealed** | Cycle revealed | **Revealed** (sky) | View leaderboard |
 
 **Live production note (early Jul 2026):** If `/market-pulse` shows **No active cycle** with an empty cycle panel, ops has not finished go-live — runtime may be `OPEN` but no **real** (non-demo) cycle is pinned active with a **published card for today**. Fix via `/admin/market-pulse` (see [Making Market Pulse visible](#making-market-pulse-visible-to-players-go-live) and [Admin dashboards](#admin-dashboards-ops-reference)).
+
+**Between cycles:** When runtime is `OPEN` but no cycle is in the active play window, `/market-pulse/play` returns `between_cycles` with **Next challenge: TBC** or the scheduled next cycle start (`next-cycle.ts`). Hub shows the same **Next cycle** signal in the cycle panel.
 
 **Production data guards:** Demo/seed cycle `[DEMO] Market Pulse Local Seed` is **filtered from public paths** in production (`demo-cycle-guards.ts`). `db:seed` is blocked unless `MARKET_PULSE_SEED=1`. Hub/play/leaderboard do **not** fall back to synthetic dev data on Vercel — they return empty/safe states instead (`hub-data.production.test.ts`).
 
@@ -124,14 +126,14 @@ Google OAuth redirect URIs (must match exactly):
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
 
-### Verification — last run 3 Jul 2026 (610 tests)
+### Verification — last run 11 Jul 2026 (656 tests)
 
 | Check | Result |
 |-------|--------|
 | **Lint** | `npm run lint` — pass (0 errors; pre-existing warnings in legacy/admin) |
 | **Typecheck** | `npm run typecheck` — pass |
 | **Build** | `npm run build` — pass (`prisma db push && next build`) |
-| **Tests** | `npm test` — **610** Vitest tests (87 files) |
+| **Tests** | `npm test` — **656** Vitest tests (92 files) |
 | **Hub lobby chip** | `hub-lobby-state.test.ts` — `no_active_cycle` when runtime OPEN + no DB cycle; `closed` when runtime paused |
 | **Launch smoke** | `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts` |
 | **Card release (HKT)** | `hkt-time.test.ts`, `card-release-schedule.test.ts` — fixed UTC+8 math; Day 1 = `2026-07-01T01:00:00.000Z` when cycle starts `2026-06-30T16:00:00.000Z`; dual gate (derived release + `publishedAt`) |
@@ -141,6 +143,8 @@ Google OAuth redirect URIs (must match exactly):
 | **Market rest cards** | `card-type.test.ts`, `play-rest-card.test.ts`, `player-handlers.test.ts`, `score-calculation.test.ts` — `ACKNOWLEDGED` on REST; +10 only; REST skipped in `computeSignalMatchStreak`; reveal/leaderboard participation-only rows |
 | **Card localization** | `card-localization.test.ts` — zh-Hant + EN fallback; PPA stripped pre-reveal |
 | **Reveal / leaderboard multi-card** | `leaderboard-score-breakdown.test.ts`, `reveal-ppa-validation.test.ts` — duplicate `dayIndex` OK; per-card breakdown labels |
+| **Post-cycle reveal review** | `reveal-cycle-review.test.ts`, `reveal-data.launch.test.ts` — full published card list (played + skipped); zero/partial participation; missing score events stay null; pre-reveal empty `cards` |
+| **Next-cycle TBC** | `next-cycle.test.ts`, `hub-data.production.test.ts`, `hub-lobby-state.test.ts`, `play-data.launch.test.ts` — nearest future `OPEN` cycle or `{ status: "tbc" }`; demo filtered in prod; hub rules CTA when TBC |
 | **Public copy** | `public-market-pulse-copy.test.ts` — no stale pre-launch/dev terms in MP i18n |
 | **Demo/seed guards** | `demo-cycle-guards.ts` — demo cycles hidden from public production paths; `seed-guards.ts` blocks `db:seed` in production |
 | **Admin launch UI** | `shouldShowMarketPulseLaunchSetupUi()` hides Setup guide + first-cycle panel after 1 Jul 2026 HKT; operational warnings remain |
@@ -1213,15 +1217,15 @@ Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes s
 
 ### 10.3 Market Pulse Hub (`/market-pulse`)
 
-**Server:** `getMarketPulseHubPageData()` — active cycle, day progress, prize label, top-5 leaderboard preview, `leaderboardRevealed`, cycle ISO dates.
+**Server:** `getMarketPulseHubPageData()` — active cycle, day progress, prize label, top-5 leaderboard preview, `leaderboardRevealed`, cycle ISO dates, **`nextCycle`** (`loadMarketPulseNextCycleStatus()` from `next-cycle.ts`).
 
 **Client:** `MarketPulseHubPage.tsx` — **game lobby** layout:
 
 | Area | Behavior |
 |------|----------|
 | **Lobby status** | `deriveHubLobbyStatus()` in `hub-lobby-state.ts` → `pre_launch` \| `open` \| `reveal_pending` \| `revealed` \| `no_active_cycle` \| `closed` |
-| **Primary CTA** | `deriveHubPrimaryCta()` — context-aware: get ready / play today / sign in / view reveal / view leaderboard / rules |
-| **Cycle panel** | Dates, reveal countdown, leaderboard live vs locked label |
+| **Primary CTA** | `deriveHubPrimaryCta()` — context-aware: get ready / play today / sign in / view reveal / view leaderboard / rules; when `no_active_cycle` and `nextCycle.status === "tbc"`, primary CTA is **Explore rules** (not “Play today”) |
+| **Cycle panel** | Dates, reveal countdown, leaderboard live vs locked label; when no active cycle, **Next cycle** row shows scheduled name/date or **TBC** + body copy |
 | **Journey steps** | Read → Decide → Reveal → Rank (decorative) |
 | **Leaderboard preview** | Top-5 ranks; **scores masked** (`scoreLocked`) until `leaderboardRevealed` |
 | **Prize** | Cycle prize banner + contest rules link |
@@ -1241,7 +1245,8 @@ Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes s
 - **Confirmation step:** Card phase `confirm` — user must confirm decision before submit (`decision_confirmation_opened` analytics)
 - **Locked/submitted:** `DecisionLockedCard` after successful submit or when revisiting a decided card; phase `locked`
 - **Submit:** `submitMarketPulseDecisionAction` → `MarketPulseDecision` row (`BULLISH`/`CAUTIOUS` or `ACKNOWLEDGED` on rest cards; scores persisted on admin reveal, not at submit time)
-- **States:** `pre_launch`, `no_active_cycle`, `cycle_unavailable`, `runtime_closed`, `no_card_today`, `sign_in_required`, `playable`, `locked`
+- **States:** `pre_launch`, `no_active_cycle`, **`between_cycles`**, `cycle_unavailable`, `runtime_closed`, `no_card_today`, `sign_in_required`, `playable`, `locked`
+- **`between_cycles`:** Runtime OPEN but no active playable cycle (gap after a cycle ends, before the next opens). Shows **Next challenge** scheduled date or **TBC** from `nextCycle`; does not show “today’s signal coming soon”
 - **Pre-launch:** non-admin → `pre_launch` status; ADMIN bypass via `launch-config.ts`
 - **Non-playable UI:** `PlayStatusCard` / status panels for each blocked state; decorative `PlayDecorativeSignalPreview` where card is hidden
 - **Playability:** `getActiveMarketPulseCycle()` returns null when `revealAt < now` even if cycle is pinned active — see [Making Market Pulse visible](#making-market-pulse-visible-to-players-go-live)
@@ -1281,13 +1286,42 @@ Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes s
 
 #### Reveal page (`/market-pulse/reveal`)
 
-- **Component:** `MarketPulseRevealExperience.tsx` + `RevealStatePanel.tsx` (locked / guest / no-participation variants).
-- **Pending:** Countdown + locked preview (`RevealLockedPreview`) — **no PPA or personal scores** in props (`reveal-data.ts` returns `results: null`).
-- **Revealed (authenticated):** Ceremony header, score summary stats, per-card results with PPA signal + insight, learning framing copy, CTAs (play next / leaderboard / rules when available).
+- **Components:** `MarketPulseRevealExperience.tsx`, `MarketPulseRevealCardList.tsx`, `RevealStatePanel.tsx` (locked / guest variants).
+- **Pending:** Countdown + locked preview (`RevealLockedPreview`) — **no PPA or personal scores** in props (`reveal-data.ts` returns `results: null`, `cards: []` from server pre-reveal gate).
+- **Revealed (authenticated):** Ceremony header, **Your cycle review** summary (`You played X of Y cards`), score summary stats, **full published card list** (played + skipped), learning framing copy, CTAs (play next when an active cycle exists; else next-cycle start date or **TBC**).
 - **Revealed (guest):** Sign-in prompt panel — no personal results.
-- **PPA gating unchanged:** PPA fields only after admin reveal + `reveal?.isRevealed`; same `reveal-access.ts` rules.
-- **Display-only additions:** `revealedCycle` summary and `playNextAvailable` flag in `reveal-data.ts` (CTA routing only).
-- Scoring: participation (+10), match bonus, streak bonus — computed in `calculateAndPersistCycleScores` on admin reveal
+- **Zero participation:** Banner above the full card list (not an empty state) — user still sees every published card with PPA for learning; skipped cards show **Not played** badges.
+- **PPA gating unchanged:** PPA fields only after admin reveal + `reveal?.isRevealed`; same `reveal-access.ts` rules. Skipped signal cards still receive PPA post-reveal (learning); REST cards never expose PPA on reveal rows.
+- **Display-only additions:** `revealedCycle`, `playNextAvailable`, and **`nextCycle`** in `reveal-data.ts` (CTA routing only).
+- Scoring: participation (+10), match bonus, streak bonus — computed in `calculateAndPersistCycleScores` on admin reveal (**unchanged**; reveal page only reads score events).
+
+##### Post-cycle reveal data model (Jul 2026)
+
+**Server:** `getMarketPulseRevealForUser()` in `server.ts` loads **all `PUBLISHED` cards** in the revealed cycle (play order: `dayIndex → sortOrder → createdAt`), joins viewer decisions and score events, and returns **one row per card**.
+
+| Field | Played | Skipped |
+|-------|--------|---------|
+| `played` | `true` | `false` |
+| `viewerDecision` | decision value | `null` |
+| `decidedAt` | timestamp | `null` |
+| `isMatch` (signal) | `true` / `false` vs locked PPA | `null` |
+| `isMatch` (REST) | always `null` | `null` |
+| Score fields | from `MarketPulseScoreEvent`, or `null` if missing | all `null` |
+
+**Totals** sum only non-null score fields on played cards — no `PARTICIPATION_POINTS` fallback when events are absent.
+
+**Page mapping:** `reveal-data.ts` → `MarketPulseRevealCardRow`; derives `totalPlayed`, `totalSkipped`, `totalPublished`, `matchesCount`, `bestStreak` (played signal cards with `isMatch === true` only).
+
+##### Next-cycle TBC (`next-cycle.ts`)
+
+When no cycle is currently playable, hub, play, and reveal loaders attach **`nextCycle`**:
+
+| `nextCycle.status` | Meaning |
+|--------------------|---------|
+| `available` | Nearest future `OPEN` cycle with `startsAt > now`, passing `shouldTreatCycleAsActiveForPublic` (demo/seed hidden in production) |
+| `tbc` | No qualifying future cycle scheduled |
+
+`firstCardReleaseAtIso`: earliest published card’s `getCardReleaseTime()`, else day-1 `getCycleDayReleaseAt()`.
 
 ### 10.6 Market Pulse rules & contest
 
@@ -1619,7 +1653,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | Admin | `src/app/admin/page.tsx`, `src/app/admin/market-pulse/page.tsx`, `MarketPulseAdminDashboard.tsx` |
 | Market Pulse Hub | `src/app/market-pulse/page.tsx`, `MarketPulseHubPage.tsx`, `hub-lobby-state.ts`, `hub-data.ts` |
 | Market Pulse play | `src/app/market-pulse/play/page.tsx`, `MarketPulsePlayExperience.tsx`, `MarketPulseSwipeCard.tsx`, `MarketPulseRestCard.tsx`, `DecisionLockedCard.tsx`, `play-page-state.ts`, `play-data.ts`, `card-type.ts` |
-| Leaderboard / reveal | `leaderboard/page.tsx`, `reveal/page.tsx`, `leaderboard-data.ts`, `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `LeaderboardStatePanel.tsx`, `MarketPulseLeaderboardMyScore.tsx`, `RevealStatePanel.tsx`, `reveal-data.ts` |
+| Leaderboard / reveal | `leaderboard/page.tsx`, `reveal/page.tsx`, `leaderboard-data.ts`, `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `LeaderboardStatePanel.tsx`, `MarketPulseLeaderboardMyScore.tsx`, `RevealStatePanel.tsx`, `MarketPulseRevealCardList.tsx`, `reveal-data.ts`, `next-cycle.ts` |
 | Homepage journey | `src/app/page.tsx`, `MarketPulseHero.tsx`, `HomeMarketPulseSimulator.tsx`, `MarketPulsePipelineSection.tsx`, `HomePulseBoardWidget.tsx`, `HomeRewardsShowcase.tsx`, `homepage-pulse-preview.ts` |
 | MP visual / analytics | `MarketPulseVisualPrimitives.tsx`, `MarketPulseTrackedLink.tsx`, `analytics.ts` |
 | Admin cycle stats | `admin-cycle-stats.ts`, `admin-data.ts` (`MarketPulseAdminCycleRow` participation fields) |
@@ -1640,10 +1674,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 - **Languages:** EN + Traditional Chinese (`ppa_locale` cookie); MP launch messages in `launch-config.ts`
 - **Data stores:** Postgres (users, Market Pulse, auth), KV (legacy theme), Markdown (blog)
-- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (610), `npm run build`
+- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (656), `npm run build`
 - **Production smoke:** [`docs/market-pulse-deploy-checklist.md`](docs/market-pulse-deploy-checklist.md) § Launch smoke test; automated suites listed in [Production smoke test](#production-smoke-test)
 - **Lint warnings:** Legacy castle-siege; TanStack Table in admin members table
 
 ---
 
-*Last updated: 10 Jul 2026 — Active-window playability (seamless overnight card windows until next 9 AM HKT release).*
+*Last updated: 11 Jul 2026 — Post-cycle reveal review (full card list, played/skipped), next-cycle TBC on hub/play/reveal, `between_cycles` play state.*

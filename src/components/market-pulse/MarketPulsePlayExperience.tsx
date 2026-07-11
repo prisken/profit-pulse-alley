@@ -46,6 +46,7 @@ import {
 } from "@/lib/market-pulse/analytics";
 import type { MarketPulseDecision } from "@/lib/market-pulse/constants";
 import type { MarketPulsePlayPageData } from "@/lib/market-pulse/play-data";
+import type { MarketPulseNextCycleStatus } from "@/lib/market-pulse/next-cycle";
 import { MARKET_PULSE_EASE } from "@/lib/market-pulse/motion";
 import { submitMarketPulseDecisionAction } from "@/lib/market-pulse/player-actions";
 import type { MarketPulseSwipeCardData, MarketPulseSwipeSubmitResult } from "@/lib/market-pulse/types";
@@ -76,6 +77,20 @@ function formatHubDate(iso: string, locale: SiteLocale, withTime = false): strin
     ...(withTime ? { timeStyle: "short" as const } : {}),
     timeZone: "Asia/Hong_Kong",
   }).format(new Date(iso));
+}
+
+function formatNextChallengeDetail(
+  nextCycle: MarketPulseNextCycleStatus,
+  locale: SiteLocale,
+  t: (key: import("@/lib/i18n/messages").MessageKey) => string,
+): string {
+  if (nextCycle.status === "available") {
+    return t("mp.play.state.nextChallenge.scheduled")
+      .replace("{name}", nextCycle.name)
+      .replace("{date}", formatHubDate(nextCycle.startsAtIso, locale, true));
+  }
+
+  return `${t("mp.play.state.nextChallenge.tbc")} ${t("mp.common.nextCycleTbcBody")}`;
 }
 
 function PlayLeaderboard({
@@ -264,18 +279,24 @@ function PlayNonPlayableState({
     );
   }
 
-  if (data.status === "no_active_cycle") {
+  if (data.status === "between_cycles") {
     return (
       <PlayStatusCard
         icon={CalendarClock}
         accent="zinc"
-        title={t("mp.play.state.noCycle.title")}
-        body={t("mp.play.state.noCycle.body")}
+        title={t("mp.play.state.betweenCycles.title")}
+        body={t("mp.play.state.betweenCycles.body")}
+        detail={formatNextChallengeDetail(data.nextCycle, locale, t)}
         ctas={[
           {
             label: t("mp.play.state.noCycle.cta.leaderboard"),
             href: "/market-pulse/leaderboard",
             variant: "primary",
+          },
+          {
+            label: t("mp.hub.lobby.secondary.rules"),
+            href: "/market-pulse/rules",
+            variant: "secondary",
           },
           {
             label: t("mp.play.state.noCycle.cta.hub"),
@@ -789,13 +810,13 @@ export default function MarketPulsePlayExperience({
 
   const showCycleChrome =
     data.status !== "pre_launch" &&
-    data.status !== "no_active_cycle" &&
+    data.status !== "between_cycles" &&
     data.status !== "cycle_unavailable" &&
     data.dayTotal > 0;
 
   const isNonPlayableStatus =
     data.status === "pre_launch" ||
-    data.status === "no_active_cycle" ||
+    data.status === "between_cycles" ||
     data.status === "cycle_unavailable" ||
     data.status === "runtime_closed" ||
     data.status === "no_card_today" ||
@@ -909,7 +930,7 @@ export default function MarketPulsePlayExperience({
           </div>
 
           {data.status !== "pre_launch" &&
-          data.status !== "no_active_cycle" &&
+          data.status !== "between_cycles" &&
           data.status !== "cycle_unavailable" ? (
             <aside className="mt-3 hidden min-w-0 shrink-0 space-y-4 lg:sticky lg:top-3 lg:mt-0 lg:block lg:self-start">
               {showCycleChrome ? (
@@ -932,7 +953,7 @@ export default function MarketPulsePlayExperience({
         </div>
 
         {data.status !== "pre_launch" &&
-        data.status !== "no_active_cycle" &&
+        data.status !== "between_cycles" &&
         data.status !== "cycle_unavailable" &&
         !isCardFocusState ? (
           <details className="mt-3 shrink-0 lg:hidden">

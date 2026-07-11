@@ -58,6 +58,74 @@ const REQUIRED_SCORING_COPY_KEYS = [
   "mp.scoring.signalStreak",
 ] as const;
 
+const REQUIRED_CYCLE_REVEAL_COPY: ReadonlyArray<{
+  key: keyof typeof marketPulseEnMessages;
+  en: string;
+  zh: string;
+}> = [
+  { key: "mp.common.tbc", en: "TBC", zh: "待定" },
+  { key: "mp.common.nextCycle", en: "Next cycle", zh: "下一期" },
+  { key: "mp.common.nextCycleTbc", en: "Next cycle: TBC", zh: "下一期：待定" },
+  {
+    key: "mp.common.nextChallengeTbc",
+    en: "Next challenge: TBC",
+    zh: "下一個挑戰：待定",
+  },
+  {
+    key: "mp.reveal.review.title",
+    en: "Your cycle review",
+    zh: "你的本期回顧",
+  },
+  {
+    key: "mp.reveal.review.playedSummary",
+    en: "You played {played} of {total} cards.",
+    zh: "你完成了 {played} / {total} 張卡牌。",
+  },
+  { key: "mp.reveal.card.played", en: "Played", zh: "已參與" },
+  { key: "mp.reveal.card.notPlayed", en: "Not played", zh: "未參與" },
+  { key: "mp.reveal.card.yourCall", en: "Your choice", zh: "你的選擇" },
+  { key: "mp.reveal.card.ppaSignal", en: "PPA signal", zh: "PPA 訊號" },
+  { key: "mp.reveal.card.ppaInsight", en: "PPA insight", zh: "PPA 洞察" },
+  { key: "mp.reveal.card.match", en: "Matched PPA", zh: "與 PPA 一致" },
+  {
+    key: "mp.reveal.card.noMatch",
+    en: "Different from PPA",
+    zh: "與 PPA 不同",
+  },
+  {
+    key: "mp.reveal.card.skippedHint",
+    en: "You did not play this card, so it does not count toward your score.",
+    zh: "你沒有參與此卡牌，因此不會計入你的分數。",
+  },
+  {
+    key: "mp.reveal.noParticipation.title",
+    en: "You did not play this cycle",
+    zh: "你未有參與本期挑戰",
+  },
+  {
+    key: "mp.reveal.noParticipation.body",
+    en: "This cycle has been revealed, but we could not find any locked choices for your account. You can still review the PPA insights below.",
+    zh: "本期結果已揭曉，但我們找不到此帳戶已鎖定的選擇。你仍可在下方查看 PPA 洞察。",
+  },
+  { key: "mp.reveal.card.scorePending", en: "Score pending", zh: "分數待確認" },
+  { key: "mp.cardType.rest", en: "Market rest card", zh: "市場休息卡" },
+  {
+    key: "mp.play.completion.acknowledged",
+    en: "Participation claimed",
+    zh: "已領取參與分",
+  },
+  {
+    key: "mp.reveal.card.restNotClaimed",
+    en: "Rest card not claimed",
+    zh: "未領取休息卡",
+  },
+  {
+    key: "mp.common.nextCycleTbcBody",
+    en: "Next cycle is TBC. Check back soon for the next Market Pulse challenge.",
+    zh: "下一期暫定，請稍後回來查看新的 Market Pulse 挑戰。",
+  },
+];
+
 function isMarketPulseHomeKey(key: string): boolean {
   return (
     key.startsWith("home.hero.") ||
@@ -231,5 +299,25 @@ describe("public Market Pulse production copy", () => {
 
     expect(enMessages["home.pipeline.scoring.rest"]).toMatch(/rest card/i);
     expect(zhHantMessages["home.pipeline.scoring.rest"]).toMatch(/休息卡/);
+  });
+
+  it("keeps cycle review, reveal, and next-cycle TBC copy in EN and zh-Hant", () => {
+    for (const { key, en, zh } of REQUIRED_CYCLE_REVEAL_COPY) {
+      expect(marketPulseEnMessages[key]).toBe(en);
+      expect(marketPulseZhHantMessages[key]).toBe(zh);
+    }
+
+    expect(marketPulseEnMessages["mp.hub.lobby.nextCycle.tbc"]).toBe(
+      "Next cycle: TBC",
+    );
+    expect(marketPulseZhHantMessages["mp.hub.lobby.nextCycle.tbc"]).toBe(
+      "下一期：待定",
+    );
+    expect(marketPulseEnMessages["mp.play.state.nextChallenge.tbc"]).toBe(
+      "Next challenge: TBC",
+    );
+    expect(marketPulseZhHantMessages["mp.play.state.nextChallenge.tbc"]).toBe(
+      "下一個挑戰：待定",
+    );
   });
 });
