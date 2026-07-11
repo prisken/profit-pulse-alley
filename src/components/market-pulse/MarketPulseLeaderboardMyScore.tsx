@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ChevronDown, Lock, LogIn, UserRound } from "lucide-react";
+import { ChevronDown, Lock, LogIn, Sparkles, UserRound } from "lucide-react";
 
 import { formatMarketPulseCardDayLabelLocalized } from "@/lib/market-pulse/card-play-order";
 import type { LeaderboardViewerScorePanel } from "@/lib/market-pulse/leaderboard-viewer-score";
@@ -75,6 +75,24 @@ function MessageBody({
       <p className="text-sm text-zinc-300 sm:text-base">{message}</p>
       {action}
     </div>
+  );
+}
+
+const REVEAL_PAGE_HREF = "/market-pulse/reveal";
+
+function RevealPageLink({
+  labelKey,
+}: Readonly<{ labelKey: MessageKey }>) {
+  const { t } = useTranslations();
+
+  return (
+    <Link
+      href={REVEAL_PAGE_HREF}
+      className={`mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-5 text-sm font-bold text-emerald-200 transition-colors hover:border-emerald-400/60 hover:bg-emerald-500/20 sm:w-auto ${focusRing}`}
+    >
+      <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
+      {t(labelKey)}
+    </Link>
   );
 }
 
@@ -279,6 +297,7 @@ export default function MarketPulseLeaderboardMyScore({
             </p>
           }
         />
+        <RevealPageLink labelKey="mp.hub.lobby.cta.viewReveal" />
       </PanelShell>
     );
   }
@@ -308,6 +327,7 @@ export default function MarketPulseLeaderboardMyScore({
               .replace("{total}", String(panel.totalCards))}
           </p>
         ) : null}
+        <RevealPageLink labelKey="mp.leaderboard.myScore.viewCycleReview" />
       </PanelShell>
     );
   }
@@ -340,6 +360,7 @@ export default function MarketPulseLeaderboardMyScore({
         />
       </div>
       <ScoreBreakdown cards={panel.breakdown} />
+      <RevealPageLink labelKey="mp.leaderboard.myScore.viewCycleReview" />
     </PanelShell>
   );
 }

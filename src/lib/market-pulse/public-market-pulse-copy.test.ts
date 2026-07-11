@@ -124,6 +124,11 @@ const REQUIRED_CYCLE_REVEAL_COPY: ReadonlyArray<{
     en: "Next cycle is TBC. Check back soon for the next Market Pulse challenge.",
     zh: "下一期暫定，請稍後回來查看新的 Market Pulse 挑戰。",
   },
+  {
+    key: "mp.leaderboard.myScore.viewCycleReview",
+    en: "View cycle review",
+    zh: "查看本期回顧",
+  },
 ];
 
 function isMarketPulseHomeKey(key: string): boolean {

@@ -14,7 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
-| **Recent `main`** | **Post-cycle reveal review** — full published card list (played + skipped), next-cycle TBC on hub/play/reveal, `between_cycles` play state; **`reveal-cycle-review.test.ts`**, **`next-cycle.test.ts`**; **601** market-pulse Vitest tests |
+| **Recent `main`** | **Leaderboard → reveal link** — **View cycle review** under My score for this cycle → `/market-pulse/reveal`; prior: post-cycle reveal review, next-cycle TBC, `between_cycles` play state |
 
 ---
 
@@ -26,7 +26,7 @@ The public site centers on **Market Pulse** — a recurring multi-day investment
 
 **Homepage (Jul 2026 terminal revamp):** premium dark **obsidian terminal** layout (`bg-mp-obsidian`, pulse green accents, JetBrains Mono metrics) with a **Market Pulse hero** (headline *“Read the Market Rhythm. Build Your Zero-Cost Life.”*, proof chips, launch-aware CTAs, interactive **Pulse Simulator** — clearly labeled Demo, local state only, no API/decision writes), **Pipeline** (4-step Signal → Lock In → Reveal → Reward + scoring chips + Ocean Park prize note), **Pulse Board** widget (locked / revealed / sample states — no unrevealed scores, no PPA, no email/phone), **Rewards** showcase (confirmed Ocean Park ticket per cycle winner; events; PPA framed as post-reveal), then Live Events Hub, philosophy, and final CTA. **Bilingual** copy via `ppa_locale` cookie. Blog is nav/footer only. **Game logic unchanged** — scoring, active-window playability, launch gating, PPA privacy, reveal gating, leaderboard locks.
 
-**Player journey UX:** Hub is a **game lobby** (cycle status chip, journey steps, prize + locked leaderboard preview). Play uses an upgraded **signal card** with Bullish/Cautious **confirmation step** before submit. Leaderboard and reveal pages use polished **locked / revealed / archive** state panels. **Scoring, launch gating, PPA privacy, and auth rules are unchanged** — see [Player journey revamp — safety unchanged](#player-journey-revamp-jun-2026--safety-unchanged).
+**Player journey UX:** Hub is a **game lobby** (cycle status chip, journey steps, prize + locked leaderboard preview). Play uses an upgraded **signal card** with Bullish/Cautious **confirmation step** before submit. Leaderboard and reveal pages use polished **locked / revealed / archive** state panels; after reveal, leaderboard **My score** links to the full **cycle review** on `/market-pulse/reveal`. **Scoring, launch gating, PPA privacy, and auth rules are unchanged** — see [Player journey revamp — safety unchanged](#player-journey-revamp-jun-2026--safety-unchanged).
 
 ### Production player experience (post-launch)
 
@@ -77,7 +77,7 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | **Member profile** | `/profile` | Members only | Profile + Market Pulse history; **i18n** |
 | **Market Pulse Hub** | `/market-pulse` | Public | **Game lobby** — status chip (`Open` / `No active cycle` / `Closed` / …), journey steps, prize, locked/revealed leaderboard preview, context-aware primary CTA; **i18n** |
 | **Market Pulse play** | `/market-pulse/play` | Login to submit | Signal cards: Bullish/Cautious swipe/tap + **confirmation**; **rest cards:** Claim participation (`ACKNOWLEDGED`); locked/submitted state; non-playable state panels; **i18n** |
-| **Market Pulse leaderboard** | `/market-pulse/leaderboard` | Public | Locked/revealed/archive state panels; per-cycle archive (`?cycleId=`); **My score** panel (logic unchanged); **i18n** |
+| **Market Pulse leaderboard** | `/market-pulse/leaderboard` | Public | Locked/revealed/archive state panels; per-cycle archive (`?cycleId=`); **My score** panel with **View cycle review** → reveal; **i18n** |
 | **PPA Insight reveal** | `/market-pulse/reveal` | Login for personal results | Pending locked ceremony; revealed results + learning framing; PPA only post-reveal; **i18n** |
 | **Market Pulse rules** | `/market-pulse/rules` | Public | Challenge rules + scoring; **i18n** |
 | **Contest rules** | `/contest-rules` | Public | Prize eligibility + legal |
@@ -144,6 +144,7 @@ Google OAuth redirect URIs (must match exactly):
 | **Card localization** | `card-localization.test.ts` — zh-Hant + EN fallback; PPA stripped pre-reveal |
 | **Reveal / leaderboard multi-card** | `leaderboard-score-breakdown.test.ts`, `reveal-ppa-validation.test.ts` — duplicate `dayIndex` OK; per-card breakdown labels |
 | **Post-cycle reveal review** | `reveal-cycle-review.test.ts`, `reveal-data.launch.test.ts` — full published card list (played + skipped); zero/partial participation; missing score events stay null; pre-reveal empty `cards` |
+| **Leaderboard → reveal CTA** | `public-market-pulse-copy.test.ts` — `mp.leaderboard.myScore.viewCycleReview` EN/zh; `MarketPulseLeaderboardMyScore.tsx` links to `/market-pulse/reveal` |
 | **Next-cycle TBC** | `next-cycle.test.ts`, `hub-data.production.test.ts`, `hub-lobby-state.test.ts`, `play-data.launch.test.ts` — nearest future `OPEN` cycle or `{ status: "tbc" }`; demo filtered in prod; hub rules CTA when TBC |
 | **Public copy** | `public-market-pulse-copy.test.ts` — no stale pre-launch/dev terms in MP i18n |
 | **Demo/seed guards** | `demo-cycle-guards.ts` — demo cycles hidden from public production paths; `seed-guards.ts` blocks `db:seed` in production |
@@ -1274,6 +1275,16 @@ Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes s
 - **Loader:** `getLeaderboardViewerScore()` in `leaderboard-viewer-score.ts` — queries **only** `session.user.id` + `selectedCycle.id`.
 - **States:** `logged_out` (sign-in prompt), `locked_participating` / `locked_no_participation` (unrevealed — **no score/rank/participation points exposed**), `revealed_no_score`, `revealed_summary` (total, participation, rank, cards played).
 - **Per-card breakdown (revealed only):** `getLeaderboardViewerScoreBreakdown()` joins `MarketPulseDecision` + `MarketPulseScoreEvent` per card; PPA **signal** label only (no `ppaInsight` text on leaderboard).
+- **Link to full cycle review:** `MarketPulseLeaderboardMyScore.tsx` shows **View cycle review** → `/market-pulse/reveal` when the selected cycle is revealed (or **View reveal** while scores are still locked but the user participated). Leaderboard breakdown shows PPA **signal** labels only; full **PPA insight** prose lives on the reveal page.
+
+**Player path — view card details after cycle end**
+
+1. Sign in (personal review requires auth).
+2. Open **`/market-pulse/leaderboard`** and select the ended/revealed cycle (or use hub **View reveal** when status is reveal pending / revealed).
+3. In the **My score for this cycle** sidebar, click **View cycle review**.
+4. On **`/market-pulse/reveal`**, scroll **Your cycle review** for every published card (played + skipped), PPA signal/insight, match chips, and scores (or **Score pending** until admin reveal/scoring runs).
+
+Admin must run **Reveal & score** in `/admin/market-pulse` `#reveal-scoring` for final points and public standings; card + PPA details appear on the reveal page once `revealAt` has passed.
 - **Participation score source:**
   - **After reveal scoring:** `MarketPulseScore.participationScore` per user/cycle (written in `calculateAndPersistCycleScores`), or sum of `MarketPulseScoreEvent.participationPoints`.
   - **Pre-reveal / no aggregate row:** Derived on read as `decisionsSubmitted × 10` (`PARTICIPATION_POINTS`) — shown only in locked messaging paths that **omit numeric scores** on the public leaderboard page.
@@ -1680,4 +1691,4 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 ---
 
-*Last updated: 11 Jul 2026 — Post-cycle reveal review (full card list, played/skipped), next-cycle TBC on hub/play/reveal, `between_cycles` play state.*
+*Last updated: 11 Jul 2026 — Leaderboard My score links to reveal cycle review; post-cycle reveal review, next-cycle TBC, `between_cycles` play state.*

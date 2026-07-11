@@ -330,6 +330,7 @@ export const marketPulseEnMessages = {
   "mp.leaderboard.myScore.breakdownMatchBonus": "+{points} match",
   "mp.leaderboard.myScore.breakdownStreakBonus": "+{points} streak",
   "mp.leaderboard.myScore.breakdownCardTotal": "{points} pts",
+  "mp.leaderboard.myScore.viewCycleReview": "View cycle review",
 
   "mp.reveal.pending.title": "PPA Insight unlocks after the cycle reveal.",
   "mp.reveal.pending.withCycle":
@@ -788,6 +789,7 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.leaderboard.myScore.breakdownMatchBonus": "+{points} 配對加分",
   "mp.leaderboard.myScore.breakdownStreakBonus": "+{points} 連勝加分",
   "mp.leaderboard.myScore.breakdownCardTotal": "{points} 分",
+  "mp.leaderboard.myScore.viewCycleReview": "查看本期回顧",
 
   "mp.reveal.pending.title": "PPA 觀點將於週期揭曉後解鎖。",
   "mp.reveal.pending.withCycle":
