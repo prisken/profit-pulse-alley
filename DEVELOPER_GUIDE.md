@@ -14,7 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
-| **Recent `main`** | **Reveal after admin scoring** — cycle review loads cards with status `PUBLISHED` **or** `REVEALED` (admin reveal flips card rows); fixes false “You did not play this cycle” when leaderboard has scores |
+| **Recent `main`** | **Optional contact number** — missing phone no longer blocks Market Pulse play or OAuth site access; optional profile/onboarding enrichment |
 
 ---
 
@@ -73,7 +73,7 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | Past event archive | `/events/wo-leung-yiu-dou-yiu` | Public | Registration closed |
 | **Fortify registration** | `/fortify-survey` | Public | **QR-coded URL — do not change** |
 | **Login** | `/login` | Public | Sign In + Create Account; Google + magic link; **i18n** |
-| **OAuth onboarding** | `/auth/onboarding` | Logged-in | Contact number; `/api/auth/complete-onboarding` JWT refresh; recovery UI |
+| **OAuth onboarding** | `/auth/onboarding` | Logged-in | **Optional** contact number; skip to play; `/api/auth/complete-onboarding` JWT refresh |
 | **Member profile** | `/profile` | Members only | Profile + Market Pulse history; **i18n** |
 | **Market Pulse Hub** | `/market-pulse` | Public | **Game lobby** — status chip (`Open` / `No active cycle` / `Closed` / …), journey steps, prize, locked/revealed leaderboard preview, context-aware primary CTA; **i18n** |
 | **Market Pulse play** | `/market-pulse/play` | Login to submit | Signal cards: Bullish/Cautious swipe/tap + **confirmation**; **rest cards:** Claim participation (`ACKNOWLEDGED`); locked/submitted state; non-playable state panels; **i18n** |
@@ -181,7 +181,7 @@ Visual/UX pass across homepage and Market Pulse player routes. **No regressions*
 
 **New display-only data fields:** `hub-data.ts` (`startsAtIso`, `endsAtIso`); `play-data.ts` (`runtimeOpen`, `runtime_closed` status via `gateRuntimeClosedPageData`); `reveal-data.ts` (`revealedCycle`, `playNextAvailable` for CTAs only).
 
-**Auth notes:** JWT strategy; `SessionProvider` hydrated from server `auth()` in root layout; middleware onboarding via `auth.config.ts`; JWT callback syncs `needsOnboarding` from DB `contactNumber` on every token refresh; stale JWT after onboarding cleared via **`GET /api/auth/complete-onboarding`** (server rewrites session cookie).
+**Auth notes:** JWT strategy; `SessionProvider` hydrated from server `auth()` in root layout; `resolveJwtUserState()` does **not** block on missing `contactNumber`; optional phone via profile/onboarding; stale session cleared via **`GET /api/auth/complete-onboarding`**.
 
 ### PPA timing — manual QA matrix (29 Jun 2026)
 
@@ -972,10 +972,10 @@ UPDATE "User" SET role = 'ADMIN' WHERE email = 'you@example.com';
 ## 7. Authentication & membership
 
 **Config:** `src/auth.ts` (full) + `src/auth.config.ts` (edge-safe, for middleware)  
-**Middleware:** `src/middleware.ts` — redirects users with `needsOnboarding` → `/auth/onboarding`  
+**Middleware:** `src/middleware.ts` — invalid-session sign-out only (no phone gate)  
 **Actions:** `src/lib/auth-actions.ts` — `signUpWithPassword`, `updateContactNumber`, `signOutAction`  
 **Route:** `src/app/api/auth/[...nextauth]/route.ts`  
-**Session:** **JWT** strategy; `jwt` callback sets `id`, `role`, `needsOnboarding`; `session` callback exposes them to the client
+**Session:** **JWT** strategy; `jwt` callback sets `id`, `role`, `needsOnboarding` (always `false` for valid users); `session` callback exposes them to the client
 
 ### Why two auth config files?
 
@@ -991,13 +991,12 @@ Vercel Edge middleware has a **1 MB bundle limit**. Importing `@/auth` in middle
 
 ### Sign-up & onboarding
 
-- **Create Account** tab on `/login` → `signUpWithPassword()` hashes password with bcrypt, stores `contactNumber`
-- **Google OAuth:** account saved via Prisma adapter; JWT gets `needsOnboarding` if no `contactNumber`
-- **Middleware:** users with `needsOnboarding` redirected to `/auth/onboarding` (except onboarding route itself)
+- **Create Account** tab on `/login` → `signUpWithPassword()` hashes password with bcrypt; `contactNumber` optional at sign-up
+- **Google OAuth:** account saved via Prisma adapter; **no forced onboarding** for missing `contactNumber`
+- **Market Pulse play:** logged-in users can access `/market-pulse/play` and submit decisions without a phone number
+- **Optional enrichment:** `/auth/onboarding` (voluntary) and `/profile` (`ProfileContactNumberCard`)
 - **Session hydration:** root `layout.tsx` passes server `auth()` session into `AuthSessionProvider`
-- **JWT sync:** `jwt` callback re-reads `contactNumber` from DB whenever `token.id` is present
-- **Onboarding submit:** `updateContactNumber()` then redirect to **`GET /api/auth/complete-onboarding`** — server verifies DB contact, re-encodes JWT with `needsOnboarding: false`, redirects home (avoids client refresh loop)
-- **Stale JWT recovery:** if DB already has contact but JWT is stale, `/auth/onboarding` server page redirects to complete-onboarding instead of bouncing away
+- **Onboarding submit / skip:** `updateContactNumber()` or skip → **`GET /api/auth/complete-onboarding`** — re-encodes JWT and redirects (no phone required to skip)
 - **Recovery UI:** `OnboardingRecoveryPanel`, `loading.tsx`, `error.tsx` on `/auth/onboarding`
 
 ### Bilingual (i18n)

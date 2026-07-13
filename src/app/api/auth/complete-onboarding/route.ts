@@ -3,7 +3,6 @@ import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 import { resolveOnboardingCallbackUrl } from "@/lib/auth/onboarding-routes";
-import { prisma } from "@/lib/prisma";
 
 function sessionCookieName(secureCookie: boolean): string {
   return secureCookie
@@ -11,7 +10,7 @@ function sessionCookieName(secureCookie: boolean): string {
     : "authjs.session-token";
 }
 
-/** Refresh JWT after onboarding using DB contact number, then redirect. */
+/** Refresh JWT after optional profile completion, then redirect. */
 export async function GET(request: NextRequest) {
   const secret = process.env.AUTH_SECRET;
   if (!secret) {
@@ -32,15 +31,6 @@ export async function GET(request: NextRequest) {
   const userId = (token?.id ?? token?.sub) as string | undefined;
   if (!userId) {
     return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { contactNumber: true },
-  });
-
-  if (!user?.contactNumber?.trim()) {
-    return NextResponse.redirect(new URL("/auth/onboarding", request.url));
   }
 
   const callbackUrl = resolveOnboardingCallbackUrl(

@@ -1,10 +1,7 @@
-const ONBOARDING_REQUIRED_PATH_PREFIXES = ["/market-pulse/play"] as const;
-
-/** Routes where contact collection is required before the player can proceed. */
+/** Contact number is optional — no routes force onboarding for missing phone. */
 export function requiresOnboardingForPath(pathname: string): boolean {
-  return ONBOARDING_REQUIRED_PATH_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
+  void pathname;
+  return false;
 }
 
 /** Safe in-app redirect targets for post-onboarding navigation. */
@@ -19,12 +16,7 @@ export function resolveOnboardingCallbackUrl(raw: string | undefined): string {
 }
 
 export function buildOnboardingLoginUrl(callbackUrl: string): string {
-  const onboardingPath =
-    callbackUrl === "/"
-      ? "/auth/onboarding"
-      : `/auth/onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-
-  return `/login?callbackUrl=${encodeURIComponent(onboardingPath)}`;
+  return `/login?callbackUrl=${encodeURIComponent(resolveOnboardingCallbackUrl(callbackUrl))}`;
 }
 
 export const ONBOARDING_SESSION_LOAD_MS = 12_000;

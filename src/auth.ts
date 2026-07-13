@@ -85,7 +85,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { contactNumber: true },
+            select: { id: true },
           });
           const jwtUserState = resolveJwtUserState(dbUser);
           token.sessionInvalid = jwtUserState.sessionInvalid;

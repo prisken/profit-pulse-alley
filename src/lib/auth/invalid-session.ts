@@ -12,7 +12,7 @@ export function isRemovedAccountLoginReason(
 }
 
 export function resolveJwtUserState(
-  dbUser: { contactNumber: string | null } | null,
+  dbUser: { id: string } | null,
 ): {
   sessionInvalid: boolean;
   needsOnboarding: boolean;
@@ -21,8 +21,9 @@ export function resolveJwtUserState(
     return { sessionInvalid: true, needsOnboarding: false };
   }
 
+  // Contact number is optional — never block site access or Market Pulse play.
   return {
     sessionInvalid: false,
-    needsOnboarding: !dbUser.contactNumber?.trim(),
+    needsOnboarding: false,
   };
 }

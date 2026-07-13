@@ -2,6 +2,8 @@
 
 import bcrypt from "bcrypt";
 
+import { revalidatePath } from "next/cache";
+
 import { auth, signOut } from "@/auth";
 import { syncMemberSignupToCrm } from "@/lib/crm-member-sync";
 import { prisma } from "@/lib/prisma";
@@ -148,6 +150,8 @@ export async function updateContactNumber(
       signedUpAt: user.createdAt,
       source: "Profit Pulse Ally OAuth Onboarding",
     });
+
+    revalidatePath("/profile");
 
     return { success: true };
   } catch (error) {

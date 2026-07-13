@@ -30,9 +30,9 @@ describe("resolveOnboardingCallbackUrl", () => {
 });
 
 describe("requiresOnboardingForPath", () => {
-  it("requires contact only for Market Pulse play", () => {
-    expect(requiresOnboardingForPath("/market-pulse/play")).toBe(true);
-    expect(requiresOnboardingForPath("/market-pulse/play/")).toBe(true);
+  it("does not force onboarding for any route", () => {
+    expect(requiresOnboardingForPath("/market-pulse/play")).toBe(false);
+    expect(requiresOnboardingForPath("/market-pulse/play/")).toBe(false);
     expect(requiresOnboardingForPath("/")).toBe(false);
     expect(requiresOnboardingForPath("/market-pulse")).toBe(false);
     expect(requiresOnboardingForPath("/profile")).toBe(false);
@@ -41,12 +41,13 @@ describe("requiresOnboardingForPath", () => {
 });
 
 describe("buildOnboardingLoginUrl", () => {
-  it("wraps callback in onboarding path for login return", () => {
+  it("wraps callback in a direct login return URL", () => {
     expect(buildOnboardingLoginUrl("/profile")).toBe(
-      "/login?callbackUrl=%2Fauth%2Fonboarding%3FcallbackUrl%3D%252Fprofile",
+      "/login?callbackUrl=%2Fprofile",
     );
-    expect(buildOnboardingLoginUrl("/")).toBe(
-      "/login?callbackUrl=%2Fauth%2Fonboarding",
+    expect(buildOnboardingLoginUrl("/market-pulse/play")).toBe(
+      "/login?callbackUrl=%2Fmarket-pulse%2Fplay",
     );
+    expect(buildOnboardingLoginUrl("/")).toBe("/login?callbackUrl=%2F");
   });
 });

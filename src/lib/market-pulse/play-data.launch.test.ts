@@ -138,6 +138,18 @@ describe("Launch smoke — public play gates", () => {
     expect(data.card).not.toHaveProperty("ppaInsight");
   });
 
+  it("is playable for logged-in users without a contact number", async () => {
+    mocks.auth.mockResolvedValue({
+      user: { id: "user-no-phone", role: "USER", needsOnboarding: false },
+    });
+    mocks.getTodayMarketPulsePlaySession.mockResolvedValue(buildSnapshot());
+
+    const data = await getMarketPulsePlayPageData();
+
+    expect(data.status).toBe("playable");
+    expect(data.isAuthenticated).toBe(true);
+  });
+
   it("prompts guests to sign in instead of submitting", async () => {
     const data = await getMarketPulsePlayPageData();
 

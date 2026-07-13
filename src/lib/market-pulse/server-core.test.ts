@@ -226,6 +226,24 @@ describe("submitMarketPulseDecision", () => {
     );
   });
 
+  it("allows submission when user has no contact number on file", async () => {
+    setupOpenRuntime("ADMIN");
+    prismaMocks.userFindUnique.mockResolvedValue({
+      id: TEST_USER_ID,
+      role: "ADMIN",
+      contactNumber: null,
+    });
+
+    const result = await submitMarketPulseDecision({
+      userId: TEST_USER_ID,
+      cardId: TEST_CARD_ID,
+      decision: "BULLISH",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(prismaMocks.decisionCreate).toHaveBeenCalledTimes(1);
+  });
+
   it("does not create a duplicate row when decision already exists", async () => {
     setupOpenRuntime();
     prismaMocks.decisionFindUnique.mockResolvedValue({

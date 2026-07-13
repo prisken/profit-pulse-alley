@@ -14,20 +14,15 @@ describe("resolveJwtUserState", () => {
     });
   });
 
-  it("requires onboarding when contact number is missing", () => {
-    expect(resolveJwtUserState({ contactNumber: null })).toEqual({
+  it("does not require onboarding when contact number is missing", () => {
+    expect(resolveJwtUserState({ id: "user-1" })).toEqual({
       sessionInvalid: false,
-      needsOnboarding: true,
-    });
-
-    expect(resolveJwtUserState({ contactNumber: "   " })).toEqual({
-      sessionInvalid: false,
-      needsOnboarding: true,
+      needsOnboarding: false,
     });
   });
 
-  it("keeps valid users out of onboarding when contact number exists", () => {
-    expect(resolveJwtUserState({ contactNumber: "+85291234567" })).toEqual({
+  it("does not require onboarding when contact number exists", () => {
+    expect(resolveJwtUserState({ id: "user-2" })).toEqual({
       sessionInvalid: false,
       needsOnboarding: false,
     });

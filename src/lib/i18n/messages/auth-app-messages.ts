@@ -2,9 +2,9 @@ export const authAppEnMessages = {
   "auth.meta.login.title": "Sign in | Profit Pulse Ally",
   "auth.meta.login.description":
     "Sign in to your Profit Pulse Ally membership with Google or email.",
-  "auth.meta.onboarding.title": "Complete your profile | Profit Pulse Ally",
+  "auth.meta.onboarding.title": "Add your contact number | Profit Pulse Ally",
   "auth.meta.onboarding.description":
-    "Add your contact number to finish setting up your membership.",
+    "Optionally add your contact number for prize coordination, event reminders, and account recovery.",
   "auth.meta.profile.title": "Member Profile | Profit Pulse Ally",
   "auth.meta.profile.description":
     "View your membership profile and Market Pulse game history.",
@@ -61,9 +61,9 @@ export const authAppEnMessages = {
   "auth.marketPulse.benefit.participation": "Earn participation points each cycle",
   "auth.marketPulse.benefit.leaderboard": "Climb the cycle leaderboard after reveal",
   "auth.marketPulse.benefit.prize": "Compete for the One Ocean Park ticket each cycle",
-  "auth.marketPulse.onboarding.title": "Complete your profile for Market Pulse",
+  "auth.marketPulse.onboarding.title": "Optional contact for prizes and events",
   "auth.marketPulse.onboarding.body":
-    "Add your contact number to complete your profile and keep your score prize-eligible.",
+    "You can play Market Pulse now. Add a contact number anytime if you want prize coordination or event reminders.",
 
   "auth.error.emailRequired": "Please enter your email address.",
   "auth.error.passwordRequired": "Please enter your password.",
@@ -88,20 +88,22 @@ export const authAppEnMessages = {
   "auth.success.accountCreated":
     "Account created successfully. You can sign in now.",
 
-  "auth.onboarding.title": "One more step",
+  "auth.onboarding.title": "Add your contact number",
   "auth.onboarding.welcome": "Welcome, {name}.",
   "auth.onboarding.body":
-    "Add your contact number so we can reach you about events and Market Pulse prizes.",
+    "Optional — useful for prize coordination, event reminders, WhatsApp updates, and account recovery.",
   "auth.onboarding.contactHint": "Include country code if outside Hong Kong.",
   "auth.onboarding.saving": "Saving…",
   "auth.onboarding.continue": "Continue",
+  "auth.onboarding.saveContact": "Save contact number",
+  "auth.onboarding.skipForNow": "I'll add it later",
   "auth.onboarding.loadingProfile": "Loading your profile…",
   "auth.onboarding.stuckHint":
     "Taking too long? Try signing in again or return home.",
   "auth.onboarding.signInAgain": "Sign in again",
   "auth.onboarding.backHome": "Back to home",
   "auth.onboarding.deferHint":
-    "You can complete this later. A contact number is required before you submit Market Pulse picks.",
+    "You can skip this and add a contact number later from your profile.",
   "auth.onboarding.finishingSetup": "Finishing setup…",
   "auth.onboarding.finishingSetupBody":
     "Your contact number is saved. Updating your session before we continue.",
@@ -114,7 +116,7 @@ export const authAppEnMessages = {
   "auth.onboarding.contactSupport": "Contact support",
   "auth.onboarding.guestTitle": "Sign in required",
   "auth.onboarding.guestBody":
-    "Sign in to add your contact number and finish setting up your account.",
+    "Sign in to optionally add your contact number or continue to Market Pulse.",
   "auth.onboarding.signInToContinue": "Sign in to continue",
   "auth.onboarding.errorTitle": "Something went wrong",
   "auth.onboarding.errorBody":
@@ -140,6 +142,13 @@ export const authAppEnMessages = {
   "auth.profile.cycleLabel": "Cycle {id}",
   "auth.profile.points": "{score} pts",
   "auth.profile.signOut": "Sign out",
+  "auth.profile.contact.title": "Add your contact number",
+  "auth.profile.contact.body":
+    "Optional — useful for prize coordination, event reminders, WhatsApp updates, and account recovery.",
+  "auth.profile.contact.cta": "Save contact number",
+  "auth.profile.contact.update": "Update contact number",
+  "auth.profile.contact.cancel": "Cancel",
+  "auth.profile.contact.saved": "Contact number saved.",
 
   "auth.admin.badge": "Admin",
   "auth.admin.dashboardTitle": "Admin Dashboard",
@@ -730,8 +739,9 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.meta.login.title": "登入 | Profit Pulse Ally",
   "auth.meta.login.description":
     "使用 Google 或電郵登入你的 Profit Pulse Ally 會員帳戶。",
-  "auth.meta.onboarding.title": "完成個人資料 | Profit Pulse Ally",
-  "auth.meta.onboarding.description": "新增聯絡電話以完成會員設定。",
+  "auth.meta.onboarding.title": "加入聯絡電話 | Profit Pulse Ally",
+  "auth.meta.onboarding.description":
+    "可選填聯絡電話，用於獎品安排、活動提醒及帳戶復原。",
   "auth.meta.profile.title": "會員檔案 | Profit Pulse Ally",
   "auth.meta.profile.description": "查看你的會員檔案及 Market Pulse 遊戲紀錄。",
   "auth.meta.admin.title": "管理後台 | Profit Pulse Ally",
@@ -785,9 +795,9 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.marketPulse.benefit.participation": "每個週期累積參與分",
   "auth.marketPulse.benefit.leaderboard": "揭曉後登上週期排行榜",
   "auth.marketPulse.benefit.prize": "每期競逐一張海洋公園門票",
-  "auth.marketPulse.onboarding.title": "完成 Market Pulse 個人資料",
+  "auth.marketPulse.onboarding.title": "獎品及活動的選填聯絡方式",
   "auth.marketPulse.onboarding.body":
-    "新增聯絡電話以完成個人資料，並保持分數的獎賞資格。",
+    "你現在就可以玩 Market Pulse。如需獎品安排或活動提醒，可隨時加入聯絡電話。",
 
   "auth.error.emailRequired": "請輸入你的電郵地址。",
   "auth.error.passwordRequired": "請輸入你的密碼。",
@@ -808,19 +818,20 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
 
   "auth.success.accountCreated": "帳戶已成功建立，你現在可以登入。",
 
-  "auth.onboarding.title": "還差一步",
+  "auth.onboarding.title": "加入聯絡電話",
   "auth.onboarding.welcome": "歡迎，{name}。",
   "auth.onboarding.body":
-    "請新增聯絡電話，以便我們就活動及 Market Pulse 獎賞與你聯絡。",
+    "選填 — 可用於獎品安排、活動提醒、WhatsApp 更新及帳戶復原。",
   "auth.onboarding.contactHint": "如非香港號碼，請包含國家代碼。",
   "auth.onboarding.saving": "儲存中…",
   "auth.onboarding.continue": "繼續",
+  "auth.onboarding.saveContact": "儲存聯絡電話",
+  "auth.onboarding.skipForNow": "稍後再加入",
   "auth.onboarding.loadingProfile": "正在載入你的檔案…",
   "auth.onboarding.stuckHint": "等太久？請重新登入或返回主頁。",
   "auth.onboarding.signInAgain": "重新登入",
   "auth.onboarding.backHome": "返回主頁",
-  "auth.onboarding.deferHint":
-    "你可稍後再完成。提交 Market Pulse 判斷前需要提供聯絡電話。",
+  "auth.onboarding.deferHint": "你可以略過，稍後在個人檔案加入聯絡電話。",
   "auth.onboarding.finishingSetup": "正在完成設定…",
   "auth.onboarding.finishingSetupBody":
     "聯絡電話已儲存。正在更新你的工作階段，然後繼續。",
@@ -832,7 +843,7 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.onboarding.returnToLogin": "返回登入",
   "auth.onboarding.contactSupport": "聯絡支援",
   "auth.onboarding.guestTitle": "需要登入",
-  "auth.onboarding.guestBody": "請登入以新增聯絡電話並完成帳戶設定。",
+  "auth.onboarding.guestBody": "請登入以選擇性加入聯絡電話，或繼續使用 Market Pulse。",
   "auth.onboarding.signInToContinue": "登入以繼續",
   "auth.onboarding.errorTitle": "發生錯誤",
   "auth.onboarding.errorBody":
@@ -857,6 +868,13 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.profile.cycleLabel": "週期 {id}",
   "auth.profile.points": "{score} 分",
   "auth.profile.signOut": "登出",
+  "auth.profile.contact.title": "加入聯絡電話",
+  "auth.profile.contact.body":
+    "選填 — 可用於獎品安排、活動提醒、WhatsApp 更新及帳戶復原。",
+  "auth.profile.contact.cta": "儲存聯絡電話",
+  "auth.profile.contact.update": "更新聯絡電話",
+  "auth.profile.contact.cancel": "取消",
+  "auth.profile.contact.saved": "聯絡電話已儲存。",
 
   "auth.admin.badge": "管理",
   "auth.admin.dashboardTitle": "管理後台",

@@ -56,13 +56,7 @@ export default async function OnboardingRoute({
     const alreadyOnboarded = Boolean(user.contactNumber?.trim());
 
     if (alreadyOnboarded) {
-      if (!session.user.needsOnboarding) {
-        redirect(callbackUrl);
-      }
-
-      redirect(
-        `/api/auth/complete-onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`,
-      );
+      redirect(callbackUrl);
     }
 
     return (

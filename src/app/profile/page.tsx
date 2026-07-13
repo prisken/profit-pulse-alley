@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { ArrowRight, Trophy } from "lucide-react";
 
 import { auth } from "@/auth";
+import ProfileContactNumberCard from "@/components/auth/ProfileContactNumberCard";
 import { signOutAction } from "@/lib/auth-actions";
+import { prisma } from "@/lib/prisma";
 import { getServerSiteLocale, getServerTranslations } from "@/lib/i18n/server";
 import { translate, translateWith } from "@/lib/i18n/messages";
 import type { SiteLocale } from "@/lib/i18n/locales";
@@ -104,6 +106,18 @@ export default async function ProfilePage() {
   const { t, locale } = await getServerTranslations();
   const { user } = session;
   const displayName = user.name?.trim() || t("auth.profile.memberFallback");
+
+  let contactNumber: string | null = null;
+
+  try {
+    const profileUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { contactNumber: true },
+    });
+    contactNumber = profileUser?.contactNumber ?? null;
+  } catch (error) {
+    console.error("[profile] Failed to load contact number:", error);
+  }
 
   let gameScores: MarketPulseHistoryEntry[] = [];
 
@@ -228,6 +242,8 @@ export default async function ProfilePage() {
           </ul>
         )}
       </section>
+
+      <ProfileContactNumberCard initialContactNumber={contactNumber} />
 
       <section aria-labelledby="profile-details-heading" className={cardClass}>
         <h2

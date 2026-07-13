@@ -118,7 +118,6 @@ function OnboardingForm({
             value={contactNumber}
             onChange={(e) => setContactNumber(e.target.value)}
             disabled={isLoading}
-            required
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? "onboarding-error" : undefined}
             className={inputClass}
@@ -128,8 +127,8 @@ function OnboardingForm({
           </span>
         </label>
 
-        <button type="submit" disabled={isLoading} className={primaryButtonClass}>
-          {isLoading ? t("auth.onboarding.saving") : t("auth.onboarding.continue")}
+        <button type="submit" disabled={isLoading || !contactNumber.trim()} className={primaryButtonClass}>
+          {isLoading ? t("auth.onboarding.saving") : t("auth.onboarding.saveContact")}
         </button>
 
         {error ? (
@@ -140,6 +139,12 @@ function OnboardingForm({
       </form>
 
       <div className="mt-5 space-y-2 text-center sm:mt-6">
+        <Link
+          href={completeOnboardingUrl(callbackUrl)}
+          className={`inline-flex min-h-10 w-full items-center justify-center rounded-full border border-gray-600 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-gray-500 hover:bg-gray-900 sm:w-auto ${focusRing}`}
+        >
+          {t("auth.onboarding.skipForNow")}
+        </Link>
         <Link
           href="/"
           className={`inline-flex min-h-10 items-center justify-center text-sm font-medium text-gray-400 underline-offset-4 transition-colors hover:text-gray-200 hover:underline ${focusRing}`}
@@ -208,14 +213,10 @@ function OnboardingRouter({
     return () => window.clearTimeout(timer);
   }, [status]);
 
-  const needsOnboarding = session?.user?.needsOnboarding;
+  const alreadyOnboarded = serverAlreadyOnboarded;
   const isAuthenticated = status === "authenticated";
   const isLoading = status === "loading";
   const isUnauthenticated = status === "unauthenticated";
-
-  const alreadyOnboarded =
-    serverAlreadyOnboarded ||
-    (isAuthenticated && needsOnboarding === false);
 
   const showGuest =
     isUnauthenticated &&

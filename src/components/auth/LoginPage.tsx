@@ -3,9 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { Suspense, useEffect, useState, type FormEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { Suspense, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { signUpWithPassword } from "@/lib/auth-actions";
 import MarketPulseAuthPanel from "@/components/auth/MarketPulseAuthPanel";
@@ -13,10 +12,6 @@ import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { isRemovedAccountLoginReason } from "@/lib/auth/invalid-session";
 import { isMarketPulseAuthCallback } from "@/lib/auth/market-pulse-auth-context";
-import {
-  requiresOnboardingForPath,
-  resolveOnboardingCallbackUrl,
-} from "@/lib/auth/onboarding-routes";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 
 const focusRing =
@@ -53,9 +48,7 @@ function GoogleIcon({ className }: { className?: string }) {
 
 function LoginForm() {
   const { t, locale } = useTranslations();
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const { status, data: session } = useSession();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const accountRemoved = isRemovedAccountLoginReason(searchParams.get("reason"));
   const fromMarketPulse = isMarketPulseAuthCallback(callbackUrl);
@@ -82,25 +75,6 @@ function LoginForm() {
   const [emailSent, setEmailSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (status !== "authenticated" || !session?.user?.needsOnboarding) {
-      return;
-    }
-
-    const destination = resolveOnboardingCallbackUrl(callbackUrl);
-
-    if (!requiresOnboardingForPath(destination)) {
-      router.replace(destination);
-      return;
-    }
-
-    const onboardingTarget = destination.startsWith("/auth/onboarding")
-      ? destination
-      : `/auth/onboarding?callbackUrl=${encodeURIComponent(destination)}`;
-
-    router.replace(onboardingTarget);
-  }, [status, session, callbackUrl, router]);
 
   const isBusy =
     isGoogleLoading ||
