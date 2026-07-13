@@ -15,6 +15,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
 | **Recent `main`** | **Acquisition progressive profiling** — learning-interest prompt after first MP decision (PR 2); next-step preference prompt on reveal (PR 3) |
+| **Feature branch** | `acquisition-admin-visibility` — acquisition admin visibility + **guided Market Pulse admin workflow (PRs 5–16)**; validated **13 Jul 2026** (`lint` 0 errors, `typecheck`, **844 tests**, `build` green); merge to `main` for Vercel production deploy |
 
 ---
 
@@ -796,6 +797,8 @@ The Market Pulse admin **cycles hub** shows a compact **Guided progress** block 
 **Related tests:** `guided-hub-progress.test.ts`, `admin-cycle-next-action.test.ts`.
 
 #### Guided workflow release checklist (PR 16)
+
+**Status (13 Jul 2026):** Complete. Final QA for PRs 5–15 — regression tests, privacy sweeps, copy alignment, and docs only (no gameplay/scoring/reveal/runtime/public-route changes). Commits: guided implementation (PRs 5–15), then `test: harden guided market pulse workflow release coverage` (lifecycle + privacy regression, hub next-focus i18n, release checklist).
 
 Final QA for the guided admin workflow (PR 5–15). **No product behavior changes** — regression tests, privacy sweeps, and docs only.
 
