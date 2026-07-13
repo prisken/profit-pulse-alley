@@ -394,7 +394,8 @@ Use this as the **end-to-end ops playbook**. UI labels are English; player card 
 
 | Method | Where | Action | Result |
 |--------|-------|--------|--------|
-| **Quick create** (recommended) | `#cycles-hub` or sticky quick actions | **Quick create next cycle** | `quickCreateMarketPulseCycleAction()` → new cycle in `DRAFT`, redirects to builder |
+| **Guided create** (fastest for full draft templates) | `#cycles-hub` → **Create guided cycle** | `/admin/market-pulse/guided-cycle/new` | `createGuidedMarketPulseCycleAction()` → `DRAFT` cycle + SIGNAL/REST draft cards from day plan; does **not** pin active, publish, or open runtime |
+| **Quick create** | `#cycles-hub` or sticky quick actions | **Quick create next cycle** | `quickCreateMarketPulseCycleAction()` → new cycle in `DRAFT`, redirects to builder |
 | **Advanced create** | `#cycles` | `MarketPulseCycleForm` create mode | `createMarketPulseCycleAction()` — full control over name, dates, status, prize, pin active |
 | **First-cycle prefill** | `#setup` (`FirstCycleGuidancePanel`) | **Prefill create-cycle form** | Inform-only Jul 2026 window; admin saves manually |
 
@@ -647,6 +648,207 @@ All require `requireAdminSession()` (`admin-auth.ts`). Wrapped with `finishAdmin
 | Active cycle | **Not** set — admin must pin manually before go-live |
 
 On success, client navigates to `redirectPath` = builder URL for the new cycle.
+
+#### Guided cycle creation (PR 5)
+
+**Route:** `/admin/market-pulse/guided-cycle/new`  
+**Action:** `createGuidedMarketPulseCycleAction()`  
+**Logic:** `src/lib/market-pulse/guided-cycle.ts`, `hkt-time.ts` (date-only HKT helpers)
+
+Admin enters **HKT calendar dates only** (no datetimes). Stored instants:
+
+| Field | HKT wall clock | Example (`2026-08-01` start) |
+|-------|----------------|------------------------------|
+| `startsAt` | 09:00 on start date | `2026-08-01T01:00:00.000Z` |
+| `endsAt` | 21:00 on end date | `2026-08-10T13:00:00.000Z` |
+| `revealAt` | 09:00 on reveal date | `2026-08-11T01:00:00.000Z` |
+
+**Validation:** `endDate >= startDate`; **`revealDate > endDate`** (strict — reveal at 09:00 HKT must fall after cycle end at 21:00 HKT on the end date).
+
+**Day plan:** inclusive start→end HKT days. Each **signal day** creates N `SIGNAL` `DRAFT` cards; each **rest day** creates exactly one `REST` `DRAFT` card (no PPA fields). Auto-sets `dayIndex`, `sortOrder`, `sourceDate` (`getCycleDayReleaseAt`).
+
+**Does not:** pin active cycle, set runtime `OPEN`, publish cards, or set cycle `OPEN`. Success screen links to the existing builder for this cycle.
+
+**Tests:** `guided-cycle.test.ts`, `admin-guided-cycle.test.ts`, `hkt-time.test.ts` (date-only conversions).
+
+#### Guided card editor (PR 6)
+
+**Route:** `/admin/market-pulse/cycles/[cycleId]/guided-cards`  
+**Data:** `getGuidedCycleCardsPageData(cycleId)`  
+**Actions:** `updateGuidedMarketPulseCardAction`, `approveGuidedMarketPulseCardPpaAction`
+
+Simplified checklist + editor for filling guided draft templates:
+
+| Concern | Guided behavior |
+|---------|-----------------|
+| **Save card** | Content fields only; keeps existing `status` (does not publish); **blocks save on `PUBLISHED` cards** with message to use advanced builder |
+| **Approve PPA** | SIGNAL only; requires `ppaSignal` + `ppaInsight` only (not full article copy); sets/refreshes `ppaSignalLockedAt`; supports re-approval without change reason |
+| **REST cards** | Title (`headline`) + body (`newsBody`); `summary` auto-filled from body on save |
+| **Status** | `Published` / `Missing content` / `Missing PPA` / `Ready` via `guided-card-status.ts` |
+| **Display price** | Optional `priceLabel` field in SIGNAL editor |
+
+Advanced builder unchanged for publish, scheduling, locked-PPA edits with change reason, and published-card edits.
+
+**Tests:** `guided-card-status.test.ts`, `guided-card-validation.test.ts`, `admin-guided-card-actions.test.ts`, `guided-cycle-cards-page-data.test.ts`, `guided-card-field-readiness.test.ts`.
+
+#### Guided card readiness guidance (PR 10)
+
+The guided card editor shows a **Readiness** panel and optional inline field hints based on `getGuidedCardFieldReadiness` in `guided-card-field-readiness.ts`. This is **UI guidance only** — it does not change gameplay, launch gating, or server validation.
+
+| Concern | Behavior |
+|---------|----------|
+| **Source of truth** | `getGuidedCardStatus`, `validateGuidedCardSave`, `validateGuidedPpaApprove`, and guided server actions remain authoritative |
+| **Basis** | Readiness is computed from the **saved card** prop; the panel updates after a successful save refreshes parent state |
+| **Content fields** | Reuses `collectGuidedSignalMissingContentFields` / `collectGuidedRestMissingContentFields` (same rules as PR 6 status) |
+| **Save-only fields** | Day index and image alt (when URL set) come from `collectGuidedSaveBlockingFields` — shown as “required before saving”, not launch blockers |
+| **PPA fields** | SIGNAL only; maps `getMissingPpaFields` for launch readiness; approve action still requires only decision + insight |
+| **Published cards** | Status `published` only; no missing-field lists; advanced-builder notice |
+
+#### Guided review & launch (PR 7)
+
+**Route:** `/admin/market-pulse/cycles/[cycleId]/guided-launch`  
+**Data:** `getGuidedCycleLaunchPageData(cycleId)`  
+**Action:** `launchGuidedMarketPulseCycleAction(cycleId)`
+
+Admin can **view** the launch page for any existing cycle. The **launch action** is allowed only when cycle status is **`DRAFT`** or **`OPEN`**. **`CLOSED`**, **`REVEALED`**, and **`ARCHIVED`** cycles show a disabled launch area with eligibility reasons; hub “Review & launch” links appear only for **`DRAFT`** / **`OPEN`**.
+
+There is **no `SCHEDULED` cycle status** in the schema. Guided launch sets launched cycles to **`OPEN`**.
+
+| Concern | Guided behavior |
+|---------|-----------------|
+| **Readiness** | Card/content/PPA requirements (`evaluateGuidedLaunchReadiness`) |
+| **Eligibility** | Cycle status gate (`evaluateGuidedLaunchEligibility`) |
+| **Launch sequence** | Publish ready cards → cycle `OPEN` → `activeCycleId` → runtime `OPEN` (mirrors manual builder go-live) |
+| **Publish** | Uses `getCardPublishBlockReason` + `deriveCardPublishedAtFromSchedule`; preserves existing `publishedAt` |
+| **Idempotency** | Success when all cards published + cycle `OPEN` + active pin + runtime `OPEN`; partial OPEN cycles publish remaining ready cards |
+| **Audit** | Reuses `PUBLISH`, `STATUS_CHANGE`, `SET_ACTIVE` with reason text noting guided launch |
+
+**Tests:** `guided-launch-readiness.test.ts`, `guided-launch-publish.test.ts`, `guided-cycle-launch-page-data.test.ts`, `admin-guided-launch-action.test.ts`, `guided-launch-preview.test.ts`.
+
+#### Guided launch preview and confirmation (PR 11)
+
+The guided launch page shows a **Launch preview** section and confirmation dialog based on `getGuidedLaunchPreview` in `guided-launch-preview.ts`. This is **UI guidance only** — it does not change launch transaction behavior.
+
+| Concern | Behavior |
+|---------|----------|
+| **Source of truth** | `launchGuidedMarketPulseCycleAction` re-validates eligibility and readiness inside its transaction |
+| **Preview helper** | Reuses `evaluateGuidedLaunchEligibility`, `evaluateGuidedLaunchReadiness`, and `getGuidedCardStatus` |
+| **Launch allowed** | `preview.launchAllowed` = eligibility.eligible && readiness.ready; client also blocks when `alreadyLaunched` |
+| **PPA privacy** | Preview rows expose `isPpaApproved` boolean only — never `ppaSignal`, `ppaInsight`, or `ppaSignalLockedAt` |
+| **Counts** | `readyCount` uses guided status `ready`; `publishedCount` is separate |
+| **Confirmation** | `AdminConfirmDialog` summarizes cycle and card counts before calling the launch action |
+
+#### Guided lifecycle regression coverage (PR 12)
+
+End-to-end guided workflow invariants are covered by **`guided-lifecycle-regression.test.ts`** using mocked Prisma and real guided server actions/helpers (Vitest only — no Playwright or component render tests).
+
+| Protected invariant | Coverage |
+|---------------------|----------|
+| **Create does not launch** | Happy path asserts `runtimeStatus` / `activeCycleId` unchanged after `createGuidedMarketPulseCycleAction` |
+| **Save / PPA are separate** | Lifecycle saves SIGNAL + REST content, then approves SIGNAL PPA before launch |
+| **Preview is advisory** | `getGuidedLaunchPreview` reports `launchAllowed` before launch; launch action re-validates |
+| **Launch is authoritative** | `launchGuidedMarketPulseCycleAction` sets cycle `OPEN`, pins active cycle, runtime `OPEN`, publishes cards |
+| **PPA-safe runtime output** | Post-launch SIGNAL card through `sanitizeMarketPulseApiCardPayload` / `toMarketPulseSwipeCardData` omits PPA fields |
+| **Blocking paths** | Incomplete SIGNAL content, missing PPA, incomplete REST, published + ready mix, failed launch, idempotent relaunch |
+| **Workflow milestones** | Hub next-action transitions (`fill_guided_cards` → `review_and_launch` → `launched`), dashboard/hub progress counts, idempotent relaunch emits no audit rows |
+
+**Related tests:** `admin-guided-cycle.test.ts`, `admin-guided-card-actions.test.ts`, `admin-guided-launch-action.test.ts`, `guided-launch-readiness.test.ts`, `guided-launch-preview.test.ts`, `guided-flow-safety.test.ts`, `guided-launch-audit-reason.test.ts`, `guided-card-dashboard.test.ts`, `guided-hub-progress.test.ts`, `guided-workflow-privacy-regression.test.ts`.
+
+#### Guided post-launch state and audit clarity (PR 13)
+
+Post-launch UI on the guided launch page is **informational only**. `launchGuidedMarketPulseCycleAction` remains **authoritative and idempotent**.
+
+| Concern | Behavior |
+|---------|----------|
+| **Post-launch panel** | When `alreadyLaunched`, shows cycle/runtime/active-pin/published counts and next-action links (play, admin hub, builder) — no launch button or blocking reasons |
+| **Launch success message** | Client uses `data.publishedCount` with copy noting server re-checked readiness; then `router.refresh()` |
+| **Audit rows** | Unchanged volume/shape: per-card `PUBLISH`, optional cycle `STATUS_CHANGE`, optional `SET_ACTIVE` |
+| **Audit reason** | `formatGuidedLaunchAuditReason` enriches existing `reason` with PPA-free operational fields (`cycleId`, `publishedCount`, `runtimeStatus`, `activeCycleId`) |
+| **Audit safety** | Must not include PPA fields, article body, or full card payloads |
+| **Hub** | Launched cycles use `kind: launched` (muted); no primary “launch now” CTA |
+
+#### Guided card dashboard and filters (PR 14)
+
+The guided cards page shows a **Card completion dashboard** and client-side **filters** based on `getGuidedCardDashboard` in `guided-card-dashboard.ts`. This is **UI guidance only** — it does not change gameplay, launch, audit, hub, or editor semantics.
+
+| Concern | Behavior |
+|---------|----------|
+| **Source of truth** | `getGuidedCardStatus`, `getGuidedCardFieldReadiness`, guided save/PPA actions, and `launchGuidedMarketPulseCycleAction` remain authoritative |
+| **Dashboard helper** | Returns PPA-safe aggregates and per-card row metadata (`missingContentCount`, `missingPpaCount`, `saveBlockingCount`) — never full card payloads |
+| **Next focus** | Priority: missing PPA SIGNAL → missing content → save-blocking → unpublished ready; in-page `setSelectedCardId` only (no URL hash) |
+| **Filters** | Client-side over loaded cycle cards via `filterGuidedCycleCardDashboardRows`; hidden rows do not clear the selected editor |
+| **PPA privacy** | Dashboard and list badges must not render `ppaSignal`, `ppaInsight`, `ppaSignalLockedAt`, article body, image URL, or image alt text |
+
+**Related tests:** `guided-card-dashboard.test.ts`, `guided-card-field-readiness.test.ts`, `guided-cycle-cards-page-data.test.ts`.
+
+#### Guided hub progress summary (PR 15)
+
+The Market Pulse admin **cycles hub** shows a compact **Guided progress** block per DRAFT/OPEN cycle from `buildGuidedHubProgressSummary` in `guided-card-dashboard.ts`. This is **UI guidance only** — it does not change launch, audit, editor, or hub button semantics.
+
+| Concern | Behavior |
+|---------|----------|
+| **Source of truth** | `getMarketPulseCycleNextAction` remains authoritative for hub CTAs |
+| **Server derivation** | `enrichCycleRowsWithGuidedProgress` attaches `guidedProgress` when building `MarketPulseAdminDashboardData` |
+| **Hub UI** | Renders only `cycle.guidedProgress` counts/reason — **not** computed from full card rows in the client |
+| **PPA safety** | `guidedProgress` must not include card IDs, PPA fields, article body, image URL/alt, `cardRows`, `cardsByStatus`, or full card payloads |
+| **Terminal cycles** | CLOSED / REVEALED / ARCHIVED → `guidedProgress: null` |
+
+**Related tests:** `guided-hub-progress.test.ts`, `admin-cycle-next-action.test.ts`.
+
+#### Guided workflow release checklist (PR 16)
+
+Final QA for the guided admin workflow (PR 5–15). **No product behavior changes** — regression tests, privacy sweeps, and docs only.
+
+| Step | Verify |
+|------|--------|
+| 1. **Create guided cycle** | DRAFT cycle + SIGNAL/REST templates; no pin/publish/runtime |
+| 2. **Fill SIGNAL and REST cards** | Guided cards page; content saved via guided save action |
+| 3. **Approve SIGNAL PPA** | PPA decision + insight only (not full article copy) |
+| 4. **Card dashboard** | `getGuidedCardDashboard` counts/filters match readiness; no PPA values in output |
+| 5. **Hub progress + next action** | `cycle.guidedProgress` counts; `getMarketPulseCycleNextAction` CTA matches stage |
+| 6. **Review launch preview** | `getGuidedLaunchPreview` advisory; no PPA/body/image in serialized preview |
+| 7. **Launch** | `launchGuidedMarketPulseCycleAction` authoritative; publishes expected cards |
+| 8. **Post-launch state** | `alreadyLaunched` / `isGuidedLaunchAlreadyComplete`; published === total |
+| 9. **Idempotent relaunch** | Returns already-launched; no extra audit rows |
+| 10. **Audit** | Existing row shape; `formatGuidedLaunchAuditReason` has no PPA/body/card payloads |
+| 11. **Privacy** | Preview, dashboard, hub progress, audit reason exclude sensitive markers |
+| 12. **Non-guided cycles** | CLOSED/REVEALED/ARCHIVED not guided-actionable; manual cycles use advanced builder |
+
+**Related tests:** `guided-lifecycle-regression.test.ts`, `guided-workflow-privacy-regression.test.ts`, `guided-card-dashboard.test.ts`, `guided-hub-progress.test.ts`, `admin-cycle-next-action.test.ts`, `admin-guided-launch-action.test.ts`.
+
+#### Guided next actions in cycle hub (PR 8)
+
+**Module:** `src/lib/market-pulse/admin-cycle-next-action.ts`  
+**UI:** `MarketPulseCyclesHub.tsx`
+
+The cycles hub recommends a **next guided action** per cycle so admins do not need to interpret internal statuses. This is **UI guidance only** — server actions (`launchGuidedMarketPulseCycleAction`, guided card save/PPA) still enforce eligibility and readiness independently.
+
+| `kind` | When | Primary CTA |
+|--------|------|-------------|
+| `fill_guided_cards` | DRAFT/OPEN with no cards, missing content, or missing PPA | Guided cards |
+| `review_and_launch` | DRAFT/OPEN ready but not fully launched | Guided launch |
+| `launched` | All cards published + cycle OPEN + active pin + runtime OPEN | Muted; **View launch status** → guided-launch (not public play) |
+| `closed` / `revealed` / `archived` | Terminal cycle statuses | Muted; advanced builder secondary only |
+| `advanced_builder` | `cards == null` (readiness unknown) | Builder |
+
+Uses PR 7 helpers: `evaluateGuidedLaunchReadiness`, `isGuidedLaunchAlreadyComplete`, `canUseGuidedFlowForCycle` (DRAFT/OPEN only). No extra DB queries — groups existing dashboard `cards` by `cycleId`.
+
+**Tests:** `admin-cycle-next-action.test.ts`.
+
+#### Market Pulse guided-flow safety invariants (PR 9)
+
+Hardening guarantees for the guided admin workflow (PR 5–8). **No gameplay, scoring, reveal scoring, runtime rules, or public player-route behavior changes.**
+
+| Invariant | Enforcement |
+|-----------|-------------|
+| **PPA privacy** | `ppaSignal`, `ppaInsight`, and `ppaSignalLockedAt` are stripped from play/today API payloads (`stripPpaFromCardPayload`, `toMarketPulseSwipeCardData`, `sanitizeMarketPulseApiCardPayload`) even when the underlying card is revealed |
+| **Post-reveal PPA** | `/market-pulse/reveal` and reveal API intentionally expose `ppaSignal` / `ppaInsight` for **SIGNAL** cards only after reveal (`getMarketPulseCardPublicPayload`); REST cards never receive PPA |
+| **Hub recommendations** | `admin-cycle-next-action.ts` is **advisory UI only**; `launchGuidedMarketPulseCycleAction` re-reads eligibility/readiness server-side |
+| **Admin auth** | All guided mutations require `requireAdminSession` and re-load records by ID server-side |
+| **Published cards** | Guided save and guided PPA approve **do not mutate** `PUBLISHED` cards (`isGuidedCardSaveAllowed`) |
+| **Guided launch** | Transactional; **DRAFT/OPEN only**; rolls back on readiness or publish-validation failure; idempotent when already fully launched |
+
+**Tests:** `guided-flow-safety.test.ts`, `server-security.test.ts`.
 
 #### Quick draft card defaults
 
