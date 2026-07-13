@@ -2,8 +2,10 @@ import { shouldShowMarketPulseLaunchSetupUi } from "@/lib/market-pulse/launch-co
 
 export const ADMIN_ROOT_PATH = "/admin";
 export const ADMIN_MARKET_PULSE_PATH = "/admin/market-pulse";
+export const ADMIN_MARKET_PULSE_GUIDED_CYCLE_PATH =
+  "/admin/market-pulse/guided-cycle/new";
 
-export { marketPulseCycleBuilderPath } from "@/lib/market-pulse/admin-builder-paths";
+export { marketPulseCycleBuilderPath, marketPulseGuidedCardsPath, marketPulseGuidedLaunchPath } from "@/lib/market-pulse/admin-builder-paths";
 
 export const MARKET_PULSE_PUBLIC_PATHS = {
   hub: "/market-pulse",
@@ -59,5 +61,44 @@ export function buildAdminMpBuilderBreadcrumbs(cycleName: string): AdminMpBreadc
       href: ADMIN_MARKET_PULSE_PATH,
     },
     { label: cycleName },
+  ];
+}
+
+export function buildAdminMpGuidedCycleBreadcrumbs(): AdminMpBreadcrumb[] {
+  return [
+    { labelKey: "auth.admin.breadcrumb.admin", href: ADMIN_ROOT_PATH },
+    {
+      labelKey: "auth.admin.breadcrumb.marketPulse",
+      href: ADMIN_MARKET_PULSE_PATH,
+    },
+    { labelKey: "auth.admin.mp.guidedCycle.breadcrumb" },
+  ];
+}
+
+export function buildAdminMpGuidedCardsBreadcrumbs(
+  cycleName: string,
+): AdminMpBreadcrumb[] {
+  return [
+    { labelKey: "auth.admin.breadcrumb.admin", href: ADMIN_ROOT_PATH },
+    {
+      labelKey: "auth.admin.breadcrumb.marketPulse",
+      href: ADMIN_MARKET_PULSE_PATH,
+    },
+    { label: cycleName },
+    { labelKey: "auth.admin.mp.guidedCards.breadcrumb" },
+  ];
+}
+
+export function buildAdminMpGuidedLaunchBreadcrumbs(
+  cycleName: string,
+): AdminMpBreadcrumb[] {
+  return [
+    { labelKey: "auth.admin.breadcrumb.admin", href: ADMIN_ROOT_PATH },
+    {
+      labelKey: "auth.admin.breadcrumb.marketPulse",
+      href: ADMIN_MARKET_PULSE_PATH,
+    },
+    { label: cycleName },
+    { labelKey: "auth.admin.mp.guidedLaunch.breadcrumb" },
   ];
 }

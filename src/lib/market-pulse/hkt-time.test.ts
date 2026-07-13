@@ -3,6 +3,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   addHktCalendarDays,
   getHktCalendarDayIndex,
+  guidedCycleEndAtFromDateOnly,
+  guidedCycleRevealAtFromDateOnly,
+  guidedCycleStartAtFromDateOnly,
   hktMidnightUtcFromCalendarDayIndex,
   hktReleaseAtUtcFromCalendarDayIndex,
   HKT_UTC_OFFSET_MS,
@@ -125,6 +128,26 @@ describe("HKT datetime-local admin helpers", () => {
   it("parses admin datetime-local strings as HKT wall clock", () => {
     expect(parseHktDatetimeLocal("2026-07-01T16:00")?.toISOString()).toBe(
       "2026-07-01T08:00:00.000Z",
+    );
+  });
+});
+
+describe("HKT date-only guided cycle helpers", () => {
+  it("converts guided start date to 09:00 HKT (01:00 UTC)", () => {
+    expect(guidedCycleStartAtFromDateOnly("2026-08-01")?.toISOString()).toBe(
+      "2026-08-01T01:00:00.000Z",
+    );
+  });
+
+  it("converts guided end date to 21:00 HKT (13:00 UTC)", () => {
+    expect(guidedCycleEndAtFromDateOnly("2026-08-10")?.toISOString()).toBe(
+      "2026-08-10T13:00:00.000Z",
+    );
+  });
+
+  it("converts guided reveal date to 09:00 HKT (01:00 UTC)", () => {
+    expect(guidedCycleRevealAtFromDateOnly("2026-08-11")?.toISOString()).toBe(
+      "2026-08-11T01:00:00.000Z",
     );
   });
 });

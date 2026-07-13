@@ -19,6 +19,8 @@ import {
   describeCyclePlayabilityIssue,
   getCyclePlayabilityIssue,
 } from "@/lib/market-pulse/cycle-playability";
+import { groupCardsByCycleId } from "@/lib/market-pulse/admin-cycle-next-action";
+import { enrichCycleRowsWithGuidedProgress, type GuidedHubProgressSummary } from "@/lib/market-pulse/guided-card-dashboard";
 import { isMarketPulseCycleRevealed } from "@/lib/market-pulse/reveal-access";
 import { getMarketPulseSettings } from "@/lib/market-pulse/server";
 import { prisma } from "@/lib/prisma";
@@ -86,6 +88,7 @@ export type MarketPulseAdminCycleRow = {
   scoresGenerated: boolean;
   topWinnerName: string | null;
   topWinnerScore: number | null;
+  guidedProgress: GuidedHubProgressSummary | null;
 };
 
 export type MarketPulseAdminActivityRow = {
@@ -213,6 +216,7 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
         ? (winnerNameByUserId.get(winner.userId) ?? null)
         : null,
       topWinnerScore: winner?.score ?? null,
+      guidedProgress: null,
     };
   });
 
@@ -227,6 +231,7 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
   });
 
   const cards: MarketPulseAdminCardRow[] = cardRows.map(mapMarketPulseAdminCardRow);
+  const cardsByCycleId = groupCardsByCycleId(cards);
 
   const [recentDecisions, recentAudits] = await Promise.all([
     prisma.marketPulseDecision.findMany({
@@ -268,12 +273,17 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 10);
 
+  const cyclesWithGuidedProgress = enrichCycleRowsWithGuidedProgress(
+    cycleRows,
+    cardsByCycleId,
+  );
+
   return {
     adminEmail: admin.email,
     runtimeStatus: settings.runtimeStatus,
     settingsId: settings.id,
     activeCycleId,
-    cycles: cycleRows,
+    cycles: cyclesWithGuidedProgress,
     cards,
     recentActivity,
   };

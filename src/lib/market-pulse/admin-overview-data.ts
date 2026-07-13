@@ -84,6 +84,7 @@ function cycleRowForGuidance(
     scoresGenerated: false,
     topWinnerName: null,
     topWinnerScore: null,
+    guidedProgress: null,
   };
 }
 

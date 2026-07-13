@@ -134,6 +134,7 @@ export async function getMarketPulseCycleBuilderData(
     scoresGenerated: scoreEventCount > 0,
     topWinnerName: winner ? (winnerNameByUserId.get(winner.userId) ?? null) : null,
     topWinnerScore: winner?.score ?? null,
+    guidedProgress: null,
   };
 
   const cards: MarketPulseAdminCardRow[] = cardRows.map(mapMarketPulseAdminCardRow);

@@ -52,8 +52,122 @@ export function hktReleaseAtUtcFromCalendarDayIndex(hktDayIndex: number): Date {
   );
 }
 
+const HKT_DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
 const HKT_DATETIME_LOCAL_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/;
+
+export type HktDateOnlyParts = {
+  year: number;
+  month: number;
+  day: number;
+};
+
+/** Parse `YYYY-MM-DD` admin date-only input (HKT calendar date, no time). */
+export function parseHktDateOnly(value: string): HktDateOnlyParts | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const match = trimmed.match(HKT_DATE_ONLY_PATTERN);
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  if (
+    !Number.isFinite(year) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return null;
+  }
+
+  return { year, month, day };
+}
+
+/** Canonical `YYYY-MM-DD` key for an HKT calendar date string. */
+export function hktDateOnlyDayKey(value: string): string | null {
+  const parts = parseHktDateOnly(value);
+  if (!parts) {
+    return null;
+  }
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
+}
+
+/**
+ * Convert an HKT calendar date + wall-clock hour to a UTC instant.
+ * Fixed UTC+8 — independent of server or browser timezone.
+ */
+export function hktDateOnlyToUtcInstant(value: string, hour: number): Date | null {
+  const parts = parseHktDateOnly(value);
+  if (!parts || hour < 0 || hour > 23) {
+    return null;
+  }
+
+  const hktWallClockUtcMs = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    hour,
+    0,
+    0,
+    0,
+  );
+  return new Date(hktWallClockUtcMs - HKT_UTC_OFFSET_MS);
+}
+
+/** Guided cycle start: 09:00 HKT on the start date. */
+export function guidedCycleStartAtFromDateOnly(value: string): Date | null {
+  return hktDateOnlyToUtcInstant(value, MARKET_PULSE_CARD_RELEASE_HKT_HOUR);
+}
+
+/** Guided cycle end: 21:00 HKT on the end date. */
+export function guidedCycleEndAtFromDateOnly(value: string): Date | null {
+  return hktDateOnlyToUtcInstant(value, 21);
+}
+
+/** Guided cycle reveal: 09:00 HKT on the reveal date. */
+export function guidedCycleRevealAtFromDateOnly(value: string): Date | null {
+  return hktDateOnlyToUtcInstant(value, MARKET_PULSE_CARD_RELEASE_HKT_HOUR);
+}
+
+/** Format a UTC instant as `YYYY-MM-DD` in the HKT calendar. */
+export function formatHktDateOnlyFromUtcInstant(instant: Date): string {
+  const hktMs = instant.getTime() + HKT_UTC_OFFSET_MS;
+  const hkt = new Date(hktMs);
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${hkt.getUTCFullYear()}-${pad(hkt.getUTCMonth() + 1)}-${pad(hkt.getUTCDate())}`;
+}
+
+/** Advance an HKT calendar date string by whole days. */
+export function addHktDateOnlyDays(value: string, days: number): string | null {
+  const midnight = hktDateOnlyToUtcInstant(value, 0);
+  if (!midnight) {
+    return null;
+  }
+
+  return formatHktDateOnlyFromUtcInstant(addHktCalendarDays(midnight, days));
+}
+
+/** Compare two HKT date-only strings. Returns null when either is invalid. */
+export function compareHktDateOnly(a: string, b: string): number | null {
+  const keyA = hktDateOnlyDayKey(a);
+  const keyB = hktDateOnlyDayKey(b);
+  if (!keyA || !keyB) {
+    return null;
+  }
+  return keyA.localeCompare(keyB);
+}
 
 /**
  * Parse an HTML datetime-local value as HKT wall-clock time → UTC instant.

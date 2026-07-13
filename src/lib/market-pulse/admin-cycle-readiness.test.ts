@@ -34,6 +34,7 @@ function baseCycle(
     scoresGenerated: false,
     topWinnerName: null,
     topWinnerScore: null,
+    guidedProgress: null,
     signalCardCount: 0,
     restCardCount: 0,
     ...overrides,

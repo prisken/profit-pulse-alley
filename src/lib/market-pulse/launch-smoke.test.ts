@@ -226,6 +226,7 @@ describe("Launch smoke — admin access and readiness", () => {
         scoresGenerated: false,
         topWinnerName: null,
         topWinnerScore: null,
+        guidedProgress: null,
         signalCardCount: 1,
         restCardCount: 0,
       },

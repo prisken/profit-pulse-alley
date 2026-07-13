@@ -6,17 +6,20 @@ import type { MarketPulseSwipeCardData } from "@/lib/market-pulse/types";
 /** Remove hidden PPA fields from any card-shaped payload (defense in depth). */
 export function stripPpaFromCardPayload<T extends Record<string, unknown>>(
   card: T,
-): Omit<T, "ppaSignal" | "ppaInsight"> {
+): Omit<T, "ppaSignal" | "ppaInsight" | "ppaSignalLockedAt"> {
   const rest = { ...card };
   delete rest.ppaSignal;
   delete rest.ppaInsight;
-  return rest as Omit<T, "ppaSignal" | "ppaInsight">;
+  delete rest.ppaSignalLockedAt;
+  return rest as Omit<T, "ppaSignal" | "ppaInsight" | "ppaSignalLockedAt">;
 }
 
 /** API-safe card payload: strips PPA, ensures cardType, never exposes PPA on REST cards. */
 export function sanitizeMarketPulseApiCardPayload<
   T extends Record<string, unknown> & { cardType?: MarketPulseCardType | null },
->(card: T): Omit<T, "ppaSignal" | "ppaInsight"> & { cardType: MarketPulseCardType } {
+>(card: T): Omit<T, "ppaSignal" | "ppaInsight" | "ppaSignalLockedAt"> & {
+  cardType: MarketPulseCardType;
+} {
   const cardType = resolveMarketPulseCardType(card.cardType);
   const stripped = stripPpaFromCardPayload(card);
   return {

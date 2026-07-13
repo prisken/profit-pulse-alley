@@ -34,6 +34,7 @@ const baseCycle: MarketPulseAdminCycleRow = {
   scoresGenerated: false,
   topWinnerName: null,
   topWinnerScore: null,
+  guidedProgress: null,
   signalCardCount: 1,
   restCardCount: 0,
 };

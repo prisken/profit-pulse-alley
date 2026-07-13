@@ -38,6 +38,7 @@ function buildCycle(
     scoresGenerated: false,
     topWinnerName: null,
     topWinnerScore: null,
+    guidedProgress: null,
     signalCardCount: 1,
     restCardCount: 0,
     ...MARKET_PULSE_ADMIN_CARD_ROW_DEFAULTS,

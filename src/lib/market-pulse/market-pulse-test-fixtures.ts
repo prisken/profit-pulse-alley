@@ -99,6 +99,7 @@ export const MARKET_PULSE_ADMIN_CYCLE_ROW_STATS_DEFAULTS = {
   scoresGenerated: false,
   topWinnerName: null,
   topWinnerScore: null,
+  guidedProgress: null,
 } as const satisfies Partial<import("@/lib/market-pulse/admin-data").MarketPulseAdminCycleRow>;
 
 /** Defaults for admin card row test fixtures after bilingual / sortOrder schema. */

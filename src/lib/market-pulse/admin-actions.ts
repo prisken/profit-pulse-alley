@@ -32,10 +32,11 @@ import {
   validateMarketPulseCycleDates,
 } from "@/lib/market-pulse/cycle-validation";
 import { mapMarketPulseAdminCardRow } from "@/lib/market-pulse/admin-card-row";
-import { marketPulseCycleBuilderPath } from "@/lib/market-pulse/admin-builder-paths";
+import { marketPulseCycleBuilderPath, marketPulseGuidedCardsPath, marketPulseGuidedLaunchPath } from "@/lib/market-pulse/admin-builder-paths";
 import {
   buildQuickCreateCycleDefaults,
   type QuickCreateCycleReference,
+  QUICK_CREATE_CYCLE_PRIZE_LABEL,
 } from "@/lib/market-pulse/quick-create-cycle-defaults";
 import {
   buildQuickDraftCardDefaults,
@@ -69,6 +70,27 @@ import {
   isMarketPulseCycleRevealed,
 } from "@/lib/market-pulse/server";
 import { validateCycleReadyForReveal } from "@/lib/market-pulse/reveal-ppa-validation.server";
+import {
+  validateGuidedCycleInput,
+  type GuidedCycleDayOverride,
+  type GuidedCycleFormInput,
+} from "@/lib/market-pulse/guided-cycle";
+import {
+  guidedRestSummaryFromBody,
+  isGuidedCardSaveAllowed,
+  validateGuidedCardSave,
+  validateGuidedPpaApprove,
+  type GuidedCardSaveInput,
+  type GuidedPpaApproveInput,
+} from "@/lib/market-pulse/guided-card-validation";
+import {
+  evaluateGuidedLaunchEligibility,
+  evaluateGuidedLaunchReadiness,
+  isGuidedLaunchAlreadyComplete,
+} from "@/lib/market-pulse/guided-launch-readiness";
+import { planGuidedLaunchPublishes } from "@/lib/market-pulse/guided-launch-publish";
+import { formatGuidedLaunchAuditReason } from "@/lib/market-pulse/guided-launch-audit-reason";
+import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
 import { prisma } from "@/lib/prisma";
 
 const ADMIN_PATH = "/admin/market-pulse";
@@ -93,6 +115,26 @@ function revalidateAdminPaths() {
   revalidatePath("/market-pulse/play");
   revalidatePath("/market-pulse/leaderboard");
   revalidatePath("/market-pulse/reveal");
+}
+
+function revalidateGuidedCardPaths(cycleId: string) {
+  revalidatePath(marketPulseGuidedCardsPath(cycleId));
+  revalidatePath(marketPulseCycleBuilderPath(cycleId));
+}
+
+function revalidateGuidedLaunchPaths(cycleId: string) {
+  revalidateGuidedCardPaths(cycleId);
+  revalidatePath(marketPulseGuidedLaunchPath(cycleId));
+  revalidateAdminPaths();
+}
+
+function revalidateGuidedCardEffect(cycleId: string) {
+  return {
+    label: "guided cards cache refresh",
+    run: () => {
+      revalidateGuidedCardPaths(cycleId);
+    },
+  };
 }
 
 function revalidateAdminEffect() {
@@ -498,6 +540,548 @@ export async function quickCreateMarketPulseCycleAction(): Promise<
       },
     },
   );
+}
+
+export type CreateGuidedMarketPulseCycleInput = GuidedCycleFormInput & {
+  dayOverrides: GuidedCycleDayOverride[];
+};
+
+export type CreateGuidedMarketPulseCycleResult = {
+  cycleId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  revealDate: string;
+  signalCardCount: number;
+  restCardCount: number;
+  guidedCardsPath: string;
+  builderPath: string;
+};
+
+export async function createGuidedMarketPulseCycleAction(
+  input: CreateGuidedMarketPulseCycleInput,
+): Promise<AdminActionResult<CreateGuidedMarketPulseCycleResult>> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const validation = validateGuidedCycleInput({
+    name: input.name,
+    startDate: input.startDate,
+    endDate: input.endDate,
+    revealDate: input.revealDate,
+    defaultSignalCardsPerDay: input.defaultSignalCardsPerDay,
+    dayOverrides: input.dayOverrides,
+  });
+
+  if (!validation.valid) {
+    const fieldErrors = Object.fromEntries(
+      Object.entries(validation.fieldErrors).filter(
+        (entry): entry is [string, string] => Boolean(entry[1]),
+      ),
+    );
+    return adminFail(validation.error, fieldErrorsFromRecord(fieldErrors));
+  }
+
+  let cycle;
+  try {
+    cycle = await prisma.$transaction(async (tx) => {
+      const createdCycle = await tx.marketPulseCycle.create({
+        data: {
+          name: input.name.trim(),
+          startsAt: validation.dates.startsAt,
+          endsAt: validation.dates.endsAt,
+          revealAt: validation.dates.revealAt,
+          prizeLabel: QUICK_CREATE_CYCLE_PRIZE_LABEL,
+          status: "DRAFT",
+        },
+      });
+
+      if (validation.cards.length > 0) {
+        await tx.marketPulseCard.createMany({
+          data: validation.cards.map((card) => ({
+            cycleId: createdCycle.id,
+            dayIndex: card.dayIndex,
+            sortOrder: card.sortOrder,
+            cardType: card.cardType,
+            companyName: card.companyName,
+            ticker: card.ticker,
+            headline: card.headline,
+            headlineZhHant: card.headlineZhHant ?? null,
+            newsBody: card.newsBody ?? null,
+            newsBodyZhHant: card.newsBodyZhHant ?? null,
+            userPrompt: card.userPrompt ?? null,
+            status: card.status,
+            sourceDate: card.sourceDate,
+            ppaSignal: card.ppaSignal,
+            ppaInsight: card.ppaInsight,
+            publishedAt: card.publishedAt,
+          })),
+        });
+      }
+
+      return createdCycle;
+    });
+  } catch (error) {
+    console.error("[admin] createGuidedMarketPulseCycleAction failed:", error);
+    return adminFail("Could not create guided cycle. Please try again.");
+  }
+
+  const builderPath = marketPulseCycleBuilderPath(cycle.id);
+  const guidedCardsPath = marketPulseGuidedCardsPath(cycle.id);
+
+  return finishAdminMutation(
+    "Guided cycle created.",
+    [
+      {
+        label: "audit log",
+        run: () =>
+          writeCycleAuditLog({
+            adminUserId: admin.userId,
+            cycleId: cycle.id,
+            action: "CREATE",
+            newValue: "DRAFT",
+            reason: `Guided-created draft cycle "${input.name.trim()}" with ${validation.signalCardCount} signal and ${validation.restCardCount} rest draft cards`,
+          }),
+      },
+      revalidateAdminEffect(),
+      {
+        label: "builder cache refresh",
+        run: () => {
+          revalidatePath(builderPath);
+        },
+      },
+      {
+        label: "guided cards cache refresh",
+        run: () => {
+          revalidatePath(guidedCardsPath);
+        },
+      },
+    ],
+    {
+      data: {
+        cycleId: cycle.id,
+        name: input.name.trim(),
+        startDate: input.startDate,
+        endDate: input.endDate,
+        revealDate: input.revealDate,
+        signalCardCount: validation.signalCardCount,
+        restCardCount: validation.restCardCount,
+        guidedCardsPath,
+        builderPath,
+      },
+    },
+  );
+}
+
+export type UpdateGuidedMarketPulseCardInput = GuidedCardSaveInput & {
+  cardId: string;
+};
+
+export async function updateGuidedMarketPulseCardAction(
+  input: UpdateGuidedMarketPulseCardInput,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const card = await prisma.marketPulseCard.findUnique({
+    where: { id: input.cardId },
+  });
+  if (!card) {
+    return adminFail("Card not found.");
+  }
+
+  if (!isGuidedCardSaveAllowed(card)) {
+    return adminFail("Published cards must be edited in advanced builder.");
+  }
+
+  const cardType = card.cardType;
+  if (input.cardType !== cardType) {
+    return adminFail("Card type does not match.");
+  }
+
+  const validation = validateGuidedCardSave(input);
+  if (!validation.valid) {
+    const fieldErrors = Object.fromEntries(
+      Object.entries(validation.errors).filter(
+        (entry): entry is [string, string] => Boolean(entry[1]),
+      ),
+    );
+    return adminFail(validation.error ?? "Invalid card data.", fieldErrorsFromRecord(fieldErrors));
+  }
+
+  const uniqueError = await assertUniqueCardSlot({
+    cycleId: card.cycleId,
+    dayIndex: input.dayIndex,
+    sortOrder: card.sortOrder,
+    excludeCardId: card.id,
+  });
+  if (uniqueError) {
+    return adminFail("Another card on this day already uses this slot.");
+  }
+
+  const updateData =
+    input.cardType === "REST"
+      ? {
+          dayIndex: input.dayIndex,
+          headline: input.headline.trim(),
+          newsBody: trimOrNull(input.newsBody),
+          summary: guidedRestSummaryFromBody(input.newsBody),
+          cardImageUrl: trimOrNull(input.cardImageUrl),
+          cardImageAlt: trimOrNull(input.cardImageAlt),
+        }
+      : {
+          dayIndex: input.dayIndex,
+          headline: input.headline.trim(),
+          newsBody: trimOrNull(input.newsBody),
+          companyName: input.companyName.trim(),
+          ticker: input.ticker.trim(),
+          summary: trimOrNull(input.summary),
+          priceLabel: trimOrNull(input.priceLabel),
+          cardImageUrl: trimOrNull(input.cardImageUrl),
+          cardImageAlt: trimOrNull(input.cardImageAlt),
+        };
+
+  try {
+    await prisma.marketPulseCard.update({
+      where: { id: card.id },
+      data: updateData,
+    });
+  } catch (error) {
+    console.error("[admin] updateGuidedMarketPulseCardAction failed:", error);
+    return adminFail("Could not save card. Please try again.");
+  }
+
+  return finishAdminMutation("Card saved.", [
+    revalidateAdminEffect(),
+    revalidateGuidedCardEffect(card.cycleId),
+  ]);
+}
+
+export type ApproveGuidedMarketPulseCardPpaInput = GuidedPpaApproveInput & {
+  cardId: string;
+};
+
+export async function approveGuidedMarketPulseCardPpaAction(
+  input: ApproveGuidedMarketPulseCardPpaInput,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const card = await prisma.marketPulseCard.findUnique({
+    where: { id: input.cardId },
+  });
+  if (!card) {
+    return adminFail("Card not found.");
+  }
+
+  if (isMarketPulseRestCard(card)) {
+    return adminFail("Rest cards do not use PPA.");
+  }
+
+  if (!isGuidedCardSaveAllowed(card)) {
+    return adminFail("Published cards must be edited in advanced builder.");
+  }
+
+  const validation = validateGuidedPpaApprove(input);
+  if (!validation.valid) {
+    const fieldErrors = Object.fromEntries(
+      Object.entries(validation.errors).filter(
+        (entry): entry is [string, string] => Boolean(entry[1]),
+      ),
+    );
+    return adminFail(validation.error ?? "PPA approval is incomplete.", fieldErrorsFromRecord(fieldErrors));
+  }
+
+  const nextSignal = input.ppaSignal || null;
+  const nextInsight = trimOrNull(input.ppaInsight);
+  const wasApproved = Boolean(card.ppaSignalLockedAt);
+
+  try {
+    await prisma.marketPulseCard.update({
+      where: { id: card.id },
+      data: {
+        ppaSignal: nextSignal,
+        ppaInsight: nextInsight,
+        ppaSignalLockedAt: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("[admin] approveGuidedMarketPulseCardPpaAction failed:", error);
+    return adminFail("Could not approve PPA. Please try again.");
+  }
+
+  const sideEffects = [
+    revalidateAdminEffect(),
+    revalidateGuidedCardEffect(card.cycleId),
+    {
+      label: "audit log",
+      run: () =>
+        prisma.marketPulseAuditLog.create({
+          data: {
+            adminUserId: admin.userId,
+            entityType: "MarketPulseCard",
+            entityId: card.id,
+            action: wasApproved ? "REAPPROVE_PPA" : "LOCK_PPA",
+            reason: wasApproved ? "PPA re-approved in guided editor" : "PPA approved in guided editor",
+          },
+        }),
+    },
+  ];
+
+  return finishAdminMutation("PPA approved.", sideEffects);
+}
+
+export type LaunchGuidedMarketPulseCycleResult = {
+  cycleId: string;
+  publishedCount: number;
+  alreadyLaunched: boolean;
+};
+
+export async function launchGuidedMarketPulseCycleAction(
+  cycleId: string,
+): Promise<AdminActionResult<LaunchGuidedMarketPulseCycleResult>> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  type LaunchTxResult = {
+    alreadyLaunched: boolean;
+    publishedPlans: Array<{
+      cardId: string;
+      previousStatus: string;
+    }>;
+    previousCycleStatus: MarketPulseCycleStatus;
+    cycleOpened: boolean;
+    pinnedActive: boolean;
+    previousActiveCycleId: string | null;
+  };
+
+  let txResult: LaunchTxResult;
+
+  try {
+    txResult = await prisma.$transaction(async (tx) => {
+      const cycle = await tx.marketPulseCycle.findUnique({
+        where: { id: cycleId },
+        select: {
+          id: true,
+          status: true,
+          startsAt: true,
+          endsAt: true,
+        },
+      });
+      if (!cycle) {
+        throw new Error("CYCLE_NOT_FOUND");
+      }
+
+      const eligibility = evaluateGuidedLaunchEligibility({ status: cycle.status });
+      if (!eligibility.eligible) {
+        throw new Error(`ELIGIBILITY:${eligibility.reasons[0] ?? "This cycle cannot be launched."}`);
+      }
+
+      const cardRows = await tx.marketPulseCard.findMany({
+        where: { cycleId },
+        orderBy: [
+          { dayIndex: "asc" },
+          { sortOrder: "asc" },
+          { createdAt: "asc" },
+        ],
+        include: { _count: { select: { decisions: true } } },
+      });
+      const cards = cardRows.map(mapMarketPulseAdminCardRow);
+
+      const settings = await tx.marketPulseGameSetting.findFirst({
+        orderBy: { createdAt: "asc" },
+      });
+      if (!settings) {
+        throw new Error("SETTINGS_NOT_FOUND");
+      }
+
+      if (
+        isGuidedLaunchAlreadyComplete({
+          cycleStatus: cycle.status,
+          activeCycleId: settings.activeCycleId,
+          runtimeStatus: settings.runtimeStatus,
+          cycleId: cycle.id,
+          cards,
+        })
+      ) {
+        return {
+          alreadyLaunched: true,
+          publishedPlans: [],
+          previousCycleStatus: cycle.status,
+          cycleOpened: false,
+          pinnedActive: false,
+          previousActiveCycleId: settings.activeCycleId,
+        };
+      }
+
+      const readiness = evaluateGuidedLaunchReadiness(cards);
+      if (!readiness.ready) {
+        throw new Error(
+          `READINESS:${readiness.reasons[0] ?? "Cycle is not ready to launch."}`,
+        );
+      }
+
+      const publishPlan = planGuidedLaunchPublishes({
+        cards,
+        cycle: { startsAt: cycle.startsAt, endsAt: cycle.endsAt },
+      });
+      if (!publishPlan.ok) {
+        throw new Error(`PUBLISH:${publishPlan.error}`);
+      }
+
+      for (const plan of publishPlan.plans) {
+        await tx.marketPulseCard.update({
+          where: { id: plan.cardId },
+          data: {
+            status: "PUBLISHED",
+            publishedAt: plan.publishedAt,
+          },
+        });
+      }
+
+      const previousCycleStatus = cycle.status;
+      let cycleOpened = false;
+      if (cycle.status !== "OPEN") {
+        await tx.marketPulseCycle.update({
+          where: { id: cycle.id },
+          data: { status: "OPEN" },
+        });
+        cycleOpened = true;
+      }
+
+      const previousActiveCycleId = settings.activeCycleId;
+      const pinnedActive = settings.activeCycleId !== cycle.id;
+
+      await tx.marketPulseGameSetting.update({
+        where: { id: settings.id },
+        data: {
+          activeCycleId: cycle.id,
+          runtimeStatus: "OPEN",
+        },
+      });
+
+      return {
+        alreadyLaunched: false,
+        publishedPlans: publishPlan.plans.map((plan) => ({
+          cardId: plan.cardId,
+          previousStatus: plan.previousStatus,
+        })),
+        previousCycleStatus,
+        cycleOpened,
+        pinnedActive,
+        previousActiveCycleId,
+      };
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "CYCLE_NOT_FOUND") {
+        return adminFail("Cycle not found.");
+      }
+      if (error.message === "SETTINGS_NOT_FOUND") {
+        return adminFail("Game settings not found.");
+      }
+      if (error.message.startsWith("ELIGIBILITY:")) {
+        return adminFail(error.message.replace("ELIGIBILITY:", ""));
+      }
+      if (error.message.startsWith("READINESS:")) {
+        return adminFail(error.message.replace("READINESS:", ""));
+      }
+      if (error.message.startsWith("PUBLISH:")) {
+        return adminFail(error.message.replace("PUBLISH:", ""));
+      }
+    }
+    console.error("[admin] launchGuidedMarketPulseCycleAction failed:", error);
+    return adminFail("Could not launch cycle. Please try again.");
+  }
+
+  const guidedLaunchAuditReason = formatGuidedLaunchAuditReason({
+    cycleId,
+    publishedCount: txResult.publishedPlans.length,
+    runtimeStatus: "OPEN",
+    activeCycleId: cycleId,
+  });
+
+  const sideEffects = txResult.alreadyLaunched
+    ? [
+        {
+          label: "guided launch cache refresh",
+          run: () => {
+            revalidateGuidedLaunchPaths(cycleId);
+          },
+        },
+      ]
+    : [
+        {
+          label: "guided launch cache refresh",
+          run: () => {
+            revalidateGuidedLaunchPaths(cycleId);
+          },
+        },
+        ...txResult.publishedPlans.map((plan) => ({
+          label: `publish audit ${plan.cardId}`,
+          run: () =>
+            prisma.marketPulseAuditLog.create({
+              data: {
+                adminUserId: admin.userId,
+                entityType: "MarketPulseCard",
+                entityId: plan.cardId,
+                action: "PUBLISH",
+                fieldName: "status",
+                oldValue: plan.previousStatus,
+                newValue: "PUBLISHED",
+                reason: guidedLaunchAuditReason,
+              },
+            }),
+        })),
+        ...(txResult.cycleOpened
+          ? [
+              {
+                label: "cycle status audit",
+                run: () =>
+                  writeCycleAuditLog({
+                    adminUserId: admin.userId,
+                    cycleId,
+                    action: "STATUS_CHANGE",
+                    fieldName: "status",
+                    oldValue: txResult.previousCycleStatus,
+                    newValue: "OPEN",
+                    reason: guidedLaunchAuditReason,
+                  }),
+              },
+            ]
+          : []),
+        ...(txResult.pinnedActive
+          ? [
+              {
+                label: "active cycle audit",
+                run: () =>
+                  writeCycleAuditLog({
+                    adminUserId: admin.userId,
+                    cycleId,
+                    action: "SET_ACTIVE",
+                    fieldName: "activeCycleId",
+                    oldValue: txResult.previousActiveCycleId,
+                    newValue: cycleId,
+                    reason: guidedLaunchAuditReason,
+                  }),
+              },
+            ]
+          : []),
+      ];
+
+  const message = txResult.alreadyLaunched
+    ? "Cycle is already launched."
+    : txResult.publishedPlans.length > 0
+      ? `Published ${txResult.publishedPlans.length} card(s) and launched the cycle.`
+      : "Cycle launched.";
+
+  return finishAdminMutation(message, sideEffects, {
+    data: {
+      cycleId,
+      publishedCount: txResult.publishedPlans.length,
+      alreadyLaunched: txResult.alreadyLaunched,
+    },
+  });
 }
 
 export type UpdateMarketPulseCycleInput = {

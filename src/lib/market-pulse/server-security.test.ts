@@ -157,6 +157,7 @@ describe("client payload stripping", () => {
         id: "card-1",
         ppaSignal: "BULLISH",
         ppaInsight: "secret",
+        ppaSignalLockedAt: "2026-01-01T00:00:00.000Z",
       }),
     ).toEqual({ id: "card-1" });
   });

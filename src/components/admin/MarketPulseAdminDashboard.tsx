@@ -361,6 +361,8 @@ export default function MarketPulseAdminDashboard({
       <MarketPulseCyclesHub
         cycles={initialData.cycles}
         cards={initialData.cards}
+        activeCycleId={initialData.activeCycleId}
+        runtimeStatus={initialData.runtimeStatus}
         disabled={isPending}
         onQuickCreateNextCycle={handleQuickCreateNextCycle}
         onEditCycle={handleEditCycleAdvanced}
