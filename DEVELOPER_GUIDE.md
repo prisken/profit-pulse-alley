@@ -15,7 +15,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
 | **Recent `main`** | **Acquisition progressive profiling** — learning-interest prompt after first MP decision (PR 2); next-step preference prompt on reveal (PR 3) |
-| **Feature branch** | `acquisition-admin-visibility` — acquisition admin visibility + **guided Market Pulse admin workflow (PRs 5–16)**; validated **13 Jul 2026** (`lint` 0 errors, `typecheck`, **844 tests**, `build` green); merge to `main` for Vercel production deploy |
+| **Feature branch** | `acquisition-admin-visibility` — acquisition admin visibility + **guided MP admin workflow (PRs 5–16)** + **play empty-state timing** (`5187ce8`); validated **13 Jul 2026** (`lint` 0 errors, `typecheck`, **857 tests**, `build` green); merge to `main` for Vercel production deploy |
 
 ---
 
@@ -1729,9 +1729,13 @@ Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes s
 - **Locked/submitted:** `DecisionLockedCard` after successful submit or when revisiting a decided card; phase `locked`
 - **Submit:** `submitMarketPulseDecisionAction` → `MarketPulseDecision` row (`BULLISH`/`CAUTIOUS` or `ACKNOWLEDGED` on rest cards; scores persisted on admin reveal, not at submit time)
 - **States:** `pre_launch`, `no_active_cycle`, **`between_cycles`**, `cycle_unavailable`, `runtime_closed`, `no_card_today`, `sign_in_required`, `playable`, `locked`
-- **`between_cycles`:** Runtime OPEN but no active playable cycle (gap after a cycle ends, before the next opens). Shows **Next challenge** scheduled date or **TBC** from `nextCycle`; does not show “today’s signal coming soon”
+- **`between_cycles`:** Runtime OPEN but no active playable cycle (gap after a cycle ends, before the next opens). Empty-state copy from `play-empty-state.ts` — **Next challenge begins soon** + HKT start time when `nextCycle` is available, else **Next challenge: TBC** (`next-cycle.ts`, `play-data.ts`). Display-only; does not change active-cycle pinning.
+- **`no_card_today`:** Active cycle but no playable card yet — shows **Today's signal unlocks soon** + HKT unlock time when `nextCardReleaseAtIso` is computed (`findEarliestFuturePublishedCardReleaseAt` in `playable-card.ts`).
+- **`cycle_unavailable` (not started):** Pinned/future cycle before `startsAt` — same future-cycle timing copy when `nextCycle` is available; other issues keep existing closed/revealed messaging.
+- **`runtime_closed`:** Existing closed copy; optional **Next scheduled cycle** detail when a future cycle exists (does not imply playability).
 - **Pre-launch:** non-admin → `pre_launch` status; ADMIN bypass via `launch-config.ts`
-- **Non-playable UI:** `PlayStatusCard` / status panels for each blocked state; decorative `PlayDecorativeSignalPreview` where card is hidden
+- **Non-playable UI:** `PlayStatusCard` via `resolvePlayBlockedStateCopy` / `applyPlayBlockedStateCopy` (`play-empty-state.ts`); decorative `PlayDecorativeSignalPreview` where card is hidden
+- **Related tests:** `play-empty-state.test.ts`, `play-data.launch.test.ts`, `next-cycle.test.ts`, `playable-card.test.ts`
 - **Playability:** `getActiveMarketPulseCycle()` returns null when `revealAt < now` even if cycle is pinned active — see [Making Market Pulse visible](#making-market-pulse-visible-to-players-go-live)
 - PPA signal/insight **never** exposed before reveal (`reveal-access.ts`, `stripPpaFromCardPayload`)
 - **Decisions:** Players may lock Bullish/Cautious on published cards without PPA lock (`server-core.test.ts`: “allows submission when PPA is missing and unlocked”)
