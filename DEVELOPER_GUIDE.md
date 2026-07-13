@@ -43,7 +43,7 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 
 **Live production note (early Jul 2026):** If `/market-pulse` shows **No active cycle** with an empty cycle panel, ops has not finished go-live — runtime may be `OPEN` but no **real** (non-demo) cycle is pinned active with a **published card for today**. Fix via `/admin/market-pulse` (see [Making Market Pulse visible](#making-market-pulse-visible-to-players-go-live) and [Admin dashboards](#admin-dashboards-ops-reference)).
 
-**Between cycles:** When runtime is `OPEN` but no cycle is in the active play window, `/market-pulse/play` returns `between_cycles` with **Next challenge: TBC** or the scheduled next cycle start (`next-cycle.ts`). Hub shows the same **Next cycle** signal in the cycle panel.
+**Between cycles:** When runtime is `OPEN` but no cycle is in the active play window, `/market-pulse/play` returns `between_cycles` with **Next challenge: TBC** or the scheduled next cycle start (`next-cycle.ts`). The play page empty state shows the **earliest public-eligible future `OPEN` cycle start time** (HKT-labelled) when known — this is display-only and does **not** change which cycle is pinned active for actual play. Hub shows the same **Next cycle** signal in the cycle panel.
 
 **Production data guards:** Demo/seed cycle `[DEMO] Market Pulse Local Seed` is **filtered from public paths** in production (`demo-cycle-guards.ts`). `db:seed` is blocked unless `MARKET_PULSE_SEED=1`. Hub/play/leaderboard do **not** fall back to synthetic dev data on Vercel — they return empty/safe states instead (`hub-data.production.test.ts`).
 

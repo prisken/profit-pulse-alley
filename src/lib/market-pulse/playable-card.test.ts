@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { getCycleDayReleaseAt } from "@/lib/market-pulse/card-release-schedule";
 import {
   comparePlayableCards,
+  findEarliestFuturePublishedCardReleaseAt,
   findPlayableCardForToday,
   findPlayableCardsForToday,
   getCardReleaseTime,
@@ -232,5 +233,37 @@ describe("getCardReleaseTime", () => {
       CYCLE_START,
     );
     expect(releaseAt.getTime()).toBe(getCycleDayReleaseAt(CYCLE_START, 1).getTime());
+  });
+});
+
+describe("findEarliestFuturePublishedCardReleaseAt", () => {
+  it("returns the earliest future published-card release in a cycle", () => {
+    const now = new Date("2026-06-01T12:00:00.000Z");
+    const later = new Date("2026-06-03T01:00:00.000Z");
+    const sooner = new Date("2026-06-02T01:00:00.000Z");
+
+    const result = findEarliestFuturePublishedCardReleaseAt(
+      [
+        card({ dayIndex: 1, status: "PUBLISHED", publishedAt: CYCLE_START }),
+        card({ dayIndex: 2, status: "PUBLISHED", publishedAt: sooner }),
+        card({ dayIndex: 3, status: "PUBLISHED", publishedAt: later }),
+      ],
+      { startsAt: CYCLE_START, revealAt: CYCLE_REVEAL },
+      now,
+    );
+
+    expect(result?.toISOString()).toBe(sooner.toISOString());
+  });
+
+  it("returns null when every published card has already released", () => {
+    const now = new Date("2026-06-05T12:00:00.000Z");
+
+    const result = findEarliestFuturePublishedCardReleaseAt(
+      [card({ dayIndex: 1, status: "PUBLISHED", publishedAt: CYCLE_START })],
+      { startsAt: CYCLE_START, revealAt: CYCLE_REVEAL },
+      now,
+    );
+
+    expect(result).toBeNull();
   });
 });

@@ -178,6 +178,61 @@ describe("Launch smoke — public play gates", () => {
     expect(data.card).toBeNull();
   });
 
+  it("keeps runtime_closed when a future cycle exists but does not imply playability", async () => {
+    mocks.getMarketPulseSettings.mockResolvedValue({ runtimeStatus: "CLOSED" });
+    mocks.getActiveMarketPulseCycle.mockResolvedValue(null);
+    mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({
+      status: "available",
+      cycleId: "cycle-aug",
+      name: "August 2026 Market Pulse",
+      startsAtIso: "2026-08-01T01:00:00.000Z",
+      endsAtIso: null,
+      revealAtIso: null,
+      firstCardReleaseAtIso: "2026-08-01T01:00:00.000Z",
+    });
+
+    const data = await getMarketPulsePlayPageData();
+
+    expect(data.status).toBe("runtime_closed");
+    expect(data.nextCycle.status).toBe("available");
+    expect(JSON.stringify(data.nextCycle)).not.toContain("ppaSignal");
+  });
+
+  it("shows cycle_unavailable with next cycle when pinned cycle has not started", async () => {
+    mocks.getActiveMarketPulseCycle.mockResolvedValue(null);
+    const futureStart = new Date("2026-08-01T01:00:00.000Z");
+    mocks.getMarketPulseSettings.mockResolvedValue({
+      runtimeStatus: "OPEN",
+      activeCycle: {
+        id: "cycle-aug",
+        name: "August 2026 Market Pulse",
+        status: "OPEN",
+        startsAt: futureStart,
+        endsAt: new Date("2026-08-11T01:00:00.000Z"),
+        revealAt: new Date("2026-08-11T01:00:00.000Z"),
+      },
+    });
+    mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({
+      status: "available",
+      cycleId: "cycle-aug",
+      name: "August 2026 Market Pulse",
+      startsAtIso: futureStart.toISOString(),
+      endsAtIso: null,
+      revealAtIso: null,
+      firstCardReleaseAtIso: futureStart.toISOString(),
+    });
+
+    const data = await getMarketPulsePlayPageData();
+
+    expect(data.status).toBe("cycle_unavailable");
+    expect(data.unavailableIssue).toBe("not_started");
+    expect(data.nextCycle.status).toBe("available");
+    expect(data.nextCycle).toMatchObject({
+      cycleId: "cycle-aug",
+      startsAtIso: futureStart.toISOString(),
+    });
+  });
+
   it("shows between-cycles state with TBC when no active cycle or future cycle exists", async () => {
     mocks.getActiveMarketPulseCycle.mockResolvedValue(null);
     mocks.getMarketPulseSettings.mockResolvedValue({
@@ -226,6 +281,29 @@ describe("Launch smoke — public play gates", () => {
 
     expect(data.status).toBe("no_card_today");
     expect(data.card).toBeNull();
+  });
+
+  it("includes nextCardReleaseAtIso when the next published card unlocks in the future", async () => {
+    const futureRelease = new Date("2026-07-06T01:00:00.000Z");
+    mocks.getTodayMarketPulsePlaySessionSnapshot.mockResolvedValue(null);
+    mocks.getActiveMarketPulseCycle.mockResolvedValue({
+      ...activeCycle,
+      cards: [
+        {
+          ...buildDbCard(),
+          dayIndex: 2,
+          publishedAt: futureRelease,
+        },
+      ],
+    });
+    mocks.auth.mockResolvedValue({
+      user: { id: "user-1", role: "USER" },
+    });
+
+    const data = await getMarketPulsePlayPageData();
+
+    expect(data.status).toBe("no_card_today");
+    expect(data.nextCardReleaseAtIso).toBe(futureRelease.toISOString());
   });
 
   it("blocks USER with pre_launch before 1 Jul 2026 00:00 HKT", async () => {

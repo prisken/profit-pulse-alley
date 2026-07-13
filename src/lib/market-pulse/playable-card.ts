@@ -222,3 +222,33 @@ export function findPlayableCardForToday(
   const todaysCards = findPlayableCardsForToday(cycle, now);
   return todaysCards[0] ?? null;
 }
+
+/** Earliest future release instant among published cards in a cycle, or null. */
+export function findEarliestFuturePublishedCardReleaseAt(
+  cards: Pick<MarketPulseCard, "status" | "dayIndex" | "publishedAt">[],
+  cycle: Pick<MarketPulseCycle, "startsAt" | "revealAt">,
+  now: Date,
+): Date | null {
+  let earliest: Date | null = null;
+
+  for (const card of cards) {
+    if (card.status !== "PUBLISHED") {
+      continue;
+    }
+
+    const releaseAt = getEffectiveCardReleaseAt(card, cycle.startsAt);
+    if (releaseAt.getTime() <= now.getTime()) {
+      continue;
+    }
+
+    if (releaseAt.getTime() > cycle.revealAt.getTime()) {
+      continue;
+    }
+
+    if (!earliest || releaseAt.getTime() < earliest.getTime()) {
+      earliest = releaseAt;
+    }
+  }
+
+  return earliest;
+}

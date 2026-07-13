@@ -147,6 +147,19 @@ export const marketPulseEnMessages = {
   "mp.play.state.nextChallenge.tbc": "Next challenge: TBC",
   "mp.play.state.nextChallenge.scheduled":
     "Next challenge: {name} · starts {date}",
+  "mp.play.state.scheduleAt": "{date} (HKT)",
+  "mp.play.state.futureCycle.title": "Next challenge begins soon",
+  "mp.play.state.futureCycle.body":
+    "The next Market Pulse cycle starts {date}.",
+  "mp.play.state.futureCycle.detail":
+    "Come back then to lock in your first signal.",
+  "mp.play.state.futureCard.title": "Today's signal unlocks soon",
+  "mp.play.state.futureCard.body":
+    "Today's Market Pulse card unlocks {date}.",
+  "mp.play.state.futureCard.detail": "Come back then to make your call.",
+  "mp.play.state.tbc.title": "Next challenge: TBC",
+  "mp.play.state.tbc.body": "We're preparing the next Market Pulse cycle.",
+  "mp.play.state.tbc.detail": "Check back soon for the next start date.",
   "mp.play.state.noCycle.cta.leaderboard": "View leaderboard archive",
   "mp.play.state.noCycle.cta.hub": "Back to Market Pulse",
   "mp.play.state.cycleUnavailable.title": "This cycle isn't open right now",
@@ -162,6 +175,7 @@ export const marketPulseEnMessages = {
   "mp.play.state.runtimeClosed.title": "Market Pulse is temporarily closed",
   "mp.play.state.runtimeClosed.body":
     "We're preparing the next challenge window. Your saved calls are safe — check back soon.",
+  "mp.play.state.runtimeClosed.nextCycle": "Next scheduled cycle: {date}",
   "mp.play.state.runtimeClosed.cta.leaderboard": "View leaderboard",
   "mp.play.state.runtimeClosed.cta.hub": "Back to Market Pulse",
   "mp.play.state.preview.ariaLabel": "Decorative Market Pulse signal preview",
@@ -618,6 +632,16 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.play.state.betweenCycles.body": "目前沒有可玩的卡牌。下一期挑戰開始後再回來。",
   "mp.play.state.nextChallenge.tbc": "下一個挑戰：待定",
   "mp.play.state.nextChallenge.scheduled": "下一個挑戰：{name} · {date} 開始",
+  "mp.play.state.scheduleAt": "{date}（香港時間）",
+  "mp.play.state.futureCycle.title": "下一期挑戰即將開始",
+  "mp.play.state.futureCycle.body": "下一期 Market Pulse 將於 {date} 開始。",
+  "mp.play.state.futureCycle.detail": "屆時再回來鎖定你的第一個訊號判斷。",
+  "mp.play.state.futureCard.title": "今日訊號即將解鎖",
+  "mp.play.state.futureCard.body": "今日 Market Pulse 卡片將於 {date} 解鎖。",
+  "mp.play.state.futureCard.detail": "屆時再回來作出你的判斷。",
+  "mp.play.state.tbc.title": "下一期挑戰：待定",
+  "mp.play.state.tbc.body": "我們正在準備下一期 Market Pulse。",
+  "mp.play.state.tbc.detail": "請稍後再來查看下一期的開始日期。",
   "mp.play.state.noCycle.cta.leaderboard": "查看排行榜存檔",
   "mp.play.state.noCycle.cta.hub": "返回 Market Pulse",
   "mp.play.state.cycleUnavailable.title": "此週期目前未開放",
@@ -633,6 +657,7 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.play.state.runtimeClosed.title": "Market Pulse 暫時關閉",
   "mp.play.state.runtimeClosed.body":
     "我們正在準備下一期挑戰。你已保存的判斷仍然安全 — 請稍後再來。",
+  "mp.play.state.runtimeClosed.nextCycle": "下一期排定於 {date} 開始",
   "mp.play.state.runtimeClosed.cta.leaderboard": "查看排行榜",
   "mp.play.state.runtimeClosed.cta.hub": "返回 Market Pulse",
   "mp.play.state.preview.ariaLabel": "Market Pulse 訊號預覽（裝飾用）",

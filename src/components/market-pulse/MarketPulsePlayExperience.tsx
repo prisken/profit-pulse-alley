@@ -47,7 +47,10 @@ import {
 } from "@/lib/market-pulse/analytics";
 import type { MarketPulseDecision } from "@/lib/market-pulse/constants";
 import type { MarketPulsePlayPageData } from "@/lib/market-pulse/play-data";
-import type { MarketPulseNextCycleStatus } from "@/lib/market-pulse/next-cycle";
+import {
+  applyPlayBlockedStateCopy,
+  resolvePlayBlockedStateCopy,
+} from "@/lib/market-pulse/play-empty-state";
 import { MARKET_PULSE_EASE } from "@/lib/market-pulse/motion";
 import { submitMarketPulseDecisionAction } from "@/lib/market-pulse/player-actions";
 import type { MarketPulseSwipeCardData, MarketPulseSwipeSubmitResult } from "@/lib/market-pulse/types";
@@ -78,20 +81,6 @@ function formatHubDate(iso: string, locale: SiteLocale, withTime = false): strin
     ...(withTime ? { timeStyle: "short" as const } : {}),
     timeZone: "Asia/Hong_Kong",
   }).format(new Date(iso));
-}
-
-function formatNextChallengeDetail(
-  nextCycle: MarketPulseNextCycleStatus,
-  locale: SiteLocale,
-  t: (key: import("@/lib/i18n/messages").MessageKey) => string,
-): string {
-  if (nextCycle.status === "available") {
-    return t("mp.play.state.nextChallenge.scheduled")
-      .replace("{name}", nextCycle.name)
-      .replace("{date}", formatHubDate(nextCycle.startsAtIso, locale, true));
-  }
-
-  return `${t("mp.play.state.nextChallenge.tbc")} ${t("mp.common.nextCycleTbcBody")}`;
 }
 
 function PlayLeaderboard({
@@ -186,6 +175,18 @@ function PlayNonPlayableState({
   locale: SiteLocale;
 }>) {
   const { t } = useTranslations();
+
+  const blockedCopy = applyPlayBlockedStateCopy(
+    resolvePlayBlockedStateCopy(
+      data.status,
+      data.nextCycle,
+      data.unavailableIssue,
+      data.nextCardReleaseAtIso,
+      locale,
+      t,
+    ),
+    t,
+  );
 
   if (data.status === "pre_launch") {
     return (
@@ -285,9 +286,9 @@ function PlayNonPlayableState({
       <PlayStatusCard
         icon={CalendarClock}
         accent="zinc"
-        title={t("mp.play.state.betweenCycles.title")}
-        body={t("mp.play.state.betweenCycles.body")}
-        detail={formatNextChallengeDetail(data.nextCycle, locale, t)}
+        title={blockedCopy.title}
+        body={blockedCopy.body}
+        detail={blockedCopy.detail}
         ctas={[
           {
             label: t("mp.play.state.noCycle.cta.leaderboard"),
@@ -310,19 +311,21 @@ function PlayNonPlayableState({
   }
 
   if (data.status === "cycle_unavailable") {
-    const detail = data.unavailableIssue
-      ? translateCyclePlayabilityIssue(locale, data.unavailableIssue)
-      : data.unavailableReason
-        ? translateMarketPulseError(locale, data.unavailableReason)
-        : undefined;
+    const issueDetail =
+      blockedCopy.title === t("mp.play.state.cycleUnavailable.title") &&
+      data.unavailableIssue
+        ? translateCyclePlayabilityIssue(locale, data.unavailableIssue)
+        : data.unavailableReason && !data.unavailableIssue
+          ? translateMarketPulseError(locale, data.unavailableReason)
+          : undefined;
 
     return (
       <PlayStatusCard
         icon={PauseCircle}
         accent="amber"
-        title={t("mp.play.state.cycleUnavailable.title")}
-        body={t("mp.play.state.cycleUnavailable.body")}
-        detail={detail}
+        title={blockedCopy.title}
+        body={blockedCopy.body}
+        detail={issueDetail ?? blockedCopy.detail}
         ctas={[
           {
             label: t("mp.play.state.cycleUnavailable.cta.leaderboard"),
@@ -344,8 +347,9 @@ function PlayNonPlayableState({
       <PlayStatusCard
         icon={Wrench}
         accent="zinc"
-        title={t("mp.play.state.runtimeClosed.title")}
-        body={t("mp.play.state.runtimeClosed.body")}
+        title={blockedCopy.title}
+        body={blockedCopy.body}
+        detail={blockedCopy.detail}
         ctas={[
           {
             label: t("mp.play.state.runtimeClosed.cta.leaderboard"),
@@ -368,8 +372,9 @@ function PlayNonPlayableState({
         icon={Sparkles}
         accent="emerald"
         showSignalPreview
-        title={t("mp.play.state.noCard.title")}
-        body={t("mp.play.state.noCard.body")}
+        title={blockedCopy.title}
+        body={blockedCopy.body}
+        detail={blockedCopy.detail}
         ctas={[
           {
             label: t("mp.play.state.noCard.cta.leaderboard"),

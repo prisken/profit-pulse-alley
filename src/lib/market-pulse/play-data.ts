@@ -37,6 +37,7 @@ import {
   canAccessMarketPulsePlay,
 } from "@/lib/market-pulse/launch-config";
 import { gateRuntimeClosedPageData } from "@/lib/market-pulse/play-page-state";
+import { findEarliestFuturePublishedCardReleaseAt } from "@/lib/market-pulse/playable-card";
 import { toMarketPulseSwipeCardData } from "@/lib/market-pulse/swipe-card";
 import type { MarketPulseSwipeCardData } from "@/lib/market-pulse/types";
 
@@ -84,6 +85,8 @@ export type MarketPulsePlayPageData = {
   /** 1-based progress within today's card set; null when only one card. */
   cardProgress: { current: number; total: number } | null;
   nextCycle: MarketPulseNextCycleStatus;
+  /** Earliest future published-card release in the active cycle (no_card_today only). */
+  nextCardReleaseAtIso: string | null;
   acquisition: PlayPageAcquisitionState;
 };
 
@@ -255,6 +258,7 @@ function buildPreLaunchPageData(
     leaderboardEntries: [],
     leaderboardRevealed: false,
     nextCycle: { status: "tbc" },
+    nextCardReleaseAtIso: null,
     acquisition: EMPTY_PLAY_PAGE_ACQUISITION,
     ...emptyPlaySlots(),
   };
@@ -291,6 +295,7 @@ function buildBetweenCyclesPageData(
     leaderboardEntries: extras.leaderboardEntries ?? [],
     leaderboardRevealed: false,
     nextCycle,
+    nextCardReleaseAtIso: null,
     acquisition: EMPTY_PLAY_PAGE_ACQUISITION,
     ...emptyPlaySlots(),
   };
@@ -397,6 +402,7 @@ export async function getMarketPulsePlayPageData(
             leaderboardEntries: [],
             leaderboardRevealed: false,
             nextCycle,
+            nextCardReleaseAtIso: null,
             ...emptyPlaySlots(),
           }
         : buildBetweenCyclesPageData(isAuthenticated, now, nextCycle),
@@ -414,12 +420,19 @@ export async function getMarketPulsePlayPageData(
   }
 
   if (!snapshot || snapshot.cards.length === 0) {
+    const nextCardReleaseAt = findEarliestFuturePublishedCardReleaseAt(
+      activeCycle.cards,
+      activeCycle,
+      now,
+    );
+
     return finalize({
       status: "no_card_today",
       isAuthenticated,
       ...cycleShell,
       leaderboardEntries,
       nextCycle,
+      nextCardReleaseAtIso: nextCardReleaseAt?.toISOString() ?? null,
       ...emptyPlaySlots(),
     });
   }
@@ -434,6 +447,7 @@ export async function getMarketPulsePlayPageData(
       ...cycleShell,
       leaderboardEntries,
       nextCycle,
+      nextCardReleaseAtIso: null,
       cardsToday: guestCardsToday,
       activeCardIndex: 0,
       card: previewCard,
@@ -454,12 +468,19 @@ export async function getMarketPulsePlayPageData(
     : guestCardsToday;
 
   if (cardsToday.length === 0) {
+    const nextCardReleaseAt = findEarliestFuturePublishedCardReleaseAt(
+      activeCycle.cards,
+      activeCycle,
+      now,
+    );
+
     return finalize({
       status: "no_card_today",
       isAuthenticated: true,
       ...cycleShell,
       leaderboardEntries,
       nextCycle,
+      nextCardReleaseAtIso: nextCardReleaseAt?.toISOString() ?? null,
       ...emptyPlaySlots(),
     });
   }
@@ -469,6 +490,7 @@ export async function getMarketPulsePlayPageData(
     ...cycleShell,
     leaderboardEntries,
     nextCycle,
+    nextCardReleaseAtIso: null,
     cardsToday,
     ...resolveAuthenticatedPlayState(cardsToday),
   });
