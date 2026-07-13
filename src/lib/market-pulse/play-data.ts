@@ -10,6 +10,11 @@ import {
   describeCyclePlayabilityIssue,
   getCyclePlayabilityIssue,
 } from "@/lib/market-pulse/cycle-playability";
+import type { PlayPageAcquisitionState } from "@/lib/acquisition/prompts";
+import {
+  EMPTY_PLAY_PAGE_ACQUISITION,
+  resolvePlayPageAcquisition,
+} from "@/lib/acquisition/prompts";
 import type { SiteLocale } from "@/lib/i18n/locales";
 import {
   loadMarketPulseNextCycleStatus,
@@ -79,6 +84,7 @@ export type MarketPulsePlayPageData = {
   /** 1-based progress within today's card set; null when only one card. */
   cardProgress: { current: number; total: number } | null;
   nextCycle: MarketPulseNextCycleStatus;
+  acquisition: PlayPageAcquisitionState;
 };
 
 function getDayProgress(
@@ -249,6 +255,7 @@ function buildPreLaunchPageData(
     leaderboardEntries: [],
     leaderboardRevealed: false,
     nextCycle: { status: "tbc" },
+    acquisition: EMPTY_PLAY_PAGE_ACQUISITION,
     ...emptyPlaySlots(),
   };
 }
@@ -284,6 +291,7 @@ function buildBetweenCyclesPageData(
     leaderboardEntries: extras.leaderboardEntries ?? [],
     leaderboardRevealed: false,
     nextCycle,
+    acquisition: EMPTY_PLAY_PAGE_ACQUISITION,
     ...emptyPlaySlots(),
   };
 }
@@ -313,8 +321,13 @@ export async function getMarketPulsePlayPageData(
   const role = session?.user?.role;
 
   if (!canAccessMarketPulsePlay(role, now)) {
-    return buildPreLaunchPageData(isAuthenticated, now);
+    return {
+      ...buildPreLaunchPageData(isAuthenticated, now),
+      acquisition: EMPTY_PLAY_PAGE_ACQUISITION,
+    };
   }
+
+  const acquisition = await resolvePlayPageAcquisition(userId);
 
   let runtimeOpen = true;
   if (isDatabaseConfigured()) {
@@ -328,9 +341,9 @@ export async function getMarketPulsePlayPageData(
   }
 
   const finalize = (
-    data: Omit<MarketPulsePlayPageData, "runtimeOpen">,
+    data: Omit<MarketPulsePlayPageData, "runtimeOpen" | "acquisition">,
   ): MarketPulsePlayPageData =>
-    gateRuntimeClosedPageData({ ...data, runtimeOpen }, runtimeOpen);
+    gateRuntimeClosedPageData({ ...data, runtimeOpen, acquisition }, runtimeOpen);
 
   const nextCycle = isDatabaseConfigured()
     ? await loadPlayNextCycle(now)

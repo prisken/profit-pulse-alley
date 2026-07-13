@@ -1,6 +1,10 @@
 import "server-only";
 
 import { auth } from "@/auth";
+import {
+  EMPTY_REVEAL_PAGE_ACQUISITION,
+  resolveRevealPageAcquisition,
+} from "@/lib/acquisition/prompts";
 import { isDatabaseConfigured } from "@/lib/db-config";
 import { isCyclePlayable } from "@/lib/market-pulse/cycle-playability";
 import type { SiteLocale } from "@/lib/i18n/locales";
@@ -82,6 +86,7 @@ const pendingBase = (
   playNextAvailable,
   nextCycle,
   results: null,
+  acquisition: EMPTY_REVEAL_PAGE_ACQUISITION,
 });
 
 export async function getMarketPulseRevealPageData(
@@ -142,6 +147,7 @@ export async function getMarketPulseRevealPageData(
       playNextAvailable,
       nextCycle,
       results: null,
+      acquisition: EMPTY_REVEAL_PAGE_ACQUISITION,
     };
   }
 
@@ -230,6 +236,8 @@ export async function getMarketPulseRevealPageData(
   const totalPoints =
     progress.totalPoints ?? reveal.totals.totalPoints ?? null;
 
+  const acquisition = await resolveRevealPageAcquisition(userId);
+
   return {
     status: "revealed",
     isAuthenticated: true,
@@ -237,6 +245,7 @@ export async function getMarketPulseRevealPageData(
     revealedCycle: revealedCycleSummary,
     playNextAvailable,
     nextCycle,
+    acquisition,
     results: {
       cycleId: reveal.cycleId,
       cycleName: reveal.cycleName,

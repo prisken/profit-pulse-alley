@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import MarketPulseCountdown from "@/components/market-pulse/MarketPulseCountdown";
+import NextStepPreferencePrompt from "@/components/acquisition/NextStepPreferencePrompt";
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
 import MarketPulseRevealCardList from "@/components/market-pulse/MarketPulseRevealCardList";
 import RevealStatePanel, {
@@ -384,6 +385,10 @@ function AuthenticatedRevealResults({
       )}
 
       <CycleReviewSection results={results} />
+
+      {data.acquisition.showNextStepPreferencePrompt && results.cards.length > 0 ? (
+        <NextStepPreferencePrompt playNextAvailable={data.playNextAvailable} />
+      ) : null}
 
       <RevealCtaBar
         playNextAvailable={data.playNextAvailable}

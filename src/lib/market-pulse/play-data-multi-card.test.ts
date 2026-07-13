@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   getTodayMarketPulsePlaySession: vi.fn(),
   getMarketPulseLeaderboard: vi.fn(),
   loadMarketPulseNextCycleStatus: vi.fn(),
+  shouldShowLearningInterestPrompt: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -36,6 +37,10 @@ vi.mock("@/lib/market-pulse/server", () => ({
   getTodayMarketPulsePlaySession: mocks.getTodayMarketPulsePlaySession,
   getMarketPulseLeaderboard: mocks.getMarketPulseLeaderboard,
   isMarketPulseCycleRevealed: vi.fn(() => false),
+}));
+
+vi.mock("@/lib/acquisition/profile", () => ({
+  shouldShowLearningInterestPrompt: mocks.shouldShowLearningInterestPrompt,
 }));
 
 import { getMarketPulsePlayPageData } from "@/lib/market-pulse/play-data";
@@ -121,6 +126,7 @@ describe("getMarketPulsePlayPageData — multiple cards per day", () => {
     mocks.getMarketPulseLeaderboard.mockResolvedValue([]);
     mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({ status: "tbc" });
     mocks.getTodayMarketPulsePlaySessionSnapshot.mockResolvedValue(buildSessionSnapshot());
+    mocks.shouldShowLearningInterestPrompt.mockResolvedValue(false);
   });
 
   afterEach(() => {

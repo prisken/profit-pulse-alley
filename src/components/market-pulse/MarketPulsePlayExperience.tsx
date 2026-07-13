@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   CalendarClock,
@@ -15,6 +15,7 @@ import {
   Wrench,
 } from "lucide-react";
 
+import LearningInterestPrompt from "@/components/acquisition/LearningInterestPrompt";
 import MarketPulseCountdown from "@/components/market-pulse/MarketPulseCountdown";
 import CycleProgress from "@/components/market-pulse/CycleProgress";
 import MarketPulseInlineDisclaimer from "@/components/market-pulse/MarketPulseInlineDisclaimer";
@@ -773,6 +774,7 @@ export default function MarketPulsePlayExperience({
   const { t, locale } = useTranslations();
   const router = useRouter();
   const reduceMotion = useReducedMotion() ?? false;
+  const [justSubmittedThisSession, setJustSubmittedThisSession] = useState(false);
   const loginHref = `/login?callbackUrl=${encodeURIComponent("/market-pulse/play")}`;
 
   const handleSubmit = useCallback(
@@ -794,11 +796,20 @@ export default function MarketPulsePlayExperience({
         return { ok: false, error: result.error };
       }
 
+      if (data.isAuthenticated) {
+        setJustSubmittedThisSession(true);
+      }
+
       router.refresh();
       return { ok: true };
     },
-    [data.card, router, t],
+    [data.card, data.isAuthenticated, router, t],
   );
+
+  const showLearningInterestPrompt =
+    data.isAuthenticated &&
+    data.acquisition.showLearningInterestPrompt &&
+    (data.status === "locked" || justSubmittedThisSession);
 
   const revealMessage = formatRevealMessage(locale, data.revealAtLabel || null);
 
@@ -925,6 +936,7 @@ export default function MarketPulsePlayExperience({
                   revealMessage={revealMessage}
                   lockedCycleContext={lockedCycleContext}
                 />
+                {showLearningInterestPrompt ? <LearningInterestPrompt /> : null}
               </motion.div>
             ) : null}
           </div>

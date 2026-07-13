@@ -19,25 +19,22 @@ import {
   deleteAdminUserAction,
   updateAdminUserRoleAction,
 } from "@/lib/admin-user-actions";
+import { downloadCsv } from "@/lib/admin/csv-download";
+import { buildAcquisitionMembersCsv } from "@/lib/admin/members-csv";
+import type { AdminMemberRow } from "@/lib/admin/members-types";
 import { invokeAdminAction } from "@/lib/admin/action-result";
 import {
   filterAdminMembers,
+  type AdminAcquisitionFilter,
   type AdminMemberRoleFilter,
 } from "@/lib/admin/user-member-filter";
+import {
+  formatLearningInterestLabel,
+  formatNextStepPreferenceLabel,
+} from "@/lib/acquisition/admin-labels";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 import { translateWith, type MessageKey } from "@/lib/i18n/messages";
-
-export type AdminMemberRow = {
-  id: string;
-  name: string | null;
-  email: string;
-  contactNumber: string | null;
-  role: "USER" | "ADMIN";
-  emailVerified: string | null;
-  createdAt: string;
-  gameScoreCount: number;
-};
 
 type MembersTableMeta = {
   currentAdminUserId: string;
@@ -195,6 +192,30 @@ function buildColumns(t: (key: MessageKey) => string) {
         );
       },
     }),
+    columnHelper.display({
+      id: "learningInterest",
+      header: t("auth.admin.users.colLearning"),
+      cell: (info) => (
+        <span className="text-zinc-200">
+          {formatLearningInterestLabel(
+            info.row.original.acquisition?.learningInterest,
+            t,
+          )}
+        </span>
+      ),
+    }),
+    columnHelper.display({
+      id: "nextStepPreference",
+      header: t("auth.admin.users.colNextStep"),
+      cell: (info) => (
+        <span className="text-zinc-200">
+          {formatNextStepPreferenceLabel(
+            info.row.original.acquisition?.nextStepPreference,
+            t,
+          )}
+        </span>
+      ),
+    }),
     columnHelper.accessor("role", {
       header: t("auth.admin.users.colRole"),
       cell: (info) => <AdminRoleBadge role={info.getValue()} />,
@@ -270,6 +291,14 @@ function MemberMobileCard({
           <p className="mt-0.5 text-xs text-zinc-500">
             <span className="text-zinc-600">{t("auth.admin.users.colContact")}: </span>
             {member.contactNumber?.trim() || "—"}
+          </p>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            <span className="text-zinc-600">{t("auth.admin.users.colLearning")}: </span>
+            {formatLearningInterestLabel(member.acquisition?.learningInterest, t)}
+          </p>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            <span className="text-zinc-600">{t("auth.admin.users.colNextStep")}: </span>
+            {formatNextStepPreferenceLabel(member.acquisition?.nextStepPreference, t)}
           </p>
         </div>
         <AdminRoleBadge role={member.role} />
@@ -351,6 +380,10 @@ export default function AdminMembersTable({
   ]);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<AdminMemberRoleFilter>("ALL");
+  const [learningInterestFilter, setLearningInterestFilter] =
+    useState<AdminAcquisitionFilter>("ALL");
+  const [nextStepPreferenceFilter, setNextStepPreferenceFilter] =
+    useState<AdminAcquisitionFilter>("ALL");
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionWarning, setActionWarning] = useState<string | null>(null);
   const [actionIsError, setActionIsError] = useState(false);
@@ -359,9 +392,36 @@ export default function AdminMembersTable({
   const [isDeleting, startDeleteTransition] = useTransition();
 
   const filteredMembers = useMemo(
-    () => filterAdminMembers(members, query, roleFilter),
-    [members, query, roleFilter],
+    () =>
+      filterAdminMembers(
+        members.map((member) => ({
+          ...member,
+          learningInterest: member.acquisition?.learningInterest ?? null,
+          nextStepPreference: member.acquisition?.nextStepPreference ?? null,
+        })),
+        query,
+        roleFilter,
+        learningInterestFilter,
+        nextStepPreferenceFilter,
+      ),
+    [
+      members,
+      query,
+      roleFilter,
+      learningInterestFilter,
+      nextStepPreferenceFilter,
+    ],
   );
+
+  const handleExportCsv = () => {
+    if (filteredMembers.length === 0) {
+      return;
+    }
+
+    const csv = buildAcquisitionMembersCsv(filteredMembers);
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(csv, `acquisition-members-${dateStamp}.csv`);
+  };
 
   const onActionMessage = (message: string, isError: boolean, warning?: string) => {
     setActionMessage(message);
@@ -445,8 +505,14 @@ export default function AdminMembersTable({
       <AdminUserFilters
         query={query}
         roleFilter={roleFilter}
+        learningInterestFilter={learningInterestFilter}
+        nextStepPreferenceFilter={nextStepPreferenceFilter}
         onQueryChange={setQuery}
         onRoleFilterChange={setRoleFilter}
+        onLearningInterestFilterChange={setLearningInterestFilter}
+        onNextStepPreferenceFilterChange={setNextStepPreferenceFilter}
+        onExportCsv={handleExportCsv}
+        exportDisabled={filteredMembers.length === 0}
         disabled={isDeleting}
       />
 
@@ -484,7 +550,7 @@ export default function AdminMembersTable({
           </ul>
 
           <div className="mt-4 hidden overflow-x-auto rounded-xl border border-zinc-700 bg-zinc-950/80 shadow-sm lg:block">
-            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id} className="border-b border-zinc-800">

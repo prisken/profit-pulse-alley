@@ -14,7 +14,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
-| **Recent `main`** | **Optional contact number** — missing phone no longer blocks Market Pulse play or OAuth site access; optional profile/onboarding enrichment |
+| **Recent `main`** | **Acquisition progressive profiling** — learning-interest prompt after first MP decision (PR 2); next-step preference prompt on reveal (PR 3) |
 
 ---
 
@@ -81,7 +81,7 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | **PPA Insight reveal** | `/market-pulse/reveal` | Login for personal results | Pending locked ceremony; revealed results + learning framing; PPA only post-reveal; **i18n** |
 | **Market Pulse rules** | `/market-pulse/rules` | Public | Challenge rules + scoring; **i18n** |
 | **Contest rules** | `/contest-rules` | Public | Prize eligibility + legal |
-| **Admin dashboard** | `/admin` | `ADMIN` only | **Command center** — 4 overview cards (users, MP runtime/cycle, player visibility, system notes), quick actions, user management (**Tel** column, search/filter) |
+| **Admin dashboard** | `/admin` | `ADMIN` only | **Command center** — 4 overview cards (users, MP runtime/cycle, player visibility, system notes), quick actions, user management (**Tel**, **Learning**, **Next Step** columns; acquisition filters; CSV export) |
 | **Market Pulse admin** | `/admin/market-pulse` | `ADMIN` only | **Full ops dashboard** — sticky status header, alerts, cycles hub, player-visibility checklist, runtime, advanced cycles, legacy cards, reveal/scoring, prize claims, audit |
 | **Market Pulse cycle builder** | `/admin/market-pulse/cycles/[cycleId]/builder` | `ADMIN` only | **Primary card workflow** — cycle summary, readiness, card list, inline editor, preview, bulk publish |
 | Game settings API | `/api/game-settings` | GET public; POST ADMIN | KV theme/event (legacy API-only; no admin UI) |
@@ -224,6 +224,7 @@ Automated tests cover server rules below. Live browser sign-in was not re-run in
 | 16 | Market Pulse brand logo | **Pass** | `MarketPulseLogo.tsx` on homepage hero, hub hero, play header (`public/images/market-pulse-logo.png`) |
 | 17 | Per-cycle leaderboard + personal score | **Pass** | `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `MarketPulseScore` model |
 | 18 | Admin member Tel column | **Pass** | `AdminMembersTable` — `contactNumber` column; searchable via `user-member-filter.ts` |
+| 19 | Admin acquisition visibility | **Pass** | `AdminMembersTable` — Learning + Next Step from `UserAcquisitionProfile`; filters + client CSV export (`members-data.ts`) |
 | 19 | Homepage + player journey visual revamp | **Pass** | Jul 2026 terminal homepage: hero + Pulse Simulator, Pipeline, Pulse Board, Rewards; hub lobby; play confirmation; leaderboard/reveal state panels; responsive + reduced-motion pass — **security unchanged** |
 
 ### Production smoke test
@@ -947,7 +948,8 @@ Then change `package.json` build to `prisma migrate deploy && next build` and ba
 
 | Model | Purpose |
 |-------|---------|
-| `User` | Members — `email`, `name`, `image`, `contactNumber?`, `password?`, `role` (`USER` \| `ADMIN`) |
+| `User` | Members — `email`, `name`, `image`, `contactNumber?`, `password?`, `role` (`USER` \| `ADMIN`); optional `acquisitionProfile` |
+| `UserAcquisitionProfile` | Progressive profiling — `learningInterest` (+ capture/dismiss timestamps); `nextStepPreference` (+ capture/dismiss timestamps) |
 | `MarketPulseCycle` | Challenge window — `startsAt`, `endsAt`, `revealAt`, `status`, `prizeLabel` |
 | `MarketPulseCard` | Daily card — `cardType` (`SIGNAL` \| `REST`), headline, ticker, `newsBody`, `cardImageUrl`/`cardImageAlt`, `logoInitials`, `userPrompt`, `ppaSignal` (SIGNAL only; admin-only until reveal), `status` |
 | `MarketPulseDecision` | User decision per card — `BULLISH` / `CAUTIOUS` on signal cards; `ACKNOWLEDGED` on rest cards (`@@unique([userId, cardId])`) |
@@ -999,6 +1001,58 @@ Vercel Edge middleware has a **1 MB bundle limit**. Importing `@/auth` in middle
 - **Onboarding submit / skip:** `updateContactNumber()` or skip → **`GET /api/auth/complete-onboarding`** — re-encodes JWT and redirects (no phone required to skip)
 - **Recovery UI:** `OnboardingRecoveryPanel`, `loading.tsx`, `error.tsx` on `/auth/onboarding`
 
+### Acquisition — progressive profiling
+
+**Player journey:**
+
+```txt
+Play → submit decision → learning-interest prompt (once, PR 2)
+→ cycle ends → admin reveal/scoring
+→ visit /market-pulse/reveal → personal review + PPA learning
+→ next-step preference prompt (once, PR 3)
+```
+
+#### Learning interest prompt (PR 2 — play)
+
+- **When:** after a logged-in user submits their **first** `MarketPulseDecision`, `/market-pulse/play` may show a one-time optional prompt below the locked/submitted card — *“What would you like to understand better?”*
+- **Eligibility:** `shouldShowLearningInterestPrompt(userId)` — requires `MarketPulseDecision.count >= 1` and no `learningInterestCapturedAt` / `learningInterestPromptDismissedAt` on `UserAcquisitionProfile`
+- **Actions:** `saveLearningInterestAction()`, `dismissLearningInterestPromptAction()`
+- **Play wiring:** `getMarketPulsePlayPageData()` → `acquisition.showLearningInterestPrompt`; UI in `LearningInterestPrompt.tsx` inside `MarketPulsePlayExperience` when `locked` or just-submitted session
+- **Options:** `market_outlook`, `long_term_investing`, `risk_management`, `retirement_planning`, `insurance_protection`, `business_owner_planning`, `just_challenge` — validated in `src/lib/acquisition/constants.ts`
+
+#### Next-step preference prompt (PR 3 — reveal)
+
+- **When:** on `/market-pulse/reveal`, after a logged-in user views **personal revealed results** (cycle review + PPA), a one-time optional prompt appears below the review — *“What would you like next from PPA?”*
+- **Eligibility:** `shouldShowNextStepPreferencePrompt(userId)` — no `nextStepCapturedAt` / `nextStepPromptDismissedAt`; reveal loader only sets the flag when `status === "revealed"`, user is authenticated, and personal `results` are loaded (post `getMarketPulseRevealForUser().isRevealed`)
+- **Never shown:** guests; `pending` / locked reveal ceremony; before personal results are available
+- **Actions:** `saveNextStepPreferenceAction()`, `dismissNextStepPreferencePromptAction()`
+- **Reveal wiring:** `getMarketPulseRevealPageData()` → `acquisition.showNextStepPreferencePrompt`; UI in `NextStepPreferencePrompt.tsx` inside `AuthenticatedRevealResults` after `CycleReviewSection` (only when `results.cards.length > 0`)
+- **Options:** `next_challenge`, `market_recap`, `attend_event`, `clarity_call`, `just_browsing`
+- **Post-selection CTAs (no phone on this surface):**
+  - `next_challenge` → `/market-pulse/play` when `playNextAvailable`, else `/market-pulse`
+  - `market_recap` → save + confirmation only
+  - `attend_event` → `/events`
+  - `clarity_call` → `/contact?intent=clarity-call`
+  - `just_browsing` → save + close confirmation
+
+#### Shared rules
+
+- **Guests:** never prompted on play or reveal surfaces
+- **One-time:** answer **or** skip → never show again for that prompt
+- **No phone** collected on acquisition prompts (optional phone remains on profile/onboarding only)
+- **Module:** `src/lib/acquisition/` — `constants.ts`, `profile.ts`, `actions.ts`, `prompts.ts`, `admin-labels.ts`
+- **i18n:** `acquisition-messages.ts` + `acquisition-messages.zh-Hant.ts`
+- **Out of scope:** Market Pulse scoring/gameplay, PPA privacy (`reveal-access.ts` unchanged), leaderboard privacy, launch gating, admin permissions, `/fortify-survey`
+
+#### Admin visibility (PR 4)
+
+- **Where:** `/admin` → User management (`AdminMembersTable`)
+- **Columns:** Tel (existing), **Learning** (`learningInterest` label), **Next Step** (`nextStepPreference` label); `—` when absent
+- **Filters:** learning interest + next step (`ALL` / Not set / each slug) via `user-member-filter.ts`; search still name/email/tel only
+- **Loader:** `loadAdminMembers()` joins `User.acquisitionProfile` only — no PPA, scores, or gameplay internals
+- **Export:** `buildAcquisitionMembersCsv()` in `members-csv.ts` (client-safe)
+- **Permissions:** unchanged — `ADMIN` only via `admin/page.tsx` redirect
+
 ### Bilingual (i18n)
 
 | Piece | Location |
@@ -1007,7 +1061,7 @@ Vercel Edge middleware has a **1 MB bundle limit**. Importing `@/auth` in middle
 | Server copy | `getServerTranslations()`, `getServerSiteLocale()` |
 | Client copy | `LocaleProvider`, `useTranslations()` |
 | Switcher | `LanguageSwitcher` — header, mobile nav, play header, login, onboarding |
-| Message files | `src/lib/i18n/messages/en.ts`, `zh-Hant.ts`, `market-pulse-messages.ts`, `auth-app-messages.ts` |
+| Message files | `src/lib/i18n/messages/en.ts`, `zh-Hant.ts`, `market-pulse-messages.ts`, `auth-app-messages.ts`, `acquisition-messages.ts` |
 | MP errors | `src/lib/i18n/market-pulse-ui.ts` maps server strings to keys |
 
 Event **detail** pages and admin MP operational UI remain largely static bilingual or English.
@@ -1354,7 +1408,7 @@ Admin uses a **zinc command-center** shell on both `/admin` and `/admin/market-p
 |------|------------|----------|
 | **Overview** | `AdminOverviewCards`, `getAdminOverviewData()` | Four cards: user totals, MP runtime + active cycle, player visibility snapshot, system notes |
 | **Quick actions** | Links in `AdminOverviewCards` | Manage Market Pulse, Hub, Play, Leaderboard |
-| **User management** | `AdminUserManagement`, `AdminMembersTable`, `AdminUserFilters`, `AdminRoleBadge`, `AdminConfirmDialog`, `AdminAddUserForm` | Add user; change role; delete with modal; search/filter by name/email/tel (`user-member-filter.ts`) |
+| **User management** | `AdminUserManagement`, `AdminMembersTable`, `AdminUserFilters`, `AdminRoleBadge`, `AdminConfirmDialog`, `AdminAddUserForm` | Add user; change role; delete with modal; search/filter by name/email/tel; **acquisition filters** (learning interest, next step); **Learning** + **Next Step** columns; export acquisition CSV (`members-data.ts`, `user-member-filter.ts`) |
 | **Safeguards** | `admin-user-validation.ts` | Block self-delete, self-demotion, final-admin demotion |
 
 **Data loading:** `getAdminOverviewData()` loads user counts, MP settings, active cycle stats (card count, PPA gaps), playability snapshot, and operational warnings into `systemNotes` for the System card.
@@ -1645,7 +1699,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | Auth actions | `src/lib/auth-actions.ts`, `src/lib/auth/onboarding-routes.ts` |
 | Login / onboarding | `LoginPage.tsx`, `OnboardingPage.tsx`, `MarketPulseAuthPanel.tsx`, `market-pulse-auth-context.ts`, `OnboardingRecoveryPanel.tsx`, `/auth/onboarding/*`, `/api/auth/complete-onboarding/route.ts` |
 | i18n | `src/lib/i18n/*`, `LocaleProvider.tsx`, `LanguageSwitcher.tsx` |
-| Admin users | `AdminUserManagement.tsx`, `AdminMembersTable.tsx`, `admin-user-actions.ts`, `admin-user-validation.ts`, `user-member-filter.ts` |
+| Admin users | `AdminUserManagement.tsx`, `AdminMembersTable.tsx`, `admin-user-actions.ts`, `admin-user-validation.ts`, `user-member-filter.ts`, `members-data.ts`, `members-csv.ts`, `members-types.ts`, `acquisition/admin-labels.ts` |
 | Admin action results | `src/lib/admin/action-result.ts` — `finishAdminMutation`, `invokeAdminAction` |
 | Admin overview | `AdminOverviewCards.tsx`, `admin-overview-data.ts` |
 | MP admin shell | `MarketPulseAdminShell.tsx`, `admin-mp-status.ts`, `MarketPulseAdminDashboard.tsx` |

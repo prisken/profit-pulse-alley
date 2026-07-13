@@ -5,10 +5,10 @@ import { redirect } from "next/navigation";
 import AdminOverviewCards from "@/components/admin/AdminOverviewCards";
 import AdminUserManagement from "@/components/admin/AdminUserManagement";
 import { auth } from "@/auth";
+import { loadAdminMembers } from "@/lib/admin/members-data";
 import { getServerSiteLocale, getServerTranslations } from "@/lib/i18n/server";
 import { translate, translateWith } from "@/lib/i18n/messages";
 import { getAdminOverviewData } from "@/lib/market-pulse/admin-overview-data";
-import { prisma } from "@/lib/prisma";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerSiteLocale();
@@ -27,52 +27,10 @@ export default async function AdminPage() {
 
   const { t, locale } = await getServerTranslations();
 
-  const [overview, usersResult] = await Promise.all([
+  const [overview, members] = await Promise.all([
     getAdminOverviewData(),
-    prisma.user
-      .findMany({
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          contactNumber: true,
-          role: true,
-          emailVerified: true,
-          createdAt: true,
-          _count: {
-            select: { gameScores: true },
-          },
-        },
-      })
-      .then((users) =>
-        users.map((user) => ({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          contactNumber: user.contactNumber,
-          role: user.role,
-          emailVerified: user.emailVerified?.toISOString() ?? null,
-          createdAt: user.createdAt.toISOString(),
-          gameScoreCount: user._count.gameScores,
-        })),
-      )
-      .catch((error) => {
-        console.error("[admin] Failed to load members:", error);
-        return [] as Array<{
-          id: string;
-          name: string | null;
-          email: string;
-          contactNumber: string | null;
-          role: "USER" | "ADMIN";
-          emailVerified: string | null;
-          createdAt: string;
-          gameScoreCount: number;
-        }>;
-      }),
+    loadAdminMembers(),
   ]);
-
-  const members = usersResult;
 
   const signedInLine =
     members.length === 1

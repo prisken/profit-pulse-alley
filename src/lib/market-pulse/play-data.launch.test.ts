@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   getTodayMarketPulsePlaySession: vi.fn(),
   getMarketPulseLeaderboard: vi.fn(),
   loadMarketPulseNextCycleStatus: vi.fn(),
+  shouldShowLearningInterestPrompt: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -40,6 +41,10 @@ vi.mock("@/lib/market-pulse/server", () => ({
   getTodayMarketPulsePlaySession: mocks.getTodayMarketPulsePlaySession,
   getMarketPulseLeaderboard: mocks.getMarketPulseLeaderboard,
   isMarketPulseCycleRevealed: vi.fn(() => false),
+}));
+
+vi.mock("@/lib/acquisition/profile", () => ({
+  shouldShowLearningInterestPrompt: mocks.shouldShowLearningInterestPrompt,
 }));
 
 import { getMarketPulsePlayPageData } from "@/lib/market-pulse/play-data";
@@ -116,6 +121,7 @@ describe("Launch smoke — public play gates", () => {
     mocks.getMarketPulseLeaderboard.mockResolvedValue([]);
     mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({ status: "tbc" });
     mocks.auth.mockResolvedValue(null);
+    mocks.shouldShowLearningInterestPrompt.mockResolvedValue(false);
   });
 
   afterEach(() => {
@@ -232,5 +238,48 @@ describe("Launch smoke — public play gates", () => {
 
     expect(data.status).toBe("pre_launch");
     expect(mocks.getActiveMarketPulseCycle).not.toHaveBeenCalled();
+  });
+
+  it("does not show the learning interest prompt for guests", async () => {
+    const data = await getMarketPulsePlayPageData();
+
+    expect(data.acquisition.showLearningInterestPrompt).toBe(false);
+    expect(mocks.shouldShowLearningInterestPrompt).not.toHaveBeenCalled();
+  });
+
+  it("surfaces the learning interest prompt for eligible authenticated users", async () => {
+    mocks.auth.mockResolvedValue({
+      user: { id: "user-1", role: "USER" },
+    });
+    mocks.getTodayMarketPulsePlaySession.mockResolvedValue(buildSnapshot());
+    mocks.shouldShowLearningInterestPrompt.mockResolvedValue(true);
+
+    const data = await getMarketPulsePlayPageData();
+
+    expect(mocks.shouldShowLearningInterestPrompt).toHaveBeenCalledWith("user-1");
+    expect(data.acquisition.showLearningInterestPrompt).toBe(true);
+    expect(data.status).toBe("playable");
+  });
+
+  it("keeps gameplay status unchanged when the learning interest prompt is eligible", async () => {
+    mocks.auth.mockResolvedValue({
+      user: { id: "user-1", role: "USER" },
+    });
+    mocks.getTodayMarketPulsePlaySession.mockResolvedValue({
+      ...buildSnapshot(),
+      cards: [
+        {
+          ...buildSnapshot().cards[0]!,
+          userDecision: { decision: "BULLISH" },
+        },
+      ],
+    });
+    mocks.shouldShowLearningInterestPrompt.mockResolvedValue(true);
+
+    const data = await getMarketPulsePlayPageData();
+
+    expect(data.status).toBe("locked");
+    expect(data.lockedDecision).toBe("BULLISH");
+    expect(data.acquisition.showLearningInterestPrompt).toBe(true);
   });
 });

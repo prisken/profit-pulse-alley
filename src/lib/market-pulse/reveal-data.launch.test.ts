@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   getMarketPulseRevealForUser: vi.fn(),
   getUserMarketPulseProgress: vi.fn(),
   loadMarketPulseNextCycleStatus: vi.fn(),
+  shouldShowNextStepPreferencePrompt: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -37,6 +38,10 @@ vi.mock("@/lib/market-pulse/server", () => ({
   getUserMarketPulseProgress: mocks.getUserMarketPulseProgress,
 }));
 
+vi.mock("@/lib/acquisition/profile", () => ({
+  shouldShowNextStepPreferencePrompt: mocks.shouldShowNextStepPreferencePrompt,
+}));
+
 import { getMarketPulseRevealPageData } from "@/lib/market-pulse/reveal-data";
 
 const pendingCycle = {
@@ -56,6 +61,7 @@ describe("Launch smoke — reveal page", () => {
     mocks.getActiveMarketPulseCycle.mockResolvedValue(pendingCycle);
     mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({ status: "tbc" });
     mocks.auth.mockResolvedValue(null);
+    mocks.shouldShowNextStepPreferencePrompt.mockResolvedValue(false);
   });
 
   it("stays pending before reveal with countdown metadata only", async () => {
@@ -70,6 +76,7 @@ describe("Launch smoke — reveal page", () => {
     expect(data.pendingCycle?.name).toBe("July 2026 Market Pulse");
     expect(data.results).toBeNull();
     expect(data.revealedCycle).toBeNull();
+    expect(data.acquisition.showNextStepPreferencePrompt).toBe(false);
   });
 
   it("shows revealed shell for guests without personal results", async () => {
@@ -84,6 +91,8 @@ describe("Launch smoke — reveal page", () => {
     expect(data.isAuthenticated).toBe(false);
     expect(data.results).toBeNull();
     expect(data.revealedCycle?.id).toBe("cycle-july");
+    expect(data.acquisition.showNextStepPreferencePrompt).toBe(false);
+    expect(mocks.shouldShowNextStepPreferencePrompt).not.toHaveBeenCalled();
   });
 
   it("returns personal results only after reveal is valid for the signed-in user", async () => {
@@ -142,6 +151,8 @@ describe("Launch smoke — reveal page", () => {
     expect(data.results?.cards[0]?.ppaSignal).toBe("BULLISH");
     expect(data.results?.cards[0]?.ppaInsight).toBe("Insight text");
     expect(data.results?.totalPoints).toBe(150);
+    expect(mocks.shouldShowNextStepPreferencePrompt).toHaveBeenCalledWith("user-1");
+    expect(data.acquisition.showNextStepPreferencePrompt).toBe(false);
   });
 
   it("includes rest cards as participation-only rows in personal results", async () => {
@@ -233,6 +244,7 @@ describe("Launch smoke — reveal page", () => {
     expect(data.status).toBe("pending");
     expect(data.results).toBeNull();
     expect(data.pendingCycle?.name).toBe("July 2026 Market Pulse");
+    expect(data.acquisition.showNextStepPreferencePrompt).toBe(false);
   });
 
   it("includes next cycle TBC when no future cycle is scheduled after reveal", async () => {
@@ -264,5 +276,119 @@ describe("Launch smoke — reveal page", () => {
 
     expect(data.status).toBe("revealed");
     expect(data.nextCycle).toEqual({ status: "tbc" });
+  });
+
+  it("surfaces the next-step preference prompt for eligible revealed users", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "user-1" } });
+    mocks.getRevealedMarketPulseCycleForPage.mockResolvedValue({
+      revealedCycle: { ...pendingCycle, status: "REVEALED" as const },
+      pendingActiveCycle: null,
+    });
+    mocks.getMarketPulseRevealForUser.mockResolvedValue({
+      cycleId: pendingCycle.id,
+      cycleName: pendingCycle.name,
+      isRevealed: true,
+      totals: {
+        participationPoints: 100,
+        matchBonus: 50,
+        streakBonus: 0,
+        totalPoints: 150,
+      },
+      cards: [
+        {
+          cardId: "card-1",
+          dayIndex: 1,
+          sortOrder: 0,
+          cardsOnDay: 1,
+          cardType: "SIGNAL",
+          companyName: "Example Co",
+          headline: "Headline",
+          ticker: null,
+          summary: null,
+          newsBody: null,
+          cardImageUrl: null,
+          cardImageAlt: null,
+          played: true,
+          viewerDecision: "BULLISH",
+          decidedAt: new Date("2026-07-01T00:00:00.000Z"),
+          ppaSignal: "BULLISH",
+          ppaInsight: "Insight text",
+          isMatch: true,
+          participationPoints: 10,
+          matchBonus: 50,
+          streakBonus: 0,
+          totalPoints: 60,
+        },
+      ],
+    });
+    mocks.getUserMarketPulseProgress.mockResolvedValue({
+      rank: 1,
+      currentStreak: 1,
+      totalPoints: 150,
+    });
+    mocks.shouldShowNextStepPreferencePrompt.mockResolvedValue(true);
+
+    const data = await getMarketPulseRevealPageData();
+
+    expect(data.acquisition.showNextStepPreferencePrompt).toBe(true);
+    expect(data.status).toBe("revealed");
+    expect(data.results?.cards[0]?.ppaInsight).toBe("Insight text");
+  });
+
+  it("keeps existing reveal page data when next-step prompt is eligible", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "user-1" } });
+    mocks.getRevealedMarketPulseCycleForPage.mockResolvedValue({
+      revealedCycle: { ...pendingCycle, status: "REVEALED" as const },
+      pendingActiveCycle: null,
+    });
+    mocks.getMarketPulseRevealForUser.mockResolvedValue({
+      cycleId: pendingCycle.id,
+      cycleName: pendingCycle.name,
+      isRevealed: true,
+      totals: {
+        participationPoints: 100,
+        matchBonus: 50,
+        streakBonus: 0,
+        totalPoints: 150,
+      },
+      cards: [
+        {
+          cardId: "card-1",
+          dayIndex: 1,
+          sortOrder: 0,
+          cardsOnDay: 1,
+          cardType: "SIGNAL",
+          companyName: "Example Co",
+          headline: "Headline",
+          ticker: null,
+          summary: null,
+          newsBody: null,
+          cardImageUrl: null,
+          cardImageAlt: null,
+          played: true,
+          viewerDecision: "BULLISH",
+          decidedAt: new Date("2026-07-01T00:00:00.000Z"),
+          ppaSignal: "BULLISH",
+          ppaInsight: "Insight text",
+          isMatch: true,
+          participationPoints: 10,
+          matchBonus: 50,
+          streakBonus: 0,
+          totalPoints: 60,
+        },
+      ],
+    });
+    mocks.getUserMarketPulseProgress.mockResolvedValue({
+      rank: 1,
+      currentStreak: 1,
+      totalPoints: 150,
+    });
+    mocks.shouldShowNextStepPreferencePrompt.mockResolvedValue(true);
+
+    const data = await getMarketPulseRevealPageData();
+
+    expect(typeof data.playNextAvailable).toBe("boolean");
+    expect(data.results?.totalPoints).toBe(150);
+    expect(data.results?.rank).toBe(1);
   });
 });

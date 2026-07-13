@@ -84,6 +84,24 @@ model User {
   marketPulseScores      MarketPulseScore[]
   marketPulsePrizeClaims MarketPulsePrizeClaim[]
   marketPulseAuditLogs   MarketPulseAuditLog[]
+  acquisitionProfile     UserAcquisitionProfile?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserAcquisitionProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  learningInterest                  String?
+  learningInterestCapturedAt        DateTime?
+  learningInterestPromptDismissedAt DateTime?
+
+  nextStepPreference          String?
+  nextStepCapturedAt          DateTime?
+  nextStepPromptDismissedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

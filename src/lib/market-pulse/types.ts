@@ -184,6 +184,9 @@ export type MarketPulseRevealPageData = {
     };
     cards: MarketPulseRevealCardRow[];
   } | null;
+  acquisition: {
+    showNextStepPreferencePrompt: boolean;
+  };
 };
 
 /** Public leaderboard row — safe for client components (no email). */

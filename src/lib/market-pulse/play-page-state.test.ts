@@ -26,6 +26,7 @@ const baseData: MarketPulsePlayPageData = {
   cardProgress: null,
   runtimeOpen: true,
   nextCycle: { status: "tbc" },
+  acquisition: { showLearningInterestPrompt: false },
 };
 
 describe("play-page-state", () => {

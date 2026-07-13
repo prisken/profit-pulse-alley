@@ -3,9 +3,8 @@
 import { useRouter } from "next/navigation";
 
 import AdminAddUserForm from "@/components/admin/AdminAddUserForm";
-import AdminMembersTable, {
-  type AdminMemberRow,
-} from "@/components/admin/AdminMembersTable";
+import AdminMembersTable from "@/components/admin/AdminMembersTable";
+import type { AdminMemberRow } from "@/lib/admin/members-types";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 
 type Props = {

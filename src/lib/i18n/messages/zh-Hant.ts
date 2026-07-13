@@ -1,6 +1,7 @@
 import type { Messages } from "@/lib/i18n/messages/en";
 import { marketPulseZhHantMessages } from "@/lib/i18n/messages/market-pulse-messages";
 import { authAppZhHantMessages } from "@/lib/i18n/messages/auth-app-messages";
+import { acquisitionZhHantMessages } from "@/lib/i18n/messages/acquisition-messages.zh-Hant";
 
 export const zhHantMessages: Messages = {
   "nav.marketPulse": "Market Pulse",
@@ -454,4 +455,5 @@ export const zhHantMessages: Messages = {
 
   ...marketPulseZhHantMessages,
   ...authAppZhHantMessages,
+  ...acquisitionZhHantMessages,
 };
