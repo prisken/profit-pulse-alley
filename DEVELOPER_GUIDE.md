@@ -552,7 +552,8 @@ Three different gate layers — do not confuse them:
 1. `validateCycleReadyForReveal(cycleId)` — server-side PPA check
 2. Transaction: cycle → `REVEALED`; published cards → `REVEALED`
 3. `calculateAndPersistCycleScores(cycleId)` — participation, match (+50), streak (+100 every 3 SIGNAL matches)
-4. Audit log + revalidate public MP routes
+4. Non-blocking emails after scoring: reveal-ready to opted-in participants; winner email to top of leaderboard (see [Product email & notifications](#product-email--notifications))
+5. Audit log + revalidate public MP routes
 
 **After reveal:** `/market-pulse/reveal` shows PPA + personal scores; leaderboard unlocks; `#prize-claims` for winner fulfillment; optional leaderboard CSV via `exportMarketPulseLeaderboardAction`.
 
