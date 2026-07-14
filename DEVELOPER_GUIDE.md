@@ -15,11 +15,11 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
 | **Recent `main`** | **Acquisition progressive profiling** — learning-interest prompt after first MP decision (PR 2); next-step preference prompt on reveal (PR 3); email foundation (`UserNotificationPreference`, `EmailDeliveryLog`, admin test email) |
-| **Feature branch** | `acquisition-admin-visibility` — guided MP admin (PRs 5–16), play empty-state timing, **full product email suite**, **admin Remove cycle** (safe delete of draft/clean cycles); validated **14 Jul 2026** (`typecheck`, **969 tests**, build previously green); merge to `main` for Vercel production deploy |
+| **Feature branch** | `acquisition-admin-visibility` — guided MP admin (PRs 5–16), play empty-state timing, **full product email suite**, **admin Remove cycle**, **homepage copy trim** (less exploratory text; layout polish); validated **15 Jul 2026** (`typecheck`, **969 tests**); merge to `main` for Vercel production deploy |
 
-**Branch status:** Sections for guided admin workflow PRs 5–16, the product email suite, and admin Remove cycle refer to the `acquisition-admin-visibility` branch unless merged to `main`. They require merge to `main` and Vercel deploy before production availability.
+**Branch status:** Sections for guided admin workflow PRs 5–16, the product email suite, admin Remove cycle, and homepage copy trim refer to the `acquisition-admin-visibility` branch unless merged to `main`. They require merge to `main` and Vercel deploy before production availability.
 
-**Latest verification (14 Jul 2026):** `npm run typecheck` passed · `npm test` passed (**969** tests) · build previously passed on this branch.
+**Latest verification (15 Jul 2026):** `npm run typecheck` passed · `npm test` passed (**969** tests) · homepage-related suites green.
 
 ---
 
@@ -29,7 +29,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 
 The public site centers on **Market Pulse** — a recurring multi-day investment challenge where members swipe **Bullish** or **Cautious** on daily market signal cards (or **claim participation** on **Market rest cards**), earn participation points, and compete on leaderboards until **PPA Insight** is revealed at cycle end. Supporting pillars: **fireside events**, **membership**, and **expert-led philosophy** (PPA Take).
 
-**Homepage (Jul 2026 terminal revamp):** premium dark **obsidian terminal** layout (`bg-mp-obsidian`, pulse green accents, JetBrains Mono metrics) with a **Market Pulse hero** (headline *“Read the Market Rhythm. Build Your Zero-Cost Life.”*, proof chips, launch-aware CTAs, interactive **Pulse Simulator** — clearly labeled Demo, local state only, no API/decision writes), **Pipeline** (4-step Signal → Lock In → Reveal → Reward + scoring chips + Ocean Park prize note), **Pulse Board** widget (locked / revealed / sample states — no unrevealed scores, no PPA, no email/phone), **Rewards** showcase (confirmed Ocean Park ticket per cycle winner; events; PPA framed as post-reveal), then Live Events Hub, philosophy, and final CTA. **Bilingual** copy via `ppa_locale` cookie. Blog is nav/footer only. **Game logic unchanged** — scoring, active-window playability, launch gating, PPA privacy, reveal gating, leaderboard locks.
+**Homepage (Jul 2026 terminal revamp; copy trim 15 Jul 2026):** premium dark **obsidian terminal** layout (`bg-mp-obsidian`, pulse green accents, JetBrains Mono metrics) with a **Market Pulse hero** (headline *“Read the Market Rhythm. Build Your Zero-Cost Life.”*, launch-aware CTAs, interactive **Pulse Simulator** — Demo-only, local state, no API/decision writes; **no proof-chip row** under CTAs), **Pipeline** (4-step Signal → Lock In → Reveal → Reward + centered Ocean Park prize note — **no pipeline subtitle or scoring-summary chips**), **Pulse Board** widget (locked / revealed / sample — no unrevealed scores, no PPA, no email/phone), **Rewards** showcase (heading + three cards; no eyebrow/subtitle), Live Events Hub, philosophy (heading + pillars + experts; no intro subtitle), and final CTA (heading + buttons; no body subtitle). Shared section shell `MP_HOME_SECTION` uses tighter vertical padding after the trim. **Bilingual** via `ppa_locale`. Blog is nav/footer only. **Game logic unchanged** — scoring, playability, launch gating, PPA privacy, reveal gating, leaderboard locks.
 
 **Player journey UX:** Hub is a **game lobby** (cycle status chip, journey steps, prize + locked leaderboard preview). Play uses an upgraded **signal card** with Bullish/Cautious **confirmation step** before submit. Leaderboard and reveal pages use polished **locked / revealed / archive** state panels; after reveal, leaderboard **My score** links to the full **cycle review** on `/market-pulse/reveal`. **Scoring, launch gating, PPA privacy, and auth rules are unchanged** — see [Player journey revamp — safety unchanged](#player-journey-revamp-jun-2026--safety-unchanged).
 
@@ -133,14 +133,15 @@ Google OAuth redirect URIs (must match exactly):
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
 
-### Verification — latest run 14 Jul 2026 (969 tests)
+### Verification — latest run 15 Jul 2026 (969 tests)
 
 | Check | Result |
 |-------|--------|
 | **Lint** | `npm run lint` — pass (0 errors; pre-existing warnings in legacy/admin) |
 | **Typecheck** | `npm run typecheck` — pass |
-| **Build** | `npm run build` — pass (`prisma db push && next build`) |
+| **Build** | `npm run build` — pass (`prisma db push && next build`) previously on branch |
 | **Tests** | `npm test` — **969** Vitest tests |
+| **Homepage trim** | `homepage-compose`, `homepage-pulse-preview`, `home-market-pulse-simulator.safety`, `public-market-pulse-copy` — pass |
 | **Hub lobby chip** | `hub-lobby-state.test.ts` — `no_active_cycle` when runtime OPEN + no DB cycle; `closed` when runtime paused |
 | **Launch smoke** | `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts` |
 | **Card release (HKT)** | `hkt-time.test.ts`, `card-release-schedule.test.ts` — fixed UTC+8 math; Day 1 = `2026-07-01T01:00:00.000Z` when cycle starts `2026-06-30T16:00:00.000Z`; dual gate (derived release + `publishedAt`) |
@@ -179,7 +180,7 @@ Visual/UX pass across homepage and Market Pulse player routes. **No regressions*
 
 | Area | Changed (UI) | Unchanged (logic) |
 |------|--------------|-------------------|
-| **Scoring** | Homepage pipeline copy references +10/+50/+100 | `score-calculation.ts`, `constants.ts`, admin reveal scoring |
+| **Scoring** | Homepage no longer shows pipeline scoring chips (detail remains on rules / contest pages) | `score-calculation.ts`, `constants.ts`, admin reveal scoring |
 | **Launch gating** | Pre-launch CTAs route to hub vs play | `launch-config.ts`, `canSubmitMarketPulseDecision`, ADMIN bypass |
 | **PPA privacy** | Home/hub/reveal use locked **decorative** previews | `reveal-access.ts`, `stripPpaFromCardPayload`, API stripping |
 | **Leaderboard scores** | `LeaderboardStatePanel` locked UI | `leaderboard-data.ts` query gating; `leaderboard-viewer-score.ts` |
@@ -1759,6 +1760,8 @@ Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes s
 
 **Removed from homepage compose (deleted or legacy):** `MarketPulseHowItWorksSection.tsx`, `MarketPulseCycleLoopSection.tsx` (deleted); `MarketPulsePpaInsightSection.tsx`, `PlayLearnWinSection.tsx`, `HomeHeroSignalPreview.tsx` — **not imported** by `page.tsx`.
 
+**Homepage copy trim (15 Jul 2026 on `acquisition-admin-visibility`):** Omitted exploratory UI-only blocks (hero proof chips, pipeline subtitle + scoring summary, rewards/philosophy/final CTA subheaders). i18n keys left in `en.ts` / `zh-Hant.ts` for later cleanup. No gameplay, scoring, PPA privacy, auth, or `/fortify-survey` changes. Spacing: tighter `MP_HOME_SECTION` + section-internal margins.
+
 **i18n copy locations**
 
 | Namespace | File(s) | Keys |
@@ -2262,10 +2265,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 - **Languages:** EN + Traditional Chinese (`ppa_locale` cookie); MP launch messages in `launch-config.ts`
 - **Data stores:** Postgres (users, Market Pulse, auth), KV (legacy theme), Markdown (blog)
-- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (**969** as of 14 Jul 2026), `npm run build`
+- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (**969** as of 15 Jul 2026), `npm run build`
 - **Production smoke:** [`docs/market-pulse-deploy-checklist.md`](docs/market-pulse-deploy-checklist.md) § Launch smoke test; automated suites listed in [Production smoke test](#production-smoke-test)
 - **Lint warnings:** Legacy castle-siege; TanStack Table in admin members table
 
 ---
 
-*Last updated: 14 Jul 2026 — Admin Remove cycle + product email suite on `acquisition-admin-visibility`; verification **969** tests; typecheck pass.*
+*Last updated: 15 Jul 2026 — Homepage copy trim + layout polish on `acquisition-admin-visibility`; verification **969** tests; typecheck pass.*

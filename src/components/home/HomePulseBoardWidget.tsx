@@ -168,7 +168,7 @@ export default async function HomePulseBoardWidget() {
         <div
           className={mergeMpClasses(
             MP_TERMINAL_PANEL,
-            "border-mp-pulse/10 p-4 shadow-[0_0_32px_rgba(0,230,118,0.04)] sm:p-6",
+            "border-mp-pulse/10 p-4 shadow-[0_0_32px_rgba(0,230,118,0.04)] sm:p-5",
           )}
         >
           <div className="flex flex-wrap items-start justify-between gap-3">

@@ -8,7 +8,6 @@ import MarketPulseLogo from "@/components/market-pulse/MarketPulseLogo";
 import MarketPulseTrackedLink from "@/components/market-pulse/MarketPulseTrackedLink";
 import {
   MarketPulseGlowBackground,
-  MarketPulseProofChip,
   MarketPulseStatusChip,
   MP_FOCUS_RING,
   MP_PRIMARY_BTN,
@@ -17,20 +16,6 @@ import {
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { MARKET_PULSE_ANALYTICS_EVENTS } from "@/lib/market-pulse/analytics";
 import { isBeforePublicLaunch } from "@/lib/market-pulse/launch-config";
-
-const PROOF_CHIP_KEYS = [
-  "home.hero.proof.dailySignals",
-  "home.hero.proof.leaderboard",
-  "home.hero.proof.ppaReveal",
-  "home.hero.proof.prize",
-] as const;
-
-const PROOF_VARIANTS = [
-  "dailySignal",
-  "participation",
-  "ppaInsight",
-  "prize",
-] as const;
 
 export default function MarketPulseHero() {
   const { t } = useTranslations();
@@ -50,11 +35,11 @@ export default function MarketPulseHero() {
     <MarketPulseGlowBackground
       accent="neutral"
       showGrid
-      className="px-3 py-6 sm:px-6 sm:py-10 lg:py-12"
+      className="px-3 py-5 sm:px-6 sm:py-8 lg:py-10"
       innerClassName="mx-auto w-full max-w-6xl"
     >
       <section aria-labelledby="market-pulse-heading">
-        <div className="grid min-w-0 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-10">
+        <div className="grid min-w-0 items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-10">
           <div className="flex min-w-0 flex-col items-center text-center lg:items-start lg:text-left">
             <MarketPulseStatusChip
               variant={preLaunch ? "preLaunch" : "live"}
@@ -64,7 +49,7 @@ export default function MarketPulseHero() {
               className="motion-reduce:[&_span]:animate-none"
             />
 
-            <div className="mt-3 sm:mt-4">
+            <div className="mt-3 sm:mt-3.5">
               <MarketPulseLogo
                 variant="header"
                 priority
@@ -76,7 +61,7 @@ export default function MarketPulseHero() {
               >
                 {t("home.hero.headline")}
               </h1>
-              <p className="mx-auto mt-2.5 max-w-lg text-pretty text-sm leading-relaxed text-mp-muted sm:text-base lg:mx-0">
+              <p className="mx-auto mt-2 max-w-lg text-pretty text-sm leading-relaxed text-mp-muted sm:mt-2.5 sm:text-base lg:mx-0">
                 {t("home.hero.subheadline")}
               </p>
             </div>
@@ -111,17 +96,6 @@ export default function MarketPulseHero() {
                 {t("home.hero.ctaSecondary")}
               </Link>
             </div>
-
-            <ul className="mt-4 flex max-w-lg flex-wrap justify-center gap-1.5 sm:mt-5 lg:justify-start">
-              {PROOF_CHIP_KEYS.map((key, index) => (
-                <li key={key} className="max-w-full">
-                  <MarketPulseProofChip
-                    label={t(key)}
-                    variant={PROOF_VARIANTS[index]}
-                  />
-                </li>
-              ))}
-            </ul>
           </div>
 
           <HomeMarketPulseSimulator />

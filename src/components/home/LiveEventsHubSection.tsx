@@ -74,7 +74,7 @@ export default async function LiveEventsHubSection({
         </header>
 
         <article
-          className={`mt-5 overflow-hidden sm:mt-8 ${MP_TERMINAL_PANEL}`}
+          className={`mt-5 overflow-hidden sm:mt-6 ${MP_TERMINAL_PANEL}`}
           aria-labelledby="upcoming-fireside-heading"
         >
           <div className="grid gap-0 md:grid-cols-2 md:gap-0">
@@ -154,11 +154,11 @@ export default async function LiveEventsHubSection({
           </div>
         </article>
 
-        <div className="mt-8 sm:mt-14">
+        <div className="mt-7 sm:mt-10">
           <h3 className="text-base font-semibold text-white sm:text-xl">
             {t("home.events.pastHeading")}
           </h3>
-          <ul className="mt-3 grid gap-2.5 sm:mt-5 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5">
+          <ul className="mt-3 grid gap-2.5 sm:mt-4 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5">
             {pastEvents.map((event) => {
               const cardBody = (
                 <>

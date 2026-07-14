@@ -14,7 +14,6 @@ import {
   MP_HOME_SECTION,
   MP_PULSE_ACCENT_ICON,
   MP_TERMINAL_PANEL,
-  MP_TICKER_TEXT,
   mergeMpClasses,
 } from "@/lib/market-pulse/visual-primitives";
 
@@ -159,21 +158,15 @@ export default async function HomeRewardsShowcase() {
     >
       <div className="mx-auto w-full max-w-6xl">
         <header className="mx-auto max-w-2xl text-center">
-          <p className={mergeMpClasses(MP_TICKER_TEXT, "text-zinc-500")}>
-            {t("home.rewards.eyebrow")}
-          </p>
           <h2
             id="home-rewards-heading"
-            className="mt-2 text-balance text-xl font-bold tracking-tight text-white sm:text-3xl"
+            className="text-balance text-xl font-bold tracking-tight text-white sm:text-3xl"
           >
             {t("home.rewards.title")}
           </h2>
-          <p className="mt-2 text-pretty text-sm text-mp-muted sm:text-base">
-            {t("home.rewards.subtitle")}
-          </p>
         </header>
 
-        <ul className="mt-6 grid list-none gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+        <ul className="mt-5 grid list-none gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {REWARD_CARDS.map(
             ({
               id,

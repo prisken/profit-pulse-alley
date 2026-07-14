@@ -84,12 +84,9 @@ export default async function PhilosophySection() {
           >
             {t("home.philosophy.heading")}
           </h2>
-          <p className="mt-2 text-pretty text-sm text-mp-muted sm:text-base">
-            {t("home.philosophy.intro")}
-          </p>
         </header>
 
-        <ul className="mt-6 grid gap-3 sm:mt-8 sm:grid-cols-3 sm:gap-4">
+        <ul className="mt-5 grid gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4">
           {PILLARS.map(({ id, icon, titleKey, bodyKey, accent }) => (
             <PhilosophyPillar
               key={id}
@@ -101,11 +98,11 @@ export default async function PhilosophySection() {
           ))}
         </ul>
 
-        <div className="mt-8 border-t border-white/10 pt-8 sm:mt-10 sm:pt-10">
+        <div className="mt-7 border-t border-white/10 pt-7 sm:mt-8 sm:pt-8">
           <h3 className="text-center text-base font-semibold tracking-tight text-white sm:text-xl">
             {t("home.philosophy.mindsHeading")}
           </h3>
-          <ul className="mt-5 flex flex-wrap justify-center gap-6 sm:mt-8 sm:gap-12 md:gap-16">
+          <ul className="mt-5 flex flex-wrap justify-center gap-6 sm:mt-6 sm:gap-10 md:gap-14">
             {experts.map((expert) => (
               <li key={expert.name} className="flex flex-col items-center text-center">
                 <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-amber-400/40 ring-2 ring-amber-500/10 sm:h-24 sm:w-24 sm:ring-4 md:h-28 md:w-28">

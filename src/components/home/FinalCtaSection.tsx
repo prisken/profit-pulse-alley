@@ -32,10 +32,7 @@ export default async function FinalCtaSection() {
         >
           {t("home.finalCta.heading")}
         </h2>
-        <p className="mt-2 max-w-md text-pretty text-sm text-mp-muted sm:text-base">
-          {t("home.finalCta.body")}
-        </p>
-        <div className="mt-5 flex w-full max-w-sm flex-col gap-2.5 sm:mt-6 sm:w-auto sm:flex-row sm:gap-3">
+        <div className="mt-4 flex w-full max-w-sm flex-col gap-2.5 sm:mt-5 sm:w-auto sm:flex-row sm:gap-3">
           <Link
             href={memberHref}
             aria-label={t("home.finalCta.memberAria")}

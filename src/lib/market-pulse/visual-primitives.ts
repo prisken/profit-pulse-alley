@@ -13,7 +13,7 @@ export const MP_OBSIDIAN_BG = "bg-mp-obsidian text-white";
 
 /** Standard homepage / MP section shell */
 export const MP_HOME_SECTION =
-  "border-t border-white/[0.08] bg-mp-obsidian px-3 py-8 text-white sm:px-6 sm:py-12 md:py-14";
+  "border-t border-white/[0.08] bg-mp-obsidian px-3 py-7 text-white sm:px-6 sm:py-10 md:py-12";
 
 /** Premium terminal card surface */
 export const MP_TERMINAL_PANEL =

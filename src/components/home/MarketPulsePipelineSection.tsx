@@ -10,12 +10,6 @@ import {
 
 import { getServerTranslations } from "@/lib/i18n/server";
 import {
-  MATCH_BONUS_POINTS,
-  PARTICIPATION_POINTS,
-  STREAK_BONUS_POINTS,
-  STREAK_INTERVAL,
-} from "@/lib/market-pulse/constants";
-import {
   MP_FOCUS_RING,
   MP_HOME_SECTION,
   MP_METRIC_TEXT,
@@ -140,41 +134,8 @@ function PipelineStepCard({
   );
 }
 
-function ScoringChip({ label }: Readonly<{ label: string }>) {
-  return (
-    <li>
-      <span
-        className={mergeMpClasses(
-          "inline-flex rounded-full border border-white/10 bg-mp-obsidian-panel px-3 py-1.5 text-xs font-semibold text-zinc-200",
-          MP_METRIC_TEXT,
-        )}
-      >
-        {label}
-      </span>
-    </li>
-  );
-}
-
 export default async function MarketPulsePipelineSection() {
   const { t } = await getServerTranslations();
-
-  const scoringChips = [
-    t("home.pipeline.scoring.participation").replace(
-      "{points}",
-      String(PARTICIPATION_POINTS),
-    ),
-    t("home.pipeline.scoring.match").replace(
-      "{points}",
-      String(MATCH_BONUS_POINTS),
-    ),
-    t("home.pipeline.scoring.streak")
-      .replace("{points}", String(STREAK_BONUS_POINTS))
-      .replace("{interval}", String(STREAK_INTERVAL)),
-    t("home.pipeline.scoring.rest").replace(
-      "{points}",
-      String(PARTICIPATION_POINTS),
-    ),
-  ];
 
   return (
     <section
@@ -198,12 +159,9 @@ export default async function MarketPulsePipelineSection() {
           >
             {t("home.pipeline.title")}
           </h2>
-          <p className="mt-2 text-pretty text-sm text-mp-muted sm:text-base">
-            {t("home.pipeline.subtitle")}
-          </p>
         </header>
 
-        <ol className="mt-6 list-none sm:mt-8 lg:mt-10 lg:flex lg:items-stretch lg:justify-between">
+        <ol className="mt-5 list-none sm:mt-6 lg:mt-8 lg:flex lg:items-stretch lg:justify-between">
           {PIPELINE_STEPS.map(
             ({ step, icon, titleKey, bodyKey, primary }, index) => (
               <li
@@ -232,35 +190,17 @@ export default async function MarketPulsePipelineSection() {
           )}
         </ol>
 
-        <div
-          className={mergeMpClasses(
-            "mt-6 grid gap-4 sm:mt-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,16rem)] lg:gap-6",
-          )}
-        >
-          <div className={`p-4 sm:p-5 ${MP_TERMINAL_PANEL}`}>
-            <p className={`text-mp-muted ${MP_TICKER_TEXT}`}>
-              {t("home.pipeline.scoring.heading")}
-            </p>
-            <ul className="mt-2 flex flex-wrap gap-2">
-              {scoringChips.map((label) => (
-                <ScoringChip key={label} label={label} />
-              ))}
-            </ul>
-            <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-              {t("home.pipeline.scoring.note")}
-            </p>
-          </div>
-
+        <div className="mx-auto mt-5 max-w-xl sm:mt-6">
           <div
             className={mergeMpClasses(
               MP_TERMINAL_PANEL,
-              "flex items-start gap-3 border-amber-500/20 bg-amber-500/[0.06] p-4 sm:p-5",
+              "flex items-start gap-3 border-amber-500/20 bg-amber-500/[0.06] p-4 sm:items-center sm:p-5",
             )}
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-300">
               <Gift className="h-5 w-5" aria-hidden="true" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className={`text-amber-200/80 ${MP_TICKER_TEXT}`}>
                 {t("home.pipeline.prize.heading")}
               </p>
@@ -272,7 +212,7 @@ export default async function MarketPulsePipelineSection() {
         </div>
 
         <nav
-          className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm sm:mt-8"
+          className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm sm:mt-6"
           aria-label={t("home.pipeline.footerNavAria")}
         >
           <Link
