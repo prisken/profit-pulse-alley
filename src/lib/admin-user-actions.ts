@@ -16,6 +16,7 @@ import {
   validateAdminCreateUserInput,
 } from "@/lib/admin-user-validation";
 import { requireAdminSession } from "@/lib/market-pulse/admin-auth";
+import { sendProductEmail } from "@/lib/email/email-sender";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
@@ -269,4 +270,93 @@ export async function updateAdminUserRoleAction(
     },
     revalidateAdminUsersEffect(),
   ]);
+}
+
+const ADMIN_TEST_EMAIL_TYPE = "admin_test";
+
+/**
+ * Sends a one-off SMTP smoke-test email to a member (admin only).
+ * Uses sendProductEmail / Zoho EMAIL_* env. Does not change auth, gameplay, or prefs.
+ */
+export async function sendAdminTestEmailAction(
+  userId: string,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminSession();
+  if (!admin) {
+    return unauthorized();
+  }
+
+  const targetId = userId.trim();
+  if (!targetId) {
+    return adminFail("User id is required.");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: targetId },
+    select: { id: true, email: true },
+  });
+  if (!user?.email?.trim()) {
+    return adminFail("User not found.");
+  }
+
+  const to = user.email.trim();
+  const sendResult = await sendProductEmail({
+    to,
+    subject: "[Profit Pulse Ally] Admin email delivery test",
+    text:
+      "This is a test email from the Profit Pulse Ally admin dashboard.\n" +
+      "If you received it, Zoho SMTP (EMAIL_SERVER / EMAIL_FROM) is working.",
+    html:
+      "<p>This is a test email from the <strong>Profit Pulse Ally</strong> admin dashboard.</p>" +
+      "<p>If you received it, Zoho SMTP (<code>EMAIL_SERVER</code> / <code>EMAIL_FROM</code>) is working.</p>",
+  });
+
+  const now = new Date();
+  const logStatus = sendResult.ok
+    ? "sent"
+    : sendResult.skipped
+      ? "skipped"
+      : "failed";
+
+  try {
+    await prisma.emailDeliveryLog.create({
+      data: {
+        userId: user.id,
+        email: to,
+        type: ADMIN_TEST_EMAIL_TYPE,
+        status: logStatus,
+        providerMessageId: sendResult.ok
+          ? (sendResult.providerMessageId ?? null)
+          : null,
+        error: sendResult.ok ? null : sendResult.error,
+        sentAt: sendResult.ok ? now : null,
+      },
+    });
+  } catch (error) {
+    console.error("[admin-user-actions] emailDeliveryLog create failed:", error);
+  }
+
+  if (sendResult.ok) {
+    return finishAdminMutation("Test email sent.", [
+      {
+        label: "audit log",
+        run: () =>
+          writeUserAuditLog({
+            adminUserId: admin.userId,
+            entityId: user.id,
+            action: "SEND_TEST_EMAIL",
+            reason: "Admin SMTP smoke test",
+            newValue: to,
+          }),
+      },
+    ]);
+  }
+
+  if (sendResult.skipped) {
+    return adminFail(
+      "Email is not configured. Set EMAIL_SERVER and EMAIL_FROM on the server.",
+    );
+  }
+
+  return adminFail(`Could not send test email: ${sendResult.error}`);
 }

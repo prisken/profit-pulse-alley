@@ -17,6 +17,7 @@ import AdminRoleBadge from "@/components/admin/AdminRoleBadge";
 import AdminUserFilters from "@/components/admin/AdminUserFilters";
 import {
   deleteAdminUserAction,
+  sendAdminTestEmailAction,
   updateAdminUserRoleAction,
 } from "@/lib/admin-user-actions";
 import { downloadCsv } from "@/lib/admin/csv-download";
@@ -47,6 +48,7 @@ const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900";
 
 const dangerButtonClass = `min-h-9 rounded-md border border-red-500/40 bg-red-500/10 px-2.5 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/20 disabled:opacity-50 sm:text-sm ${focusRing}`;
+const secondaryButtonClass = `min-h-9 rounded-md border border-zinc-600 bg-zinc-900 px-2.5 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-800 disabled:opacity-50 sm:text-sm ${focusRing}`;
 
 const columnHelper = createColumnHelper<AdminMemberRow>();
 
@@ -78,9 +80,10 @@ function MemberActions({
   const { t, locale } = useTranslations();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
   const [optimisticRole, setOptimisticRole] = useState<Role | null>(null);
   const isSelf = member.id === currentAdminUserId;
-  const busy = isPending || isRowPending;
+  const busy = isPending || isRowPending || isSendingTestEmail;
   const roleValue = optimisticRole ?? member.role;
 
   function refreshAfterAction(message: string, warning?: string) {
@@ -126,6 +129,31 @@ function MemberActions({
     });
   }
 
+  function handleSendTestEmail() {
+    setIsSendingTestEmail(true);
+    startTransition(async () => {
+      try {
+        await invokeAdminAction(() => sendAdminTestEmailAction(member.id), {
+          onSuccess: (successMessage, warning) => {
+            onActionMessage(
+              translateAuthMessage(
+                locale,
+                successMessage ?? t("auth.admin.users.testEmailSent"),
+              ),
+              false,
+              warning,
+            );
+          },
+          onError: (error) => {
+            onActionMessage(translateAuthMessage(locale, error), true);
+          },
+        });
+      } finally {
+        setIsSendingTestEmail(false);
+      }
+    });
+  }
+
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       <label className="flex flex-col gap-1 text-xs text-zinc-400">
@@ -146,6 +174,21 @@ function MemberActions({
           </span>
         ) : null}
       </label>
+
+      <button
+        type="button"
+        className={secondaryButtonClass}
+        disabled={busy}
+        onClick={handleSendTestEmail}
+        aria-label={t("auth.admin.users.sendTestEmailAria").replace(
+          "{email}",
+          member.email,
+        )}
+      >
+        {isSendingTestEmail
+          ? t("auth.admin.users.sendingTestEmail")
+          : t("auth.admin.users.sendTestEmail")}
+      </button>
 
       {isSelf ? (
         <p className="max-w-xs text-[11px] leading-relaxed text-zinc-500">

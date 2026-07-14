@@ -8,10 +8,15 @@ const prismaMocks = vi.hoisted(() => ({
   userCount: vi.fn(),
   transaction: vi.fn(),
   auditCreate: vi.fn(),
+  emailDeliveryLogCreate: vi.fn(),
 }));
 
 const authMocks = vi.hoisted(() => ({
   requireAdminSession: vi.fn(),
+}));
+
+const emailMocks = vi.hoisted(() => ({
+  sendProductEmail: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -30,6 +35,10 @@ vi.mock("@/lib/market-pulse/admin-auth", () => ({
   requireAdminSession: authMocks.requireAdminSession,
 }));
 
+vi.mock("@/lib/email/email-sender", () => ({
+  sendProductEmail: emailMocks.sendProductEmail,
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: {
@@ -42,6 +51,9 @@ vi.mock("@/lib/prisma", () => ({
     marketPulseAuditLog: {
       create: prismaMocks.auditCreate,
     },
+    emailDeliveryLog: {
+      create: prismaMocks.emailDeliveryLogCreate,
+    },
     $transaction: prismaMocks.transaction,
   },
 }));
@@ -49,6 +61,7 @@ vi.mock("@/lib/prisma", () => ({
 import {
   createAdminUserAction,
   deleteAdminUserAction,
+  sendAdminTestEmailAction,
   updateAdminUserRoleAction,
 } from "@/lib/admin-user-actions";
 
@@ -66,6 +79,11 @@ describe("admin-user-actions", () => {
       }),
     );
     prismaMocks.auditCreate.mockResolvedValue({ id: "audit-1" });
+    prismaMocks.emailDeliveryLogCreate.mockResolvedValue({ id: "log-1" });
+    emailMocks.sendProductEmail.mockResolvedValue({
+      ok: true,
+      providerMessageId: "<test@zoho>",
+    });
   });
 
   afterEach(() => {
@@ -156,5 +174,71 @@ describe("admin-user-actions", () => {
       expect(result.warning).toContain("audit log");
     }
     expect(prismaMocks.userDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends a test email and writes a delivery log", async () => {
+    prismaMocks.userFindUnique.mockResolvedValue({
+      id: "user-1",
+      email: "player@example.com",
+    });
+
+    const result = await sendAdminTestEmailAction("user-1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.message).toBe("Test email sent.");
+    }
+    expect(emailMocks.sendProductEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "player@example.com",
+        subject: expect.stringContaining("Admin email delivery test"),
+      }),
+    );
+    expect(prismaMocks.emailDeliveryLogCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: "user-1",
+          email: "player@example.com",
+          type: "admin_test",
+          status: "sent",
+          providerMessageId: "<test@zoho>",
+        }),
+      }),
+    );
+  });
+
+  it("returns a clear error when SMTP is not configured", async () => {
+    prismaMocks.userFindUnique.mockResolvedValue({
+      id: "user-1",
+      email: "player@example.com",
+    });
+    emailMocks.sendProductEmail.mockResolvedValue({
+      ok: false,
+      skipped: true,
+      error: "Email delivery is not configured (EMAIL_SERVER / EMAIL_FROM).",
+    });
+
+    const result = await sendAdminTestEmailAction("user-1");
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatch(/EMAIL_SERVER/i);
+    }
+    expect(prismaMocks.emailDeliveryLogCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: "skipped",
+        }),
+      }),
+    );
+  });
+
+  it("rejects unauthenticated callers for test email", async () => {
+    authMocks.requireAdminSession.mockResolvedValue(null);
+
+    const result = await sendAdminTestEmailAction("user-1");
+
+    expect(result.ok).toBe(false);
+    expect(emailMocks.sendProductEmail).not.toHaveBeenCalled();
   });
 });

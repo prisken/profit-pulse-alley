@@ -28,6 +28,9 @@ const AUTH_MESSAGE_KEYS: Record<string, MessageKey> = {
   "User deleted.": "auth.admin.users.userDeleted",
   "User added.": "auth.admin.users.userCreated",
   "User created.": "auth.admin.users.userCreated",
+  "Test email sent.": "auth.admin.users.testEmailSent",
+  "Email is not configured. Set EMAIL_SERVER and EMAIL_FROM on the server.":
+    "auth.admin.users.testEmailNotConfigured",
   "You cannot delete your own account from the admin dashboard.":
     "auth.admin.users.blockedDeleteSelf",
   "Cannot demote the last admin account.":
