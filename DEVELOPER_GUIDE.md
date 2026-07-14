@@ -1736,17 +1736,18 @@ Bottom bar: logo left; `© 2026 Profit Pulse Ally. All Rights Reserved.` right.
 
 ### 10.1 Homepage (`src/app/page.tsx`)
 
-Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes seven sections in order — **no blog preview** on homepage. Shared visual primitives: `MarketPulseVisualPrimitives.tsx` (glow background, status/proof chips) + `visual-primitives.ts` (terminal panels, pulse tokens, focus rings).
+Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes seven sections in order — **no blog preview** on homepage. Shared visual primitives: `MarketPulseVisualPrimitives.tsx` (glow background, status chips; proof-chip primitive still used elsewhere) + `visual-primitives.ts` (`MP_HOME_SECTION`, terminal panels, pulse tokens, focus rings).
 
 | # | Component | Purpose | Primary CTAs |
 |---|-----------|---------|--------------|
-| 1 | `MarketPulseHero` | Brand logo, pre-launch/live status chip, headline, proof chips, launch-aware primary CTA; mounts **`HomeMarketPulseSimulator`** | Pre-launch → hub; post-launch → play; secondary → leaderboard |
-| 2 | `MarketPulsePipelineSection` | 4-step game flow (Signal → Lock In → Reveal → Reward); scoring chips (+10/+50/+100 copy); Ocean Park prize note | Text links → leaderboard, contest rules |
+| 1 | `MarketPulseHero` | Brand logo, pre-launch/live status chip, headline + subheadline, launch-aware primary CTA; mounts **`HomeMarketPulseSimulator`**. **No** proof-chip row under CTAs (trimmed 15 Jul 2026). | Pre-launch → hub; post-launch → play; secondary → leaderboard |
+| 2 | `MarketPulsePipelineSection` | 4-step game flow (Signal → Lock In → Reveal → Reward); centered Ocean Park prize note. **No** pipeline subtitle or scoring-summary panel (trimmed 15 Jul 2026). | Footer links → leaderboard, contest rules |
 | 3 | `HomePulseBoardWidget` | Mini leaderboard preview — **privacy-safe** via `getHomePulseBoardPreview()` | → `/market-pulse/leaderboard` |
-| 4 | `HomeRewardsShowcase` | Confirmed prize (Ocean Park ticket), events community, PPA post-reveal framing | → contest rules, events, rules |
+| 4 | `HomeRewardsShowcase` | Heading + three cards (prize, events, PPA). **No** eyebrow/subtitle (trimmed 15 Jul 2026). | → contest rules, events, rules |
 | 5 | `LiveEventsHubSection` | Upcoming Sales & Marketing; past Fortify + placeholders (`home-events-hub.ts`) | → `/events/fortify-sales-marketing` |
-| 6 | `PhilosophySection` | PPA philosophy; expert headshots | — |
-| 7 | `FinalCtaSection` | Ready to Test Your Instincts? | **Become a Member** → `/login`; secondary → Market Pulse hub |
+| 6 | `PhilosophySection` | Heading + three pillars + expert headshots. **No** intro subtitle (trimmed 15 Jul 2026). | — |
+| 7 | `FinalCtaSection` | Heading + CTAs only. **No** body subtitle (trimmed 15 Jul 2026). | **Create free account** → `/login`; secondary → Market Pulse hub |
+
 
 **Pulse Simulator (`HomeMarketPulseSimulator.tsx`):** Client-only demo. Clearly labeled **PULSE SIMULATOR** + Demo badge. Bullish/Cautious buttons update local `useState` only — **no `fetch`, no decision API, no DB writes**. Disclaimer copy states choices are not saved or scored. Link to real play is launch-aware (`/market-pulse` vs `/market-pulse/play`).
 
