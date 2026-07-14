@@ -85,6 +85,8 @@ model User {
   marketPulsePrizeClaims MarketPulsePrizeClaim[]
   marketPulseAuditLogs   MarketPulseAuditLog[]
   acquisitionProfile     UserAcquisitionProfile?
+  notificationPreference UserNotificationPreference?
+  emailDeliveryLogs      EmailDeliveryLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -105,6 +107,43 @@ model UserAcquisitionProfile {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model UserNotificationPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  marketPulseRemindersEnabled Boolean @default(false)
+  revealNotificationsEnabled  Boolean @default(true)
+  eventUpdatesEnabled         Boolean @default(false)
+  learningDigestEnabled       Boolean @default(false)
+  unsubscribedAt              DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmailDeliveryLog {
+  id     String  @id @default(cuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  email             String
+  type              String
+  cycleId           String?
+  cardId            String?
+  status            String
+  providerMessageId String?
+  error             String?
+  sentAt            DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, type])
+  @@index([email, type])
+  @@index([cycleId, type])
+  @@index([cardId, type])
 }
 
 model GameScore {

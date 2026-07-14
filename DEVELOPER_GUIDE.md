@@ -15,7 +15,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
 | **Recent `main`** | **Acquisition progressive profiling** — learning-interest prompt after first MP decision (PR 2); next-step preference prompt on reveal (PR 3) |
-| **Feature branch** | `acquisition-admin-visibility` — acquisition admin visibility + **guided MP admin workflow (PRs 5–16)** + **play empty-state timing** (`5187ce8`); validated **13 Jul 2026** (`lint` 0 errors, `typecheck`, **857 tests**, `build` green); merge to `main` for Vercel production deploy |
+| **Feature branch** | `acquisition-admin-visibility` — guided MP admin (PRs 5–16), play empty-state timing, **email notification foundation** (`UserNotificationPreference`, `EmailDeliveryLog`, `sendProductEmail`); validated **14 Jul 2026** (`typecheck`, **861 tests**); merge to `main` for Vercel production deploy |
 
 ---
 
@@ -1341,14 +1341,17 @@ Files: `prisma/seed.ts` (runner), `prisma/seed-guards.ts` (production block), `p
 | `AUTH_GOOGLE_SECRET` | For Google login | Auth.js Google provider |
 | `DATABASE_URL` | Auto-injected | Vercel Prisma Postgres (do not use as Prisma `url` — wrong protocol) |
 | `PRISMA_DATABASE_URL` | Auto-injected | Prisma Postgres integration (`prisma+postgres://` format) |
-| `EMAIL_SERVER` | For email login | Nodemailer provider (e.g. `smtp://user:pass@host:587`) |
-| `EMAIL_FROM` | For email login | Magic-link sender address |
+| `EMAIL_SERVER` | Auth magic link + product email | Nodemailer SMTP URL (e.g. Zoho `smtp://user:pass@host:587`) |
+| `EMAIL_FROM` | Auth magic link + product email | From address; display name OK (`Profit Pulse Ally <info@profitpulseally.com>`) |
+| `EMAIL_REPLY_TO` | Product email (optional) | Default Reply-To (e.g. `prisken@profitpulseally.com`) |
 | `KV_REST_API_URL` | Game settings (Market Pulse) | `@vercel/kv` |
 | `KV_REST_API_TOKEN` | Game settings (Market Pulse) | `@vercel/kv` |
 
 `.env.local` is gitignored. **Never commit secrets.**
 
-Nodemailer is **omitted from Auth.js providers** when `EMAIL_SERVER` / `EMAIL_FROM` are unset — allows local build without SMTP.
+Nodemailer Auth.js provider is **omitted** when `EMAIL_SERVER` / `EMAIL_FROM` are unset — allows local build without SMTP. Product mail (`src/lib/email/email-sender.ts`) returns `{ ok: false, skipped: true }` in the same case and never throws during import/build.
+
+**Product email (Zoho):** `sendProductEmail()` — server-only; shares SMTP credentials with Auth.js magic link; logs errors without message bodies. Preference + delivery models: `UserNotificationPreference`, `EmailDeliveryLog` (no notification campaigns wired yet).
 
 ---
 
@@ -1418,6 +1421,7 @@ Vercel Edge middleware has a **1 MB bundle limit**. Importing `@/auth` in middle
 | **Google OAuth** | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` |
 | **Credentials** | Email + password (`bcrypt.compare` against `User.password`) |
 | **Nodemailer** | Magic link when `EMAIL_SERVER` + `EMAIL_FROM` set |
+| **Product email** | `sendProductEmail` in `src/lib/email/email-sender.ts` — same SMTP env; default `EMAIL_REPLY_TO` |
 
 ### Sign-up & onboarding
 
