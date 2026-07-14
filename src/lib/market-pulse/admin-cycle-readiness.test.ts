@@ -25,6 +25,8 @@ function baseCycle(
     playabilityIssue: null,
     cardCount: 0,
     decisionCount: 0,
+    scoreCount: 0,
+    prizeClaimCount: 0,
     usersPlayed: 0,
     missingSignalCount: 0,
     unlockedCount: 0,

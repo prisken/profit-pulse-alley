@@ -31,6 +31,11 @@ import {
   parseCycleDate,
   validateMarketPulseCycleDates,
 } from "@/lib/market-pulse/cycle-validation";
+import {
+  CYCLE_REMOVAL_MESSAGES,
+  cycleRemovalBlockMessage,
+  getCycleRemovalBlockReason,
+} from "@/lib/market-pulse/cycle-removal";
 import { mapMarketPulseAdminCardRow } from "@/lib/market-pulse/admin-card-row";
 import { marketPulseCycleBuilderPath, marketPulseGuidedCardsPath, marketPulseGuidedLaunchPath } from "@/lib/market-pulse/admin-builder-paths";
 import {
@@ -1225,6 +1230,78 @@ export async function closeMarketPulseCycleAction(
           fieldName: "status",
           oldValue: existing.status,
           newValue: "CLOSED",
+        }),
+    },
+    revalidateAdminEffect(),
+  ]);
+}
+
+export async function removeMarketPulseCycleAction(
+  cycleId: string,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminSession();
+  if (!admin) return unauthorized();
+
+  const trimmedCycleId = typeof cycleId === "string" ? cycleId.trim() : "";
+  if (!trimmedCycleId) {
+    return adminFail(CYCLE_REMOVAL_MESSAGES.notFound);
+  }
+
+  const existing = await prisma.marketPulseCycle.findUnique({
+    where: { id: trimmedCycleId },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      _count: {
+        select: {
+          decisions: true,
+          scores: true,
+          scoreEvents: true,
+          prizeClaims: true,
+        },
+      },
+    },
+  });
+  if (!existing) {
+    return adminFail(CYCLE_REMOVAL_MESSAGES.notFound);
+  }
+
+  const settings = await getGameSettings();
+  const blockReason = getCycleRemovalBlockReason({
+    status: existing.status,
+    isActive: settings?.activeCycleId === trimmedCycleId,
+    decisionCount: existing._count.decisions,
+    scoreCount: existing._count.scores,
+    scoreEventCount: existing._count.scoreEvents,
+    prizeClaimCount: existing._count.prizeClaims,
+  });
+  if (blockReason) {
+    return adminFail(cycleRemovalBlockMessage(blockReason));
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.marketPulseCard.deleteMany({ where: { cycleId: trimmedCycleId } });
+      await tx.marketPulseCycle.delete({ where: { id: trimmedCycleId } });
+    });
+  } catch (error) {
+    console.error("[admin] removeMarketPulseCycleAction failed:", error);
+    return adminFail(CYCLE_REMOVAL_MESSAGES.failed);
+  }
+
+  return finishAdminMutation(CYCLE_REMOVAL_MESSAGES.success, [
+    {
+      label: "audit log",
+      run: () =>
+        writeCycleAuditLog({
+          adminUserId: admin.userId,
+          cycleId: trimmedCycleId,
+          action: "DELETE",
+          fieldName: "cycle",
+          oldValue: existing.name,
+          newValue: null,
+          reason: existing.status,
         }),
     },
     revalidateAdminEffect(),

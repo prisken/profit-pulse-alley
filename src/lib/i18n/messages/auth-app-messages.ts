@@ -669,6 +669,19 @@ export const authAppEnMessages = {
   "auth.admin.mp.cycleStats.noWinner": "No winner yet",
   "auth.admin.mp.cycleStats.noParticipation": "No participation yet",
   "auth.admin.mp.closeCycle": "Close cycle",
+  "auth.admin.mp.removeCycle.button": "Remove",
+  "auth.admin.mp.removeCycle.confirmTitle": "Remove Market Pulse cycle?",
+  "auth.admin.mp.removeCycle.confirmBody":
+    "This permanently removes the cycle and its draft cards. This cannot be undone. Cycles with player decisions, scores, prize claims, or revealed/archive status cannot be removed.",
+  "auth.admin.mp.removeCycle.confirmButton": "Remove cycle",
+  "auth.admin.mp.removeCycle.pending": "Removing…",
+  "auth.admin.mp.removeCycle.success": "Cycle removed.",
+  "auth.admin.mp.removeCycle.blockedActive":
+    "Cannot remove the active cycle. Unpin or switch the active cycle first.",
+  "auth.admin.mp.removeCycle.blockedData":
+    "Cannot remove a cycle with player decisions, scores, score events, or prize claims.",
+  "auth.admin.mp.removeCycle.blockedStatus":
+    "Cannot remove revealed or archived cycles.",
   "auth.admin.mp.active": "Active",
   "auth.admin.mp.notPlayable": "Not playable",
   "auth.admin.mp.prizeReview": "Prize review",
@@ -1681,6 +1694,19 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.admin.mp.cycleStats.noWinner": "尚無贏家",
   "auth.admin.mp.cycleStats.noParticipation": "尚無參與",
   "auth.admin.mp.closeCycle": "關閉週期",
+  "auth.admin.mp.removeCycle.button": "移除",
+  "auth.admin.mp.removeCycle.confirmTitle": "移除 Market Pulse 週期？",
+  "auth.admin.mp.removeCycle.confirmBody":
+    "這會永久移除該週期及其草稿卡片，無法復原。有玩家決策、分數、獎品申請，或已揭曉／已封存的週期無法移除。",
+  "auth.admin.mp.removeCycle.confirmButton": "移除週期",
+  "auth.admin.mp.removeCycle.pending": "移除中…",
+  "auth.admin.mp.removeCycle.success": "週期已移除。",
+  "auth.admin.mp.removeCycle.blockedActive":
+    "無法移除作用中週期。請先取消固定或切換作用中週期。",
+  "auth.admin.mp.removeCycle.blockedData":
+    "無法移除含有玩家決策、分數、分數事件或獎品申請的週期。",
+  "auth.admin.mp.removeCycle.blockedStatus":
+    "無法移除已揭曉或已封存的週期。",
   "auth.admin.mp.active": "進行中",
   "auth.admin.mp.notPlayable": "不可遊玩",
   "auth.admin.mp.prizeReview": "獎賞審核",

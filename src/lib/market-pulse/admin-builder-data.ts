@@ -125,6 +125,8 @@ export async function getMarketPulseCycleBuilderData(
     signalCardCount: cardBreakdown.signalCards,
     restCardCount: cardBreakdown.restCards,
     decisionCount: cycle._count.decisions,
+    scoreCount: 0,
+    prizeClaimCount: 0,
     usersPlayed,
     missingSignalCount: cardBreakdown.missingPpaSignalCards,
     unlockedCount: cardBreakdown.unlockedSignalCards,

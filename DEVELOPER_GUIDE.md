@@ -15,7 +15,11 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
 | **Recent `main`** | **Acquisition progressive profiling** — learning-interest prompt after first MP decision (PR 2); next-step preference prompt on reveal (PR 3); email foundation (`UserNotificationPreference`, `EmailDeliveryLog`, admin test email) |
-| **Feature branch** | `acquisition-admin-visibility` — guided MP admin (PRs 5–16), play empty-state timing, **full product email suite** (welcome, reveal-ready, winner, reminder cron + opt-in CTA, profile prefs, unsubscribe); validated **14 Jul 2026** (`typecheck`, **953 tests**, build); merge to `main` for Vercel production deploy |
+| **Feature branch** | `acquisition-admin-visibility` — guided MP admin (PRs 5–16), play empty-state timing, **full product email suite**, **admin Remove cycle** (safe delete of draft/clean cycles); validated **14 Jul 2026** (`typecheck`, **969 tests**, build previously green); merge to `main` for Vercel production deploy |
+
+**Branch status:** Sections for guided admin workflow PRs 5–16, the product email suite, and admin Remove cycle refer to the `acquisition-admin-visibility` branch unless merged to `main`. They require merge to `main` and Vercel deploy before production availability.
+
+**Latest verification (14 Jul 2026):** `npm run typecheck` passed · `npm test` passed (**969** tests) · build previously passed on this branch.
 
 ---
 
@@ -75,11 +79,11 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | **Fortify registration** | `/fortify-survey` | Public | **QR-coded URL — do not change** |
 | **Login** | `/login` | Public | Sign In + Create Account; Google + magic link; **i18n** |
 | **OAuth onboarding** | `/auth/onboarding` | Logged-in | **Optional** contact number; skip to play; `/api/auth/complete-onboarding` JWT refresh |
-| **Member profile** | `/profile` | Members only | Profile + Market Pulse history + **Email preferences**; **i18n** |
-| **Unsubscribe** | `/unsubscribe` | Signed token | One-click marketing unsubscribe (`unsubscribedAt`) |
-| **Cron — MP reminders** | `POST /api/cron/market-pulse-reminders` | `CRON_SECRET` | Opt-in reminder batch (counts only) |
+| **Member profile** | `/profile` | Members only | Profile + Market Pulse history; **i18n**. **Email preferences:** feature branch — production after merge to `main` |
+| **Unsubscribe** | `/unsubscribe` | Signed token | Feature branch — one-click marketing unsubscribe (`unsubscribedAt`); production after merge |
+| **Cron — MP reminders** | `POST /api/cron/market-pulse-reminders` | `CRON_SECRET` | Feature branch — opt-in reminder batch (counts only); production after merge |
 | **Market Pulse Hub** | `/market-pulse` | Public | **Game lobby** — status chip (`Open` / `No active cycle` / `Closed` / …), journey steps, prize, locked/revealed leaderboard preview, context-aware primary CTA; **i18n** |
-| **Market Pulse play** | `/market-pulse/play` | Login to submit | Signal cards: Bullish/Cautious swipe/tap + **confirmation**; **rest cards:** Claim participation (`ACKNOWLEDGED`); locked/submitted state + **reminder opt-in CTA**; non-playable state panels; **i18n** |
+| **Market Pulse play** | `/market-pulse/play` | Login to submit | Signal cards: Bullish/Cautious swipe/tap + **confirmation**; **rest cards:** Claim participation (`ACKNOWLEDGED`); locked/submitted state; non-playable state panels; **i18n**. **Reminder opt-in CTA:** feature branch — production after merge |
 | **Market Pulse leaderboard** | `/market-pulse/leaderboard` | Public | Locked/revealed/archive state panels; per-cycle archive (`?cycleId=`); **My score** panel with **View cycle review** → reveal; **i18n** |
 | **PPA Insight reveal** | `/market-pulse/reveal` | Login for personal results | Pending locked ceremony; revealed results + learning framing; PPA only post-reveal; **i18n** |
 | **Market Pulse rules** | `/market-pulse/rules` | Public | Challenge rules + scoring; **i18n** |
@@ -129,14 +133,14 @@ Google OAuth redirect URIs (must match exactly):
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
 
-### Verification — last run 11 Jul 2026 (656 tests)
+### Verification — latest run 14 Jul 2026 (969 tests)
 
 | Check | Result |
 |-------|--------|
 | **Lint** | `npm run lint` — pass (0 errors; pre-existing warnings in legacy/admin) |
 | **Typecheck** | `npm run typecheck` — pass |
 | **Build** | `npm run build` — pass (`prisma db push && next build`) |
-| **Tests** | `npm test` — **656** Vitest tests (92 files) |
+| **Tests** | `npm test` — **969** Vitest tests |
 | **Hub lobby chip** | `hub-lobby-state.test.ts` — `no_active_cycle` when runtime OPEN + no DB cycle; `closed` when runtime paused |
 | **Launch smoke** | `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts` |
 | **Card release (HKT)** | `hkt-time.test.ts`, `card-release-schedule.test.ts` — fixed UTC+8 math; Day 1 = `2026-07-01T01:00:00.000Z` when cycle starts `2026-06-30T16:00:00.000Z`; dual gate (derived release + `publishedAt`) |
@@ -228,7 +232,7 @@ Automated tests cover server rules below. Live browser sign-in was not re-run in
 | 17 | Per-cycle leaderboard + personal score | **Pass** | `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `MarketPulseScore` model |
 | 18 | Admin member Tel column | **Pass** | `AdminMembersTable` — `contactNumber` column; searchable via `user-member-filter.ts` |
 | 19 | Admin acquisition visibility | **Pass** | `AdminMembersTable` — Learning + Next Step from `UserAcquisitionProfile`; filters + client CSV export (`members-data.ts`) |
-| 19 | Homepage + player journey visual revamp | **Pass** | Jul 2026 terminal homepage: hero + Pulse Simulator, Pipeline, Pulse Board, Rewards; hub lobby; play confirmation; leaderboard/reveal state panels; responsive + reduced-motion pass — **security unchanged** |
+| 20 | Homepage + player journey visual revamp | **Pass** | Jul 2026 terminal homepage: hero + Pulse Simulator, Pipeline, Pulse Board, Rewards; hub lobby; play confirmation; leaderboard/reveal state panels; responsive + reduced-motion pass — **security unchanged** |
 
 ### Production smoke test
 
@@ -424,6 +428,9 @@ Use this as the **end-to-end ops playbook**. UI labels are English; player card 
 | **Prize label** | Required when status is player-facing (`OPEN` / `CLOSED` / `REVEALED`) |
 | **Set as active cycle** | Writes `MarketPulseGameSetting.activeCycleId` — required for hub/play/leaderboard |
 | **Close cycle** | `closeMarketPulseCycleAction()` → status `CLOSED` (stops new play in window rules) |
+| **Remove cycle** | `removeMarketPulseCycleAction()` — ADMIN-only; deletes a cycle + its cards when safe (see below) |
+
+**Remove cycle (admin only):** Available on the cycles hub and advanced cycle panels (`RemoveMarketPulseCycleButton`). Allowed only for `DRAFT` / `OPEN` / `CLOSED` cycles that are **not** the pinned `activeCycleId` and have **no** player data (`MarketPulseDecision`, `MarketPulseScore`, `MarketPulseScoreEvent`, `MarketPulsePrizeClaim`). Blocks `REVEALED` / `ARCHIVED` and active cycles. Does **not** delete users or global game settings. Helpers: `cycle-removal.ts`. Tests: `cycle-removal.test.ts`, `admin-remove-cycle-action.test.ts`.
 
 **Pin active cycle:** Only one cycle is “active” at a time (`setActiveMarketPulseCycleAction` or checkbox on save). Demo cycles (`[DEMO]` prefix) trigger `demo-cycle-active` alerts in production and are hidden from public paths.
 
@@ -579,7 +586,7 @@ All require `requireAdminSession()` (`admin-auth.ts`). Wrapped with `finishAdmin
 
 | Category | Actions |
 |----------|---------|
-| **Runtime / cycle** | `updateMarketPulseRuntimeStatusAction`, `setActiveMarketPulseCycleAction`, `createMarketPulseCycleAction`, `quickCreateMarketPulseCycleAction`, `updateMarketPulseCycleAction`, `closeMarketPulseCycleAction`, `revealMarketPulseCycleAction` |
+| **Runtime / cycle** | `updateMarketPulseRuntimeStatusAction`, `setActiveMarketPulseCycleAction`, `createMarketPulseCycleAction`, `quickCreateMarketPulseCycleAction`, `updateMarketPulseCycleAction`, `closeMarketPulseCycleAction`, `removeMarketPulseCycleAction`, `revealMarketPulseCycleAction` |
 | **Cards** | `createMarketPulseCardAction`, `quickCreateMarketPulseCardDraftAction`, `quickCreateMarketPulseRestCardDraftAction`, `duplicateMarketPulseCardAction`, `updateMarketPulseCardAction`, `updateMarketPulseCardDraftAction`, `reorderMarketPulseCardAction`, `fillMissingCardSourceDatesAction` |
 | **Publish** | `publishMarketPulseCardAction`, `unpublishMarketPulseCardAction`, `bulkPublishMarketPulseCardsAction`, `bulkPublishAllReadyMarketPulseCardsAction`, `bulkUnpublishMarketPulseCardsAction` |
 | **PPA** | `lockMarketPulseCardPpaAction` |
@@ -801,7 +808,7 @@ The Market Pulse admin **cycles hub** shows a compact **Guided progress** block 
 
 #### Guided workflow release checklist (PR 16)
 
-**Status (13 Jul 2026):** Complete. Final QA for PRs 5–15 — regression tests, privacy sweeps, copy alignment, and docs only (no gameplay/scoring/reveal/runtime/public-route changes). Commits: guided implementation (PRs 5–15), then `test: harden guided market pulse workflow release coverage` (lifecycle + privacy regression, hub next-focus i18n, release checklist).
+**Status (13 Jul 2026 — historical baseline on `acquisition-admin-visibility`):** Complete. Final QA for PRs 5–15 — regression tests, privacy sweeps, copy alignment, and docs only (no gameplay/scoring/reveal/runtime/public-route changes). Commits: guided implementation (PRs 5–15), then `test: harden guided market pulse workflow release coverage` (lifecycle + privacy regression, hub next-focus i18n, release checklist). **Not production until merged to `main`.** See latest verification count at the top of this guide (**969 tests**, 14 Jul 2026).
 
 Final QA for the guided admin workflow (PR 5–15). **No product behavior changes** — regression tests, privacy sweeps, and docs only.
 
@@ -1059,6 +1066,7 @@ Key test files for the fast builder journey:
 | Navigation / breadcrumbs | `admin-mp-navigation.test.ts` |
 | Builder data gate | `admin-builder-data.test.ts` |
 | Quick create cycle | `quick-create-cycle-defaults.test.ts`, `admin-quick-create-cycle.test.ts` |
+| Remove cycle | `cycle-removal.test.ts`, `admin-remove-cycle-action.test.ts` |
 | Draft card defaults | `cycle-card-defaults.test.ts`, `admin-quick-create-card-draft.test.ts` |
 | Draft save | `admin-card-draft-save.test.ts` |
 | Duplicate | `duplicate-card-data.test.ts`, `admin-duplicate-card.test.ts` |
@@ -1074,7 +1082,7 @@ Key test files for the fast builder journey:
 | PPA / public privacy | `server-security.test.ts`, `admin-card-preview.test.ts` |
 | Non-admin rejection | `admin-builder-data.test.ts`, `admin-duplicate-card.test.ts`, `admin-quick-create-cycle.test.ts` |
 
-**Last CI:** lint pass (0 errors), typecheck pass, **694 tests** (95 files), build pass.
+**Latest CI (14 Jul 2026):** lint pass (0 errors), typecheck pass, **969 tests**, build pass. Earlier counts (e.g. 953 / 694 / 656 / 610) are historical baselines only.
 
 ### Making Market Pulse visible to players (go-live)
 
@@ -1131,7 +1139,8 @@ Inform-only (no auto-overwrite). **Prefill create-cycle form** opens recommended
 
 - [x] **Postgres** — `POSTGRES_URL` from **Storage → Prisma Postgres** (`prisma-postgres-celeste-dog`)
 - [x] **Auth.js** — `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
-- [ ] **Email sign-in** (optional) — `EMAIL_SERVER`, `EMAIL_FROM`
+- [ ] **SMTP email** — `EMAIL_SERVER`, `EMAIL_FROM`, `EMAIL_REPLY_TO`. Required for product emails and magic-link sign-in; app builds without it but product emails are skipped.
+- [ ] **Cron reminders** (optional) — `CRON_SECRET` for `POST /api/cron/market-pulse-reminders`
 - [x] **KV** (game settings) — `KV_REST_API_URL`, `KV_REST_API_TOKEN`
 - [x] **Schema sync** — automatic via `prisma db push` in `npm run build`
 - [ ] **First admin** — `UPDATE "User" SET role = 'ADMIN' WHERE email = '...'`
@@ -1291,7 +1300,7 @@ npm run dev
 | `npm run build` | **`prisma db push && next build`** (Vercel uses this) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript (`tsc --noEmit`) |
-| `npm test` | Vitest unit tests (`vitest run`) — **610 tests** (87 files) |
+| `npm test` | Vitest unit tests (`vitest run`) — **969 tests** as of 14 Jul 2026 |
 | `npm run db:migrate` | Prisma migrate dev (when using migration files) |
 | `npm run db:push` | Push schema without migration files |
 | `npm run db:seed` | Seed **demo Market Pulse** data (dev only — see [§4.1](#41-market-pulse-demo-seed)) |
@@ -1360,7 +1369,13 @@ Nodemailer Auth.js provider is **omitted** when `EMAIL_SERVER` / `EMAIL_FROM` ar
 
 ### Product email & notifications
 
-**Status (14 Jul 2026):** Implemented on `acquisition-admin-visibility` — welcome, reveal-ready, winner (transactional), reminder cron + explicit reminder opt-in CTA, profile email preferences, signed unsubscribe.
+**Status (14 Jul 2026):** Implemented on `acquisition-admin-visibility` (merge to `main` required for production) — welcome, reveal-ready, winner (transactional), reminder cron + explicit reminder opt-in CTA, profile email preferences, signed unsubscribe.
+
+**Clarifications**
+
+- **Welcome email** currently covers **credentials signup only** (`signUpWithPassword` → `sendWelcomeEmailForNewUser`).
+- **Google OAuth / first-login welcome is deferred** (Auth.js `events.createUser` not wired yet; avoid auth regressions).
+- **`event_update` and `learning_digest`:** preference flags + approved templates are defined; **sending workflows are not wired yet**.
 
 **Shared infrastructure**
 
@@ -1381,15 +1396,20 @@ Nodemailer Auth.js provider is **omitted** when `EMAIL_SERVER` / `EMAIL_FROM` ar
 
 | Type | Trigger | Who receives it | Opt-in / gates | Dedupe / rate | Unsubscribe footer |
 |------|---------|-----------------|----------------|---------------|--------------------|
-| **`welcome`** | Credentials signup (`signUpWithPassword` → `sendWelcomeEmailForNewUser`) | New email/password user | Always eligible if not unsubscribed | Once per `userId` **or** email | Yes (optional marketing) |
+| **`welcome`** | Credentials signup only (`signUpWithPassword` → `sendWelcomeEmailForNewUser`) | New email/password user | Always eligible if not unsubscribed | Once per `userId` **or** email | Yes (optional marketing) |
 | **`market_pulse_reveal`** | After admin `revealMarketPulseCycleAction` succeeds **and** scores persist | Distinct users with decisions in that cycle + `revealNotificationsEnabled` | `canSendEmailType`; skip if unsubscribed | Once per `userId` + `cycleId` | Yes |
 | **`market_pulse_winner`** | Same reveal/scoring success path (`sendWinnerEmailForCycle`) | Top leaderboard user for the cycle | **Transactional** — ignores marketing opt-outs; needs email | Once per `userId` + `cycleId` | **No** |
 | **`market_pulse_reminder`** (today) | Cron `POST /api/cron/market-pulse-reminders` when runtime OPEN + playable card(s) today | Opted-in users who have **not** submitted every playable card today | `marketPulseRemindersEnabled` + not unsubscribed + has email | Once per card/cycle; **no more than one reminder / 24h** | Yes |
 | **`market_pulse_reminder`** (next cycle) | Same cron when **no** playable today, but a public future cycle starts within **24h** | Same opted-in pool | Same | Once per upcoming `cycleId`; 24h rate | Yes |
-| **`event_update`** | *Not wired yet* | Pref `eventUpdatesEnabled` | — | — | Yes (when built) |
-| **`learning_digest`** | *Not wired yet* | Pref `learningDigestEnabled` | — | — | Yes (when built) |
+| **`event_update`** | *Sending workflow not wired yet* (pref + template reserved) | Pref `eventUpdatesEnabled` | — | — | Yes (when built) |
+| **`learning_digest`** | *Sending workflow not wired yet* (pref + template reserved) | Pref `learningDigestEnabled` | — | — | Yes (when built) |
 
-**Not implemented yet:** OAuth / Google first-login welcome (Auth.js `events.createUser` deferred). Admin “Send test email” on members table is a manual SMTP smoke check (not a product template above).
+**Deferred / not wired yet**
+
+- Google OAuth first-login welcome (Auth.js `events.createUser`)
+- Automated `event_update` and `learning_digest` senders
+
+Admin “Send test email” on members table is a manual SMTP smoke check (not a product template above).
 
 Reveal/winner sends **never block** admin reveal if SMTP fails. Welcome never blocks account creation. Cron returns **count summary only** (no emails/PPA in the JSON).
 
@@ -2242,10 +2262,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 - **Languages:** EN + Traditional Chinese (`ppa_locale` cookie); MP launch messages in `launch-config.ts`
 - **Data stores:** Postgres (users, Market Pulse, auth), KV (legacy theme), Markdown (blog)
-- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (656), `npm run build`
+- **Testing:** `npm run lint`, `npm run typecheck`, `npm test` (**969** as of 14 Jul 2026), `npm run build`
 - **Production smoke:** [`docs/market-pulse-deploy-checklist.md`](docs/market-pulse-deploy-checklist.md) § Launch smoke test; automated suites listed in [Production smoke test](#production-smoke-test)
 - **Lint warnings:** Legacy castle-siege; TanStack Table in admin members table
 
 ---
 
-*Last updated: 12 Jul 2026 — Reveal cycle review includes `REVEALED` cards after admin scoring; leaderboard My score → reveal link; post-cycle review, next-cycle TBC.*
+*Last updated: 14 Jul 2026 — Admin Remove cycle + product email suite on `acquisition-admin-visibility`; verification **969** tests; typecheck pass.*

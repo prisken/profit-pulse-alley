@@ -24,6 +24,8 @@ const baseCycle: MarketPulseAdminCycleRow = {
   playabilityIssue: null,
   cardCount: 1,
   decisionCount: 5,
+  scoreCount: 0,
+  prizeClaimCount: 0,
   usersPlayed: 3,
   missingSignalCount: 0,
   unlockedCount: 0,

@@ -90,6 +90,8 @@ export const MARKET_PULSE_ADMIN_CYCLE_ROW_STATS_DEFAULTS = {
   signalCardCount: 1,
   restCardCount: 0,
   decisionCount: 0,
+  scoreCount: 0,
+  prizeClaimCount: 0,
   usersPlayed: 0,
   missingSignalCount: 0,
   unlockedCount: 0,

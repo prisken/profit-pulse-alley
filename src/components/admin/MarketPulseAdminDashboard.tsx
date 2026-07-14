@@ -20,6 +20,7 @@ import {
   MarketPulsePpaRevealWarningBanner,
 } from "@/components/admin/MarketPulseAdminShell";
 import MarketPulseCyclesHub from "@/components/admin/MarketPulseCyclesHub";
+import RemoveMarketPulseCycleButton from "@/components/admin/RemoveMarketPulseCycleButton";
 import MarketPulseCardList from "@/components/admin/MarketPulseCardList";
 import MarketPulseCycleForm from "@/components/admin/MarketPulseCycleForm";
 import {
@@ -367,6 +368,7 @@ export default function MarketPulseAdminDashboard({
         onQuickCreateNextCycle={handleQuickCreateNextCycle}
         onEditCycle={handleEditCycleAdvanced}
         onScrollToReveal={handleScrollToReveal}
+        onRefresh={() => router.refresh()}
       />
 
       <MarketPulseAdminSection
@@ -981,7 +983,7 @@ function CyclePanel({
         <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
           {t("auth.admin.mp.cycleActions")}
         </p>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start">
           {cycle.status !== "CLOSED" && cycle.status !== "REVEALED" ? (
             <button type="button" className={buttonClass} disabled={disabled} onClick={onClose}>
               {t("auth.admin.mp.closeCycle")}
@@ -993,6 +995,19 @@ function CyclePanel({
             cycleStatus={cycle.status}
             disabled={disabled || !revealReadiness.canReveal}
             blockMessage={revealReadiness.blockMessage}
+            onSuccess={onRefresh}
+          />
+          <RemoveMarketPulseCycleButton
+            cycleId={cycle.id}
+            eligibility={{
+              status: cycle.status,
+              isActive: cycle.isActive,
+              decisionCount: cycle.decisionCount,
+              scoreCount: cycle.scoreCount,
+              scoreEventCount: cycle.scoreEventCount,
+              prizeClaimCount: cycle.prizeClaimCount,
+            }}
+            disabled={disabled}
             onSuccess={onRefresh}
           />
         </div>

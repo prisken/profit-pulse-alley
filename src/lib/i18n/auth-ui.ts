@@ -43,6 +43,13 @@ const AUTH_MESSAGE_KEYS: Record<string, MessageKey> = {
     "auth.admin.users.blockedSelfDemote",
   "Could not delete user. Related records may prevent removal — contact engineering.":
     "auth.admin.users.blockedRelatedRecords",
+  "Cycle removed.": "auth.admin.mp.removeCycle.success",
+  "Cannot remove the active cycle. Unpin or switch the active cycle first.":
+    "auth.admin.mp.removeCycle.blockedActive",
+  "Cannot remove a cycle with player decisions, scores, score events, or prize claims.":
+    "auth.admin.mp.removeCycle.blockedData",
+  "Cannot remove revealed or archived cycles.":
+    "auth.admin.mp.removeCycle.blockedStatus",
   "Action failed.": "auth.admin.mp.actionFailed",
   "Done.": "auth.admin.mp.done",
   "Saved.": "auth.admin.mp.saved",

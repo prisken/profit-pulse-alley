@@ -79,6 +79,8 @@ export type MarketPulseAdminCycleRow = {
   signalCardCount: number;
   restCardCount: number;
   decisionCount: number;
+  scoreCount: number;
+  prizeClaimCount: number;
   usersPlayed: number;
   missingSignalCount: number;
   unlockedCount: number;
@@ -120,7 +122,14 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
   const cycles = await prisma.marketPulseCycle.findMany({
     orderBy: { startsAt: "desc" },
     include: {
-      _count: { select: { cards: true, decisions: true } },
+      _count: {
+        select: {
+          cards: true,
+          decisions: true,
+          scores: true,
+          prizeClaims: true,
+        },
+      },
       cards: {
       select: {
           id: true,
@@ -204,6 +213,8 @@ export async function getMarketPulseAdminDashboardData(): Promise<MarketPulseAdm
       signalCardCount: cardBreakdown.signalCards,
       restCardCount: cardBreakdown.restCards,
       decisionCount: cycle._count.decisions,
+      scoreCount: cycle._count.scores,
+      prizeClaimCount: cycle._count.prizeClaims,
       usersPlayed,
       missingSignalCount: cardBreakdown.missingPpaSignalCards,
       unlockedCount: cardBreakdown.unlockedSignalCards,

@@ -28,6 +28,7 @@ import type {
 } from "@/lib/market-pulse/guided-card-dashboard";
 import { evaluateRevealReadiness } from "@/lib/market-pulse/admin-reveal-status";
 import { translateWith, type MessageKey } from "@/lib/i18n/messages";
+import RemoveMarketPulseCycleButton from "@/components/admin/RemoveMarketPulseCycleButton";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
@@ -131,6 +132,7 @@ type Props = {
   onQuickCreateNextCycle: () => void;
   onEditCycle: (cycleId: string) => void;
   onScrollToReveal: () => void;
+  onRefresh?: () => void;
 };
 
 function CycleNextActionSection({
@@ -195,6 +197,7 @@ export default function MarketPulseCyclesHub({
   onQuickCreateNextCycle,
   onEditCycle,
   onScrollToReveal,
+  onRefresh,
 }: Readonly<Props>) {
   const { t } = useTranslations();
 
@@ -358,6 +361,19 @@ export default function MarketPulseCyclesHub({
                           >
                             {t("auth.admin.mp.nav.leaderboard")}
                           </Link>
+                          <RemoveMarketPulseCycleButton
+                            cycleId={cycle.id}
+                            eligibility={{
+                              status: cycle.status,
+                              isActive: cycle.isActive,
+                              decisionCount: cycle.decisionCount,
+                              scoreCount: cycle.scoreCount,
+                              scoreEventCount: cycle.scoreEventCount,
+                              prizeClaimCount: cycle.prizeClaimCount,
+                            }}
+                            disabled={disabled}
+                            onSuccess={onRefresh}
+                          />
                         </div>
                       </td>
                     </tr>
@@ -422,6 +438,19 @@ export default function MarketPulseCyclesHub({
                         {t("auth.admin.mp.nav.revealScoring")}
                       </button>
                     ) : null}
+                    <RemoveMarketPulseCycleButton
+                      cycleId={cycle.id}
+                      eligibility={{
+                        status: cycle.status,
+                        isActive: cycle.isActive,
+                        decisionCount: cycle.decisionCount,
+                        scoreCount: cycle.scoreCount,
+                        scoreEventCount: cycle.scoreEventCount,
+                        prizeClaimCount: cycle.prizeClaimCount,
+                      }}
+                      disabled={disabled}
+                      onSuccess={onRefresh}
+                    />
                   </div>
                 </li>
               );

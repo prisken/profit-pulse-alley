@@ -75,6 +75,8 @@ function cycleRowForGuidance(
     signalCardCount: activeCycle.signalCardCount,
     restCardCount: activeCycle.restCardCount,
     decisionCount: 0,
+    scoreCount: 0,
+    prizeClaimCount: 0,
     usersPlayed: 0,
     missingSignalCount: activeCycle.missingSignalCount,
     unlockedCount: activeCycle.unlockedCount,
