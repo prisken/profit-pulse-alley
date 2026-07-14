@@ -341,6 +341,19 @@ export const zhHantMessages: Messages = {
   "legal.privacy.link.contest": "比賽規則",
   "meta.privacy.title": "私隱政策 | Profit Pulse Ally",
   "meta.privacy.description": "Profit Pulse Ally 如何處理你的個人資料。",
+  "meta.unsubscribe.title": "取消訂閱 | Profit Pulse Ally",
+  "meta.unsubscribe.description": "取消訂閱非必要的 Profit Pulse Ally 電郵。",
+  "unsubscribe.title": "取消電郵訂閱",
+  "unsubscribe.success": "你已取消訂閱非必要電郵。",
+  "unsubscribe.already": "你已取消訂閱非必要電郵。",
+  "unsubscribe.failed":
+    "未能處理此取消訂閱連結。連結可能無效或已過期。",
+  "unsubscribe.expired":
+    "此取消訂閱連結已過期。請登入後在個人檔案管理電郵偏好。",
+  "unsubscribe.transactionalNote":
+    "必要時你仍可能收到獎品或帳戶相關的交易性電郵。",
+  "unsubscribe.manageProfile": "管理電郵偏好",
+  "unsubscribe.backHome": "返回主頁",
 
   "legal.disclaimer.title": "投資免責聲明",
   "legal.disclaimer.noAdviceHeading": "非財務建議",

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 
 import { auth, signOut } from "@/auth";
 import { syncMemberSignupToCrm } from "@/lib/crm-member-sync";
+import { sendWelcomeEmailForNewUser } from "@/lib/notifications/welcome-email";
 import { prisma } from "@/lib/prisma";
 
 const BCRYPT_SALT_ROUNDS = 12;
@@ -90,6 +91,20 @@ export async function signUpWithPassword(
       signedUpAt: user.createdAt,
       source: "Profit Pulse Ally Password Signup",
     });
+
+    // Non-blocking — signup must succeed even when SMTP is unset or fails.
+    try {
+      await sendWelcomeEmailForNewUser({
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+      });
+    } catch (welcomeError) {
+      console.error(
+        "[auth-actions] welcome email failed after signup:",
+        welcomeError,
+      );
+    }
 
     return {
       success: true,

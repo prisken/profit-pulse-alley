@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { BookOpen, CheckCircle2, ChevronRight, Lock, Trophy } from "lucide-react";
 
 import CycleProgress from "@/components/market-pulse/CycleProgress";
+import MarketPulseRemindersOptInCta from "@/components/market-pulse/MarketPulseRemindersOptInCta";
 import {
   MP_FOCUS_RING,
   mergeMpClasses,
@@ -28,6 +29,11 @@ export type DecisionLockedCardProps = {
   revealMessage?: string;
   cycleContext?: DecisionLockedCardContext;
   className?: string;
+  remindersOptIn?: {
+    isAuthenticated: boolean;
+    remindersEnabled: boolean | null;
+    loginHref: string;
+  };
 };
 
 export default function DecisionLockedCard({
@@ -35,6 +41,7 @@ export default function DecisionLockedCard({
   revealMessage,
   cycleContext,
   className = "",
+  remindersOptIn,
 }: DecisionLockedCardProps) {
   const { t } = useTranslations();
   const reduceMotion = useReducedMotion() ?? false;
@@ -182,6 +189,16 @@ export default function DecisionLockedCard({
         <p className="mt-3 text-sm font-medium text-zinc-300">
           {isAcknowledged ? t("mp.rest.locked.nextCard") : t("mp.locked.nextSignal")}
         </p>
+
+        {remindersOptIn ? (
+          <div className="mx-auto mt-4 max-w-sm">
+            <MarketPulseRemindersOptInCta
+              isAuthenticated={remindersOptIn.isAuthenticated}
+              remindersEnabled={remindersOptIn.remindersEnabled}
+              loginHref={remindersOptIn.loginHref}
+            />
+          </div>
+        ) : null}
       </div>
 
       <nav

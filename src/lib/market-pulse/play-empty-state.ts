@@ -143,3 +143,34 @@ export function applyPlayBlockedStateCopy(
       : undefined,
   };
 }
+
+/**
+ * Show reminder opt-in CTA on play blocked states when the next return
+ * time is known (next cycle start or next card unlock) — not for TBC-only.
+ */
+export function shouldOfferPlayRemindersOptIn(
+  status: MarketPulsePlayPageStatus,
+  nextCycle: MarketPulseNextCycleStatus,
+  nextCardReleaseAtIso: string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (nextCycle.status === "available") {
+    if (
+      status === "between_cycles" ||
+      status === "cycle_unavailable" ||
+      status === "runtime_closed"
+    ) {
+      return true;
+    }
+  }
+
+  if (
+    status === "no_card_today" &&
+    nextCardReleaseAtIso &&
+    new Date(nextCardReleaseAtIso).getTime() > now.getTime()
+  ) {
+    return true;
+  }
+
+  return false;
+}

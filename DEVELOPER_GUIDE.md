@@ -14,8 +14,8 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
-| **Recent `main`** | **Acquisition progressive profiling** — learning-interest prompt after first MP decision (PR 2); next-step preference prompt on reveal (PR 3) |
-| **Feature branch** | `acquisition-admin-visibility` — guided MP admin (PRs 5–16), play empty-state timing, **email notification foundation** (`UserNotificationPreference`, `EmailDeliveryLog`, `sendProductEmail`); validated **14 Jul 2026** (`typecheck`, **861 tests**); merge to `main` for Vercel production deploy |
+| **Recent `main`** | **Acquisition progressive profiling** — learning-interest prompt after first MP decision (PR 2); next-step preference prompt on reveal (PR 3); email foundation (`UserNotificationPreference`, `EmailDeliveryLog`, admin test email) |
+| **Feature branch** | `acquisition-admin-visibility` — guided MP admin (PRs 5–16), play empty-state timing, **full product email suite** (welcome, reveal-ready, winner, reminder cron + opt-in CTA, profile prefs, unsubscribe); validated **14 Jul 2026** (`typecheck`, **953 tests**, build); merge to `main` for Vercel production deploy |
 
 ---
 
@@ -75,9 +75,11 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | **Fortify registration** | `/fortify-survey` | Public | **QR-coded URL — do not change** |
 | **Login** | `/login` | Public | Sign In + Create Account; Google + magic link; **i18n** |
 | **OAuth onboarding** | `/auth/onboarding` | Logged-in | **Optional** contact number; skip to play; `/api/auth/complete-onboarding` JWT refresh |
-| **Member profile** | `/profile` | Members only | Profile + Market Pulse history; **i18n** |
+| **Member profile** | `/profile` | Members only | Profile + Market Pulse history + **Email preferences**; **i18n** |
+| **Unsubscribe** | `/unsubscribe` | Signed token | One-click marketing unsubscribe (`unsubscribedAt`) |
+| **Cron — MP reminders** | `POST /api/cron/market-pulse-reminders` | `CRON_SECRET` | Opt-in reminder batch (counts only) |
 | **Market Pulse Hub** | `/market-pulse` | Public | **Game lobby** — status chip (`Open` / `No active cycle` / `Closed` / …), journey steps, prize, locked/revealed leaderboard preview, context-aware primary CTA; **i18n** |
-| **Market Pulse play** | `/market-pulse/play` | Login to submit | Signal cards: Bullish/Cautious swipe/tap + **confirmation**; **rest cards:** Claim participation (`ACKNOWLEDGED`); locked/submitted state; non-playable state panels; **i18n** |
+| **Market Pulse play** | `/market-pulse/play` | Login to submit | Signal cards: Bullish/Cautious swipe/tap + **confirmation**; **rest cards:** Claim participation (`ACKNOWLEDGED`); locked/submitted state + **reminder opt-in CTA**; non-playable state panels; **i18n** |
 | **Market Pulse leaderboard** | `/market-pulse/leaderboard` | Public | Locked/revealed/archive state panels; per-cycle archive (`?cycleId=`); **My score** panel with **View cycle review** → reveal; **i18n** |
 | **PPA Insight reveal** | `/market-pulse/reveal` | Login for personal results | Pending locked ceremony; revealed results + learning framing; PPA only post-reveal; **i18n** |
 | **Market Pulse rules** | `/market-pulse/rules` | Public | Challenge rules + scoring; **i18n** |
@@ -1145,6 +1147,7 @@ Inform-only (no auto-overwrite). **Prefill create-cycle form** opens recommended
 3. [Repository structure](#3-repository-structure)
 4. [Local development](#4-local-development)
 5. [Environment variables](#5-environment-variables)
+   - [Product email & notifications](#product-email--notifications)
 6. [Database & Prisma](#6-database--prisma)
 7. [Authentication & membership](#7-authentication--membership)
 8. [Routing & pages](#8-routing--pages)
@@ -1344,6 +1347,9 @@ Files: `prisma/seed.ts` (runner), `prisma/seed-guards.ts` (production block), `p
 | `EMAIL_SERVER` | Auth magic link + product email | Nodemailer SMTP URL (e.g. Zoho `smtp://user:pass@host:587`) |
 | `EMAIL_FROM` | Auth magic link + product email | From address; display name OK (`Profit Pulse Ally <priskenlo@profitpulseally.com>`) |
 | `EMAIL_REPLY_TO` | Product email (optional) | Default Reply-To (e.g. `priskenlo@profitpulseally.com`) |
+| `CRON_SECRET` | Reminder cron | Required for `POST /api/cron/market-pulse-reminders` (`CRON_SECRET` header or `Authorization: Bearer`) |
+| `NEXT_PUBLIC_SITE_URL` / `AUTH_URL` | Email links | Public origin for CTAs + unsubscribe URLs |
+| `UNSUBSCRIBE_SECRET` or `AUTH_SECRET` | Unsubscribe tokens | Signed `/unsubscribe?token=` |
 | `KV_REST_API_URL` | Game settings (Market Pulse) | `@vercel/kv` |
 | `KV_REST_API_TOKEN` | Game settings (Market Pulse) | `@vercel/kv` |
 
@@ -1351,7 +1357,62 @@ Files: `prisma/seed.ts` (runner), `prisma/seed-guards.ts` (production block), `p
 
 Nodemailer Auth.js provider is **omitted** when `EMAIL_SERVER` / `EMAIL_FROM` are unset — allows local build without SMTP. Product mail (`src/lib/email/email-sender.ts`) returns `{ ok: false, skipped: true }` in the same case and never throws during import/build.
 
-**Product email (Zoho):** `sendProductEmail()` — server-only; shares SMTP credentials with Auth.js magic link; logs errors without message bodies. Preference + delivery models: `UserNotificationPreference`, `EmailDeliveryLog` (no notification campaigns wired yet).
+### Product email & notifications
+
+**Status (14 Jul 2026):** Implemented on `acquisition-admin-visibility` — welcome, reveal-ready, winner (transactional), reminder cron + explicit reminder opt-in CTA, profile email preferences, signed unsubscribe.
+
+**Shared infrastructure**
+
+| Piece | Path / role |
+|-------|-------------|
+| `sendProductEmail` | `src/lib/email/email-sender.ts` — From = `EMAIL_FROM`; Reply-To = `EMAIL_REPLY_TO` when set |
+| Branded layout | `src/lib/email/email-layout.ts` — exact approved copy → plain text + simple HTML + CTA button |
+| Marketing footer | `src/lib/email/email-footer.ts` — unsubscribe + profile link (not on winner/prize) |
+| Prefs | `UserNotificationPreference` — defaults: reminders **off**, reveal notifications **on** |
+| Delivery log | `EmailDeliveryLog` — `attempted` / `sent` / `failed` / `skipped`; dedupe + rate limits |
+| Pref helpers | `src/lib/notifications/notification-preferences.ts` (`canSendEmailType`) |
+| Profile UI | `/profile` → `ProfileNotificationPreferencesCard` |
+| Play opt-in CTA | `MarketPulseRemindersOptInCta` on waiting/locked play states |
+
+**Tone / safety rules:** clear, calm, professional, educational — no investment advice, guarantees, FOMO, urgency, or market-prediction claims. **Never** put raw PPA insight, private signal logic, scores, ranks, or leaderboard detail in the body — link to the site instead. Prefer skip / safe fallback over misleading copy.
+
+#### When each email is sent
+
+| Type | Trigger | Who receives it | Opt-in / gates | Dedupe / rate | Unsubscribe footer |
+|------|---------|-----------------|----------------|---------------|--------------------|
+| **`welcome`** | Credentials signup (`signUpWithPassword` → `sendWelcomeEmailForNewUser`) | New email/password user | Always eligible if not unsubscribed | Once per `userId` **or** email | Yes (optional marketing) |
+| **`market_pulse_reveal`** | After admin `revealMarketPulseCycleAction` succeeds **and** scores persist | Distinct users with decisions in that cycle + `revealNotificationsEnabled` | `canSendEmailType`; skip if unsubscribed | Once per `userId` + `cycleId` | Yes |
+| **`market_pulse_winner`** | Same reveal/scoring success path (`sendWinnerEmailForCycle`) | Top leaderboard user for the cycle | **Transactional** — ignores marketing opt-outs; needs email | Once per `userId` + `cycleId` | **No** |
+| **`market_pulse_reminder`** (today) | Cron `POST /api/cron/market-pulse-reminders` when runtime OPEN + playable card(s) today | Opted-in users who have **not** submitted every playable card today | `marketPulseRemindersEnabled` + not unsubscribed + has email | Once per card/cycle; **no more than one reminder / 24h** | Yes |
+| **`market_pulse_reminder`** (next cycle) | Same cron when **no** playable today, but a public future cycle starts within **24h** | Same opted-in pool | Same | Once per upcoming `cycleId`; 24h rate | Yes |
+| **`event_update`** | *Not wired yet* | Pref `eventUpdatesEnabled` | — | — | Yes (when built) |
+| **`learning_digest`** | *Not wired yet* | Pref `learningDigestEnabled` | — | — | Yes (when built) |
+
+**Not implemented yet:** OAuth / Google first-login welcome (Auth.js `events.createUser` deferred). Admin “Send test email” on members table is a manual SMTP smoke check (not a product template above).
+
+Reveal/winner sends **never block** admin reveal if SMTP fails. Welcome never blocks account creation. Cron returns **count summary only** (no emails/PPA in the JSON).
+
+#### Email templates (exact subjects + purpose)
+
+| Type | Subject | Primary CTA | Module |
+|------|---------|-------------|--------|
+| Welcome | Welcome to Profit Pulse Ally | Play Market Pulse → `/market-pulse/play` | `welcome-email.ts` |
+| Reveal | Your Market Pulse results are ready | View your review → `/market-pulse/reveal` | `reveal-email.ts` |
+| Winner | Congratulations — you won this Market Pulse cycle | (body: prize label + reply) | `winner-email.ts` |
+| Reminder (live signal) | Today's Market Pulse signal is ready | Play now → `/market-pulse/play` | `reminder-email.ts` |
+| Reminder (next cycle) | Next Market Pulse cycle starts soon | Go to Market Pulse → `/market-pulse/play` | `reminder-email.ts` |
+| Event update (future) | New Profit Pulse Ally event update | View update → `/events` | — |
+| Learning digest (future) | Profit Pulse Ally learning digest | Read more → `/learn` | — |
+
+**Reminder cron auth example:**
+
+```bash
+curl -X POST https://profitpulseally.com/api/cron/market-pulse-reminders \
+  -H "CRON_SECRET: $CRON_SECRET"
+# or: -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Schedule on Vercel Cron (or external scheduler) pointing at that route; set `CRON_SECRET` in production env.
 
 ---
 
@@ -1380,6 +1441,8 @@ Then change `package.json` build to `prisma migrate deploy && next build` and ba
 | Model | Purpose |
 |-------|---------|
 | `User` | Members — `email`, `name`, `image`, `contactNumber?`, `password?`, `role` (`USER` \| `ADMIN`); optional `acquisitionProfile` |
+| `UserNotificationPreference` | Email prefs — reminders (default off), reveal (default on), events, digest; `unsubscribedAt` |
+| `EmailDeliveryLog` | Product email attempts — `type`, `status`, optional `cycleId` / `cardId`, `sentAt` |
 | `UserAcquisitionProfile` | Progressive profiling — `learningInterest` (+ capture/dismiss timestamps); `nextStepPreference` (+ capture/dismiss timestamps) |
 | `MarketPulseCycle` | Challenge window — `startsAt`, `endsAt`, `revealAt`, `status`, `prizeLabel` |
 | `MarketPulseCard` | Daily card — `cardType` (`SIGNAL` \| `REST`), headline, ticker, `newsBody`, `cardImageUrl`/`cardImageAlt`, `logoInitials`, `userPrompt`, `ppaSignal` (SIGNAL only; admin-only until reveal), `status` |
@@ -1967,8 +2030,9 @@ Not shown on `/admin`. Component `AdminGameSettings.tsx` is retained but unmount
 | `/api/market-pulse/decision` | POST | User | Submit `BULLISH`/`CAUTIOUS` (signal) or `ACKNOWLEDGED` (rest); **403 before public launch** unless `ADMIN` |
 | `/api/market-pulse/leaderboard` | GET | Public | `?cycleId=` (page) or `?mode=current-cycle\|monthly\|all-time` (legacy API); empty array if DB unavailable |
 | `/api/market-pulse/reveal` | GET | User | Personal reveal payload; 404 until cycle revealed |
+| `/api/cron/market-pulse-reminders` | POST | `CRON_SECRET` | Opt-in Market Pulse reminder batch; returns counts only |
 
-Handlers: `src/lib/market-pulse/player-handlers.ts`. Core logic: `src/lib/market-pulse/server.ts`.
+Handlers: `src/lib/market-pulse/player-handlers.ts`. Core logic: `src/lib/market-pulse/server.ts`. Reminder batch: `src/lib/notifications/reminder-cron.ts`.
 
 ---
 

@@ -494,6 +494,15 @@ export const marketPulseEnMessages = {
   "mp.error.generic": "Something went wrong. Please try again.",
 
   "mp.announcement.ariaLabel": "Market Pulse update",
+
+  "mp.reminders.optIn.prompt": "Want a reminder next time?",
+  "mp.reminders.optIn.button": "Turn on Market Pulse reminders",
+  "mp.reminders.optIn.enabling": "Turning on…",
+  "mp.reminders.optIn.signIn": "Sign in to turn on reminders",
+  "mp.reminders.optIn.subtext":
+    "We’ll only email when there’s a signal or cycle to come back for. You can turn this off anytime.",
+  "mp.reminders.enabled": "Market Pulse reminders are on.",
+  "mp.reminders.manage": "Manage in profile",
 } as const;
 
 export type MarketPulseMessageKey = keyof typeof marketPulseEnMessages;
@@ -955,4 +964,13 @@ export const marketPulseZhHantMessages: Record<MarketPulseMessageKey, string> = 
   "mp.error.generic": "發生錯誤，請再試一次。",
 
   "mp.announcement.ariaLabel": "Market Pulse 最新消息",
+
+  "mp.reminders.optIn.prompt": "想下次收到提醒嗎？",
+  "mp.reminders.optIn.button": "開啟 Market Pulse 提醒",
+  "mp.reminders.optIn.enabling": "開啟中…",
+  "mp.reminders.optIn.signIn": "登入以開啟提醒",
+  "mp.reminders.optIn.subtext":
+    "我們只會在有新訊號或下一期挑戰時寄電郵提醒你。你可以隨時關閉。",
+  "mp.reminders.enabled": "已開啟 Market Pulse 提醒。",
+  "mp.reminders.manage": "在個人檔案管理",
 };

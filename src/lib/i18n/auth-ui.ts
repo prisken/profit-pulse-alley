@@ -23,6 +23,10 @@ const AUTH_MESSAGE_KEYS: Record<string, MessageKey> = {
   "Contact number is required.": "auth.error.contactRequired",
   "Could not save your contact number. Please try again.":
     "auth.error.contactSaveFailed",
+  "Could not save your email preferences. Please try again.":
+    "auth.profile.emailPrefs.saveFailed",
+  "Invalid notification preferences.": "auth.profile.emailPrefs.invalid",
+  "Email preferences saved.": "auth.profile.emailPrefs.saved",
   "Role updated.": "auth.admin.users.roleUpdated",
   "User role updated.": "auth.admin.users.roleUpdated",
   "User deleted.": "auth.admin.users.userDeleted",

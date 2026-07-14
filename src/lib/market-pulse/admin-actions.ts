@@ -70,6 +70,8 @@ import {
   isMarketPulseCycleRevealed,
 } from "@/lib/market-pulse/server";
 import { validateCycleReadyForReveal } from "@/lib/market-pulse/reveal-ppa-validation.server";
+import { sendRevealReadyEmailsForCycle } from "@/lib/notifications/reveal-email";
+import { sendWinnerEmailForCycle } from "@/lib/notifications/winner-email";
 import {
   validateGuidedCycleInput,
   type GuidedCycleDayOverride,
@@ -1294,6 +1296,25 @@ export async function revealMarketPulseCycleAction(
       eventsCreated: summary.eventsCreated,
       topScore: summary.topScore,
     };
+
+    // Non-blocking: reveal must succeed even if SMTP or prefs checks fail.
+    try {
+      await sendRevealReadyEmailsForCycle(cycleId);
+    } catch (emailError) {
+      console.error(
+        "[admin] revealMarketPulseCycleAction reveal emails failed:",
+        emailError,
+      );
+    }
+
+    try {
+      await sendWinnerEmailForCycle(cycleId);
+    } catch (emailError) {
+      console.error(
+        "[admin] revealMarketPulseCycleAction winner email failed:",
+        emailError,
+      );
+    }
   } catch (error) {
     console.error("[admin] revealMarketPulseCycleAction scoring failed:", error);
     extraWarning =

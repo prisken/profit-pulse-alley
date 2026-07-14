@@ -40,6 +40,7 @@ import { gateRuntimeClosedPageData } from "@/lib/market-pulse/play-page-state";
 import { findEarliestFuturePublishedCardReleaseAt } from "@/lib/market-pulse/playable-card";
 import { toMarketPulseSwipeCardData } from "@/lib/market-pulse/swipe-card";
 import type { MarketPulseSwipeCardData } from "@/lib/market-pulse/types";
+import { getOrCreateUserNotificationPreference } from "@/lib/notifications/notification-preferences";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -87,6 +88,11 @@ export type MarketPulsePlayPageData = {
   nextCycle: MarketPulseNextCycleStatus;
   /** Earliest future published-card release in the active cycle (no_card_today only). */
   nextCardReleaseAtIso: string | null;
+  /**
+   * Reminder opt-in for the signed-in user. `null` for guests.
+   * Defaults false when authenticated and preferences cannot be loaded.
+   */
+  marketPulseRemindersEnabled: boolean | null;
   acquisition: PlayPageAcquisitionState;
 };
 
@@ -259,6 +265,7 @@ function buildPreLaunchPageData(
     leaderboardRevealed: false,
     nextCycle: { status: "tbc" },
     nextCardReleaseAtIso: null,
+    marketPulseRemindersEnabled: null,
     acquisition: EMPTY_PLAY_PAGE_ACQUISITION,
     ...emptyPlaySlots(),
   };
@@ -296,6 +303,7 @@ function buildBetweenCyclesPageData(
     leaderboardRevealed: false,
     nextCycle,
     nextCardReleaseAtIso: null,
+    marketPulseRemindersEnabled: null,
     acquisition: EMPTY_PLAY_PAGE_ACQUISITION,
     ...emptyPlaySlots(),
   };
@@ -325,9 +333,24 @@ export async function getMarketPulsePlayPageData(
   const isAuthenticated = Boolean(userId);
   const role = session?.user?.role;
 
+  let marketPulseRemindersEnabled: boolean | null = null;
+  if (userId) {
+    try {
+      const preference = await getOrCreateUserNotificationPreference(userId);
+      marketPulseRemindersEnabled = preference.marketPulseRemindersEnabled;
+    } catch (error) {
+      console.error(
+        "[market-pulse/play-data] Failed to load notification preferences:",
+        error,
+      );
+      marketPulseRemindersEnabled = false;
+    }
+  }
+
   if (!canAccessMarketPulsePlay(role, now)) {
     return {
       ...buildPreLaunchPageData(isAuthenticated, now),
+      marketPulseRemindersEnabled,
       acquisition: EMPTY_PLAY_PAGE_ACQUISITION,
     };
   }
@@ -346,9 +369,20 @@ export async function getMarketPulsePlayPageData(
   }
 
   const finalize = (
-    data: Omit<MarketPulsePlayPageData, "runtimeOpen" | "acquisition">,
+    data: Omit<
+      MarketPulsePlayPageData,
+      "runtimeOpen" | "acquisition" | "marketPulseRemindersEnabled"
+    >,
   ): MarketPulsePlayPageData =>
-    gateRuntimeClosedPageData({ ...data, runtimeOpen, acquisition }, runtimeOpen);
+    gateRuntimeClosedPageData(
+      {
+        ...data,
+        runtimeOpen,
+        acquisition,
+        marketPulseRemindersEnabled,
+      },
+      runtimeOpen,
+    );
 
   const nextCycle = isDatabaseConfigured()
     ? await loadPlayNextCycle(now)

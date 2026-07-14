@@ -6,6 +6,7 @@ import { CalendarOff, Loader2 } from "lucide-react";
 
 import DecisionLockedCard, {
   type DecisionLockedCardContext,
+  type DecisionLockedCardProps,
 } from "@/components/market-pulse/DecisionLockedCard";
 import {
   MP_FOCUS_RING,
@@ -25,6 +26,7 @@ export type MarketPulseRestCardProps = {
   disabled?: boolean;
   showClaimButton?: boolean;
   lockedCycleContext?: DecisionLockedCardContext;
+  remindersOptIn?: DecisionLockedCardProps["remindersOptIn"];
   className?: string;
 };
 
@@ -35,6 +37,7 @@ export default function MarketPulseRestCard({
   disabled = false,
   showClaimButton = true,
   lockedCycleContext,
+  remindersOptIn,
   className = "",
 }: MarketPulseRestCardProps) {
   const { t } = useTranslations();
@@ -76,6 +79,7 @@ export default function MarketPulseRestCard({
         <DecisionLockedCard
           decision="ACKNOWLEDGED"
           cycleContext={lockedCycleContext}
+          remindersOptIn={remindersOptIn}
         />
       </div>
     );

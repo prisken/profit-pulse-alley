@@ -6,11 +6,17 @@ import { ArrowRight, Trophy } from "lucide-react";
 
 import { auth } from "@/auth";
 import ProfileContactNumberCard from "@/components/auth/ProfileContactNumberCard";
+import ProfileNotificationPreferencesCard from "@/components/auth/ProfileNotificationPreferencesCard";
 import { signOutAction } from "@/lib/auth-actions";
 import { prisma } from "@/lib/prisma";
 import { getServerSiteLocale, getServerTranslations } from "@/lib/i18n/server";
 import { translate, translateWith } from "@/lib/i18n/messages";
 import type { SiteLocale } from "@/lib/i18n/locales";
+import {
+  DEFAULT_PROFILE_NOTIFICATION_PREFERENCES,
+  loadProfileNotificationPreferences,
+  type ProfileNotificationPreferences,
+} from "@/lib/notifications/profile-notification-preferences";
 import {
   formatMarketPulseHistoryCycleLabel,
   getUserMarketPulseHistory,
@@ -108,6 +114,8 @@ export default async function ProfilePage() {
   const displayName = user.name?.trim() || t("auth.profile.memberFallback");
 
   let contactNumber: string | null = null;
+  let notificationPreferences: ProfileNotificationPreferences =
+    DEFAULT_PROFILE_NOTIFICATION_PREFERENCES;
 
   try {
     const profileUser = await prisma.user.findUnique({
@@ -117,6 +125,12 @@ export default async function ProfilePage() {
     contactNumber = profileUser?.contactNumber ?? null;
   } catch (error) {
     console.error("[profile] Failed to load contact number:", error);
+  }
+
+  try {
+    notificationPreferences = await loadProfileNotificationPreferences(user.id);
+  } catch (error) {
+    console.error("[profile] Failed to load notification preferences:", error);
   }
 
   let gameScores: MarketPulseHistoryEntry[] = [];
@@ -244,6 +258,10 @@ export default async function ProfilePage() {
       </section>
 
       <ProfileContactNumberCard initialContactNumber={contactNumber} />
+
+      <ProfileNotificationPreferencesCard
+        initialPreferences={notificationPreferences}
+      />
 
       <section aria-labelledby="profile-details-heading" className={cardClass}>
         <h2

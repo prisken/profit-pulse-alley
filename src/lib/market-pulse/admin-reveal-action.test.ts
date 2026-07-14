@@ -17,6 +17,14 @@ const serverMocks = vi.hoisted(() => ({
   calculateAndPersistCycleScores: vi.fn(),
 }));
 
+const revealEmailMocks = vi.hoisted(() => ({
+  sendRevealReadyEmailsForCycle: vi.fn(),
+}));
+
+const winnerEmailMocks = vi.hoisted(() => ({
+  sendWinnerEmailForCycle: vi.fn(),
+}));
+
 vi.mock("server-only", () => ({}));
 
 vi.mock("next/cache", () => ({
@@ -35,6 +43,14 @@ vi.mock("@/lib/market-pulse/server", () => ({
   calculateAndPersistCycleScores: serverMocks.calculateAndPersistCycleScores,
   getMarketPulseLeaderboard: vi.fn(),
   isMarketPulseCycleRevealed: vi.fn(),
+}));
+
+vi.mock("@/lib/notifications/reveal-email", () => ({
+  sendRevealReadyEmailsForCycle: revealEmailMocks.sendRevealReadyEmailsForCycle,
+}));
+
+vi.mock("@/lib/notifications/winner-email", () => ({
+  sendWinnerEmailForCycle: winnerEmailMocks.sendWinnerEmailForCycle,
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -86,6 +102,14 @@ describe("revealMarketPulseCycleAction PPA safety", () => {
       streakBonusPoints: 0,
       totalPoints: 80,
     });
+    revealEmailMocks.sendRevealReadyEmailsForCycle.mockResolvedValue({
+      cycleId: CYCLE_ID,
+      attempted: 1,
+      sent: 1,
+      skipped: 0,
+      failed: 0,
+    });
+    winnerEmailMocks.sendWinnerEmailForCycle.mockResolvedValue({ ok: true });
   });
 
   afterEach(() => {
@@ -124,6 +148,8 @@ describe("revealMarketPulseCycleAction PPA safety", () => {
     }
     expect(prismaMocks.transaction).not.toHaveBeenCalled();
     expect(serverMocks.calculateAndPersistCycleScores).not.toHaveBeenCalled();
+    expect(revealEmailMocks.sendRevealReadyEmailsForCycle).not.toHaveBeenCalled();
+    expect(winnerEmailMocks.sendWinnerEmailForCycle).not.toHaveBeenCalled();
   });
 
   it("reveals and scores when all published cards have complete locked PPA", async () => {
@@ -137,5 +163,38 @@ describe("revealMarketPulseCycleAction PPA safety", () => {
     expect(serverMocks.calculateAndPersistCycleScores).toHaveBeenCalledWith(
       CYCLE_ID,
     );
+    expect(revealEmailMocks.sendRevealReadyEmailsForCycle).toHaveBeenCalledWith(
+      CYCLE_ID,
+    );
+    expect(winnerEmailMocks.sendWinnerEmailForCycle).toHaveBeenCalledWith(
+      CYCLE_ID,
+    );
+  });
+
+  it("still succeeds when reveal email sending fails", async () => {
+    revealEmailMocks.sendRevealReadyEmailsForCycle.mockRejectedValue(
+      new Error("smtp exploded"),
+    );
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await revealMarketPulseCycleAction(CYCLE_ID);
+
+    expect(result.ok).toBe(true);
+    expect(serverMocks.calculateAndPersistCycleScores).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it("still succeeds when winner email sending fails", async () => {
+    winnerEmailMocks.sendWinnerEmailForCycle.mockRejectedValue(
+      new Error("winner smtp exploded"),
+    );
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await revealMarketPulseCycleAction(CYCLE_ID);
+
+    expect(result.ok).toBe(true);
+    expect(serverMocks.calculateAndPersistCycleScores).toHaveBeenCalled();
+    expect(revealEmailMocks.sendRevealReadyEmailsForCycle).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 });

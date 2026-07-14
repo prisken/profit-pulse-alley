@@ -365,6 +365,22 @@ export const enMessages = {
   "legal.privacy.link.contest": "Contest Rules",
   "meta.privacy.title": "Privacy Policy | Profit Pulse Ally",
   "meta.privacy.description": "How Profit Pulse Ally handles your personal data.",
+  "meta.unsubscribe.title": "Unsubscribe | Profit Pulse Ally",
+  "meta.unsubscribe.description":
+    "Unsubscribe from non-essential Profit Pulse Ally emails.",
+  "unsubscribe.title": "Email unsubscribe",
+  "unsubscribe.success":
+    "You have been unsubscribed from non-essential emails.",
+  "unsubscribe.already":
+    "You were already unsubscribed from non-essential emails.",
+  "unsubscribe.failed":
+    "We could not process this unsubscribe link. It may be invalid or expired.",
+  "unsubscribe.expired":
+    "This unsubscribe link has expired. Sign in to manage email preferences on your profile.",
+  "unsubscribe.transactionalNote":
+    "You may still receive transactional prize or account emails when necessary.",
+  "unsubscribe.manageProfile": "Manage email preferences",
+  "unsubscribe.backHome": "Back to home",
 
   "legal.disclaimer.title": "Investment Disclaimer",
   "legal.disclaimer.noAdviceHeading": "No Financial Advice",

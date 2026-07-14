@@ -23,6 +23,7 @@ import MarketPulseLogo from "@/components/market-pulse/MarketPulseLogo";
 import MarketPulseRestCard from "@/components/market-pulse/MarketPulseRestCard";
 import MarketPulseSwipeCard from "@/components/market-pulse/MarketPulseSwipeCard";
 import PlayStatusCard from "@/components/market-pulse/PlayStatusCard";
+import MarketPulseRemindersOptInCta from "@/components/market-pulse/MarketPulseRemindersOptInCta";
 import type { DecisionLockedCardContext } from "@/components/market-pulse/DecisionLockedCard";
 import {
   MarketPulseGlowBackground,
@@ -50,6 +51,7 @@ import type { MarketPulsePlayPageData } from "@/lib/market-pulse/play-data";
 import {
   applyPlayBlockedStateCopy,
   resolvePlayBlockedStateCopy,
+  shouldOfferPlayRemindersOptIn,
 } from "@/lib/market-pulse/play-empty-state";
 import { MARKET_PULSE_EASE } from "@/lib/market-pulse/motion";
 import { submitMarketPulseDecisionAction } from "@/lib/market-pulse/player-actions";
@@ -188,6 +190,21 @@ function PlayNonPlayableState({
     t,
   );
 
+  const showRemindersOptIn = shouldOfferPlayRemindersOptIn(
+    data.status,
+    data.nextCycle,
+    data.nextCardReleaseAtIso,
+  );
+
+  const remindersCta = showRemindersOptIn ? (
+    <MarketPulseRemindersOptInCta
+      className="mt-4"
+      isAuthenticated={data.isAuthenticated}
+      remindersEnabled={data.marketPulseRemindersEnabled}
+      loginHref={loginHref}
+    />
+  ) : null;
+
   if (data.status === "pre_launch") {
     return (
       <div className="space-y-4">
@@ -283,30 +300,33 @@ function PlayNonPlayableState({
 
   if (data.status === "between_cycles") {
     return (
-      <PlayStatusCard
-        icon={CalendarClock}
-        accent="zinc"
-        title={blockedCopy.title}
-        body={blockedCopy.body}
-        detail={blockedCopy.detail}
-        ctas={[
-          {
-            label: t("mp.play.state.noCycle.cta.leaderboard"),
-            href: "/market-pulse/leaderboard",
-            variant: "primary",
-          },
-          {
-            label: t("mp.hub.lobby.secondary.rules"),
-            href: "/market-pulse/rules",
-            variant: "secondary",
-          },
-          {
-            label: t("mp.play.state.noCycle.cta.hub"),
-            href: "/market-pulse",
-            variant: "secondary",
-          },
-        ]}
-      />
+      <div className="space-y-0">
+        <PlayStatusCard
+          icon={CalendarClock}
+          accent="zinc"
+          title={blockedCopy.title}
+          body={blockedCopy.body}
+          detail={blockedCopy.detail}
+          ctas={[
+            {
+              label: t("mp.play.state.noCycle.cta.leaderboard"),
+              href: "/market-pulse/leaderboard",
+              variant: "primary",
+            },
+            {
+              label: t("mp.hub.lobby.secondary.rules"),
+              href: "/market-pulse/rules",
+              variant: "secondary",
+            },
+            {
+              label: t("mp.play.state.noCycle.cta.hub"),
+              href: "/market-pulse",
+              variant: "secondary",
+            },
+          ]}
+        />
+        {remindersCta}
+      </div>
     );
   }
 
@@ -320,74 +340,83 @@ function PlayNonPlayableState({
           : undefined;
 
     return (
-      <PlayStatusCard
-        icon={PauseCircle}
-        accent="amber"
-        title={blockedCopy.title}
-        body={blockedCopy.body}
-        detail={issueDetail ?? blockedCopy.detail}
-        ctas={[
-          {
-            label: t("mp.play.state.cycleUnavailable.cta.leaderboard"),
-            href: "/market-pulse/leaderboard",
-            variant: "primary",
-          },
-          {
-            label: t("mp.play.state.cycleUnavailable.cta.hub"),
-            href: "/market-pulse",
-            variant: "secondary",
-          },
-        ]}
-      />
+      <div className="space-y-0">
+        <PlayStatusCard
+          icon={PauseCircle}
+          accent="amber"
+          title={blockedCopy.title}
+          body={blockedCopy.body}
+          detail={issueDetail ?? blockedCopy.detail}
+          ctas={[
+            {
+              label: t("mp.play.state.cycleUnavailable.cta.leaderboard"),
+              href: "/market-pulse/leaderboard",
+              variant: "primary",
+            },
+            {
+              label: t("mp.play.state.cycleUnavailable.cta.hub"),
+              href: "/market-pulse",
+              variant: "secondary",
+            },
+          ]}
+        />
+        {remindersCta}
+      </div>
     );
   }
 
   if (data.status === "runtime_closed") {
     return (
-      <PlayStatusCard
-        icon={Wrench}
-        accent="zinc"
-        title={blockedCopy.title}
-        body={blockedCopy.body}
-        detail={blockedCopy.detail}
-        ctas={[
-          {
-            label: t("mp.play.state.runtimeClosed.cta.leaderboard"),
-            href: "/market-pulse/leaderboard",
-            variant: "primary",
-          },
-          {
-            label: t("mp.play.state.runtimeClosed.cta.hub"),
-            href: "/market-pulse",
-            variant: "secondary",
-          },
-        ]}
-      />
+      <div className="space-y-0">
+        <PlayStatusCard
+          icon={Wrench}
+          accent="zinc"
+          title={blockedCopy.title}
+          body={blockedCopy.body}
+          detail={blockedCopy.detail}
+          ctas={[
+            {
+              label: t("mp.play.state.runtimeClosed.cta.leaderboard"),
+              href: "/market-pulse/leaderboard",
+              variant: "primary",
+            },
+            {
+              label: t("mp.play.state.runtimeClosed.cta.hub"),
+              href: "/market-pulse",
+              variant: "secondary",
+            },
+          ]}
+        />
+        {remindersCta}
+      </div>
     );
   }
 
   if (data.status === "no_card_today") {
     return (
-      <PlayStatusCard
-        icon={Sparkles}
-        accent="emerald"
-        showSignalPreview
-        title={blockedCopy.title}
-        body={blockedCopy.body}
-        detail={blockedCopy.detail}
-        ctas={[
-          {
-            label: t("mp.play.state.noCard.cta.leaderboard"),
-            href: "/market-pulse/leaderboard",
-            variant: "primary",
-          },
-          {
-            label: t("mp.play.state.noCard.cta.hub"),
-            href: "/market-pulse",
-            variant: "secondary",
-          },
-        ]}
-      />
+      <div className="space-y-0">
+        <PlayStatusCard
+          icon={Sparkles}
+          accent="emerald"
+          showSignalPreview
+          title={blockedCopy.title}
+          body={blockedCopy.body}
+          detail={blockedCopy.detail}
+          ctas={[
+            {
+              label: t("mp.play.state.noCard.cta.leaderboard"),
+              href: "/market-pulse/leaderboard",
+              variant: "primary",
+            },
+            {
+              label: t("mp.play.state.noCard.cta.hub"),
+              href: "/market-pulse",
+              variant: "secondary",
+            },
+          ]}
+        />
+        {remindersCta}
+      </div>
     );
   }
 
@@ -684,6 +713,7 @@ function PlayActiveCard({
   onSubmit,
   revealMessage,
   lockedCycleContext,
+  remindersOptIn,
   analyticsContext,
   className,
 }: Readonly<{
@@ -693,6 +723,11 @@ function PlayActiveCard({
   onSubmit: (decision: MarketPulsePlayerChoice) => Promise<MarketPulseSwipeSubmitResult>;
   revealMessage: string;
   lockedCycleContext: DecisionLockedCardContext;
+  remindersOptIn: {
+    isAuthenticated: boolean;
+    remindersEnabled: boolean | null;
+    loginHref: string;
+  };
   analyticsContext: { cycleId?: string; dayIndex?: number };
   className?: string;
 }>) {
@@ -705,6 +740,7 @@ function PlayActiveCard({
         disabled={status === "locked"}
         onClaim={() => onSubmit("ACKNOWLEDGED")}
         lockedCycleContext={lockedCycleContext}
+        remindersOptIn={remindersOptIn}
       />
     );
   }
@@ -718,10 +754,12 @@ function PlayActiveCard({
           ? lockedDecision
           : null
       }
+      disabled={status === "locked"}
       analyticsContext={analyticsContext}
       onSubmit={(decision: MarketPulseDecision) => onSubmit(decision)}
       revealMessage={revealMessage}
       lockedCycleContext={lockedCycleContext}
+      remindersOptIn={remindersOptIn}
     />
   );
 }
@@ -940,6 +978,11 @@ export default function MarketPulsePlayExperience({
                   onSubmit={handleSubmit}
                   revealMessage={revealMessage}
                   lockedCycleContext={lockedCycleContext}
+                  remindersOptIn={{
+                    isAuthenticated: data.isAuthenticated,
+                    remindersEnabled: data.marketPulseRemindersEnabled,
+                    loginHref,
+                  }}
                 />
                 {showLearningInterestPrompt ? <LearningInterestPrompt /> : null}
               </motion.div>

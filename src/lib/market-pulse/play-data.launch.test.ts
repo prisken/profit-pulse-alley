@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   getMarketPulseLeaderboard: vi.fn(),
   loadMarketPulseNextCycleStatus: vi.fn(),
   shouldShowLearningInterestPrompt: vi.fn(),
+  getOrCreateUserNotificationPreference: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
@@ -45,6 +46,11 @@ vi.mock("@/lib/market-pulse/server", () => ({
 
 vi.mock("@/lib/acquisition/profile", () => ({
   shouldShowLearningInterestPrompt: mocks.shouldShowLearningInterestPrompt,
+}));
+
+vi.mock("@/lib/notifications/notification-preferences", () => ({
+  getOrCreateUserNotificationPreference:
+    mocks.getOrCreateUserNotificationPreference,
 }));
 
 import { getMarketPulsePlayPageData } from "@/lib/market-pulse/play-data";
@@ -122,6 +128,13 @@ describe("Launch smoke — public play gates", () => {
     mocks.loadMarketPulseNextCycleStatus.mockResolvedValue({ status: "tbc" });
     mocks.auth.mockResolvedValue(null);
     mocks.shouldShowLearningInterestPrompt.mockResolvedValue(false);
+    mocks.getOrCreateUserNotificationPreference.mockResolvedValue({
+      marketPulseRemindersEnabled: false,
+      revealNotificationsEnabled: true,
+      eventUpdatesEnabled: false,
+      learningDigestEnabled: false,
+      unsubscribedAt: null,
+    });
   });
 
   afterEach(() => {

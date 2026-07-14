@@ -31,6 +31,7 @@ import {
 
 import DecisionLockedCard, {
   type DecisionLockedCardContext,
+  type DecisionLockedCardProps,
 } from "@/components/market-pulse/DecisionLockedCard";
 import { MP_FOCUS_RING } from "@/components/market-pulse/MarketPulseVisualPrimitives";
 import { useLocale, useTranslations } from "@/components/providers/LocaleProvider";
@@ -83,6 +84,7 @@ export type MarketPulseSwipeCardProps = {
   analyticsContext?: MarketPulseSwipeCardAnalyticsContext;
   revealMessage?: string;
   lockedCycleContext?: DecisionLockedCardContext;
+  remindersOptIn?: DecisionLockedCardProps["remindersOptIn"];
   className?: string;
 };
 
@@ -675,6 +677,7 @@ export default function MarketPulseSwipeCard({
   analyticsContext,
   revealMessage,
   lockedCycleContext,
+  remindersOptIn,
   className = "",
 }: MarketPulseSwipeCardProps) {
   const { t, locale } = useLocale();
@@ -897,6 +900,7 @@ export default function MarketPulseSwipeCard({
           decision={lockedDecision}
           revealMessage={revealMessage ?? t("mp.play.reveal.default")}
           cycleContext={lockedCycleContext}
+          remindersOptIn={remindersOptIn}
         />
       </div>
     );

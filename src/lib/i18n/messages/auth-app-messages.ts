@@ -161,6 +161,33 @@ export const authAppEnMessages = {
   "auth.profile.contact.update": "Update contact number",
   "auth.profile.contact.cancel": "Cancel",
   "auth.profile.contact.saved": "Contact number saved.",
+  "auth.profile.emailPrefs.title": "Email preferences",
+  "auth.profile.emailPrefs.description":
+    "Choose which Profit Pulse Ally emails you want to receive. Game reminders are optional and off by default.",
+  "auth.profile.emailPrefs.reminders.label": "Market Pulse game reminders",
+  "auth.profile.emailPrefs.reminders.help":
+    "We’ll only email when there’s a signal or cycle to come back for. You can turn this off anytime.",
+  "auth.profile.emailPrefs.reminders.optInPrompt": "Want a reminder next time?",
+  "auth.profile.emailPrefs.reminders.optInButton":
+    "Turn on Market Pulse reminders",
+  "auth.profile.emailPrefs.reminders.enabled": "Market Pulse reminders are on.",
+  "auth.profile.emailPrefs.reveal.label": "Reveal notifications",
+  "auth.profile.emailPrefs.reveal.help":
+    "Tell me when PPA Insight and my cycle review are ready.",
+  "auth.profile.emailPrefs.events.label": "Event invitations",
+  "auth.profile.emailPrefs.events.help":
+    "Send me relevant PPA event updates.",
+  "auth.profile.emailPrefs.digest.label": "Learning digest",
+  "auth.profile.emailPrefs.digest.help":
+    "Send occasional investing and planning education from PPA.",
+  "auth.profile.emailPrefs.transactionalNote":
+    "Transactional prize/account emails may still be sent when necessary.",
+  "auth.profile.emailPrefs.save": "Save preferences",
+  "auth.profile.emailPrefs.saving": "Saving…",
+  "auth.profile.emailPrefs.saved": "Email preferences saved.",
+  "auth.profile.emailPrefs.saveFailed":
+    "Could not save your email preferences. Please try again.",
+  "auth.profile.emailPrefs.invalid": "Invalid notification preferences.",
 
   "auth.admin.badge": "Admin",
   "auth.admin.dashboardTitle": "Admin Dashboard",
@@ -1167,6 +1194,30 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.profile.contact.update": "更新聯絡電話",
   "auth.profile.contact.cancel": "取消",
   "auth.profile.contact.saved": "聯絡電話已儲存。",
+  "auth.profile.emailPrefs.title": "電郵偏好設定",
+  "auth.profile.emailPrefs.description":
+    "選擇你想收到的 Profit Pulse Ally 電郵。遊戲提醒為選擇性，預設關閉。",
+  "auth.profile.emailPrefs.reminders.label": "Market Pulse 遊戲提醒",
+  "auth.profile.emailPrefs.reminders.help":
+    "我們只會在有新訊號或下一期挑戰時寄電郵提醒你。你可以隨時關閉。",
+  "auth.profile.emailPrefs.reminders.optInPrompt": "想下次收到提醒嗎？",
+  "auth.profile.emailPrefs.reminders.optInButton": "開啟 Market Pulse 提醒",
+  "auth.profile.emailPrefs.reminders.enabled": "已開啟 Market Pulse 提醒。",
+  "auth.profile.emailPrefs.reveal.label": "揭曉通知",
+  "auth.profile.emailPrefs.reveal.help":
+    "PPA 觀點及我的週期回顧準備好時通知我。",
+  "auth.profile.emailPrefs.events.label": "活動邀請",
+  "auth.profile.emailPrefs.events.help": "向我發送相關的 PPA 活動更新。",
+  "auth.profile.emailPrefs.digest.label": "學習精選",
+  "auth.profile.emailPrefs.digest.help":
+    "偶爾發送 PPA 的投資與規劃教育內容。",
+  "auth.profile.emailPrefs.transactionalNote":
+    "必要時仍可能發送獎品／帳戶相關的交易性電郵。",
+  "auth.profile.emailPrefs.save": "儲存偏好",
+  "auth.profile.emailPrefs.saving": "儲存中…",
+  "auth.profile.emailPrefs.saved": "電郵偏好已儲存。",
+  "auth.profile.emailPrefs.saveFailed": "無法儲存電郵偏好，請再試一次。",
+  "auth.profile.emailPrefs.invalid": "通知偏好無效。",
 
   "auth.admin.badge": "管理",
   "auth.admin.dashboardTitle": "管理後台",

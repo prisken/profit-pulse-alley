@@ -8,6 +8,7 @@ import {
   applyPlayBlockedStateCopy,
   formatPlayScheduleDateWithHkt,
   resolvePlayBlockedStateCopy,
+  shouldOfferPlayRemindersOptIn,
 } from "@/lib/market-pulse/play-empty-state";
 
 const t = (key: keyof typeof marketPulseEnMessages) => marketPulseEnMessages[key];
@@ -174,5 +175,51 @@ describe("next-cycle privacy in play empty state", () => {
     expect(serialized).not.toContain("ppaSignal");
     expect(serialized).not.toContain("ppaInsight");
     expect(serialized).not.toContain("newsBody");
+  });
+});
+
+describe("shouldOfferPlayRemindersOptIn", () => {
+  const scheduledCycle = {
+    status: "available" as const,
+    cycleId: "cycle-aug",
+    name: "August 2026",
+    startsAtIso: FUTURE_START,
+    endsAtIso: null,
+    revealAtIso: null,
+    firstCardReleaseAtIso: null,
+  };
+
+  it("is true when next cycle start is known on between_cycles", () => {
+    expect(
+      shouldOfferPlayRemindersOptIn("between_cycles", scheduledCycle, null, NOW),
+    ).toBe(true);
+  });
+
+  it("is true when next card unlock time is known", () => {
+    expect(
+      shouldOfferPlayRemindersOptIn(
+        "no_card_today",
+        { status: "tbc" },
+        FUTURE_CARD,
+        NOW,
+      ),
+    ).toBe(true);
+  });
+
+  it("is false for TBC-only between_cycles", () => {
+    expect(
+      shouldOfferPlayRemindersOptIn("between_cycles", { status: "tbc" }, null, NOW),
+    ).toBe(false);
+  });
+
+  it("is false for no_card_today without a future unlock", () => {
+    expect(
+      shouldOfferPlayRemindersOptIn(
+        "no_card_today",
+        { status: "tbc" },
+        null,
+        NOW,
+      ),
+    ).toBe(false);
   });
 });
