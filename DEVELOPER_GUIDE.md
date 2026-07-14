@@ -1342,8 +1342,8 @@ Files: `prisma/seed.ts` (runner), `prisma/seed-guards.ts` (production block), `p
 | `DATABASE_URL` | Auto-injected | Vercel Prisma Postgres (do not use as Prisma `url` — wrong protocol) |
 | `PRISMA_DATABASE_URL` | Auto-injected | Prisma Postgres integration (`prisma+postgres://` format) |
 | `EMAIL_SERVER` | Auth magic link + product email | Nodemailer SMTP URL (e.g. Zoho `smtp://user:pass@host:587`) |
-| `EMAIL_FROM` | Auth magic link + product email | From address; display name OK (`Profit Pulse Ally <info@profitpulseally.com>`) |
-| `EMAIL_REPLY_TO` | Product email (optional) | Default Reply-To (e.g. `prisken@profitpulseally.com`) |
+| `EMAIL_FROM` | Auth magic link + product email | From address; display name OK (`Profit Pulse Ally <priskenlo@profitpulseally.com>`) |
+| `EMAIL_REPLY_TO` | Product email (optional) | Default Reply-To (e.g. `priskenlo@profitpulseally.com`) |
 | `KV_REST_API_URL` | Game settings (Market Pulse) | `@vercel/kv` |
 | `KV_REST_API_TOKEN` | Game settings (Market Pulse) | `@vercel/kv` |
 

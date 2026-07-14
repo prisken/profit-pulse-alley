@@ -6,8 +6,8 @@
  *
  * Requires in .env.local (or .env):
  *   EMAIL_SERVER=smtp://USER:APP_PASSWORD@smtp.zoho.com:587
- *   EMAIL_FROM=Profit Pulse Ally <info@profitpulseally.com>
- *   EMAIL_REPLY_TO=prisken@profitpulseally.com
+ *   EMAIL_FROM=Profit Pulse Ally <priskenlo@profitpulseally.com>
+ *   EMAIL_REPLY_TO=priskenlo@profitpulseally.com
  *
  * Does not print message bodies or SMTP passwords.
  * Mirrors src/lib/email/email-sender.ts (cannot import that module from a

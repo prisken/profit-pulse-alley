@@ -50,8 +50,8 @@ describe("sendProductEmail", () => {
   it("applies EMAIL_REPLY_TO when replyTo is not provided", async () => {
     process.env.EMAIL_SERVER = "smtp://user:pass@smtp.zoho.com:587";
     process.env.EMAIL_FROM =
-      "Profit Pulse Ally <info@profitpulseally.com>";
-    process.env.EMAIL_REPLY_TO = "prisken@profitpulseally.com";
+      "Profit Pulse Ally <priskenlo@profitpulseally.com>";
+    process.env.EMAIL_REPLY_TO = "priskenlo@profitpulseally.com";
     mocks.sendMail.mockResolvedValue({ messageId: "<msg-1@zoho>" });
 
     const result = await sendProductEmail({
@@ -67,18 +67,18 @@ describe("sendProductEmail", () => {
     );
     expect(mocks.sendMail).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: "Profit Pulse Ally <info@profitpulseally.com>",
+        from: "Profit Pulse Ally <priskenlo@profitpulseally.com>",
         to: "player@example.com",
         subject: "Reveal is live",
-        replyTo: "prisken@profitpulseally.com",
+        replyTo: "priskenlo@profitpulseally.com",
       }),
     );
   });
 
   it("prefers explicit replyTo over EMAIL_REPLY_TO", async () => {
     process.env.EMAIL_SERVER = "smtp://user:pass@smtp.zoho.com:587";
-    process.env.EMAIL_FROM = "info@profitpulseally.com";
-    process.env.EMAIL_REPLY_TO = "prisken@profitpulseally.com";
+    process.env.EMAIL_FROM = "priskenlo@profitpulseally.com";
+    process.env.EMAIL_REPLY_TO = "priskenlo@profitpulseally.com";
     mocks.sendMail.mockResolvedValue({ messageId: "<msg-2@zoho>" });
 
     await sendProductEmail({
@@ -97,7 +97,7 @@ describe("sendProductEmail", () => {
 
   it("returns a safe error result when transport fails", async () => {
     process.env.EMAIL_SERVER = "smtp://user:pass@smtp.zoho.com:587";
-    process.env.EMAIL_FROM = "info@profitpulseally.com";
+    process.env.EMAIL_FROM = "priskenlo@profitpulseally.com";
     mocks.sendMail.mockRejectedValue(new Error("SMTP connection timed out"));
 
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
