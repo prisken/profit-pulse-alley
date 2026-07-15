@@ -1,17 +1,15 @@
 import type { EventDetailData } from "@/lib/events/types";
 
-/** July 2026 sales & marketing edition — coming soon. */
+/** July 2026 Lunch & Learn edition — coming soon. */
 export const fortifySalesMarketingEvent: EventDetailData = {
-  pageTitle:
-    "Fortify Your Future / Sales and Marketing | Profit Pulse Ally",
-  title:
-    "Fortify Your Future / Sales and Marketing / 守業增值創未來 / 銷售與市場推廣",
+  pageTitle: "Fortify Your Future (Lunch & Learn) | Profit Pulse Ally",
+  title: "Fortify Your Future (Lunch & Learn) / 守業增值創未來（Lunch & Learn）",
   subtitle:
-    "An exclusive session on sales and marketing for Hong Kong's ambitious founders. Full programme details to be announced.",
+    "An exclusive Lunch & Learn for Hong Kong's ambitious founders. Full programme details to be announced.",
   highlights: [
     {
-      label: "Sales & Marketing Focus:",
-      text: "Practical strategies to grow revenue and reach new customers.",
+      label: "Lunch & Learn:",
+      text: "A focused midday session designed for busy founders.",
     },
     {
       label: "Expert Speakers:",
@@ -41,12 +39,12 @@ export const fortifySalesMarketingEvent: EventDetailData = {
   ],
   venueDescription:
     "Venue to be confirmed. Check back for updates on location and registration.",
-  eventDateTime: "July 17, 2026",
+  eventDateTime: "July",
   eventLocation: "TBC",
   eventCost: "TBC",
   heroImage: {
     mobileSrc: "/images/fortify-hero-chess-king.png",
     desktopSrc: "/images/fortify-hero-1600.png",
-    alt: "Fortify Your Future / Sales and Marketing — coming soon",
+    alt: "Fortify Your Future (Lunch & Learn) — coming soon",
   },
 };

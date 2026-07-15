@@ -96,6 +96,8 @@ export const zhHantMessages: Messages = {
   "home.hero.simulator.title": "PULSE SIMULATOR",
   "home.hero.simulator.badgeDemo": "示範",
   "home.hero.simulator.sampleLabel": "示範訊號",
+  "home.hero.simulator.sampleTicker": "HKRT",
+  "home.hero.simulator.imageAlt": "Market Pulse 模擬器示範卡用的市場圖表樣本",
   "home.hero.simulator.headline": "香港零售數據在科技擴張復甦下急升。",
   "home.hero.simulator.chip.market": "HK MARKET",
   "home.hero.simulator.chip.cycle": "6-DAY CYCLE",
@@ -154,6 +156,7 @@ export const zhHantMessages: Messages = {
   "home.pulseBoard.sample.player2": "示範 · 玩家 B",
   "home.pulseBoard.sample.player3": "示範 · 玩家 C",
   "home.pulseBoard.sample.scoreHidden": "—",
+  "home.pulseBoard.winnerBadge": "冠軍",
   "home.pulseBoard.cycleLabel": "{cycleName}",
   "home.pulseBoard.cta": "查看完整排行榜",
   "home.pulseBoard.ctaAria": "查看完整 Market Pulse 排行榜",
@@ -231,11 +234,12 @@ export const zhHantMessages: Messages = {
   "home.events.pastHeading": "精彩回顧",
   "home.events.guestTba": "嘉賓待定",
   "home.events.upcoming.salesMarketing.title":
-    "Fortify Your Future / Sales and Marketing",
-  "home.events.upcoming.salesMarketing.titleZh": "守業增值創未來 / 銷售與市場推廣",
+    "Fortify Your Future (Lunch & Learn)",
+  "home.events.upcoming.salesMarketing.titleZh":
+    "守業增值創未來（Lunch & Learn）",
   "home.events.upcoming.salesMarketing.subtitle":
-    "專為香港創業者而設的銷售與市場推廣策略分享，詳細內容即將公布。",
-  "home.events.upcoming.salesMarketing.date": "2026年7月17日",
+    "專為香港創業者而設的 Lunch & Learn，詳細內容即將公布。",
+  "home.events.upcoming.salesMarketing.date": "7月",
   "home.events.upcoming.salesMarketing.location": "待定",
   "home.events.past1.title": "《我兩樣都要》線下戰略會議",
   "home.events.past1.summary":
@@ -245,14 +249,7 @@ export const zhHantMessages: Messages = {
   "home.events.pastFortify.summary":
     "與 Vicky Huang 及 Marcy Chan 的爐邊對談，探討守業增值與投資策略——免費專業形象照、高質素交流及創業者洞察。",
   "home.events.pastFortify.metric": "創業者及投資者",
-  "home.events.past2.title": "零成本人生沙龍",
-  "home.events.past2.summary":
-    "實用晚會：在不犧牲日常現金流的前提下，設計被動收入來源。",
-  "home.events.past2.metric": "120+ 參加者",
-  "home.events.past3.title": "創業者融資圓桌論壇",
-  "home.events.past3.summary":
-    "早期創業者分享真實融資故事：路演、條款及首輪融資的生存之道。",
-  "home.events.past3.metric": "90+ 參加者",
+  "home.events.pastArchiveCta": "查看回顧",
 
   "events.hub.title": "Profit Pulse Ally 活動",
   "events.hub.subtitle": "為有抱負的創業者及投資者提供實用洞察與交流機會。",
@@ -262,7 +259,7 @@ export const zhHantMessages: Messages = {
   "events.hub.comingSoon": "敬請期待",
   "events.hub.archivedClosed": "已存檔 — 報名已結束",
   "events.hub.upcoming.salesMarketing.blurb":
-    "專為香港創業者而設的銷售與市場推廣策略分享，詳細內容即將公布。",
+    "專為香港創業者而設的 Lunch & Learn，詳細內容即將公布。",
 
   "home.philosophy.srHeading": "我們的理念",
   "home.philosophy.heading": "以系統思維思考",

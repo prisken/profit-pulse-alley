@@ -80,7 +80,7 @@ export default function LayoutShell({
                 width={32}
                 height={32}
                 priority
-                className="h-7 w-7 rounded-sm md:h-8 md:w-8"
+                className="h-7 w-7 object-contain md:h-8 md:w-8"
               />
               <span className="hidden text-sm sm:inline md:text-base lg:text-lg">
                 {t("common.brandName")}

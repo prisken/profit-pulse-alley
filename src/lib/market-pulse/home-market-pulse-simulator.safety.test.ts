@@ -34,8 +34,10 @@ describe("HomeMarketPulseSimulator safety (static)", () => {
     expect(source).toContain("home.hero.simulator.title");
     expect(source).toContain("home.hero.simulator.badgeDemo");
     expect(source).toContain("home.hero.simulator.sampleLabel");
-    expect(source).toContain("home.hero.simulator.disclaimer");
+    expect(source).not.toContain("home.hero.simulator.disclaimer");
     expect(source).toContain("home.hero.simulator.feedbackLocked");
+    expect(source).toContain("/images/simulator-sample-signal.jpg");
+    expect(source).toContain("useState");
   });
 
   it("does not import player actions, API handlers, or server submission logic", () => {

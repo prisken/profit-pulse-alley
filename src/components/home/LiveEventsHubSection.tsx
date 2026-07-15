@@ -1,11 +1,29 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Calendar, MapPin, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Calendar,
+  Flame,
+  MapPin,
+  Shield,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
-import type { PastEventShowcase } from "@/lib/events/home-events-hub";
+import type {
+  PastEventAccent,
+  PastEventShowcase,
+} from "@/lib/events/home-events-hub";
 import { getServerTranslations } from "@/lib/i18n/server";
-
-import { MP_FOCUS_RING, MP_HOME_SECTION, MP_PRIMARY_BTN, MP_TERMINAL_PANEL, MP_TICKER_TEXT, mergeMpClasses } from "@/lib/market-pulse/visual-primitives";
+import {
+  MP_FOCUS_RING,
+  MP_HOME_SECTION,
+  MP_METRIC_TEXT,
+  MP_PRIMARY_BTN,
+  MP_TERMINAL_PANEL,
+  MP_TICKER_TEXT,
+  mergeMpClasses,
+} from "@/lib/market-pulse/visual-primitives";
 
 const focusRing = MP_FOCUS_RING;
 
@@ -34,6 +52,148 @@ type LiveEventsHubSectionProps = Readonly<{
   upcomingEvent: LiveUpcomingEvent;
   pastEvents: PastEventShowcase[];
 }>;
+
+const PAST_ACCENT_STYLES: Record<
+  PastEventAccent,
+  {
+    card: string;
+    glow: string;
+    icon: string;
+    bar: string;
+    metric: string;
+  }
+> = {
+  pulse: {
+    card: "border-mp-pulse/25 hover:border-mp-pulse/40",
+    glow: "bg-mp-pulse/20",
+    icon: "border-mp-pulse/35 bg-mp-pulse/15 text-mp-pulse shadow-[0_0_28px_rgba(0,230,118,0.22)]",
+    bar: "from-mp-pulse via-mp-pulse/70 to-transparent",
+    metric: "text-mp-pulse/90",
+  },
+  amber: {
+    card: "border-amber-400/25 hover:border-amber-400/40",
+    glow: "bg-amber-400/15",
+    icon: "border-amber-400/40 bg-amber-400/12 text-amber-300 shadow-[0_0_28px_rgba(251,191,36,0.22)]",
+    bar: "from-amber-400 via-amber-400/70 to-transparent",
+    metric: "text-amber-300/90",
+  },
+  sky: {
+    card: "border-sky-400/20 hover:border-sky-400/35",
+    glow: "bg-sky-400/15",
+    icon: "border-sky-400/35 bg-sky-400/12 text-sky-300 shadow-[0_0_28px_rgba(56,189,248,0.2)]",
+    bar: "from-sky-400 via-sky-400/70 to-transparent",
+    metric: "text-sky-300/90",
+  },
+};
+
+const PAST_ICONS: LucideIcon[] = [Users, Flame, Shield];
+
+function PastEventCard({
+  event,
+  index,
+  archiveCta,
+}: Readonly<{
+  event: PastEventShowcase;
+  index: number;
+  archiveCta: string;
+}>) {
+  const styles = PAST_ACCENT_STYLES[event.accent];
+  const Icon = PAST_ICONS[index % PAST_ICONS.length] ?? Users;
+  const indexLabel = String(index + 1).padStart(2, "0");
+
+  const body = (
+    <>
+      <div
+        className={mergeMpClasses(
+          "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r",
+          styles.bar,
+        )}
+        aria-hidden="true"
+      />
+      <div
+        className={mergeMpClasses(
+          "pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full blur-2xl transition-opacity duration-300 group-hover:opacity-100",
+          styles.glow,
+          "opacity-70 motion-reduce:transition-none",
+        )}
+        aria-hidden="true"
+      />
+      <span
+        className={mergeMpClasses(
+          "pointer-events-none absolute -right-1 top-1 select-none text-5xl font-bold leading-none sm:text-6xl",
+          MP_METRIC_TEXT,
+          "text-white/[0.06]",
+        )}
+        aria-hidden="true"
+      >
+        {indexLabel}
+      </span>
+
+      <div className="relative flex flex-col items-start gap-4 sm:gap-5">
+        <div
+          className={mergeMpClasses(
+            "flex h-14 w-14 items-center justify-center rounded-2xl border sm:h-16 sm:w-16",
+            styles.icon,
+          )}
+        >
+          <Icon className="h-7 w-7 sm:h-8 sm:w-8" aria-hidden="true" />
+        </div>
+        <div className="min-w-0">
+          <h4 className="text-base font-bold leading-snug tracking-tight text-white sm:text-lg">
+            {event.title}
+          </h4>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-400 sm:text-[15px]">
+            {event.summary}
+          </p>
+          <p
+            className={mergeMpClasses(
+              "mt-4 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide sm:text-[13px]",
+              styles.metric,
+            )}
+          >
+            <Users className="h-3.5 w-3.5" aria-hidden="true" />
+            {event.attendeeMetric}
+          </p>
+          {event.archiveHref ? (
+            <span
+              className={mergeMpClasses(
+                "mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-300 transition-colors group-hover:text-white",
+              )}
+            >
+              {archiveCta}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </>
+  );
+
+  const cardClass = mergeMpClasses(
+    "group relative flex h-full flex-col overflow-hidden",
+    MP_TERMINAL_PANEL,
+    "bg-gradient-to-b from-white/[0.05] to-transparent p-5 transition-[border-color,box-shadow,transform] duration-300 sm:p-6",
+    "hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.35)] motion-reduce:transform-none motion-reduce:transition-none",
+    styles.card,
+    event.archiveHref ? focusRing : "",
+  );
+
+  if (event.archiveHref) {
+    return (
+      <li>
+        <Link href={event.archiveHref} className={cardClass}>
+          {body}
+        </Link>
+      </li>
+    );
+  }
+
+  return (
+    <li>
+      <article className={cardClass}>{body}</article>
+    </li>
+  );
+}
 
 export default async function LiveEventsHubSection({
   upcomingEvent,
@@ -137,11 +297,7 @@ export default async function LiveEventsHubSection({
                 </p>
               ) : null}
               <Link
-                href={
-                  upcomingEvent.kind === "event"
-                    ? upcomingEvent.registerHref
-                    : upcomingEvent.registerHref
-                }
+                href={upcomingEvent.registerHref}
                 className={mergeMpClasses(
                   MP_PRIMARY_BTN,
                   "mt-4 min-h-11 w-full px-5 py-2.5 text-sm sm:mt-6 sm:w-auto sm:px-8",
@@ -158,43 +314,15 @@ export default async function LiveEventsHubSection({
           <h3 className="text-base font-semibold text-white sm:text-xl">
             {t("home.events.pastHeading")}
           </h3>
-          <ul className="mt-3 grid gap-2.5 sm:mt-4 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5">
-            {pastEvents.map((event) => {
-              const cardBody = (
-                <>
-                  <h4 className="text-sm font-semibold leading-snug text-white group-hover:text-amber-100 sm:text-lg">
-                    {event.title}
-                  </h4>
-                  <p className="mt-2 flex-1 text-xs leading-relaxed text-zinc-400 sm:mt-3 sm:text-sm">
-                    {event.summary}
-                  </p>
-                  <p className="mt-3 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-amber-300/80 sm:mt-4 sm:text-[13px]">
-                    <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
-                    {event.attendeeMetric}
-                  </p>
-                </>
-              );
-
-              return (
-                <li key={event.title}>
-                  {event.archiveHref ? (
-                    <Link
-                      href={event.archiveHref}
-                      className={mergeMpClasses(
-                        "group flex h-full flex-col rounded-xl border border-white/10 bg-mp-obsidian-panel p-4 transition-colors hover:border-white/15 hover:bg-mp-obsidian-elevated motion-safe:hover:-translate-y-0.5 motion-reduce:transform-none sm:rounded-2xl sm:p-6",
-                        focusRing,
-                      )}
-                    >
-                      {cardBody}
-                    </Link>
-                  ) : (
-                    <article className={mergeMpClasses("flex h-full flex-col rounded-xl border border-white/10 bg-mp-obsidian-panel p-4 sm:rounded-2xl sm:p-6", MP_TERMINAL_PANEL)}>
-                      {cardBody}
-                    </article>
-                  )}
-                </li>
-              );
-            })}
+          <ul className="mt-3 grid gap-3 sm:mt-4 sm:grid-cols-2 sm:gap-4 lg:gap-5">
+            {pastEvents.map((event, index) => (
+              <PastEventCard
+                key={event.title}
+                event={event}
+                index={index}
+                archiveCta={t("home.events.pastArchiveCta")}
+              />
+            ))}
           </ul>
         </div>
       </div>

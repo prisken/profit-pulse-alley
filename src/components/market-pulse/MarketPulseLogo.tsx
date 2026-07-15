@@ -1,8 +1,8 @@
 import Image from "next/image";
 
 const LOGO_SRC = "/images/market-pulse-logo.png";
-const LOGO_WIDTH = 1024;
-const LOGO_HEIGHT = 311;
+const LOGO_WIDTH = 877;
+const LOGO_HEIGHT = 261;
 
 type MarketPulseLogoProps = Readonly<{
   variant?: "hero" | "header" | "play";

@@ -98,6 +98,9 @@ export const enMessages = {
   "home.hero.simulator.title": "PULSE SIMULATOR",
   "home.hero.simulator.badgeDemo": "Demo",
   "home.hero.simulator.sampleLabel": "Sample signal",
+  "home.hero.simulator.sampleTicker": "HKRT",
+  "home.hero.simulator.imageAlt":
+    "Sample market chart for the Market Pulse simulator demo card",
   "home.hero.simulator.headline":
     "Hong Kong retail metrics surged amid renewed tech expansion.",
   "home.hero.simulator.chip.market": "HK MARKET",
@@ -162,6 +165,7 @@ export const enMessages = {
   "home.pulseBoard.sample.player2": "Sample · Player B",
   "home.pulseBoard.sample.player3": "Sample · Player C",
   "home.pulseBoard.sample.scoreHidden": "—",
+  "home.pulseBoard.winnerBadge": "Winner",
   "home.pulseBoard.cycleLabel": "{cycleName}",
   "home.pulseBoard.cta": "View full leaderboard",
   "home.pulseBoard.ctaAria": "View the full Market Pulse leaderboard",
@@ -246,11 +250,12 @@ export const enMessages = {
   "home.events.pastHeading": "What You've Missed",
   "home.events.guestTba": "Guest Speaker TBA",
   "home.events.upcoming.salesMarketing.title":
-    "Fortify Your Future / Sales and Marketing",
-  "home.events.upcoming.salesMarketing.titleZh": "守業增值創未來 / 銷售與市場推廣",
+    "Fortify Your Future (Lunch & Learn)",
+  "home.events.upcoming.salesMarketing.titleZh":
+    "守業增值創未來（Lunch & Learn）",
   "home.events.upcoming.salesMarketing.subtitle":
-    "Sales and marketing strategies for Hong Kong founders. Programme details coming soon.",
-  "home.events.upcoming.salesMarketing.date": "July 17, 2026",
+    "A Lunch & Learn for Hong Kong founders. Programme details coming soon.",
+  "home.events.upcoming.salesMarketing.date": "July",
   "home.events.upcoming.salesMarketing.location": "TBC",
   "home.events.past1.title": "《我兩樣都要》線下戰略會議",
   "home.events.past1.summary":
@@ -261,14 +266,7 @@ export const enMessages = {
   "home.events.pastFortify.summary":
     "A fireside chat on business defense and investment with Vicky Huang and Marcy Chan — free headshots, high-value networking, and founder insights.",
   "home.events.pastFortify.metric": "Founders & Investors",
-  "home.events.past2.title": "The Zero-Cost Life Salon",
-  "home.events.past2.summary":
-    "A practical evening on designing passive income streams without sacrificing your day-to-day cash flow.",
-  "home.events.past2.metric": "120+ Attendees",
-  "home.events.past3.title": "Founder's Funding Roundtable",
-  "home.events.past3.summary":
-    "Early-stage founders traded real stories on pitching, term sheets, and surviving your first capital raise.",
-  "home.events.past3.metric": "90+ Attendees",
+  "home.events.pastArchiveCta": "View archive",
 
   "events.hub.title": "Profit Pulse Ally Events",
   "events.hub.subtitle":
@@ -279,7 +277,7 @@ export const enMessages = {
   "events.hub.comingSoon": "Coming Soon / 敬請期待",
   "events.hub.archivedClosed": "Archived — registration closed",
   "events.hub.upcoming.salesMarketing.blurb":
-    "Sales and marketing strategies for Hong Kong founders. Full programme details to be announced.",
+    "A Lunch & Learn for Hong Kong founders. Full programme details to be announced.",
 
   "home.philosophy.srHeading": "Our Philosophy",
   "home.philosophy.heading": "Think in systems",

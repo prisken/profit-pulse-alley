@@ -13,12 +13,13 @@ import {
   MP_FOCUS_RING,
   MP_HOME_SECTION,
   MP_METRIC_TEXT,
-  MP_PULSE_ACCENT_ICON,
   MP_PULSE_LIVE_CHIP,
   MP_TERMINAL_PANEL,
   MP_TICKER_TEXT,
   mergeMpClasses,
 } from "@/lib/market-pulse/visual-primitives";
+
+type StepAccent = "pulse" | "sky" | "violet" | "amber";
 
 const PIPELINE_STEPS = [
   {
@@ -26,30 +27,70 @@ const PIPELINE_STEPS = [
     icon: CreditCard,
     titleKey: "home.pipeline.step1.title" as const,
     bodyKey: "home.pipeline.step1.body" as const,
-    primary: true,
+    accent: "pulse" as const,
   },
   {
     step: 2,
     icon: Lock,
     titleKey: "home.pipeline.step2.title" as const,
     bodyKey: "home.pipeline.step2.body" as const,
-    primary: false,
+    accent: "sky" as const,
   },
   {
     step: 3,
     icon: Activity,
     titleKey: "home.pipeline.step3.title" as const,
     bodyKey: "home.pipeline.step3.body" as const,
-    primary: false,
+    accent: "violet" as const,
   },
   {
     step: 4,
     icon: Trophy,
     titleKey: "home.pipeline.step4.title" as const,
     bodyKey: "home.pipeline.step4.body" as const,
-    primary: false,
+    accent: "amber" as const,
   },
 ] as const;
+
+const ACCENT_STYLES: Record<
+  StepAccent,
+  {
+    card: string;
+    glow: string;
+    icon: string;
+    index: string;
+    bar: string;
+  }
+> = {
+  pulse: {
+    card: "border-mp-pulse/25 hover:border-mp-pulse/40",
+    glow: "bg-mp-pulse/20",
+    icon: "border-mp-pulse/35 bg-mp-pulse/15 text-mp-pulse shadow-[0_0_24px_rgba(0,230,118,0.18)]",
+    index: "text-mp-pulse/20",
+    bar: "from-mp-pulse via-mp-pulse/70 to-transparent",
+  },
+  sky: {
+    card: "border-sky-400/20 hover:border-sky-400/35",
+    glow: "bg-sky-400/15",
+    icon: "border-sky-400/35 bg-sky-400/12 text-sky-300 shadow-[0_0_24px_rgba(56,189,248,0.16)]",
+    index: "text-sky-300/20",
+    bar: "from-sky-400 via-sky-400/70 to-transparent",
+  },
+  violet: {
+    card: "border-violet-400/20 hover:border-violet-400/35",
+    glow: "bg-violet-400/15",
+    icon: "border-violet-400/35 bg-violet-400/12 text-violet-300 shadow-[0_0_24px_rgba(167,139,250,0.16)]",
+    index: "text-violet-300/20",
+    bar: "from-violet-400 via-violet-400/70 to-transparent",
+  },
+  amber: {
+    card: "border-amber-400/25 hover:border-amber-400/40",
+    glow: "bg-amber-400/15",
+    icon: "border-amber-400/40 bg-amber-400/12 text-amber-300 shadow-[0_0_24px_rgba(251,191,36,0.18)]",
+    index: "text-amber-300/25",
+    bar: "from-amber-400 via-amber-400/70 to-transparent",
+  },
+};
 
 function PipelineConnector({
   orientation,
@@ -68,10 +109,7 @@ function PipelineConnector({
   }
 
   return (
-    <div
-      className="flex justify-center py-1 lg:hidden"
-      aria-hidden="true"
-    >
+    <div className="flex justify-center py-1 lg:hidden" aria-hidden="true">
       <div className="h-5 w-px bg-gradient-to-b from-mp-pulse/40 to-white/10" />
     </div>
   );
@@ -82,54 +120,70 @@ function PipelineStepCard({
   icon: Icon,
   title,
   body,
-  stepLabel,
-  primary,
+  accent,
 }: Readonly<{
   step: number;
   icon: LucideIcon;
   title: string;
   body: string;
-  stepLabel: string;
-  primary: boolean;
+  accent: StepAccent;
 }>) {
+  const styles = ACCENT_STYLES[accent];
+  const indexLabel = String(step).padStart(2, "0");
+
   return (
     <article
       className={mergeMpClasses(
-        "flex h-full flex-col",
+        "group relative flex h-full flex-col overflow-hidden",
         MP_TERMINAL_PANEL,
-        "p-4 sm:p-5",
-        primary && "border-mp-pulse/20 shadow-[0_0_24px_rgba(0,230,118,0.06)]",
+        "bg-gradient-to-b from-white/[0.05] to-transparent p-4 transition-[border-color,box-shadow,transform] duration-300 sm:p-5",
+        "hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.35)] motion-reduce:transform-none motion-reduce:transition-none",
+        styles.card,
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <span
-          className={mergeMpClasses(
-            "inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-[11px] font-bold",
-            MP_METRIC_TEXT,
-            primary
-              ? "border-mp-pulse/30 bg-mp-pulse/10 text-mp-pulse"
-              : "border-white/10 bg-white/[0.04] text-zinc-400",
-          )}
-          aria-hidden="true"
-        >
-          {String(step).padStart(2, "0")}
-        </span>
+      <div
+        className={mergeMpClasses(
+          "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r",
+          styles.bar,
+        )}
+        aria-hidden="true"
+      />
+      <div
+        className={mergeMpClasses(
+          "pointer-events-none absolute -right-6 -top-8 h-28 w-28 rounded-full blur-2xl transition-opacity duration-300 group-hover:opacity-100",
+          styles.glow,
+          "opacity-70 motion-reduce:transition-none",
+        )}
+        aria-hidden="true"
+      />
+      <span
+        className={mergeMpClasses(
+          "pointer-events-none absolute -right-1 top-1 select-none text-5xl font-bold leading-none sm:text-6xl",
+          MP_METRIC_TEXT,
+          styles.index,
+        )}
+        aria-hidden="true"
+      >
+        {indexLabel}
+      </span>
+
+      <div className="relative">
         <div
           className={mergeMpClasses(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
-            primary
-              ? MP_PULSE_ACCENT_ICON
-              : "border-white/10 bg-mp-obsidian-elevated text-zinc-300",
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border sm:h-14 sm:w-14",
+            styles.icon,
           )}
         >
-          <Icon className="h-5 w-5" aria-hidden="true" />
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
         </div>
       </div>
-      <p className={`mt-3 text-mp-muted ${MP_TICKER_TEXT}`}>{stepLabel}</p>
-      <h3 className="mt-1 text-base font-semibold text-white sm:text-lg">
+
+      <h3 className="relative mt-4 text-xl font-bold tracking-tight text-white sm:mt-5 sm:text-2xl">
         {title}
       </h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-mp-muted">{body}</p>
+      <p className="relative mt-2 text-sm leading-relaxed text-zinc-400 sm:text-[15px]">
+        {body}
+      </p>
     </article>
   );
 }
@@ -163,7 +217,7 @@ export default async function MarketPulsePipelineSection() {
 
         <ol className="mt-5 list-none sm:mt-6 lg:mt-8 lg:flex lg:items-stretch lg:justify-between">
           {PIPELINE_STEPS.map(
-            ({ step, icon, titleKey, bodyKey, primary }, index) => (
+            ({ step, icon, titleKey, bodyKey, accent }, index) => (
               <li
                 key={step}
                 className="flex flex-col lg:min-w-0 lg:flex-1 lg:flex-row lg:items-center"
@@ -173,11 +227,7 @@ export default async function MarketPulsePipelineSection() {
                   icon={icon}
                   title={t(titleKey)}
                   body={t(bodyKey)}
-                  stepLabel={t("home.pipeline.stepLabel").replace(
-                    "{step}",
-                    String(step),
-                  )}
-                  primary={primary}
+                  accent={accent}
                 />
                 {index < PIPELINE_STEPS.length - 1 ? (
                   <PipelineConnector orientation="vertical" />
@@ -193,20 +243,37 @@ export default async function MarketPulsePipelineSection() {
         <div className="mx-auto mt-5 max-w-xl sm:mt-6">
           <div
             className={mergeMpClasses(
+              "group relative flex overflow-hidden",
               MP_TERMINAL_PANEL,
-              "flex items-start gap-3 border-amber-500/20 bg-amber-500/[0.06] p-4 sm:items-center sm:p-5",
+              "border-amber-400/25 bg-gradient-to-b from-amber-400/[0.08] to-transparent p-4 transition-[border-color,box-shadow,transform] duration-300 sm:items-center sm:p-5",
+              "hover:-translate-y-0.5 hover:border-amber-400/40 hover:shadow-[0_12px_40px_rgba(0,0,0,0.35)] motion-reduce:transform-none motion-reduce:transition-none",
             )}
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-300">
-              <Gift className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <p className={`text-amber-200/80 ${MP_TICKER_TEXT}`}>
-                {t("home.pipeline.prize.heading")}
-              </p>
-              <p className="mt-1.5 text-sm font-semibold leading-snug text-amber-50 sm:text-base">
-                {t("home.pipeline.prize.body")}
-              </p>
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-amber-400 via-amber-400/70 to-transparent"
+              aria-hidden="true"
+            />
+            <div
+              className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-amber-400/20 opacity-70 blur-2xl transition-opacity duration-300 group-hover:opacity-100 motion-reduce:transition-none"
+              aria-hidden="true"
+            />
+            <div className="relative flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-400/40 bg-amber-400/12 text-amber-300 shadow-[0_0_24px_rgba(251,191,36,0.18)] sm:h-14 sm:w-14">
+                <Gift className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
+              </div>
+              <div className="relative min-w-0">
+                <p
+                  className={mergeMpClasses(
+                    "text-amber-200/90",
+                    MP_TICKER_TEXT,
+                  )}
+                >
+                  {t("home.pipeline.prize.heading")}
+                </p>
+                <p className="mt-1.5 text-lg font-bold leading-snug tracking-tight text-white sm:text-xl">
+                  {t("home.pipeline.prize.body")}
+                </p>
+              </div>
             </div>
           </div>
         </div>

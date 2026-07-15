@@ -15,9 +15,9 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Revamp branch** | `revamp-market-pulse-july-2026` — **merged to `main`** (`79033a4`, 29 Jun 2026) |
 | **Production status** | **`main` deployed** on Vercel; public launch **1 Jul 2026 00:00 HKT** passed; first cycle window **1–10 Jul 2026**; **live site playable only after ops pins a real OPEN cycle** (see [Production player experience](#production-player-experience-post-launch)) |
 | **Recent `main`** | **Acquisition progressive profiling** — learning-interest prompt after first MP decision (PR 2); next-step preference prompt on reveal (PR 3); email foundation (`UserNotificationPreference`, `EmailDeliveryLog`, admin test email) |
-| **Feature branch** | `acquisition-admin-visibility` — guided MP admin (PRs 5–16), play empty-state timing, **full product email suite**, **admin Remove cycle**, **homepage copy trim** (less exploratory text; layout polish); validated **15 Jul 2026** (`typecheck`, **969 tests**); merge to `main` for Vercel production deploy |
+| **Feature branch** | `acquisition-admin-visibility` — guided MP admin (PRs 5–16), play empty-state timing, **full product email suite**, **admin Remove cycle**, **homepage visual polish** (simulator / pipeline / pulse board / rewards / events / philosophy) + Fortify Lunch & Learn event update; validated **15 Jul 2026** (`typecheck`, **969 tests**); merge to `main` for Vercel production deploy |
 
-**Branch status:** Sections for guided admin workflow PRs 5–16, the product email suite, admin Remove cycle, and homepage copy trim refer to the `acquisition-admin-visibility` branch unless merged to `main`. They require merge to `main` and Vercel deploy before production availability.
+**Branch status:** Sections for guided admin workflow PRs 5–16, the product email suite, admin Remove cycle, and homepage visual polish refer to the `acquisition-admin-visibility` branch unless merged to `main`. They require merge to `main` and Vercel deploy before production availability.
 
 **Latest verification (15 Jul 2026):** `npm run typecheck` passed · `npm test` passed (**969** tests) · homepage-related suites green.
 
@@ -29,7 +29,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 
 The public site centers on **Market Pulse** — a recurring multi-day investment challenge where members swipe **Bullish** or **Cautious** on daily market signal cards (or **claim participation** on **Market rest cards**), earn participation points, and compete on leaderboards until **PPA Insight** is revealed at cycle end. Supporting pillars: **fireside events**, **membership**, and **expert-led philosophy** (PPA Take).
 
-**Homepage (Jul 2026 terminal revamp; copy trim 15 Jul 2026):** premium dark **obsidian terminal** layout (`bg-mp-obsidian`, pulse green accents, JetBrains Mono metrics) with a **Market Pulse hero** (headline *“Read the Market Rhythm. Build Your Zero-Cost Life.”*, launch-aware CTAs, interactive **Pulse Simulator** — Demo-only, local state, no API/decision writes; **no proof-chip row** under CTAs), **Pipeline** (4-step Signal → Lock In → Reveal → Reward + centered Ocean Park prize note — **no pipeline subtitle or scoring-summary chips**), **Pulse Board** widget (locked / revealed / sample — no unrevealed scores, no PPA, no email/phone), **Rewards** showcase (heading + three cards; no eyebrow/subtitle), Live Events Hub, philosophy (heading + pillars + experts; no intro subtitle), and final CTA (heading + buttons; no body subtitle). Shared section shell `MP_HOME_SECTION` uses tighter vertical padding after the trim. **Bilingual** via `ppa_locale`. Blog is nav/footer only. **Game logic unchanged** — scoring, playability, launch gating, PPA privacy, reveal gating, leaderboard locks.
+**Homepage (Jul 2026 terminal revamp; copy trim + visual polish 15 Jul 2026):** premium dark **obsidian terminal** layout (`bg-mp-obsidian`, pulse green accents, JetBrains Mono metrics) with a **Market Pulse hero** (headline *“Read the Market Rhythm. Build Your Zero-Cost Life.”*, launch-aware CTAs, interactive **Pulse Simulator** — Demo-only, local state, no API/decision writes; stacked 3D card + sample signal image + spotlight; **no** duplicate stance disclaimer; **no proof-chip row** under CTAs), **Pipeline** (4 textured accent step cards + Ocean Park prize strip — **no** pipeline subtitle or scoring-summary chips), **Pulse Board** (winner-highlighted standings; locked / revealed / sample — no unrevealed scores, no PPA, no email/phone), **Rewards** (three pipeline-style accent cards; no eyebrow/subtitle), Live Events Hub (**Lunch & Learn** upcoming; two real past archives), **Think in systems** (icon-first pillars + experts; no intro subtitle), and final CTA (heading + buttons; no body subtitle). Shared section shell `MP_HOME_SECTION` uses tighter vertical padding after the trim. **Bilingual** via `ppa_locale`. Blog is nav/footer only. **Game logic unchanged** — scoring, playability, launch gating, PPA privacy, reveal gating, leaderboard locks.
 
 **Player journey UX:** Hub is a **game lobby** (cycle status chip, journey steps, prize + locked leaderboard preview). Play uses an upgraded **signal card** with Bullish/Cautious **confirmation step** before submit. Leaderboard and reveal pages use polished **locked / revealed / archive** state panels; after reveal, leaderboard **My score** links to the full **cycle review** on `/market-pulse/reveal`. **Scoring, launch gating, PPA privacy, and auth rules are unchanged** — see [Player journey revamp — safety unchanged](#player-journey-revamp-jun-2026--safety-unchanged).
 
@@ -72,9 +72,9 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | **Homepage** | `/` | Public | MP hero + Pulse Simulator (demo) + Pipeline + Pulse Board + Rewards; Live Events Hub; philosophy; final CTA; **i18n** |
 | Brand concept | `/concept` | Public | “Our Philosophy” in nav |
 | Blog (EN + zh-HK) | `/blog`, `/blog/{lang}/[slug]` | Public | 3 paired articles |
-| Events hub | `/events` | Public | Upcoming: Sales & Marketing; past: Fortify + Wo Leung; **i18n** |
+| Events hub | `/events` | Public | Upcoming: Lunch & Learn; past: Fortify + Wo Leung; **i18n** |
 | Fortify event (past) | `/events/fortify-your-future` | Public | **Archived** — registration closed |
-| Sales & Marketing event | `/events/fortify-sales-marketing` | Public | Coming soon — 17 Jul 2026, TBC |
+| Lunch & Learn event | `/events/fortify-sales-marketing` | Public | Coming soon — **July**, TBC |
 | Past event archive | `/events/wo-leung-yiu-dou-yiu` | Public | Registration closed |
 | **Fortify registration** | `/fortify-survey` | Public | **QR-coded URL — do not change** |
 | **Login** | `/login` | Public | Sign In + Create Account; Google + magic link; **i18n** |
@@ -104,10 +104,10 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | Event | Status | Route | Notes |
 |-------|--------|-------|-------|
 | **Fortify Your Future** (June fireside) | **Past** | `/events/fortify-your-future` | Registration closed; past banner on detail |
-| **Fortify Sales & Marketing** | **Coming soon** | `/events/fortify-sales-marketing` | 17 Jul 2026, location TBC |
+| **Fortify Your Future (Lunch & Learn)** | **Coming soon** | `/events/fortify-sales-marketing` | Month: **July**; location TBC (was Sales & Marketing / 17 Jul) |
 | **《我兩樣都要》** | Past | `/events/wo-leung-yiu-dou-yiu` | Archive page |
 
-**`/fortify-survey`** — unchanged QR URL. Do **not** modify `FortifyYourFutureSurvey.tsx` without approval.
+**`/fortify-survey`** — unchanged QR URL. Do **not** modify `FortifyYourFutureSurvey.tsx` without approval. Homepage /events detail copy for Lunch & Learn was updated separately; the survey funnel remains the live QR capture as-is.
 
 Historical June 2026 Fortify copy (survey + archived detail):
 
@@ -141,7 +141,7 @@ Google OAuth redirect URIs (must match exactly):
 | **Typecheck** | `npm run typecheck` — pass |
 | **Build** | `npm run build` — pass (`prisma db push && next build`) previously on branch |
 | **Tests** | `npm test` — **969** Vitest tests |
-| **Homepage trim** | `homepage-compose`, `homepage-pulse-preview`, `home-market-pulse-simulator.safety`, `public-market-pulse-copy` — pass |
+| **Homepage polish** | `homepage-compose`, `homepage-pulse-preview`, `home-market-pulse-simulator.safety`, `home-events-hub`, `upcoming-event-display`, `public-market-pulse-copy` — pass |
 | **Hub lobby chip** | `hub-lobby-state.test.ts` — `no_active_cycle` when runtime OPEN + no DB cycle; `closed` when runtime paused |
 | **Launch smoke** | `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts` |
 | **Card release (HKT)** | `hkt-time.test.ts`, `card-release-schedule.test.ts` — fixed UTC+8 math; Day 1 = `2026-07-01T01:00:00.000Z` when cycle starts `2026-06-30T16:00:00.000Z`; dual gate (derived release + `publishedAt`) |
@@ -227,7 +227,7 @@ Automated tests cover server rules below. Live browser sign-in was not re-run in
 | 11 | Language switcher placement | **Pass** | Header, mobile nav, MP play, login, onboarding |
 | 12 | Onboarding blank/loop fix | **Pass** | Server redirect via `/api/auth/complete-onboarding`; no client redirect loop |
 | 13 | Fortify Your Future → past | **Pass** | `fortify-your-future.ts`, past banner on detail |
-| 14 | Sales & Marketing coming soon | **Pass** | 17 Jul 2026, TBC — `/events/fortify-sales-marketing` |
+| 14 | Lunch & Learn coming soon | **Pass** | July, TBC — `/events/fortify-sales-marketing` (`fortify-sales-marketing.ts`) |
 | 15 | `/fortify-survey` unchanged | **Pass** | Do not modify URL or `FortifyYourFutureSurvey.tsx` |
 | 16 | Market Pulse brand logo | **Pass** | `MarketPulseLogo.tsx` on homepage hero, hub hero, play header (`public/images/market-pulse-logo.png`) |
 | 17 | Per-cycle leaderboard + personal score | **Pass** | `leaderboard-cycle-select.ts`, `leaderboard-viewer-score.ts`, `MarketPulseScore` model |
@@ -1178,7 +1178,7 @@ Inform-only (no auto-overwrite). **Prefill create-cycle form** opens recommended
 Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning community for new-generation investors and founders. The current product narrative centers on **Market Pulse**:
 
 - **Market Pulse** — Prisma-backed daily swipe challenge with **Jul 2026 public launch**; cycles, cards (incl. news body + card image), decisions, leaderboards, reveal gating; admin CMS at `/admin/market-pulse`
-- **Events** — Fortify past archive + Sales & Marketing coming soon; `/fortify-survey` registration (fixed QR URL)
+- **Events** — Fortify past archive + Lunch & Learn coming soon (July); `/fortify-survey` registration (fixed QR URL)
 - **Membership** — Auth.js sign-in (Google + email), profile, role-based admin, **admin user management**
 - **i18n** — Cookie `ppa_locale` (`en` / `zh-Hant`); `LanguageSwitcher` in header, mobile nav, play header
 - **Philosophy & trust** — PPA investment philosophy; expert headshots on homepage
@@ -1741,15 +1741,15 @@ Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes s
 | # | Component | Purpose | Primary CTAs |
 |---|-----------|---------|--------------|
 | 1 | `MarketPulseHero` | Brand logo, pre-launch/live status chip, headline + subheadline, launch-aware primary CTA; mounts **`HomeMarketPulseSimulator`**. **No** proof-chip row under CTAs (trimmed 15 Jul 2026). | Pre-launch → hub; post-launch → play; secondary → leaderboard |
-| 2 | `MarketPulsePipelineSection` | 4-step game flow (Signal → Lock In → Reveal → Reward); centered Ocean Park prize note. **No** pipeline subtitle or scoring-summary panel (trimmed 15 Jul 2026). | Footer links → leaderboard, contest rules |
-| 3 | `HomePulseBoardWidget` | Mini leaderboard preview — **privacy-safe** via `getHomePulseBoardPreview()` | → `/market-pulse/leaderboard` |
-| 4 | `HomeRewardsShowcase` | Heading + three cards (prize, events, PPA). **No** eyebrow/subtitle (trimmed 15 Jul 2026). | → contest rules, events, rules |
-| 5 | `LiveEventsHubSection` | Upcoming Sales & Marketing; past Fortify + placeholders (`home-events-hub.ts`) | → `/events/fortify-sales-marketing` |
-| 6 | `PhilosophySection` | Heading + three pillars + expert headshots. **No** intro subtitle (trimmed 15 Jul 2026). | — |
+| 2 | `MarketPulsePipelineSection` | 4 textured accent step cards (Signal → Lock In → Reveal → Reward) + Ocean Park prize strip. **No** pipeline subtitle or scoring-summary panel (trimmed 15 Jul 2026). | Footer links → leaderboard, contest rules |
+| 3 | `HomePulseBoardWidget` | Mini leaderboard preview with **winner highlight**; **privacy-safe** via `getHomePulseBoardPreview()` | → `/market-pulse/leaderboard` |
+| 4 | `HomeRewardsShowcase` | Heading + three pipeline-style accent cards (prize, events, PPA). **No** eyebrow/subtitle (trimmed 15 Jul 2026). | → contest rules, events, rules |
+| 5 | `LiveEventsHubSection` | Upcoming **Fortify Lunch & Learn**; past Wo Leung + Fortify only (`home-events-hub.ts` — placeholders removed) | → `/events/fortify-sales-marketing` |
+| 6 | `PhilosophySection` | **Think in systems** — icon-first pillars + expert headshots. **No** intro subtitle (trimmed 15 Jul 2026). | — |
 | 7 | `FinalCtaSection` | Heading + CTAs only. **No** body subtitle (trimmed 15 Jul 2026). | **Create free account** → `/login`; secondary → Market Pulse hub |
 
 
-**Pulse Simulator (`HomeMarketPulseSimulator.tsx`):** Client-only demo. Clearly labeled **PULSE SIMULATOR** + Demo badge. Bullish/Cautious buttons update local `useState` only — **no `fetch`, no decision API, no DB writes**. Disclaimer copy states choices are not saved or scored. Link to real play is launch-aware (`/market-pulse` vs `/market-pulse/play`).
+**Pulse Simulator (`HomeMarketPulseSimulator.tsx`):** Client-only demo. Labeled **PULSE SIMULATOR** + Demo badge. Stacked card chrome, sample signal image (`/images/simulator-sample-signal.jpg`), green spotlight, green/red stance outlines. Bullish/Cautious update local `useState` only — **no `fetch`, no decision API, no DB writes**. Link to real play is launch-aware (`/market-pulse` vs `/market-pulse/play`).
 
 **Pulse Board privacy (`homepage-pulse-preview.ts`):**
 
@@ -1761,7 +1761,7 @@ Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes s
 
 **Removed from homepage compose (deleted or legacy):** `MarketPulseHowItWorksSection.tsx`, `MarketPulseCycleLoopSection.tsx` (deleted); `MarketPulsePpaInsightSection.tsx`, `PlayLearnWinSection.tsx`, `HomeHeroSignalPreview.tsx` — **not imported** by `page.tsx`.
 
-**Homepage copy trim (15 Jul 2026 on `acquisition-admin-visibility`):** Omitted exploratory UI-only blocks (hero proof chips, pipeline subtitle + scoring summary, rewards/philosophy/final CTA subheaders). i18n keys left in `en.ts` / `zh-Hant.ts` for later cleanup. No gameplay, scoring, PPA privacy, auth, or `/fortify-survey` changes. Spacing: tighter `MP_HOME_SECTION` + section-internal margins.
+**Homepage copy trim + visual polish (15 Jul 2026 on `acquisition-admin-visibility`):** Omitted exploratory UI-only blocks (hero proof chips, pipeline subtitle + scoring summary, rewards/philosophy/final CTA subheaders). Follow-up polish: textured pipeline/rewards/philosophy cards, Pulse Simulator stack + spotlight + sample image, Pulse Board winner highlight, Events “What You've Missed” archive cards; Fortify upcoming retitled **Lunch & Learn** with date **July**; removed placeholder past events (Zero-Cost Life Salon, Founder's Funding Roundtable). i18n keys for trimmed/removed copy may remain in catalogs for later cleanup. No gameplay, scoring, PPA privacy, auth, or `/fortify-survey` changes. Spacing: tighter `MP_HOME_SECTION` + section-internal margins.
 
 **i18n copy locations**
 
@@ -2208,7 +2208,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 1. **FAQ placeholder** — `/faq` still needs full content from comms.
 2. **Newsletter** — `SiteFooter` subscribe is UI-only.
 3. **Social URLs** — LinkedIn/Twitter placeholders; Instagram live.
-4. **Past events placeholders** — “Zero-Cost Life Salon” and “Founder's Funding Roundtable” show on homepage without archive links until detail pages exist (`archiveHref` optional in `home-events-hub.ts`).
+4. **Past events on homepage** — Only real archives (Wo Leung + Fortify June) via `home-events-hub.ts`; placeholder salon/roundtable cards removed (15 Jul 2026).
 5. **Event detail pages** — Static bilingual strings; not fully driven by `ppa_locale`.
 6. **KV vs Prisma settings** — KV theme/event API (`/api/game-settings`) is legacy API-only with no admin UI; runtime game state is Prisma `MarketPulseGameSetting` on `/admin/market-pulse`. VC/KV Game Settings removed from `/admin` (Jun 2026 redesign).
 7. **Demo seed dates** — `npm run db:seed` creates a cycle relative to seed time; production may retain expired `[DEMO]` cycles — update in admin or create new Jul 2026 cycle.

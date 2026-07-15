@@ -372,7 +372,7 @@ export default function SiteFooter() {
               alt=""
               width={32}
               height={32}
-              className="h-8 w-8 rounded-sm"
+              className="h-8 w-8 object-contain"
             />
             <span className="text-sm font-semibold text-white sm:text-base">
               {t("common.brandName")}

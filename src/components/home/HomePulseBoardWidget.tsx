@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Lock, Trophy } from "lucide-react";
+import { ArrowRight, Crown, Lock, Medal, Trophy } from "lucide-react";
 
 import { getServerTranslations } from "@/lib/i18n/server";
 import {
@@ -9,7 +9,7 @@ import {
   type HomePulseBoardPreviewRow,
 } from "@/lib/market-pulse/homepage-pulse-preview";
 import {
-  MP_FOCUS_RING,
+  MP_FOCUS_RING_AMBER,
   MP_HOME_SECTION,
   MP_METRIC_TEXT,
   MP_PULSE_LIVE_CHIP,
@@ -63,13 +63,13 @@ function titleKeyForState(
 
 function RankBadge({
   rank,
-  revealed,
-}: Readonly<{ rank: number | null; revealed: boolean }>) {
+  highlightWinner,
+}: Readonly<{ rank: number | null; highlightWinner: boolean }>) {
   if (rank == null) {
     return (
       <span
         className={mergeMpClasses(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-mp-obsidian-elevated text-amber-300/90 sm:h-9 sm:w-9",
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-mp-obsidian-elevated text-amber-300/90 sm:h-10 sm:w-10",
         )}
         aria-hidden="true"
       >
@@ -78,17 +78,50 @@ function RankBadge({
     );
   }
 
-  const rankClass =
-    rank === 1 && revealed
-      ? "bg-mp-pulse/15 text-mp-pulse ring-1 ring-mp-pulse/30"
-      : "bg-mp-obsidian-elevated text-zinc-200 ring-1 ring-white/10";
+  if (rank === 1 && highlightWinner) {
+    return (
+      <span
+        className={mergeMpClasses(
+          "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 text-amber-950 shadow-[0_0_24px_rgba(251,191,36,0.45)] ring-2 ring-amber-300/60 sm:h-11 sm:w-11",
+        )}
+        aria-hidden="true"
+      >
+        <Trophy className="h-5 w-5" />
+      </span>
+    );
+  }
+
+  if (rank === 2 && highlightWinner) {
+    return (
+      <span
+        className={mergeMpClasses(
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-400/20 text-zinc-100 ring-1 ring-zinc-300/35 sm:h-10 sm:w-10",
+        )}
+        aria-hidden="true"
+      >
+        <Medal className="h-4 w-4" />
+      </span>
+    );
+  }
+
+  if (rank === 3 && highlightWinner) {
+    return (
+      <span
+        className={mergeMpClasses(
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-500/20 text-orange-200 ring-1 ring-orange-400/35 sm:h-10 sm:w-10",
+        )}
+        aria-hidden="true"
+      >
+        <Medal className="h-4 w-4" />
+      </span>
+    );
+  }
 
   return (
     <span
       className={mergeMpClasses(
-        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold sm:h-9 sm:w-9 sm:text-sm",
+        "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mp-obsidian-elevated text-xs font-bold text-zinc-200 ring-1 ring-white/10 sm:h-10 sm:w-10 sm:text-sm",
         MP_METRIC_TEXT,
-        rankClass,
       )}
       aria-hidden="true"
     >
@@ -102,13 +135,18 @@ function PulseBoardRow({
   state,
   lockedSlotLabel,
   sampleScoreLabel,
+  winnerBadge,
 }: Readonly<{
   row: HomePulseBoardPreviewRow;
   state: HomePulseBoardPreview["state"];
   lockedSlotLabel: string;
   sampleScoreLabel: string;
+  winnerBadge: string;
 }>) {
   const showScore = state === "revealed" && row.score !== undefined;
+  const highlightRanks = state === "revealed" || state === "sample";
+  const isWinner = highlightRanks && row.rank === 1;
+  const isPodium = highlightRanks && row.rank != null && row.rank <= 3;
   const playerLabel =
     state === "locked"
       ? lockedSlotLabel
@@ -117,37 +155,83 @@ function PulseBoardRow({
         : row.playerName;
 
   return (
-    <li className="flex items-center gap-3 px-3 py-3 sm:px-4">
-      <RankBadge rank={row.rank} revealed={state === "revealed"} />
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-100 sm:text-base">
-        {playerLabel}
-      </span>
-      {showScore ? (
-        <span
-          className={mergeMpClasses(
-            "shrink-0 font-semibold text-mp-pulse",
-            MP_METRIC_TEXT,
-            "text-sm sm:text-base",
-          )}
-        >
-          {row.score}
-        </span>
-      ) : state === "locked" ? (
-        <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-amber-300/90 sm:text-sm">
-          <Lock className="h-3.5 w-3.5" aria-hidden="true" />
-          <span className={MP_METRIC_TEXT}>—</span>
-        </span>
-      ) : (
-        <span
-          className={mergeMpClasses(
-            "shrink-0 text-sm text-zinc-500",
-            MP_METRIC_TEXT,
-          )}
-          aria-hidden="true"
-        >
-          {sampleScoreLabel}
-        </span>
+    <li
+      className={mergeMpClasses(
+        "relative overflow-hidden rounded-xl border px-3 py-3 transition-[border-color,box-shadow,transform] sm:rounded-2xl sm:px-4 sm:py-3.5",
+        isWinner
+          ? "border-amber-400/45 bg-gradient-to-r from-amber-500/20 via-amber-400/10 to-mp-obsidian-panel shadow-[0_12px_40px_rgba(251,191,36,0.18)] sm:scale-[1.01]"
+          : isPodium
+            ? "border-white/[0.1] bg-gradient-to-r from-white/[0.05] to-transparent"
+            : "border-white/[0.06] bg-black/25",
+        state === "locked" && "border-amber-500/15 bg-amber-500/[0.03]",
       )}
+    >
+      {isWinner ? (
+        <>
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-amber-300 via-amber-400/80 to-transparent"
+            aria-hidden="true"
+          />
+          <div
+            className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-amber-400/25 blur-2xl"
+            aria-hidden="true"
+          />
+        </>
+      ) : null}
+
+      <div className="relative flex items-center gap-3">
+        <RankBadge rank={row.rank} highlightWinner={highlightRanks} />
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span
+              className={mergeMpClasses(
+                "truncate text-sm font-semibold sm:text-base",
+                isWinner ? "text-amber-50" : "text-zinc-100",
+              )}
+            >
+              {playerLabel}
+            </span>
+            {isWinner ? (
+              <span
+                className={mergeMpClasses(
+                  MP_TICKER_TEXT,
+                  "inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/15 px-2 py-0.5 text-amber-200",
+                )}
+              >
+                <Crown className="h-3 w-3" aria-hidden="true" />
+                {winnerBadge}
+              </span>
+            ) : null}
+          </div>
+        </div>
+        {showScore ? (
+          <span
+            className={mergeMpClasses(
+              "shrink-0 font-bold sm:text-lg",
+              MP_METRIC_TEXT,
+              isWinner ? "text-amber-300" : "text-mp-pulse",
+              "text-sm",
+            )}
+          >
+            {row.score}
+          </span>
+        ) : state === "locked" ? (
+          <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-amber-300/90 sm:text-sm">
+            <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className={MP_METRIC_TEXT}>—</span>
+          </span>
+        ) : (
+          <span
+            className={mergeMpClasses(
+              "shrink-0 text-sm text-zinc-500",
+              MP_METRIC_TEXT,
+            )}
+            aria-hidden="true"
+          >
+            {sampleScoreLabel}
+          </span>
+        )}
+      </div>
     </li>
   );
 }
@@ -167,18 +251,34 @@ export default async function HomePulseBoardWidget() {
       <div className="mx-auto w-full max-w-6xl">
         <div
           className={mergeMpClasses(
+            "group relative overflow-hidden",
             MP_TERMINAL_PANEL,
-            "border-mp-pulse/10 p-4 shadow-[0_0_32px_rgba(0,230,118,0.04)] sm:p-5",
+            "border-amber-400/20 bg-gradient-to-b from-amber-400/[0.07] via-mp-obsidian-panel to-mp-obsidian-panel p-4 shadow-[0_18px_50px_rgba(0,0,0,0.45)] sm:p-5",
           )}
         >
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-amber-400 via-amber-400/70 to-transparent"
+            aria-hidden="true"
+          />
+          <div
+            className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-amber-400/20 opacity-80 blur-3xl"
+            aria-hidden="true"
+          />
+          <div
+            className="pointer-events-none absolute -left-10 bottom-0 h-36 w-36 rounded-full bg-mp-pulse/10 blur-3xl"
+            aria-hidden="true"
+          />
+
+          <div className="relative flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-2 text-mp-pulse/90">
-                  <Trophy className="h-5 w-5 shrink-0" aria-hidden="true" />
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-400/40 bg-amber-400/12 text-amber-300 shadow-[0_0_24px_rgba(251,191,36,0.2)] sm:h-11 sm:w-11">
+                    <Trophy className="h-5 w-5" aria-hidden="true" />
+                  </span>
                   <h2
                     id="home-pulse-board-heading"
-                    className="text-lg font-bold text-white sm:text-xl"
+                    className="text-xl font-bold tracking-tight text-white sm:text-2xl"
                   >
                     {t(titleKey)}
                   </h2>
@@ -206,7 +306,7 @@ export default async function HomePulseBoardWidget() {
                 ) : null}
               </div>
               {preview.cycleName ? (
-                <p className="mt-1.5 text-sm text-mp-muted">
+                <p className="mt-2 text-sm text-mp-muted">
                   {t("home.pulseBoard.cycleLabel").replace(
                     "{cycleName}",
                     preview.cycleName,
@@ -228,8 +328,8 @@ export default async function HomePulseBoardWidget() {
               href="/market-pulse/leaderboard"
               aria-label={t("home.pulseBoard.ctaAria")}
               className={mergeMpClasses(
-                "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-mp-pulse/25 bg-mp-pulse/10 px-4 py-2 text-sm font-semibold text-mp-pulse transition-colors hover:bg-mp-pulse/15",
-                MP_FOCUS_RING,
+                "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-200 transition-colors hover:border-amber-400/50 hover:bg-amber-400/15",
+                MP_FOCUS_RING_AMBER,
               )}
             >
               {t("home.pulseBoard.cta")}
@@ -238,12 +338,7 @@ export default async function HomePulseBoardWidget() {
           </div>
 
           <ol
-            className={mergeMpClasses(
-              "mt-4 divide-y divide-white/[0.06] overflow-hidden sm:mt-5",
-              MP_TERMINAL_PANEL,
-              preview.state === "locked" &&
-                "border-amber-500/15 bg-amber-500/[0.03]",
-            )}
+            className="relative mt-4 flex flex-col gap-2.5 sm:mt-5 sm:gap-3"
             aria-label={t("home.pulseBoard.listAria")}
           >
             {preview.rows.map((row, index) => (
@@ -253,6 +348,7 @@ export default async function HomePulseBoardWidget() {
                 state={preview.state}
                 lockedSlotLabel={t("home.pulseBoard.locked.slot")}
                 sampleScoreLabel={t("home.pulseBoard.sample.scoreHidden")}
+                winnerBadge={t("home.pulseBoard.winnerBadge")}
               />
             ))}
           </ol>

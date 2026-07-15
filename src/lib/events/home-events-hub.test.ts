@@ -22,16 +22,18 @@ describe("getPastEventsShowcase", () => {
     expect(fortify?.title).toBe("守業增值創未來");
   });
 
-  it("omits archive links for placeholder past events without pages", () => {
+  it("only lists real archived events — no placeholder salons", () => {
     const past = getPastEventsShowcase("en");
-    const salon = past.find((event) =>
-      event.title.includes("Zero-Cost Life Salon"),
-    );
-    const roundtable = past.find((event) =>
-      event.title.includes("Funding Roundtable"),
-    );
 
-    expect(salon?.archiveHref).toBeUndefined();
-    expect(roundtable?.archiveHref).toBeUndefined();
+    expect(past).toHaveLength(2);
+    expect(
+      past.every((event) => Boolean(event.archiveHref)),
+    ).toBe(true);
+    expect(
+      past.some((event) => event.title.includes("Zero-Cost Life Salon")),
+    ).toBe(false);
+    expect(
+      past.some((event) => event.title.includes("Funding Roundtable")),
+    ).toBe(false);
   });
 });
