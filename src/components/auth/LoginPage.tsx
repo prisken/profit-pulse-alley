@@ -8,9 +8,11 @@ import { useSearchParams } from "next/navigation";
 
 import { signUpWithPassword } from "@/lib/auth-actions";
 import MarketPulseAuthPanel from "@/components/auth/MarketPulseAuthPanel";
+import MatchingPulseAuthPanel from "@/components/auth/MatchingPulseAuthPanel";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { isRemovedAccountLoginReason } from "@/lib/auth/invalid-session";
+import { isMatchingPulseAuthCallback } from "@/lib/auth/matching-pulse-auth-context";
 import { isMarketPulseAuthCallback } from "@/lib/auth/market-pulse-auth-context";
 import { translateAuthMessage } from "@/lib/i18n/auth-ui";
 
@@ -51,7 +53,9 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const accountRemoved = isRemovedAccountLoginReason(searchParams.get("reason"));
-  const fromMarketPulse = isMarketPulseAuthCallback(callbackUrl);
+  const fromMatchingPulse = isMatchingPulseAuthCallback(callbackUrl);
+  const fromMarketPulse =
+    !fromMatchingPulse && isMarketPulseAuthCallback(callbackUrl);
 
   const [activeTab, setActiveTab] = useState<AuthTab>(
     accountRemoved ? "create-account" : "sign-in",
@@ -223,15 +227,19 @@ function LoginForm() {
           />
         </Link>
         <h1 className="mt-4 text-xl font-semibold tracking-tight text-white sm:mt-5 sm:text-2xl">
-          {fromMarketPulse
+          {fromMatchingPulse
             ? activeTab === "sign-in"
-              ? t("auth.marketPulse.signIn.title")
-              : t("auth.marketPulse.create.title")
-            : activeTab === "sign-in"
-              ? t("auth.login.welcomeBack")
-              : t("auth.login.joinCommunity")}
+              ? t("auth.matchingPulse.signIn.title")
+              : t("auth.matchingPulse.create.title")
+            : fromMarketPulse
+              ? activeTab === "sign-in"
+                ? t("auth.marketPulse.signIn.title")
+                : t("auth.marketPulse.create.title")
+              : activeTab === "sign-in"
+                ? t("auth.login.welcomeBack")
+                : t("auth.login.joinCommunity")}
         </h1>
-        {!fromMarketPulse ? (
+        {!fromMarketPulse && !fromMatchingPulse ? (
           <p className="mt-1.5 text-xs text-gray-400 sm:mt-2 sm:text-sm">
             {activeTab === "sign-in"
               ? t("auth.login.subtitleSignIn")
@@ -240,7 +248,9 @@ function LoginForm() {
         ) : null}
       </div>
 
-      {fromMarketPulse ? (
+      {fromMatchingPulse ? (
+        <MatchingPulseAuthPanel className="mt-5 sm:mt-6" />
+      ) : fromMarketPulse ? (
         <MarketPulseAuthPanel
           variant={activeTab === "create-account" ? "create-account" : "sign-in"}
           className="mt-5 sm:mt-6"

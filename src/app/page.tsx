@@ -1,4 +1,5 @@
 import FinalCtaSection from "@/components/home/FinalCtaSection";
+import HomePpaEcosystemSection from "@/components/home/HomePpaEcosystemSection";
 import LiveEventsHubSection from "@/components/home/LiveEventsHubSection";
 import HomePulseBoardWidget from "@/components/home/HomePulseBoardWidget";
 import HomeRewardsShowcase from "@/components/home/HomeRewardsShowcase";
@@ -22,6 +23,7 @@ export default async function Home() {
       <MarketPulsePipelineSection />
       <HomePulseBoardWidget />
       <HomeRewardsShowcase />
+      <HomePpaEcosystemSection />
       <LiveEventsHubSection
         upcomingEvent={{
           kind: "event",

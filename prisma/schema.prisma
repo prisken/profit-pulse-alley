@@ -66,6 +66,36 @@ enum MarketPulseGameRuntimeStatus {
   MAINTENANCE
 }
 
+enum MatchingPulseRequestType {
+  NEED_HELP
+  OFFER_HELP
+  PARTNERSHIP
+}
+
+enum MatchingPulseCategory {
+  CAREER
+  BUSINESS
+  CAPITAL
+  NETWORKING
+  OTHER
+}
+
+enum MatchingPulseUrgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum MatchingPulseStatus {
+  NEW
+  REVIEWING
+  NEED_MORE_INFO
+  POTENTIAL_MATCH_FOUND
+  INTRO_MADE
+  CLOSED
+  REJECTED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -84,6 +114,7 @@ model User {
   marketPulseScores      MarketPulseScore[]
   marketPulsePrizeClaims MarketPulsePrizeClaim[]
   marketPulseAuditLogs   MarketPulseAuditLog[]
+  matchingPulseRequests  MatchingPulseRequest[]
   acquisitionProfile     UserAcquisitionProfile?
   notificationPreference UserNotificationPreference?
   emailDeliveryLogs      EmailDeliveryLog[]
@@ -101,9 +132,9 @@ model UserAcquisitionProfile {
   learningInterestCapturedAt        DateTime?
   learningInterestPromptDismissedAt DateTime?
 
-  nextStepPreference          String?
-  nextStepCapturedAt          DateTime?
-  nextStepPromptDismissedAt   DateTime?
+  nextStepPreference        String?
+  nextStepCapturedAt        DateTime?
+  nextStepPromptDismissedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -114,10 +145,10 @@ model UserNotificationPreference {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  marketPulseRemindersEnabled Boolean @default(false)
-  revealNotificationsEnabled  Boolean @default(true)
-  eventUpdatesEnabled         Boolean @default(false)
-  learningDigestEnabled       Boolean @default(false)
+  marketPulseRemindersEnabled Boolean   @default(false)
+  revealNotificationsEnabled  Boolean   @default(true)
+  eventUpdatesEnabled         Boolean   @default(false)
+  learningDigestEnabled       Boolean   @default(false)
   unsubscribedAt              DateTime?
 
   createdAt DateTime @default(now())
@@ -190,49 +221,49 @@ model MarketPulseCycle {
 }
 
 model MarketPulseCard {
-  id                String                @id @default(cuid())
-  cycleId           String
+  id                 String                @id @default(cuid())
+  cycleId            String
   /// 1-based cycle calendar day (legacy rows may use 0-based). Multiple cards may share the same dayIndex; use sortOrder to order them.
-  dayIndex          Int
+  dayIndex           Int
   /// Order within a cycle day (0 = first). Together with dayIndex identifies a card slot when multiple signals run on one day.
-  sortOrder         Int                   @default(0)
-  cardType          MarketPulseCardType     @default(SIGNAL)
-  companyName       String
+  sortOrder          Int                   @default(0)
+  cardType           MarketPulseCardType   @default(SIGNAL)
+  companyName        String
   /// Traditional Chinese company name (legacy zh field — English default is companyName).
-  companyNameZh     String?
-  ticker            String
-  exchange          String?
-  logoUrl           String?
-  priceLabel        String?
-  priceDirection    String?
-  headline          String
+  companyNameZh      String?
+  ticker             String
+  exchange           String?
+  logoUrl            String?
+  priceLabel         String?
+  priceDirection     String?
+  headline           String
   /// Traditional Chinese headline; players fall back to headline when empty.
-  headlineZhHant    String?
-  sourceName        String?
-  sourceUrl         String?
-  sourceDate        DateTime?
-  newsBody          String?               @db.Text
-  newsBodyZhHant    String?               @db.Text
-  summary           String?
-  summaryZhHant     String?
-  logoInitials      String?
-  cardImageUrl      String?
-  cardImageAlt      String?
+  headlineZhHant     String?
+  sourceName         String?
+  sourceUrl          String?
+  sourceDate         DateTime?
+  newsBody           String?               @db.Text
+  newsBodyZhHant     String?               @db.Text
+  summary            String?
+  summaryZhHant      String?
+  logoInitials       String?
+  cardImageUrl       String?
+  cardImageAlt       String?
   cardImageAltZhHant String?
-  userPrompt        String?
-  userPromptZhHant  String?
-  ppaSignal         MarketPulseSignal?
-  ppaInsight        String?
+  userPrompt         String?
+  userPromptZhHant   String?
+  ppaSignal          MarketPulseSignal?
+  ppaInsight         String?
   /// Post-reveal only — never exposed in public payloads before reveal (see reveal-access.ts).
-  ppaInsightZhHant  String?               @db.Text
-  ppaSignalLockedAt DateTime?
-  status            MarketPulseCardStatus @default(DRAFT)
+  ppaInsightZhHant   String?               @db.Text
+  ppaSignalLockedAt  DateTime?
+  status             MarketPulseCardStatus @default(DRAFT)
   /// Legacy per-card go-live override; new workflow may derive 9:00 AM HKT from cycle + dayIndex.
-  publishedAt       DateTime?
+  publishedAt        DateTime?
   /// Legacy per-card reveal override; defaults to cycle.revealAt when null.
-  revealAt          DateTime?
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  revealAt           DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
 
   cycle       MarketPulseCycle        @relation(fields: [cycleId], references: [id], onDelete: Cascade)
   decisions   MarketPulseDecision[]
@@ -362,6 +393,37 @@ model MarketPulseGameSetting {
   activeCycle MarketPulseCycle? @relation(fields: [activeCycleId], references: [id], onDelete: SetNull)
 
   @@index([activeCycleId])
+}
+
+// --- Matching Pulse (login-required request intake) ---
+
+model MatchingPulseRequest {
+  id               String                   @id @default(cuid())
+  userId           String
+  user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String
+  company          String?
+  roleTitle        String?
+  contactPhone     String?
+  contactMethod    String?
+  requestType      MatchingPulseRequestType
+  category         MatchingPulseCategory
+  urgency          MatchingPulseUrgency?
+  description      String
+  idealMatch       String?
+  source           String?
+  status           MatchingPulseStatus      @default(NEW)
+  consentToContact Boolean                  @default(false)
+  consentToShare   Boolean                  @default(false)
+  adminNotes       String?
+  tags             String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
 }
 
 // --- Auth.js Prisma Adapter models ---

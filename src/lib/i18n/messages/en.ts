@@ -5,6 +5,7 @@ import { acquisitionEnMessages } from "@/lib/i18n/messages/acquisition-messages"
 export const enMessages = {
   "nav.marketPulse": "Market Pulse",
   "nav.events": "Events",
+  "nav.matchingPulse": "Matching Pulse",
   "nav.philosophy": "Our Philosophy",
   "nav.blog": "Blog",
   "nav.login": "Login",
@@ -51,6 +52,7 @@ export const enMessages = {
   "footer.link.privacy": "Privacy Policy",
   "footer.link.investmentDisclaimer": "Investment Disclaimer",
   "footer.link.contestRules": "Contest Rules",
+  "footer.link.postMatchingPulseRequest": "Post a request",
   "footer.newsletter.description":
     "Get Market Pulse updates, event invites, and community highlights in your inbox.",
   "footer.newsletter.emailAria": "Email address",
@@ -190,6 +192,32 @@ export const enMessages = {
   "home.rewards.ppa.lockedNote": "PPA Insight unlocks after cycle reveal.",
   "home.rewards.ppa.cta": "How reveal works",
   "home.rewards.ppa.ctaAria": "Read how PPA Insight reveal works",
+
+  "home.ecosystem.badge": "PPA ecosystem",
+  "home.ecosystem.title":
+    "Start with Market Pulse. Grow through the community.",
+  "home.ecosystem.body":
+    "Market Pulse is our first live product. Events and Matching Pulse extend the same PPA account from online learning into real-world conversations and curated collaboration.",
+  "home.ecosystem.listAria": "PPA ecosystem pillars",
+  "home.ecosystem.marketPulse.badge": "Live MVP",
+  "home.ecosystem.marketPulse.title": "Market Pulse",
+  "home.ecosystem.marketPulse.body":
+    "Play the online challenge, make your Bullish or Cautious call, and learn from PPA Insight after reveal.",
+  "home.ecosystem.marketPulse.cta": "Play Market Pulse",
+  "home.ecosystem.marketPulse.ctaAria": "Play today's Market Pulse challenge",
+  "home.ecosystem.events.badge": "Community layer",
+  "home.ecosystem.events.title": "PPA Events",
+  "home.ecosystem.events.body":
+    "Join workshops and firesides where members meet PPA, learn together, and build trust in person.",
+  "home.ecosystem.events.cta": "View events",
+  "home.ecosystem.events.ctaAria": "View Profit Pulse Ally events",
+  "home.ecosystem.matchingPulse.badge": "Pilot",
+  "home.ecosystem.matchingPulse.title": "Matching Pulse",
+  "home.ecosystem.matchingPulse.body":
+    "Post a business need, offer, or partnership idea. PPA reviews requests and may help create warm introductions.",
+  "home.ecosystem.matchingPulse.cta": "Explore Matching Pulse",
+  "home.ecosystem.matchingPulse.ctaAria":
+    "Explore Matching Pulse collaboration requests",
 
   "home.ppaInsight.badge": "PPA Insight",
   "home.ppaInsight.title": "Guess less. Learn more.",

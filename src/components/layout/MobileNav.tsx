@@ -38,6 +38,7 @@ const MAIN_LINKS: ReadonlyArray<{
   analyticsCta?: "nav_events";
 }> = [
   { labelKey: "nav.marketPulse", href: "/market-pulse" },
+  { labelKey: "nav.matchingPulse", href: "/matching-pulse" },
   { labelKey: "nav.events", href: "/events", analyticsCta: "nav_events" },
   { labelKey: "nav.philosophy", href: "/concept" },
   { labelKey: "nav.blog", href: "/blog" },

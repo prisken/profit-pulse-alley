@@ -2,12 +2,14 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import AdminMatchingPulseOverview from "@/components/admin/AdminMatchingPulseOverview";
 import AdminOverviewCards from "@/components/admin/AdminOverviewCards";
 import AdminUserManagement from "@/components/admin/AdminUserManagement";
 import { auth } from "@/auth";
 import { loadAdminMembers } from "@/lib/admin/members-data";
 import { getServerSiteLocale, getServerTranslations } from "@/lib/i18n/server";
 import { translate, translateWith } from "@/lib/i18n/messages";
+import { getMatchingPulseAdminOverviewCounts } from "@/lib/matching-pulse/admin-data";
 import { getAdminOverviewData } from "@/lib/market-pulse/admin-overview-data";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,9 +29,10 @@ export default async function AdminPage() {
 
   const { t, locale } = await getServerTranslations();
 
-  const [overview, members] = await Promise.all([
+  const [overview, members, matchingPulseCounts] = await Promise.all([
     getAdminOverviewData(),
     loadAdminMembers(),
+    getMatchingPulseAdminOverviewCounts(),
   ]);
 
   const signedInLine =
@@ -57,18 +60,28 @@ export default async function AdminPage() {
             {t("auth.admin.opsSubtitle")}
           </p>
           <p className="mt-2 text-sm text-zinc-500">{signedInLine}</p>
-          <p className="mt-3 text-sm">
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
             <Link
               href="/admin/market-pulse"
               className="font-medium text-emerald-400 underline-offset-4 hover:text-emerald-300 hover:underline"
             >
               {t("auth.admin.marketPulseLink")}
             </Link>
+            <Link
+              href="/admin/matching-pulse"
+              className="font-medium text-emerald-400 underline-offset-4 hover:text-emerald-300 hover:underline"
+            >
+              {t("auth.admin.matchingPulseLink")}
+            </Link>
           </p>
         </header>
 
         <div className="mt-8 space-y-10">
           <AdminOverviewCards overview={overview} />
+
+          {matchingPulseCounts ? (
+            <AdminMatchingPulseOverview counts={matchingPulseCounts} />
+          ) : null}
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 shadow-sm sm:p-6 lg:p-8">
             <AdminUserManagement

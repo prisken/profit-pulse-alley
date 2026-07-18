@@ -137,6 +137,7 @@ function isMarketPulseHomeKey(key: string): boolean {
     key.startsWith("home.pipeline.") ||
     key.startsWith("home.pulseBoard.") ||
     key.startsWith("home.rewards.") ||
+    key.startsWith("home.ecosystem.") ||
     key.startsWith("home.finalCta.") ||
     key.startsWith("home.countdown.") ||
     key.startsWith("home.ppaInsight.") ||

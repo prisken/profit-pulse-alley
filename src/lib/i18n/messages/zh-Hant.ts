@@ -6,6 +6,7 @@ import { acquisitionZhHantMessages } from "@/lib/i18n/messages/acquisition-messa
 export const zhHantMessages: Messages = {
   "nav.marketPulse": "Market Pulse",
   "nav.events": "活動",
+  "nav.matchingPulse": "Matching Pulse",
   "nav.philosophy": "我們的理念",
   "nav.blog": "網誌",
   "nav.login": "登入",
@@ -50,6 +51,7 @@ export const zhHantMessages: Messages = {
   "footer.link.privacy": "私隱政策",
   "footer.link.investmentDisclaimer": "投資免責聲明",
   "footer.link.contestRules": "比賽規則",
+  "footer.link.postMatchingPulseRequest": "提交協作請求",
   "footer.newsletter.description":
     "訂閱以接收 Market Pulse 更新、活動邀請及社群精選資訊。",
   "footer.newsletter.emailAria": "電郵地址",
@@ -178,6 +180,30 @@ export const zhHantMessages: Messages = {
   "home.rewards.ppa.lockedNote": "PPA Insight 於周期公布後解鎖。",
   "home.rewards.ppa.cta": "公布機制",
   "home.rewards.ppa.ctaAria": "了解 PPA Insight 公布機制",
+
+  "home.ecosystem.badge": "PPA 生態",
+  "home.ecosystem.title": "從 Market Pulse 開始，在社群中成長。",
+  "home.ecosystem.body":
+    "Market Pulse 是我們首個上線產品。活動與 Matching Pulse 延續同一個 PPA 帳戶，把線上學習延伸到真實交流與精準協作。",
+  "home.ecosystem.listAria": "PPA 生態支柱",
+  "home.ecosystem.marketPulse.badge": "線上 MVP",
+  "home.ecosystem.marketPulse.title": "Market Pulse",
+  "home.ecosystem.marketPulse.body":
+    "參與線上挑戰，作出看升或謹慎判斷，並在公布後從 PPA Insight 學習。",
+  "home.ecosystem.marketPulse.cta": "挑戰 Market Pulse",
+  "home.ecosystem.marketPulse.ctaAria": "挑戰今日 Market Pulse",
+  "home.ecosystem.events.badge": "社群層",
+  "home.ecosystem.events.title": "PPA 活動",
+  "home.ecosystem.events.body":
+    "參加工作坊與爐邊對談，與 PPA 及會員見面、一起學習，建立信任。",
+  "home.ecosystem.events.cta": "查看活動",
+  "home.ecosystem.events.ctaAria": "查看 Profit Pulse Ally 活動",
+  "home.ecosystem.matchingPulse.badge": "試點",
+  "home.ecosystem.matchingPulse.title": "Matching Pulse",
+  "home.ecosystem.matchingPulse.body":
+    "提交業務需要、可提供的協助或合作構想。PPA 會審核請求，並可能促成溫暖引薦。",
+  "home.ecosystem.matchingPulse.cta": "探索 Matching Pulse",
+  "home.ecosystem.matchingPulse.ctaAria": "探索 Matching Pulse 協作請求",
 
   "home.ppaInsight.badge": "PPA Insight",
   "home.ppaInsight.title": "少猜多學。",

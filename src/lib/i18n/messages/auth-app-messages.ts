@@ -77,6 +77,13 @@ export const authAppEnMessages = {
   "auth.marketPulse.onboarding.body":
     "You can play Market Pulse now. Add a contact number anytime if you want prize coordination or event reminders.",
 
+  "auth.matchingPulse.panelAria": "Matching Pulse sign-in context",
+  "auth.matchingPulse.title": "One PPA account for Matching Pulse",
+  "auth.matchingPulse.body":
+    "Sign in or create a free account to post collaboration requests. The same account also works for Market Pulse and your member profile.",
+  "auth.matchingPulse.signIn.title": "Sign in to post a request",
+  "auth.matchingPulse.create.title": "Create an account to post a request",
+
   "auth.error.emailRequired": "Please enter your email address.",
   "auth.error.passwordRequired": "Please enter your password.",
   "auth.error.magicLinkEmailRequired":
@@ -135,7 +142,8 @@ export const authAppEnMessages = {
     "We could not load onboarding. Try again, return to login, or contact support if this keeps happening.",
 
   "auth.profile.title": "My Profile",
-  "auth.profile.subtitle": "Your Market Pulse history and membership details.",
+  "auth.profile.subtitle":
+    "Your PPA account connects Market Pulse learning, event participation, and Matching Pulse collaboration.",
   "auth.profile.memberFallback": "Member",
   "auth.profile.latestScore": "Latest score:",
   "auth.profile.play": "Play",
@@ -147,6 +155,18 @@ export const authAppEnMessages = {
   "auth.profile.historyCta":
     "Play today's card to start building your history.",
   "auth.profile.playToday": "Play Today's Card",
+  "auth.profile.matchingPulse.title": "Matching Pulse",
+  "auth.profile.matchingPulse.empty": "No collaboration requests yet.",
+  "auth.profile.matchingPulse.countOne": "{count} request submitted",
+  "auth.profile.matchingPulse.countPlural": "{count} requests submitted",
+  "auth.profile.matchingPulse.bridge":
+    "Your PPA account connects Market Pulse learning, event participation, and future Matching Pulse collaboration.",
+  "auth.profile.matchingPulse.latestLabel": "Latest request",
+  "auth.profile.matchingPulse.emptyCta":
+    "Post a collaboration need, offer, or partnership idea for PPA to review.",
+  "auth.profile.matchingPulse.postCta": "Post a collaboration request",
+  "auth.profile.matchingPulse.viewCta": "View my requests",
+  "auth.profile.matchingPulse.learnMore": "Learn more",
   "auth.profile.accountDetails": "Account details",
   "auth.profile.fieldName": "Name",
   "auth.profile.fieldRole": "Role",
@@ -196,6 +216,7 @@ export const authAppEnMessages = {
   "auth.admin.signedInAs": "Signed in as {email} · {count} member",
   "auth.admin.signedInAsPlural": "Signed in as {email} · {count} members",
   "auth.admin.marketPulseLink": "Market Pulse admin →",
+  "auth.admin.matchingPulseLink": "Matching Pulse admin →",
   "auth.admin.backToAdmin": "← Back to admin",
 
   "auth.admin.overview.heading": "Overview",
@@ -215,9 +236,19 @@ export const authAppEnMessages = {
   "auth.admin.overview.systemOkHint": "Check Market Pulse admin for detailed setup.",
 
   "auth.admin.quickActions.manageMp": "Manage Market Pulse",
+  "auth.admin.quickActions.matchingPulse": "Matching Pulse",
   "auth.admin.quickActions.hub": "View Market Pulse Hub",
   "auth.admin.quickActions.play": "View Play Page",
   "auth.admin.quickActions.leaderboard": "View Leaderboard",
+
+  "auth.admin.matchingPulse.heading": "Matching Pulse",
+  "auth.admin.matchingPulse.awaitingOne":
+    "{count} request awaiting review",
+  "auth.admin.matchingPulse.awaitingPlural":
+    "{count} requests awaiting review",
+  "auth.admin.matchingPulse.totals":
+    "{newCount} new · {total} total",
+  "auth.admin.matchingPulse.reviewCta": "Review requests",
   "auth.admin.mpTitle": "Market Pulse",
   "auth.admin.mp.adminTitle": "Market Pulse Admin",
   "auth.admin.mp.adminSubtitle":
@@ -1131,6 +1162,13 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.marketPulse.onboarding.body":
     "你現在就可以玩 Market Pulse。如需獎品安排或活動提醒，可隨時加入聯絡電話。",
 
+  "auth.matchingPulse.panelAria": "Matching Pulse 登入說明",
+  "auth.matchingPulse.title": "一個 PPA 帳戶暢用 Matching Pulse",
+  "auth.matchingPulse.body":
+    "登入或建立免費帳戶以提交協作請求。同一個帳戶亦可用於 Market Pulse 及你的會員檔案。",
+  "auth.matchingPulse.signIn.title": "登入以提交請求",
+  "auth.matchingPulse.create.title": "建立帳戶以提交請求",
+
   "auth.error.emailRequired": "請輸入你的電郵地址。",
   "auth.error.passwordRequired": "請輸入你的密碼。",
   "auth.error.magicLinkEmailRequired": "請輸入電郵地址以接收魔法連結。",
@@ -1182,7 +1220,8 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
     "無法載入 onboarding。請再試一次、返回登入，或如問題持續請聯絡支援。",
 
   "auth.profile.title": "我的檔案",
-  "auth.profile.subtitle": "你的 Market Pulse 紀錄及會員資料。",
+  "auth.profile.subtitle":
+    "你的 PPA 帳戶連繫 Market Pulse 學習、活動參與，以及 Matching Pulse 協作。",
   "auth.profile.memberFallback": "會員",
   "auth.profile.latestScore": "最新分數：",
   "auth.profile.play": "開始挑戰",
@@ -1193,6 +1232,18 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.profile.viewHub": "查看主頁",
   "auth.profile.historyCta": "挑戰今日卡片，開始建立你的紀錄。",
   "auth.profile.playToday": "挑戰今日卡片",
+  "auth.profile.matchingPulse.title": "Matching Pulse",
+  "auth.profile.matchingPulse.empty": "尚未提交協作請求。",
+  "auth.profile.matchingPulse.countOne": "已提交 {count} 則請求",
+  "auth.profile.matchingPulse.countPlural": "已提交 {count} 則請求",
+  "auth.profile.matchingPulse.bridge":
+    "你的 PPA 帳戶連繫 Market Pulse 學習、活動參與，以及未來的 Matching Pulse 協作。",
+  "auth.profile.matchingPulse.latestLabel": "最新請求",
+  "auth.profile.matchingPulse.emptyCta":
+    "提交你的業務需要、可提供的協助或合作構想，由 PPA 審核。",
+  "auth.profile.matchingPulse.postCta": "提交協作請求",
+  "auth.profile.matchingPulse.viewCta": "查看我的請求",
+  "auth.profile.matchingPulse.learnMore": "了解更多",
   "auth.profile.accountDetails": "帳戶資料",
   "auth.profile.fieldName": "姓名",
   "auth.profile.fieldRole": "角色",
@@ -1239,6 +1290,7 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.admin.signedInAs": "已登入 {email} · {count} 位會員",
   "auth.admin.signedInAsPlural": "已登入 {email} · {count} 位會員",
   "auth.admin.marketPulseLink": "Market Pulse 管理 →",
+  "auth.admin.matchingPulseLink": "Matching Pulse 管理 →",
   "auth.admin.backToAdmin": "← 返回管理後台",
   "auth.admin.mpTitle": "Market Pulse",
   "auth.admin.mp.adminTitle": "Market Pulse 管理",
@@ -1302,9 +1354,16 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.admin.overview.systemOkHint": "詳細設定請見 Market Pulse 管理。",
 
   "auth.admin.quickActions.manageMp": "管理 Market Pulse",
+  "auth.admin.quickActions.matchingPulse": "Matching Pulse",
   "auth.admin.quickActions.hub": "查看 Market Pulse 主頁",
   "auth.admin.quickActions.play": "查看遊玩頁",
   "auth.admin.quickActions.leaderboard": "查看排行榜",
+
+  "auth.admin.matchingPulse.heading": "Matching Pulse",
+  "auth.admin.matchingPulse.awaitingOne": "有 {count} 則請求待審核",
+  "auth.admin.matchingPulse.awaitingPlural": "有 {count} 則請求待審核",
+  "auth.admin.matchingPulse.totals": "{newCount} 則新請求 · 共 {total} 則",
+  "auth.admin.matchingPulse.reviewCta": "審核請求",
 
   "auth.admin.users.title": "用戶管理",
   "auth.admin.users.subtitle":

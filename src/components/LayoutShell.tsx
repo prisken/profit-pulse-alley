@@ -94,6 +94,9 @@ export default function LayoutShell({
               <Link href="/market-pulse" className={navLinkClass}>
                 {t("nav.marketPulse")}
               </Link>
+              <Link href="/matching-pulse" className={navLinkClass}>
+                {t("nav.matchingPulse")}
+              </Link>
               <Link
                 href="/events"
                 className={navLinkClass}

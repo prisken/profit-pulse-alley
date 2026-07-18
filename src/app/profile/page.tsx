@@ -22,6 +22,11 @@ import {
   getUserMarketPulseHistory,
 } from "@/lib/market-pulse/queries";
 import type { MarketPulseHistoryEntry } from "@/lib/market-pulse/types";
+import {
+  getMatchingPulseProfileSummary,
+  type MatchingPulseProfileSummary,
+} from "@/lib/matching-pulse/data";
+import ProfileMatchingPulseCard from "@/components/auth/ProfileMatchingPulseCard";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerSiteLocale();
@@ -141,6 +146,17 @@ export default async function ProfilePage() {
     console.error("[profile] Failed to load game scores:", error);
   }
 
+  let matchingPulseSummary: MatchingPulseProfileSummary = {
+    totalCount: 0,
+    latest: null,
+  };
+
+  try {
+    matchingPulseSummary = await getMatchingPulseProfileSummary(user.id);
+  } catch (error) {
+    console.error("[profile] Failed to load Matching Pulse summary:", error);
+  }
+
   const latestScore = gameScores[0]?.score;
   const historyCountLabel =
     gameScores.length === 0
@@ -256,6 +272,12 @@ export default async function ProfilePage() {
           </ul>
         )}
       </section>
+
+      <ProfileMatchingPulseCard
+        summary={matchingPulseSummary}
+        locale={locale}
+        t={t}
+      />
 
       <ProfileContactNumberCard initialContactNumber={contactNumber} />
 

@@ -73,6 +73,8 @@ function InstagramIcon() {
 
 const PPA_LINK_KEYS: ReadonlyArray<{ labelKey: MessageKey; href: string }> = [
   { labelKey: "nav.marketPulse", href: "/market-pulse" },
+  { labelKey: "nav.matchingPulse", href: "/matching-pulse" },
+  { labelKey: "footer.link.postMatchingPulseRequest", href: "/matching-pulse/request" },
   { labelKey: "nav.events", href: "/events" },
   { labelKey: "nav.philosophy", href: "/concept" },
   { labelKey: "nav.blog", href: "/blog" },
