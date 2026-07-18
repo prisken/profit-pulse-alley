@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { MATCHING_PULSE_DEFAULT_CREATE_SOURCE } from "@/lib/matching-pulse/create-source";
 import type {
   MatchingPulseRequestFormInput,
+  MatchingPulseRequestFormValues,
   MatchingPulseValidationFailure,
 } from "@/lib/matching-pulse/types";
 import { validateMatchingPulseRequestCreate } from "@/lib/matching-pulse/validation";
@@ -14,6 +15,46 @@ import { prisma } from "@/lib/prisma";
 
 const LOGIN_CALLBACK = "/matching-pulse/request";
 const SUCCESS_PATH = "/matching-pulse/success";
+
+function readFormString(formData: FormData, key: string): string {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
+}
+
+function isConsentChecked(formData: FormData, key: string): boolean {
+  const value = formData.get(key);
+  if (typeof value !== "string") {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized === "true" ||
+    normalized === "on" ||
+    normalized === "1" ||
+    normalized === "yes"
+  );
+}
+
+/** Captures submitted fields so the client can restore them after validation errors. */
+function formDataToFormValues(
+  formData: FormData,
+): MatchingPulseRequestFormValues {
+  return {
+    title: readFormString(formData, "title"),
+    company: readFormString(formData, "company"),
+    roleTitle: readFormString(formData, "roleTitle"),
+    contactPhone: readFormString(formData, "contactPhone"),
+    contactMethod: readFormString(formData, "contactMethod"),
+    requestType: readFormString(formData, "requestType"),
+    category: readFormString(formData, "category"),
+    urgency: readFormString(formData, "urgency"),
+    description: readFormString(formData, "description"),
+    idealMatch: readFormString(formData, "idealMatch"),
+    source: readFormString(formData, "source"),
+    consentToContact: isConsentChecked(formData, "consentToContact"),
+    consentToShare: isConsentChecked(formData, "consentToShare"),
+  };
+}
 
 function formDataToCreateInput(formData: FormData): MatchingPulseRequestFormInput {
   // Intentionally ignore userId / email — identity comes only from the session.
@@ -34,12 +75,25 @@ function formDataToCreateInput(formData: FormData): MatchingPulseRequestFormInpu
   };
 }
 
+function withPreservedValues(
+  failure: MatchingPulseValidationFailure,
+  formData: FormData,
+  prev: MatchingPulseValidationFailure | null,
+): MatchingPulseValidationFailure {
+  return {
+    ...failure,
+    values: formDataToFormValues(formData),
+    revision: (prev?.revision ?? 0) + 1,
+  };
+}
+
 /**
  * Creates a Matching Pulse request for the signed-in user.
  * Guests are redirected to login. Success redirects to the success page.
- * Validation failures return field errors for the form UI.
+ * Validation failures return field errors + submitted values for form redisplay.
  */
 export async function createMatchingPulseRequestAction(
+  prev: MatchingPulseValidationFailure | null,
   formData: FormData,
 ): Promise<MatchingPulseValidationFailure> {
   const session = await auth();
@@ -54,7 +108,7 @@ export async function createMatchingPulseRequestAction(
   );
 
   if (!validated.ok) {
-    return validated;
+    return withPreservedValues(validated, formData, prev);
   }
 
   const { data } = validated;
@@ -99,10 +153,14 @@ export async function createMatchingPulseRequestAction(
     }
 
     console.error("[matching-pulse] createMatchingPulseRequestAction failed:", error);
-    return {
-      ok: false,
-      fieldErrors: {},
-      formError: "Could not submit your request. Please try again.",
-    };
+    return withPreservedValues(
+      {
+        ok: false,
+        fieldErrors: {},
+        formError: "Could not submit your request. Please try again.",
+      },
+      formData,
+      prev,
+    );
   }
 }

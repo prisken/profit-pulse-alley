@@ -146,7 +146,7 @@ describe("createMatchingPulseRequestAction", () => {
     mocks.auth.mockResolvedValue(null);
 
     await expect(
-      createMatchingPulseRequestAction(buildValidFormData()),
+      createMatchingPulseRequestAction(null, buildValidFormData()),
     ).rejects.toThrow(/NEXT_REDIRECT/);
 
     expect(mocks.redirect).toHaveBeenCalledWith(
@@ -161,7 +161,7 @@ describe("createMatchingPulseRequestAction", () => {
     mocks.matchingPulseRequestCreate.mockResolvedValue({ id: "req-1" });
 
     await expect(
-      createMatchingPulseRequestAction(buildValidFormData()),
+      createMatchingPulseRequestAction(null, buildValidFormData()),
     ).rejects.toThrow(/NEXT_REDIRECT/);
 
     expect(mocks.matchingPulseRequestCreate).toHaveBeenCalledTimes(1);
@@ -188,7 +188,7 @@ describe("createMatchingPulseRequestAction", () => {
     });
 
     await expect(
-      createMatchingPulseRequestAction(formData),
+      createMatchingPulseRequestAction(null, formData),
     ).rejects.toThrow(/NEXT_REDIRECT/);
 
     const createArg = mocks.matchingPulseRequestCreate.mock.calls[0]?.[0];
@@ -205,31 +205,49 @@ describe("createMatchingPulseRequestAction", () => {
     mocks.matchingPulseRequestCreate.mockResolvedValue({ id: "req-4" });
 
     await expect(
-      createMatchingPulseRequestAction(buildValidFormData()),
+      createMatchingPulseRequestAction(null, buildValidFormData()),
     ).rejects.toThrow(/NEXT_REDIRECT/);
 
     expect(mocks.matchingPulseRequestCreate).toHaveBeenCalledTimes(1);
     expect(mocks.userCreate).not.toHaveBeenCalled();
   });
 
-  it("returns field errors for invalid form data and does not write", async () => {
+  it("returns field errors and preserves submitted values for redisplay", async () => {
     mocks.auth.mockResolvedValue({ user: { id: "session-user-3" } });
 
     const formData = new FormData();
-    formData.set("title", "");
+    formData.set("title", "Keep this title");
     formData.set("requestType", "NEED_HELP");
     formData.set("category", "BUSINESS");
-    formData.set("description", "Short");
+    formData.set("description", "Keep this description");
+    formData.set("company", "Acme");
     formData.set("consentToContact", "false");
+    formData.set("consentToShare", "on");
+    formData.set("source", "direct");
 
-    const result = await createMatchingPulseRequestAction(formData);
+    const result = await createMatchingPulseRequestAction(null, formData);
 
     expect(result.ok).toBe(false);
     if (result.ok) {
       return;
     }
-    expect(result.fieldErrors.title).toBeTruthy();
     expect(result.fieldErrors.consentToContact).toBeTruthy();
+    expect(result.values).toEqual({
+      title: "Keep this title",
+      company: "Acme",
+      roleTitle: "",
+      contactPhone: "",
+      contactMethod: "",
+      requestType: "NEED_HELP",
+      category: "BUSINESS",
+      urgency: "",
+      description: "Keep this description",
+      idealMatch: "",
+      source: "direct",
+      consentToContact: false,
+      consentToShare: true,
+    });
+    expect(result.revision).toBe(1);
     expect(mocks.matchingPulseRequestCreate).not.toHaveBeenCalled();
     expect(mocks.redirect).not.toHaveBeenCalled();
   });

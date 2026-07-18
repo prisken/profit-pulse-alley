@@ -24,13 +24,6 @@ import {
 
 type FormState = MatchingPulseValidationFailure | null;
 
-async function submitMatchingPulseRequest(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  return createMatchingPulseRequestAction(formData);
-}
-
 const fieldClass = mergeMpClasses(
   "mt-1.5 w-full min-h-11 rounded-xl border border-white/10 bg-mp-obsidian-elevated px-3 py-2.5 text-base text-white outline-none placeholder:text-zinc-500 disabled:opacity-60 sm:text-sm",
   "focus-visible:border-mp-pulse/40 focus-visible:ring-2 focus-visible:ring-mp-pulse/50",
@@ -59,16 +52,24 @@ export default function MatchingPulseRequestForm({
   posterLabel,
 }: MatchingPulseRequestFormProps) {
   const [state, formAction, isPending] = useActionState(
-    submitMatchingPulseRequest,
+    createMatchingPulseRequestAction,
     null,
   );
 
   const fieldErrors = state?.fieldErrors ?? {};
   const formError = state?.formError;
+  const values = state?.values;
+  // Remount uncontrolled inputs with preserved defaults after a failed submit.
+  const formKey = `mp-request-${state?.revision ?? 0}`;
 
   return (
-    <form action={formAction} noValidate className="space-y-5 sm:space-y-6">
-      <input type="hidden" name="source" value={source} />
+    <form
+      key={formKey}
+      action={formAction}
+      noValidate
+      className="space-y-5 sm:space-y-6"
+    >
+      <input type="hidden" name="source" value={values?.source || source} />
 
       {posterLabel ? (
         <p
@@ -103,6 +104,7 @@ export default function MatchingPulseRequestForm({
           required
           maxLength={MATCHING_PULSE_FIELD_MAX.title}
           disabled={isPending}
+          defaultValue={values?.title ?? ""}
           className={fieldClass}
           aria-required="true"
           aria-invalid={fieldErrors.title ? true : undefined}
@@ -127,7 +129,7 @@ export default function MatchingPulseRequestForm({
             name="requestType"
             required
             disabled={isPending}
-            defaultValue=""
+            defaultValue={values?.requestType ?? ""}
             className={fieldClass}
             aria-required="true"
             aria-invalid={fieldErrors.requestType ? true : undefined}
@@ -161,7 +163,7 @@ export default function MatchingPulseRequestForm({
             name="category"
             required
             disabled={isPending}
-            defaultValue=""
+            defaultValue={values?.category ?? ""}
             className={fieldClass}
             aria-required="true"
             aria-invalid={fieldErrors.category ? true : undefined}
@@ -198,6 +200,7 @@ export default function MatchingPulseRequestForm({
           rows={5}
           maxLength={MATCHING_PULSE_FIELD_MAX.description}
           disabled={isPending}
+          defaultValue={values?.description ?? ""}
           className={mergeMpClasses(fieldClass, "min-h-28 resize-y")}
           aria-required="true"
           aria-invalid={fieldErrors.description ? true : undefined}
@@ -230,6 +233,7 @@ export default function MatchingPulseRequestForm({
             type="text"
             maxLength={MATCHING_PULSE_FIELD_MAX.company}
             disabled={isPending}
+            defaultValue={values?.company ?? ""}
             className={fieldClass}
             aria-invalid={fieldErrors.company ? true : undefined}
             aria-describedby={
@@ -254,6 +258,7 @@ export default function MatchingPulseRequestForm({
             type="text"
             maxLength={MATCHING_PULSE_FIELD_MAX.roleTitle}
             disabled={isPending}
+            defaultValue={values?.roleTitle ?? ""}
             className={fieldClass}
             aria-invalid={fieldErrors.roleTitle ? true : undefined}
             aria-describedby={
@@ -280,6 +285,7 @@ export default function MatchingPulseRequestForm({
             type="tel"
             maxLength={MATCHING_PULSE_FIELD_MAX.contactPhone}
             disabled={isPending}
+            defaultValue={values?.contactPhone ?? ""}
             className={fieldClass}
             autoComplete="tel"
             aria-invalid={fieldErrors.contactPhone ? true : undefined}
@@ -305,6 +311,7 @@ export default function MatchingPulseRequestForm({
             type="text"
             maxLength={MATCHING_PULSE_FIELD_MAX.contactMethod}
             disabled={isPending}
+            defaultValue={values?.contactMethod ?? ""}
             className={fieldClass}
             placeholder="e.g. WhatsApp, email, LinkedIn"
             aria-invalid={fieldErrors.contactMethod ? true : undefined}
@@ -329,7 +336,7 @@ export default function MatchingPulseRequestForm({
           id="mp-urgency"
           name="urgency"
           disabled={isPending}
-          defaultValue=""
+          defaultValue={values?.urgency ?? ""}
           className={fieldClass}
           aria-invalid={fieldErrors.urgency ? true : undefined}
           aria-describedby={
@@ -361,6 +368,7 @@ export default function MatchingPulseRequestForm({
           rows={3}
           maxLength={MATCHING_PULSE_FIELD_MAX.idealMatch}
           disabled={isPending}
+          defaultValue={values?.idealMatch ?? ""}
           className={mergeMpClasses(fieldClass, "min-h-20 resize-y")}
           placeholder="Who would be most helpful to connect with?"
           aria-invalid={fieldErrors.idealMatch ? true : undefined}
@@ -387,6 +395,7 @@ export default function MatchingPulseRequestForm({
             value="on"
             required
             disabled={isPending}
+            defaultChecked={values?.consentToContact ?? false}
             className={mergeMpClasses(
               "mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-mp-obsidian-elevated text-mp-pulse",
               MP_FOCUS_RING,
@@ -416,6 +425,7 @@ export default function MatchingPulseRequestForm({
             name="consentToShare"
             value="on"
             disabled={isPending}
+            defaultChecked={values?.consentToShare ?? false}
             className={mergeMpClasses(
               "mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-mp-obsidian-elevated text-mp-pulse",
               MP_FOCUS_RING,

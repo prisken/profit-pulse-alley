@@ -52,10 +52,31 @@ export type MatchingPulseValidationSuccess = {
   data: MatchingPulseRequestCreateData;
 };
 
+/** Snapshot of submitted fields so the form can re-display after validation errors. */
+export type MatchingPulseRequestFormValues = {
+  title: string;
+  company: string;
+  roleTitle: string;
+  contactPhone: string;
+  contactMethod: string;
+  requestType: string;
+  category: string;
+  urgency: string;
+  description: string;
+  idealMatch: string;
+  source: string;
+  consentToContact: boolean;
+  consentToShare: boolean;
+};
+
 export type MatchingPulseValidationFailure = {
   ok: false;
   fieldErrors: MatchingPulseRequestFieldErrors;
   formError?: string;
+  /** Preserved input for redisplay after a failed submit. */
+  values?: MatchingPulseRequestFormValues;
+  /** Bumps so uncontrolled inputs remount with fresh defaultValues. */
+  revision?: number;
 };
 
 export type MatchingPulseValidationResult =

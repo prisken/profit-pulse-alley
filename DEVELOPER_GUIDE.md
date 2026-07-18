@@ -17,7 +17,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 
 **Product focus:** **Market Pulse** is the MVP and homepage primary CTA. **Matching Pulse** is a login-required collaboration-request **pilot** (not a marketplace; no credits/tokens; no public request board). Events + Matching Pulse are supporting pillars.
 
-**Latest verification (19 Jul 2026):** `npm run lint` (0 errors) · `npm run typecheck` · `npm test` (**140** files / **1036** tests) · `npm run build` · Matching Pulse frontend entry points (nav / footer / homepage ecosystem / `/matching-pulse`) verified.
+**Latest verification (19 Jul 2026):** `npm run typecheck` · Matching Pulse request form preserves values on validation failure · prior suite **1036** tests / build green on `main`.
 
 ---
 
@@ -120,6 +120,7 @@ Login-required **request intake** tied to the existing `User` / Auth.js session 
 | Area | Notes |
 |------|--------|
 | **Identity** | `MatchingPulseRequest.userId` = `session.user.id`; form must not create users or accept spoofed `userId`/`email` |
+| **Request form UX** | Validation failures return submitted `values` + `revision`; form remounts with `defaultValue` / `defaultChecked` so incomplete submits do **not** clear fields |
 | **Source / Lunch & Learn** | `?source=wework_lunch_learn_july_2026` → CTA + hidden field → DB (sanitize: letters/numbers/`_`/`-`, max 120; else `direct`); workshop note when source starts with `wework` |
 | **Status workflow** | `NEW` → `REVIEWING` → `NEED_MORE_INFO` → `POTENTIAL_MATCH_FOUND` → `INTRO_MADE` → `CLOSED` / `REJECTED` |
 | **Admin** | `/admin/matching-pulse` list + detail; filters/search; status / notes / tags; filtered **CSV export** omits `adminNotes` |
@@ -128,6 +129,7 @@ Login-required **request intake** tied to the existing `User` / Auth.js session 
 
 - [x] Logged-out `/matching-pulse/request` redirects to login with `callbackUrl` preserving `?source=` when valid
 - [x] Logged-in member can submit a request; row uses their `session.user.id`
+- [x] Failed validation preserves filled fields (no full form reset)
 - [x] `/matching-pulse/my-requests` shows only the current user’s requests
 - [x] Admin list shows all requests; non-admin cannot open admin routes/actions
 - [x] `adminNotes` never appear on public/user pages
@@ -1553,6 +1555,7 @@ Vercel Edge middleware has a **1 MB bundle limit**. Importing `@/auth` in middle
 
 - **Posting requires login** — guests hitting `/matching-pulse/request` (or the create action) redirect to `/login?callbackUrl=/matching-pulse/request` (source query preserved when valid)
 - **Identity** — `createMatchingPulseRequestAction` binds `userId` from `session.user.id` only; ignores form `userId` / `email`; **does not** call `prisma.user.create`
+- **Form redisplay** — `useActionState` + failure payload `values` / `revision`; incomplete submits keep user input (`MatchingPulseRequestForm.tsx`)
 - **Privacy** — members see only their own requests; `adminNotes` never on user/public loaders
 - **Login copy** — `MatchingPulseAuthPanel` + `matching-pulse-auth-context.ts` when callback is Matching Pulse (does not collide with `/market-pulse`)
 
@@ -2089,7 +2092,7 @@ Public landing + login-required request intake. Full product notes and QA checkl
 | Route | Auth | Notes |
 |-------|------|--------|
 | `/matching-pulse` | Public | Landing; `?source=` → CTA; workshop note when source starts with `wework` |
-| `/matching-pulse/request` | Logged-in | Hidden `source` field; create via `createMatchingPulseRequestAction` |
+| `/matching-pulse/request` | Logged-in | Hidden `source` field; create via `createMatchingPulseRequestAction`; failed validation preserves field values |
 | `/matching-pulse/my-requests` | Logged-in | Own rows only (`getMatchingPulseRequestsForUser`) |
 | `/matching-pulse/success` | Public shell | Title only when request owned by session user |
 | `/admin/matching-pulse` | `ADMIN` | Review board + CSV |
@@ -2344,4 +2347,4 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 ---
 
-*Last updated: 19 Jul 2026 — Matching Pulse MVP pilot (routes, nav/footer, homepage ecosystem, admin review); Market Pulse remains homepage primary; verification **1036** tests.*
+*Last updated: 19 Jul 2026 — Matching Pulse request form keeps filled fields after validation errors; Market Pulse remains homepage primary.*
