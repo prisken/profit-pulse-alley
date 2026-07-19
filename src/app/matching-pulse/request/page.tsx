@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import MatchingPulseRequestForm from "@/components/matching-pulse/MatchingPulseRequestForm";
+import { getServerSiteLocale, getServerTranslations } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n/messages";
 import {
   buildMatchingPulseRequestPath,
   getMatchingPulseRequestCreateInitialSource,
@@ -16,11 +18,13 @@ import {
   MP_TERMINAL_PANEL,
 } from "@/lib/market-pulse/visual-primitives";
 
-export const metadata: Metadata = {
-  title: "Post a Matching Pulse request | Profit Pulse Ally",
-  description:
-    "Tell us what you need, what you can offer, or who you would like to meet. PPA will review your Matching Pulse request before making any introduction.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerSiteLocale();
+  return {
+    title: translate(locale, "meta.matchingPulse.request.title"),
+    description: translate(locale, "meta.matchingPulse.request.description"),
+  };
+}
 
 type MatchingPulseRequestPageProps = Readonly<{
   searchParams: Promise<{ source?: string | string[] }>;
@@ -50,6 +54,7 @@ export default async function MatchingPulseRequestPage({
     redirect(`/login?callbackUrl=${encodeURIComponent(callbackPath)}`);
   }
 
+  const { t } = await getServerTranslations();
   const source = getMatchingPulseRequestCreateInitialSource(params);
   const posterLabel = formatPosterLabel(session.user.name, session.user.email);
   const showWorkshopNote = isMatchingPulseWorkshopSource(source);
@@ -80,26 +85,26 @@ export default async function MatchingPulseRequestPage({
               "rounded-sm",
             )}
           >
-            Matching Pulse
+            {t("nav.matchingPulse")}
           </Link>
           <span className="mx-2 text-zinc-600" aria-hidden="true">
             /
           </span>
-          <span className="text-zinc-200">Request</span>
+          <span className="text-zinc-200">
+            {t("matchingPulse.request.breadcrumb")}
+          </span>
         </p>
 
         <header className="mt-4 sm:mt-5">
           <h1 className="text-balance text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            Post a Matching Pulse request
+            {t("matchingPulse.request.title")}
           </h1>
           <p className="mt-3 text-pretty text-sm leading-relaxed text-zinc-400 sm:text-[15px]">
-            Tell us what you need, what you can offer, or who you would like to
-            meet. PPA will review your request before making any introduction.
+            {t("matchingPulse.request.intro")}
           </p>
           {showWorkshopNote ? (
             <p className="mt-3 text-pretty text-sm leading-relaxed text-mp-pulse/90 sm:text-[15px]">
-              Joining from a PPA workshop? Submit your request here and PPA will
-              review it after the session.
+              {t("matchingPulse.request.workshopNote")}
             </p>
           ) : null}
         </header>

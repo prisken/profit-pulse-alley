@@ -2,6 +2,13 @@
 
 import { useActionState } from "react";
 
+import { useTranslations } from "@/components/providers/LocaleProvider";
+import {
+  MATCHING_PULSE_CATEGORY_MESSAGE_KEYS,
+  MATCHING_PULSE_REQUEST_TYPE_MESSAGE_KEYS,
+  MATCHING_PULSE_URGENCY_MESSAGE_KEYS,
+  translateMatchingPulseError,
+} from "@/lib/i18n/matching-pulse-ui";
 import { createMatchingPulseRequestAction } from "@/lib/matching-pulse/actions";
 import {
   MATCHING_PULSE_CATEGORIES,
@@ -10,19 +17,11 @@ import {
   MATCHING_PULSE_URGENCIES,
 } from "@/lib/matching-pulse/constants";
 import {
-  MATCHING_PULSE_CATEGORY_LABELS,
-  MATCHING_PULSE_REQUEST_TYPE_LABELS,
-  MATCHING_PULSE_URGENCY_LABELS,
-} from "@/lib/matching-pulse/labels";
-import type { MatchingPulseValidationFailure } from "@/lib/matching-pulse/types";
-import {
   mergeMpClasses,
   MP_FOCUS_RING,
   MP_PRIMARY_BTN,
   MP_TERMINAL_PANEL,
 } from "@/lib/market-pulse/visual-primitives";
-
-type FormState = MatchingPulseValidationFailure | null;
 
 const fieldClass = mergeMpClasses(
   "mt-1.5 w-full min-h-11 rounded-xl border border-white/10 bg-mp-obsidian-elevated px-3 py-2.5 text-base text-white outline-none placeholder:text-zinc-500 disabled:opacity-60 sm:text-sm",
@@ -51,16 +50,23 @@ export default function MatchingPulseRequestForm({
   source,
   posterLabel,
 }: MatchingPulseRequestFormProps) {
+  const { t, locale } = useTranslations();
   const [state, formAction, isPending] = useActionState(
     createMatchingPulseRequestAction,
     null,
   );
 
   const fieldErrors = state?.fieldErrors ?? {};
-  const formError = state?.formError;
+  const formError = state?.formError
+    ? translateMatchingPulseError(locale, state.formError)
+    : undefined;
   const values = state?.values;
   // Remount uncontrolled inputs with preserved defaults after a failed submit.
   const formKey = `mp-request-${state?.revision ?? 0}`;
+
+  function fieldError(message: string | undefined): string | undefined {
+    return message ? translateMatchingPulseError(locale, message) : undefined;
+  }
 
   return (
     <form
@@ -78,7 +84,7 @@ export default function MatchingPulseRequestForm({
             "px-3.5 py-3 text-sm text-zinc-300 sm:px-4",
           )}
         >
-          Posting as{" "}
+          {t("matchingPulse.form.postingAs")}{" "}
           <span className="font-medium text-white">{posterLabel}</span>
         </p>
       ) : null}
@@ -94,7 +100,7 @@ export default function MatchingPulseRequestForm({
 
       <div>
         <label htmlFor="mp-title" className={labelClass}>
-          Title
+          {t("matchingPulse.form.title")}
           <RequiredMark />
         </label>
         <input
@@ -109,11 +115,11 @@ export default function MatchingPulseRequestForm({
           aria-required="true"
           aria-invalid={fieldErrors.title ? true : undefined}
           aria-describedby={fieldErrors.title ? "mp-title-error" : undefined}
-          placeholder="e.g. Looking for a marketing collaborator"
+          placeholder={t("matchingPulse.form.titlePlaceholder")}
         />
         {fieldErrors.title ? (
           <p id="mp-title-error" className={errorClass} role="alert">
-            {fieldErrors.title}
+            {fieldError(fieldErrors.title)}
           </p>
         ) : null}
       </div>
@@ -121,7 +127,7 @@ export default function MatchingPulseRequestForm({
       <div className="grid gap-5 sm:grid-cols-2 sm:gap-4">
         <div>
           <label htmlFor="mp-requestType" className={labelClass}>
-            Request type
+            {t("matchingPulse.form.requestType")}
             <RequiredMark />
           </label>
           <select
@@ -138,24 +144,24 @@ export default function MatchingPulseRequestForm({
             }
           >
             <option value="" disabled>
-              Select type
+              {t("matchingPulse.form.selectType")}
             </option>
             {MATCHING_PULSE_REQUEST_TYPES.map((value) => (
               <option key={value} value={value}>
-                {MATCHING_PULSE_REQUEST_TYPE_LABELS[value]}
+                {t(MATCHING_PULSE_REQUEST_TYPE_MESSAGE_KEYS[value])}
               </option>
             ))}
           </select>
           {fieldErrors.requestType ? (
             <p id="mp-requestType-error" className={errorClass} role="alert">
-              {fieldErrors.requestType}
+              {fieldError(fieldErrors.requestType)}
             </p>
           ) : null}
         </div>
 
         <div>
           <label htmlFor="mp-category" className={labelClass}>
-            Category
+            {t("matchingPulse.form.category")}
             <RequiredMark />
           </label>
           <select
@@ -172,17 +178,17 @@ export default function MatchingPulseRequestForm({
             }
           >
             <option value="" disabled>
-              Select category
+              {t("matchingPulse.form.selectCategory")}
             </option>
             {MATCHING_PULSE_CATEGORIES.map((value) => (
               <option key={value} value={value}>
-                {MATCHING_PULSE_CATEGORY_LABELS[value]}
+                {t(MATCHING_PULSE_CATEGORY_MESSAGE_KEYS[value])}
               </option>
             ))}
           </select>
           {fieldErrors.category ? (
             <p id="mp-category-error" className={errorClass} role="alert">
-              {fieldErrors.category}
+              {fieldError(fieldErrors.category)}
             </p>
           ) : null}
         </div>
@@ -190,7 +196,7 @@ export default function MatchingPulseRequestForm({
 
       <div>
         <label htmlFor="mp-description" className={labelClass}>
-          Description
+          {t("matchingPulse.form.description")}
           <RequiredMark />
         </label>
         <textarea
@@ -209,14 +215,17 @@ export default function MatchingPulseRequestForm({
               ? "mp-description-error"
               : "mp-description-hint"
           }
-          placeholder="Share context, goals, and what a good fit looks like."
+          placeholder={t("matchingPulse.form.descriptionPlaceholder")}
         />
         <p id="mp-description-hint" className={hintClass}>
-          Max {MATCHING_PULSE_FIELD_MAX.description} characters
+          {t("matchingPulse.form.descriptionMaxHint").replace(
+            "{max}",
+            String(MATCHING_PULSE_FIELD_MAX.description),
+          )}
         </p>
         {fieldErrors.description ? (
           <p id="mp-description-error" className={errorClass} role="alert">
-            {fieldErrors.description}
+            {fieldError(fieldErrors.description)}
           </p>
         ) : null}
       </div>
@@ -224,8 +233,10 @@ export default function MatchingPulseRequestForm({
       <div className="grid gap-5 sm:grid-cols-2 sm:gap-4">
         <div>
           <label htmlFor="mp-company" className={labelClass}>
-            Company{" "}
-            <span className="font-normal text-zinc-500">(optional)</span>
+            {t("matchingPulse.form.company")}{" "}
+            <span className="font-normal text-zinc-500">
+              {t("matchingPulse.form.optional")}
+            </span>
           </label>
           <input
             id="mp-company"
@@ -242,15 +253,17 @@ export default function MatchingPulseRequestForm({
           />
           {fieldErrors.company ? (
             <p id="mp-company-error" className={errorClass} role="alert">
-              {fieldErrors.company}
+              {fieldError(fieldErrors.company)}
             </p>
           ) : null}
         </div>
 
         <div>
           <label htmlFor="mp-roleTitle" className={labelClass}>
-            Role{" "}
-            <span className="font-normal text-zinc-500">(optional)</span>
+            {t("matchingPulse.form.role")}{" "}
+            <span className="font-normal text-zinc-500">
+              {t("matchingPulse.form.optional")}
+            </span>
           </label>
           <input
             id="mp-roleTitle"
@@ -267,7 +280,7 @@ export default function MatchingPulseRequestForm({
           />
           {fieldErrors.roleTitle ? (
             <p id="mp-roleTitle-error" className={errorClass} role="alert">
-              {fieldErrors.roleTitle}
+              {fieldError(fieldErrors.roleTitle)}
             </p>
           ) : null}
         </div>
@@ -276,8 +289,10 @@ export default function MatchingPulseRequestForm({
       <div className="grid gap-5 sm:grid-cols-2 sm:gap-4">
         <div>
           <label htmlFor="mp-contactPhone" className={labelClass}>
-            Contact phone{" "}
-            <span className="font-normal text-zinc-500">(optional)</span>
+            {t("matchingPulse.form.contactPhone")}{" "}
+            <span className="font-normal text-zinc-500">
+              {t("matchingPulse.form.optional")}
+            </span>
           </label>
           <input
             id="mp-contactPhone"
@@ -295,15 +310,17 @@ export default function MatchingPulseRequestForm({
           />
           {fieldErrors.contactPhone ? (
             <p id="mp-contactPhone-error" className={errorClass} role="alert">
-              {fieldErrors.contactPhone}
+              {fieldError(fieldErrors.contactPhone)}
             </p>
           ) : null}
         </div>
 
         <div>
           <label htmlFor="mp-contactMethod" className={labelClass}>
-            Preferred contact method{" "}
-            <span className="font-normal text-zinc-500">(optional)</span>
+            {t("matchingPulse.form.contactMethod")}{" "}
+            <span className="font-normal text-zinc-500">
+              {t("matchingPulse.form.optional")}
+            </span>
           </label>
           <input
             id="mp-contactMethod"
@@ -313,7 +330,7 @@ export default function MatchingPulseRequestForm({
             disabled={isPending}
             defaultValue={values?.contactMethod ?? ""}
             className={fieldClass}
-            placeholder="e.g. WhatsApp, email, LinkedIn"
+            placeholder={t("matchingPulse.form.contactMethodPlaceholder")}
             aria-invalid={fieldErrors.contactMethod ? true : undefined}
             aria-describedby={
               fieldErrors.contactMethod ? "mp-contactMethod-error" : undefined
@@ -321,7 +338,7 @@ export default function MatchingPulseRequestForm({
           />
           {fieldErrors.contactMethod ? (
             <p id="mp-contactMethod-error" className={errorClass} role="alert">
-              {fieldErrors.contactMethod}
+              {fieldError(fieldErrors.contactMethod)}
             </p>
           ) : null}
         </div>
@@ -329,8 +346,10 @@ export default function MatchingPulseRequestForm({
 
       <div>
         <label htmlFor="mp-urgency" className={labelClass}>
-          Urgency{" "}
-          <span className="font-normal text-zinc-500">(optional)</span>
+          {t("matchingPulse.form.urgency")}{" "}
+          <span className="font-normal text-zinc-500">
+            {t("matchingPulse.form.optional")}
+          </span>
         </label>
         <select
           id="mp-urgency"
@@ -343,24 +362,26 @@ export default function MatchingPulseRequestForm({
             fieldErrors.urgency ? "mp-urgency-error" : undefined
           }
         >
-          <option value="">No preference</option>
+          <option value="">{t("matchingPulse.form.noPreference")}</option>
           {MATCHING_PULSE_URGENCIES.map((value) => (
             <option key={value} value={value}>
-              {MATCHING_PULSE_URGENCY_LABELS[value]}
+              {t(MATCHING_PULSE_URGENCY_MESSAGE_KEYS[value])}
             </option>
           ))}
         </select>
         {fieldErrors.urgency ? (
           <p id="mp-urgency-error" className={errorClass} role="alert">
-            {fieldErrors.urgency}
+            {fieldError(fieldErrors.urgency)}
           </p>
         ) : null}
       </div>
 
       <div>
         <label htmlFor="mp-idealMatch" className={labelClass}>
-          Ideal match{" "}
-          <span className="font-normal text-zinc-500">(optional)</span>
+          {t("matchingPulse.form.idealMatch")}{" "}
+          <span className="font-normal text-zinc-500">
+            {t("matchingPulse.form.optional")}
+          </span>
         </label>
         <textarea
           id="mp-idealMatch"
@@ -370,7 +391,7 @@ export default function MatchingPulseRequestForm({
           disabled={isPending}
           defaultValue={values?.idealMatch ?? ""}
           className={mergeMpClasses(fieldClass, "min-h-20 resize-y")}
-          placeholder="Who would be most helpful to connect with?"
+          placeholder={t("matchingPulse.form.idealMatchPlaceholder")}
           aria-invalid={fieldErrors.idealMatch ? true : undefined}
           aria-describedby={
             fieldErrors.idealMatch ? "mp-idealMatch-error" : undefined
@@ -378,14 +399,14 @@ export default function MatchingPulseRequestForm({
         />
         {fieldErrors.idealMatch ? (
           <p id="mp-idealMatch-error" className={errorClass} role="alert">
-            {fieldErrors.idealMatch}
+            {fieldError(fieldErrors.idealMatch)}
           </p>
         ) : null}
       </div>
 
       <fieldset className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] px-3.5 py-4 sm:px-4">
         <legend className="px-1 text-sm font-medium text-zinc-200">
-          Consents
+          {t("matchingPulse.form.consents")}
         </legend>
 
         <label className="flex items-start gap-3 text-sm text-zinc-300">
@@ -409,13 +430,13 @@ export default function MatchingPulseRequestForm({
             }
           />
           <span>
-            I agree that PPA may contact me about this request.
+            {t("matchingPulse.form.consentContact")}
             <RequiredMark />
           </span>
         </label>
         {fieldErrors.consentToContact ? (
           <p id="mp-consentToContact-error" className={errorClass} role="alert">
-            {fieldErrors.consentToContact}
+            {fieldError(fieldErrors.consentToContact)}
           </p>
         ) : null}
 
@@ -432,9 +453,10 @@ export default function MatchingPulseRequestForm({
             )}
           />
           <span>
-            I am open to PPA sharing relevant request details with a potential
-            match after review.{" "}
-            <span className="text-zinc-500">(optional)</span>
+            {t("matchingPulse.form.consentShare")}{" "}
+            <span className="text-zinc-500">
+              {t("matchingPulse.form.optional")}
+            </span>
           </span>
         </label>
       </fieldset>
@@ -450,13 +472,15 @@ export default function MatchingPulseRequestForm({
             "disabled:cursor-not-allowed disabled:opacity-60",
           )}
         >
-          {isPending ? "Submitting…" : "Submit request"}
+          {isPending
+            ? t("matchingPulse.form.submitting")
+            : t("matchingPulse.form.submit")}
         </button>
         <p className="mt-3 text-xs text-zinc-500">
           <span className="text-mp-pulse" aria-hidden="true">
             *
           </span>{" "}
-          Required fields
+          {t("matchingPulse.form.requiredFields")}
         </p>
       </div>
     </form>

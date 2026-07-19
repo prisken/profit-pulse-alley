@@ -17,7 +17,7 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 
 **Product focus:** **Market Pulse** is the MVP and homepage primary CTA. **Matching Pulse** is a login-required collaboration-request **pilot** (not a marketplace; no credits/tokens; no public request board). Events + Matching Pulse are supporting pillars.
 
-**Latest verification (19 Jul 2026):** `npm run typecheck` · Matching Pulse request form preserves values on validation failure · prior suite **1036** tests / build green on `main`.
+**Latest verification (20 Jul 2026):** `npm run typecheck` · Matching Pulse **request page bilingual** (EN / zh-Hant via `ppa_locale`) · **1039** tests / build green on `main`.
 
 ---
 
@@ -77,7 +77,7 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | Lunch & Learn event | `/events/fortify-sales-marketing` | Public | Coming soon — **July**, TBC |
 | Past event archive | `/events/wo-leung-yiu-dou-yiu` | Public | Registration closed |
 | **Matching Pulse landing** | `/matching-pulse` | Public | Pilot collaboration intake; optional `?source=` attribution; **no public request board** |
-| **Matching Pulse request** | `/matching-pulse/request` | Logged-in | Post need / offer / partnership; guests → `/login?callbackUrl=…` |
+| **Matching Pulse request** | `/matching-pulse/request` | Logged-in | Post need / offer / partnership; guests → `/login?callbackUrl=…`; **i18n** (EN / zh-Hant) |
 | **Matching Pulse my requests** | `/matching-pulse/my-requests` | Logged-in | Submitter’s own requests only (no `adminNotes`) |
 | **Matching Pulse admin** | `/admin/matching-pulse` | `ADMIN` only | Request review board + detail; status / notes / tags; CSV export |
 | **Fortify registration** | `/fortify-survey` | Public | **QR-coded URL — do not change** |
@@ -121,15 +121,17 @@ Login-required **request intake** tied to the existing `User` / Auth.js session 
 |------|--------|
 | **Identity** | `MatchingPulseRequest.userId` = `session.user.id`; form must not create users or accept spoofed `userId`/`email` |
 | **Request form UX** | Validation failures return submitted `values` + `revision`; form remounts with `defaultValue` / `defaultChecked` so incomplete submits do **not** clear fields |
+| **i18n (request page)** | `/matching-pulse/request` fully bilingual via `ppa_locale` — page shell `getServerTranslations()`; form `useTranslations()`; labels/enums/errors in `matching-pulse-messages.ts`; server English validation strings mapped in `matching-pulse-ui.ts`. Landing / my-requests / success / admin still mostly English |
 | **Source / Lunch & Learn** | `?source=wework_lunch_learn_july_2026` → CTA + hidden field → DB (sanitize: letters/numbers/`_`/`-`, max 120; else `direct`); workshop note when source starts with `wework` |
 | **Status workflow** | `NEW` → `REVIEWING` → `NEED_MORE_INFO` → `POTENTIAL_MATCH_FOUND` → `INTRO_MADE` → `CLOSED` / `REJECTED` |
 | **Admin** | `/admin/matching-pulse` list + detail; filters/search; status / notes / tags; filtered **CSV export** omits `adminNotes` |
 
-**QA checklist** (code review **19 Jul 2026** — PASS; browser smoke still recommended before prod)
+**QA checklist** (code review **20 Jul 2026** — PASS; browser smoke still recommended before prod)
 
 - [x] Logged-out `/matching-pulse/request` redirects to login with `callbackUrl` preserving `?source=` when valid
 - [x] Logged-in member can submit a request; row uses their `session.user.id`
 - [x] Failed validation preserves filled fields (no full form reset)
+- [x] Request page + form switch EN ↔ zh-Hant with site `LanguageSwitcher` (including validation errors and enum option labels)
 - [x] `/matching-pulse/my-requests` shows only the current user’s requests
 - [x] Admin list shows all requests; non-admin cannot open admin routes/actions
 - [x] `adminNotes` never appear on public/user pages
@@ -161,15 +163,15 @@ Google OAuth redirect URIs (must match exactly):
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
 
-### Verification — latest run 19 Jul 2026 (1036 tests)
+### Verification — latest run 20 Jul 2026 (1039 tests)
 
 | Check | Result |
 |-------|--------|
 | **Lint** | `npm run lint` — pass (0 errors; 17 pre-existing warnings in legacy/admin) |
 | **Typecheck** | `npm run typecheck` — pass |
 | **Build** | `npm run build` — pass (`prisma db push && next build`) |
-| **Tests** | `npm test` — **140** files / **1036** Vitest tests |
-| **Matching Pulse** | Domain + privacy + CSV + source tracking tests; homepage compose asserts nav/footer/ecosystem entry points |
+| **Tests** | `npm test` — **141** files / **1039** Vitest tests |
+| **Matching Pulse** | Domain + privacy + CSV + source tracking + request i18n error mapping; homepage compose asserts nav/footer/ecosystem entry points |
 | **Homepage** | `homepage-compose` — hero primary; ecosystem after Rewards; Matching Pulse pilot card; no fortify-survey from homepage |
 | **Hub lobby chip** | `hub-lobby-state.test.ts` — `no_active_cycle` when runtime OPEN + no DB cycle; `closed` when runtime paused |
 | **Launch smoke** | `launch-smoke.test.ts`, `play-data.launch.test.ts`, `reveal-data.launch.test.ts`, `launch-regression-audit.test.ts` |
@@ -1291,7 +1293,7 @@ Profit Pulse Ally is a bilingual (English / Traditional Chinese) learning commun
 │   │   ├── admin/              ← MarketPulseCyclesHub, matching-pulse/*, legacy panels, …
 │   │   └── auth/               ← LoginPage, OnboardingPage, OnboardingRecoveryPanel
 │   ├── lib/
-│   │   ├── i18n/               ← locales, messages (en, zh-Hant), server helpers, auth-ui, market-pulse-ui
+│   │   ├── i18n/               ← locales, messages (en, zh-Hant, matching-pulse-messages), server helpers, auth-ui, market-pulse-ui, matching-pulse-ui
 │   │   ├── matching-pulse/     ← validation, actions, data, admin-*, create-source, csv
 │   │   ├── auth/onboarding-routes.ts
 │   │   ├── admin-user-actions.ts, admin-user-validation.ts
@@ -1327,7 +1329,7 @@ npm run dev
 | `npm run build` | **`prisma db push && next build`** (Vercel uses this) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript (`tsc --noEmit`) |
-| `npm test` | Vitest unit tests (`vitest run`) — **1036 tests** / **140** files as of 19 Jul 2026 |
+| `npm test` | Vitest unit tests (`vitest run`) — **1039 tests** / **141** files as of 20 Jul 2026 |
 | `npm run db:migrate` | Prisma migrate dev (when using migration files) |
 | `npm run db:push` | Push schema without migration files |
 | `npm run db:seed` | Seed **demo Market Pulse** data (dev only — see [§4.1](#41-market-pulse-demo-seed)) |
@@ -1619,10 +1621,11 @@ Play → submit decision → learning-interest prompt (once, PR 2)
 | Server copy | `getServerTranslations()`, `getServerSiteLocale()` |
 | Client copy | `LocaleProvider`, `useTranslations()` |
 | Switcher | `LanguageSwitcher` — header, mobile nav, play header, login, onboarding |
-| Message files | `src/lib/i18n/messages/en.ts`, `zh-Hant.ts`, `market-pulse-messages.ts`, `auth-app-messages.ts`, `acquisition-messages.ts` |
+| Message files | `src/lib/i18n/messages/en.ts`, `zh-Hant.ts`, `market-pulse-messages.ts`, `auth-app-messages.ts`, `acquisition-messages.ts`, `matching-pulse-messages.ts` |
 | MP errors | `src/lib/i18n/market-pulse-ui.ts` maps server strings to keys |
+| Matching Pulse request | Page + form bilingual; `src/lib/i18n/matching-pulse-ui.ts` maps validation/submit English strings → keys |
 
-Event **detail** pages and admin MP operational UI remain largely static bilingual or English.
+Event **detail** pages, Matching Pulse landing / my-requests / success, and admin MP / Matching Pulse ops UI remain largely static bilingual or English.
 
 ### Pages
 
@@ -1632,7 +1635,7 @@ Event **detail** pages and admin MP operational UI remain largely static bilingu
 | `/auth/onboarding` | Logged-in | Contact form; recovery buttons; OAuth grace period |
 | `/profile` | Logged-in | Profile Details + Market Pulse History + Matching Pulse summary card; sign out |
 | `/matching-pulse` | Public | Landing; optional `?source=` |
-| `/matching-pulse/request` | Logged-in | Create request; guests → login with callback |
+| `/matching-pulse/request` | Logged-in | Create request; guests → login with callback; **i18n** |
 | `/matching-pulse/my-requests` | Logged-in | Own requests only |
 | `/admin` | `role === ADMIN` | **Command center** — overview + user management (Tel, Learning, Next Step, acquisition CSV); Matching Pulse overview link; non-admin → `/` |
 | `/admin/market-pulse` | `role === ADMIN` | **Market Pulse ops** — cycles hub, builder, runtime, reveal/scoring; see [Admin operations manual](#admin-operations-manual--cycles-cards-and-go-live) |
@@ -2092,7 +2095,7 @@ Public landing + login-required request intake. Full product notes and QA checkl
 | Route | Auth | Notes |
 |-------|------|--------|
 | `/matching-pulse` | Public | Landing; `?source=` → CTA; workshop note when source starts with `wework` |
-| `/matching-pulse/request` | Logged-in | Hidden `source` field; create via `createMatchingPulseRequestAction`; failed validation preserves field values |
+| `/matching-pulse/request` | Logged-in | Hidden `source` field; create via `createMatchingPulseRequestAction`; failed validation preserves field values; **EN / zh-Hant** via `matching-pulse-messages` + `matching-pulse-ui` |
 | `/matching-pulse/my-requests` | Logged-in | Own rows only (`getMatchingPulseRequestsForUser`) |
 | `/matching-pulse/success` | Public shell | Title only when request owned by session user |
 | `/admin/matching-pulse` | `ADMIN` | Review board + CSV |
@@ -2341,10 +2344,10 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 - **Languages:** EN + Traditional Chinese (`ppa_locale` cookie); MP launch messages in `launch-config.ts`
 - **Data stores:** Postgres (users, Market Pulse, Matching Pulse, auth), KV (legacy theme), Markdown (blog)
-- **Testing:** `npm run lint` (0 errors), `npm run typecheck`, `npm test` (**1036**), `npm run build` — last green **19 Jul 2026**
-- **Production smoke:** [`docs/market-pulse-deploy-checklist.md`](docs/market-pulse-deploy-checklist.md) § Launch smoke test; Matching Pulse QA in [Matching Pulse MVP (pilot)](#matching-pulse-mvp-pilot); [Verification — latest run](#verification--latest-run-19-jul-2026-1036-tests)
+- **Testing:** `npm run lint` (0 errors), `npm run typecheck`, `npm test` (**1039**), `npm run build` — last green **20 Jul 2026**
+- **Production smoke:** [`docs/market-pulse-deploy-checklist.md`](docs/market-pulse-deploy-checklist.md) § Launch smoke test; Matching Pulse QA in [Matching Pulse MVP (pilot)](#matching-pulse-mvp-pilot); [Verification — latest run](#verification--latest-run-20-jul-2026-1039-tests)
 - **Lint warnings:** Legacy castle-siege; TanStack Table in admin members table
 
 ---
 
-*Last updated: 19 Jul 2026 — Matching Pulse request form keeps filled fields after validation errors; Market Pulse remains homepage primary.*
+*Last updated: 20 Jul 2026 — Matching Pulse request page fully bilingual (EN / zh-Hant); Market Pulse remains homepage primary.*
