@@ -833,7 +833,7 @@ The Market Pulse admin **cycles hub** shows a compact **Guided progress** block 
 
 #### Guided workflow release checklist (PR 16)
 
-Guided admin workflow (PRs 5–16) is on `acquisition-admin-visibility`. Final QA was regression/privacy/docs only — **no gameplay/scoring/reveal changes**. See [Verification — latest run](#verification--latest-run-19-jul-2026-1036-tests).
+Guided admin workflow (PRs 5–16) is on `acquisition-admin-visibility`. Final QA was regression/privacy/docs only — **no gameplay/scoring/reveal changes**. See [Verification — latest run](#verification--latest-run-20-jul-2026-1039-tests).
 
 | Step | Verify |
 |------|--------|
@@ -1105,7 +1105,7 @@ Key test files for the fast builder journey:
 | PPA / public privacy | `server-security.test.ts`, `admin-card-preview.test.ts` |
 | Non-admin rejection | `admin-builder-data.test.ts`, `admin-duplicate-card.test.ts`, `admin-quick-create-cycle.test.ts` |
 
-**Latest CI:** see [Verification — latest run](#verification--latest-run-19-jul-2026-1036-tests) (lint / typecheck / **1036** tests / build).
+**Latest CI:** see [Verification — latest run](#verification--latest-run-20-jul-2026-1039-tests) (lint / typecheck / **1039** tests / build).
 
 ### Making Market Pulse visible to players (go-live)
 
