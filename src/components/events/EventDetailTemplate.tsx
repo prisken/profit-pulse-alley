@@ -154,7 +154,7 @@ export default function EventDetailTemplate({
             {heroImage ? (
               <div className="order-1 min-w-0 lg:order-2">
                 <div className="overflow-hidden rounded-xl border border-foreground/10 bg-white shadow-sm sm:rounded-2xl">
-                  <div className="relative mx-auto aspect-[4/3] max-h-[14rem] w-full sm:max-h-[20rem] md:aspect-[16/9] md:max-h-none">
+                  <div className="relative mx-auto aspect-[3/4] max-h-[22rem] w-full sm:max-h-[28rem] md:aspect-[3/4] md:max-h-[32rem]">
                     <Image
                       src={heroImage.mobileSrc}
                       alt={heroImage.alt}

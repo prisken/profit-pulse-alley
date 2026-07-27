@@ -74,13 +74,13 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | Blog (EN + zh-HK) | `/blog`, `/blog/{lang}/[slug]` | Public | 3 paired articles |
 | Events hub | `/events` | Public | Upcoming: Lunch & Learn; past: Fortify + Wo Leung; **i18n** |
 | Fortify event (past) | `/events/fortify-your-future` | Public | **Archived** — registration closed |
-| Lunch & Learn event | `/events/fortify-sales-marketing` | Public | Coming soon — **July**, TBC |
+| Lunch & Learn event | `/events/fortify-sales-marketing` | Public | **30 Jul 2026**, WeWork Taikoo 22B; free; open registration |
 | Past event archive | `/events/wo-leung-yiu-dou-yiu` | Public | Registration closed |
 | **Matching Pulse landing** | `/matching-pulse` | Public | Pilot collaboration intake; optional `?source=` attribution; **no public request board** |
 | **Matching Pulse request** | `/matching-pulse/request` | Logged-in | Post need / offer / partnership; guests → `/login?callbackUrl=…`; **i18n** (EN / zh-Hant) |
 | **Matching Pulse my requests** | `/matching-pulse/my-requests` | Logged-in | Submitter’s own requests only (no `adminNotes`) |
 | **Matching Pulse admin** | `/admin/matching-pulse` | `ADMIN` only | Request review board + detail; status / notes / tags; CSV export |
-| **Fortify registration** | `/fortify-survey` | Public | **QR-coded URL — do not change** |
+| **Fortify registration** | `/fortify-registration` | Public | Lunch & Learn signup (Google Form). Legacy `/fortify-survey` → **301 redirect** here |
 | **Login** | `/login` | Public | Sign In + Create Account; Google + magic link; **i18n** |
 | **OAuth onboarding** | `/auth/onboarding` | Logged-in | **Optional** contact number; skip to play; `/api/auth/complete-onboarding` JWT refresh |
 | **Member profile** | `/profile` | Members only | Profile + Market Pulse history; **i18n**. **Email preferences:** feature branch — production after merge to `main` |
@@ -108,14 +108,14 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | Event | Status | Route | Notes |
 |-------|--------|-------|-------|
 | **Fortify Your Future** (June fireside) | **Past** | `/events/fortify-your-future` | Registration closed; past banner on detail |
-| **Fortify Your Future (Lunch & Learn)** | **Coming soon** | `/events/fortify-sales-marketing` | Month: **July**; location TBC (was Sales & Marketing / 17 Jul) |
+| **Fortify Your Future (Lunch & Learn)** | **Open** | `/events/fortify-sales-marketing` | **30 Jul 2026**, 12:30–13:30; WeWork Taikoo Room 22B; free; guest **Vickie Yau**; poster `fortify-lunch-learn-july-2026-poster.png`; register `/fortify-registration` |
 | **《我兩樣都要》** | Past | `/events/wo-leung-yiu-dou-yiu` | Archive page |
 
-**`/fortify-survey`** — unchanged QR URL. Do **not** modify `FortifyYourFutureSurvey.tsx` without approval. Homepage /events detail copy for Lunch & Learn was updated separately; the survey funnel remains the live QR capture as-is.
+**`/fortify-registration`** — Lunch & Learn signup (`FortifyRegistration.tsx` + Google Form). Legacy **`/fortify-survey` permanently redirects** here so old QR codes keep working.
 
 ### Matching Pulse MVP (pilot)
 
-Login-required **request intake** tied to the existing `User` / Auth.js session — **one PPA account**. Not a marketplace; not a credit system. Requests are **private** (submitter + `ADMIN` only). Market Pulse scoring, reveal, PPA privacy, launch gating, and `/fortify-survey` are **unchanged**.
+Login-required **request intake** tied to the existing `User` / Auth.js session — **one PPA account**. Not a marketplace; not a credit system. Requests are **private** (submitter + `ADMIN` only). Market Pulse scoring, reveal, PPA privacy, and launch gating are **unchanged**.
 
 | Area | Notes |
 |------|--------|
@@ -137,7 +137,7 @@ Login-required **request intake** tied to the existing `User` / Auth.js session 
 - [x] `adminNotes` never appear on public/user pages
 - [x] Source tracking works (`wework_…` CTA + hidden field + admin display); workshop note when source starts with `wework`
 - [x] Market Pulse play / reveal / leaderboard paths untouched by Matching Pulse (static/git)
-- [x] `/fortify-survey` and `FortifyYourFutureSurvey.tsx` unchanged
+- [x] Fortify registration lives at `/fortify-registration` (legacy `/fortify-survey` redirects)
 
 Historical June 2026 Fortify copy (survey + archived detail):
 
@@ -1640,7 +1640,7 @@ Event **detail** pages, Matching Pulse landing / my-requests / success, and admi
 | `/admin` | `role === ADMIN` | **Command center** — overview + user management (Tel, Learning, Next Step, acquisition CSV); Matching Pulse overview link; non-admin → `/` |
 | `/admin/market-pulse` | `role === ADMIN` | **Market Pulse ops** — cycles hub, builder, runtime, reveal/scoring; see [Admin operations manual](#admin-operations-manual--cycles-cards-and-go-live) |
 | `/admin/matching-pulse` | `role === ADMIN` | Matching Pulse request review board + detail |
-**Full-page routes (no header/footer):** `/fortify-survey`, `/login`, `/admin`, `/auth/onboarding`
+**Full-page routes (no header/footer):** `/fortify-registration`, `/login`, `/admin`, `/auth/onboarding`
 
 **Immersive routes (no site chrome — product UI only):** `/market-pulse/play` — back link to hub in play header; leaderboard/disclaimer in collapsible `<details>` on mobile.
 
@@ -1708,7 +1708,7 @@ if (session.user.role !== "ADMIN") redirect("/");
 | `/admin/market-pulse` | `src/app/admin/market-pulse/page.tsx` | Market Pulse Admin — full ops dashboard |
 | `/admin/matching-pulse` | `src/app/admin/matching-pulse/page.tsx` | Matching Pulse request review board |
 | `/admin/matching-pulse/[requestId]` | `src/app/admin/matching-pulse/[requestId]/page.tsx` | Matching Pulse request detail / review |
-| `/fortify-survey` | `src/app/fortify-survey/page.tsx` | Fortify registration (QR URL) |
+| `/fortify-registration` | `src/app/fortify-registration/page.tsx` | Fortify Lunch & Learn registration (`/fortify-survey` redirects here) |
 | `/events/fortify-your-future` | `src/app/events/fortify-your-future/page.tsx` | Past Fortify event |
 | `/events/fortify-sales-marketing` | `src/app/events/fortify-sales-marketing/page.tsx` | Coming soon event |
 | `/concept`, `/blog/*`, `/events` | … | Content & events |
@@ -1737,7 +1737,7 @@ if (session.user.role !== "ADMIN") redirect("/");
 
 | Constant | Routes | Chrome |
 |----------|--------|--------|
-| `FULL_PAGE_ROUTES` | `/fortify-survey`, `/login`, `/admin`, `/auth/onboarding` | No header/footer |
+| `FULL_PAGE_ROUTES` | `/fortify-registration`, `/login`, `/admin`, `/auth/onboarding` | No header/footer |
 | `IMMERSIVE_ROUTES` | `/market-pulse/play` | No header/footer; play-specific header |
 | *(default)* | All other routes | Sticky header + footer |
 
@@ -1781,7 +1781,7 @@ Four columns (content):
 
 Bottom bar: logo left; `© 2026 Profit Pulse Ally. All Rights Reserved.` right.
 
-**Full-page routes (no header/footer):** `/fortify-survey`, `/login`, `/admin`, `/auth/onboarding`
+**Full-page routes (no header/footer):** `/fortify-registration`, `/login`, `/admin`, `/auth/onboarding`
 
 ---
 
@@ -1834,13 +1834,15 @@ Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes s
 
 **Accessibility / motion:** `MP_FOCUS_RING` on interactive elements; simulator uses `aria-pressed`, `role="status"`, `aria-live`; `motion-reduce` on hero pulse chip, simulator trendline, event card hovers; `min-w-0` + `overflow-x-hidden` for mobile overflow guard.
 
-### 10.2 Fortify registration (`/fortify-survey`)
+### 10.2 Fortify registration (`/fortify-registration`)
 
-**Do not modify** `FortifyYourFutureSurvey.tsx` or the route without explicit approval — live QR codes point here.
+**Canonical URL:** `/fortify-registration` (`src/components/FortifyRegistration.tsx`). **Legacy:** `/fortify-survey` → permanent redirect in `next.config.ts` (keeps printed QR codes working).
+
+**Copy:** EN/zh toggle on-page — Lunch & Learn details (30 Jul 2026, 12:30–13:30, WeWork Taikoo Room 22B, free, guest Vickie Yau, case study Ghost in the Shopping Cart!).
 
 **Past event detail:** `src/lib/events/fortify-your-future.ts` — `registrationDisabled: true`, past banner on page.
 
-**Upcoming event:** `src/lib/events/fortify-sales-marketing.ts` — `/events/fortify-sales-marketing`.
+**Upcoming event:** `getFortifySalesMarketingEvent(locale)` in `fortify-sales-marketing.ts` — bilingual detail at `/events/fortify-sales-marketing`; poster `/images/fortify-lunch-learn-july-2026-poster.png`.
 
 **Events hub i18n:** `getFortifySalesMarketingShowcase(locale)` in `upcoming-event-display.ts`.
 
@@ -2238,7 +2240,7 @@ if (!session?.user?.id) redirect("/login?callbackUrl=/your-path");
 
 ### Update Fortify registration
 
-Edit only with approval — update `FortifyYourFutureSurvey.tsx` `content` + form embed; **never change `/fortify-survey` URL**.
+Edit registration copy in `FortifyRegistration.tsx` `content` + Google Form embed; keep `/fortify-survey` → `/fortify-registration` redirect for legacy QR codes.
 
 ### Update homepage copy or events showcase
 
@@ -2330,7 +2332,7 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 | Market Pulse domain | `server.ts`, `cycle-playability.ts`, `playable-card.ts` (`findActiveScheduleDayIndex`, `getCardActiveWindowEnd`, `isCardWithinActivePlayWindow`), `reveal-access.ts`, `admin-actions.ts`, `card-validation.ts`, `score-calculation.ts`, `card-type.ts` |
 | Market Pulse APIs | `src/app/api/market-pulse/*`, `player-handlers.ts` |
 | Deploy checklist | `docs/market-pulse-deploy-checklist.md` |
-| Fortify (QR) | `FortifyYourFutureSurvey.tsx`, `fortify-your-future.ts`, `fortify-sales-marketing.ts` |
+| Fortify (registration) | `FortifyRegistration.tsx`, `fortify-your-future.ts`, `fortify-sales-marketing.ts` |
 | Events hub i18n | `upcoming-event-display.ts`, `home-events-hub.ts` |
 | Nav / layout | `LayoutShell.tsx`, `SiteFooter.tsx`, `MobileNav.tsx`, `route-chrome.ts` |
 | Homepage | `src/app/page.tsx`, `src/components/home/*` |
@@ -2350,4 +2352,4 @@ Use `ContentPageLayout` — see [§10.11](#1011-content-pages-contentpagelayout)
 
 ---
 
-*Last updated: 20 Jul 2026 — Matching Pulse request page fully bilingual (EN / zh-Hant); Market Pulse remains homepage primary.*
+*Last updated: 28 Jul 2026 — Fortify Lunch & Learn (30 Jul 2026, WeWork Taikoo) open; registration at `/fortify-registration` (legacy `/fortify-survey` redirects); Market Pulse remains homepage primary.*

@@ -20,7 +20,7 @@ export const fortifyYourFutureEvent: EventDetailData = {
       text: "Connect with a curated group of ambitious founders.",
     },
   ],
-  registrationLink: "/fortify-survey",
+  registrationLink: "/fortify-registration",
   registrationText: "Registration Closed / 報名已結束",
   registrationDisabled: true,
   speakersSectionTitle: "Meet the Speakers / 本次活動嘉賓",

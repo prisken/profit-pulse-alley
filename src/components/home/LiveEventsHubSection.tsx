@@ -251,7 +251,7 @@ export default async function LiveEventsHubSection({
                     : upcomingEvent.speakerName
                 }
                 fill
-                className="object-cover object-center"
+                className="object-contain object-center bg-zinc-950"
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
               <div

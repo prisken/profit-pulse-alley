@@ -1,7 +1,6 @@
-// --- CRITICAL --- //
-// DO NOT MODIFY THIS COMPONENT OR THE /fortify-survey ROUTE.
-// This is a live lead capture funnel linked from physical QR codes.
-// ---------------- //
+// Live lead-capture funnel for Fortify Lunch & Learn registration.
+// Canonical URL: /fortify-registration
+// Legacy QR URL /fortify-survey permanently redirects here (see next.config.ts).
 
 "use client";
 
@@ -13,45 +12,59 @@ const GOOGLE_FORM_EMBED_HTML = `<iframe src="https://docs.google.com/forms/d/e/1
 const content = {
   en: {
     title: "Fortify Your Future",
-    subtitle: "A Fireside Chat on Sales and Marketing",
-    hook_line1: "Trapped in the daily grind?",
+    subtitle: "Lunch & Learn",
+    hook_line1: "Ghost in the Shopping Cart!",
     hook_line2:
-      "When was the last time you stopped working *in* your business to work *on* it?",
+      "Join us for a midday case study on *Amazon's AI Sales Engine* — plus discussion, collaboration, and a complimentary light lunch.",
     invitation:
-      "Join us for an exclusive fireside chat designed to shift your mindset from operator to owner. We have now confirmed the event details. Secure your spot below.",
+      "Profit Pulse Ally × WeWork invite you to an exclusive Lunch & Learn with guest speaker Vickie Yau. Secure your free seat below.",
     event_details_heading: "Event Details",
     event_date_label: "Date:",
-    event_date: "July 17th (Friday)",
+    event_date: "30th July 2026 (Thursday)",
     event_time_label: "Time:",
-    event_time: "7:00 PM - 9:00 PM",
+    event_time: "12:30 – 13:30",
     event_venue_label: "Venue:",
-    event_venue: "WeWork Lee Garden",
+    event_venue: "WeWork Taikoo, Room 22B",
+    event_cost_label: "Cost:",
+    event_cost: "Free",
+    speaker_heading: "Guest speaker",
+    speaker_name: "Vickie Yau",
+    speaker_credentials:
+      "Ph.D. (Education, HKU) · Regional APAC Corporate Trainer and Facilitator · Coach for Executives and Organisational Leaders",
     registration_title: "Register Now",
     registration_subtitle:
       "Fill out the form below to confirm your attendance. Seats are limited.",
-    bonus_heading: "Bonus",
+    bonus_heading: "What you get",
     bonus_text:
-      "All attendees will receive a free professional headshot at the event. Plus, there might be hot dogs!",
+      "Professional headshot · Complimentary light lunch · Useful discussion · Business collaboration",
     footer: "© 2026 ProfitPulseAlly. All Rights Reserved.",
   },
   zh: {
-    title: "守業・增值・創未來",
-    subtitle: "一場關於「銷售與市場推廣」的圍爐對話。",
-    hook_line1: "被日常工作困住？",
-    hook_line2: "你上一次停下腳步，「規劃」你的業務，是在什麼時候？",
+    title: "守業增值創未來",
+    subtitle: "Lunch & Learn",
+    hook_line1: "Ghost in the Shopping Cart!",
+    hook_line2:
+      "午間案例研討：*Amazon 的 AI 銷售引擎*——加上討論、協作交流，以及免費輕食午餐。",
     invitation:
-      "我們誠邀您參與這場專屬的爐邊對話，旨在將您的思維從「營運者」轉變為「擁有者」。活動詳情現已確定，請在下方預留您的席位。",
+      "Profit Pulse Ally × WeWork 誠邀你參加這場 Lunch & Learn，嘉賓講者 Vickie Yau。名額有限，請在下方免費預留席位。",
     event_details_heading: "活動詳情",
     event_date_label: "日期：",
-    event_date: "7月17日 (星期五)",
+    event_date: "2026年7月30日（星期四）",
     event_time_label: "時間：",
-    event_time: "晚上 7:00 - 9:00",
+    event_time: "12:30 – 13:30",
     event_venue_label: "地點：",
-    event_venue: "WeWork Lee Garden",
+    event_venue: "WeWork Taikoo 22B 室",
+    event_cost_label: "費用：",
+    event_cost: "免費",
+    speaker_heading: "嘉賓講者",
+    speaker_name: "Vickie Yau",
+    speaker_credentials:
+      "香港大學教育學博士 · 亞太區企業培訓師與引導者 · 高管與組織領袖教練",
     registration_title: "立即報名",
     registration_subtitle: "請填寫以下表格以確認出席。座位有限，請盡早報名。",
-    bonus_heading: "額外禮遇",
-    bonus_text: "所有出席者均可在活動中獲贈一張專業個人頭像照。另外，現場可能會有熱狗！",
+    bonus_heading: "活動亮點",
+    bonus_text:
+      "專業形象照 · 免費輕食午餐 · 實用討論 · 商業協作",
     footer: "© 2026 ProfitPulseAlly. 版權所有。",
   },
 };
@@ -75,7 +88,7 @@ function renderEmphasizedText(text: string) {
   });
 }
 
-export default function FortifyYourFutureSurvey() {
+export default function FortifyRegistration() {
   const [lang, setLang] = useState<Lang>("en");
   const t = content[lang];
 
@@ -154,7 +167,22 @@ export default function FortifyYourFutureSurvey() {
                 <dt className="font-semibold text-white">{t.event_venue_label}</dt>
                 <dd>{t.event_venue}</dd>
               </div>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-semibold text-white">{t.event_cost_label}</dt>
+                <dd>{t.event_cost}</dd>
+              </div>
             </dl>
+            <div className="mx-auto mt-5 max-w-md border-t border-amber-400/15 pt-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-amber-400/90">
+                {t.speaker_heading}
+              </p>
+              <p className="mt-1.5 text-base font-semibold text-white">
+                {t.speaker_name}
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-gray-300">
+                {t.speaker_credentials}
+              </p>
+            </div>
           </div>
         </section>
 

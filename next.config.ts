@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
         destination: "/market-pulse/play",
         permanent: true,
       },
+      {
+        // Legacy QR / printed URL — keep working after rename to /fortify-registration.
+        source: "/fortify-survey",
+        destination: "/fortify-registration",
+        permanent: true,
+      },
     ];
   },
   images: {

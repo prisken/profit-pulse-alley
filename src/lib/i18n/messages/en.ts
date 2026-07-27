@@ -283,9 +283,10 @@ export const enMessages = {
   "home.events.upcoming.salesMarketing.titleZh":
     "守業增值創未來（Lunch & Learn）",
   "home.events.upcoming.salesMarketing.subtitle":
-    "A Lunch & Learn for Hong Kong founders. Programme details coming soon.",
-  "home.events.upcoming.salesMarketing.date": "July",
-  "home.events.upcoming.salesMarketing.location": "TBC",
+    "Ghost in the Shopping Cart! — Amazon's AI Sales Engine. Guest speaker Vickie Yau. Free Lunch & Learn at WeWork Taikoo.",
+  "home.events.upcoming.salesMarketing.date":
+    "30th July 2026 (Thursday), 12:30–13:30",
+  "home.events.upcoming.salesMarketing.location": "WeWork Taikoo, Room 22B",
   "home.events.past1.title": "《我兩樣都要》線下戰略會議",
   "home.events.past1.summary":
     "Founders explored how to scale a business while building long-term wealth with Vicky Huang and Marcy Chan.",
@@ -304,9 +305,11 @@ export const enMessages = {
   "events.hub.pastHeading": "Past Events / 過往活動",
   "events.hub.viewDetails": "View Details",
   "events.hub.comingSoon": "Coming Soon / 敬請期待",
+  "events.hub.openRegistration": "Free · Open for registration",
+  "events.hub.registerNow": "Register now",
   "events.hub.archivedClosed": "Archived — registration closed",
   "events.hub.upcoming.salesMarketing.blurb":
-    "A Lunch & Learn for Hong Kong founders. Full programme details to be announced.",
+    "Ghost in the Shopping Cart! — Amazon's AI Sales Engine with guest speaker Vickie Yau. Complimentary light lunch, professional headshot, discussion, and collaboration.",
 
   "home.philosophy.srHeading": "Our Philosophy",
   "home.philosophy.heading": "Think in systems",

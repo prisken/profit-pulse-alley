@@ -1,11 +1,20 @@
+import type { Metadata } from "next";
+
 import EventDetailTemplate from "@/components/events/EventDetailTemplate";
-import { fortifySalesMarketingEvent } from "@/lib/events/fortify-sales-marketing";
+import { getFortifySalesMarketingEvent } from "@/lib/events/fortify-sales-marketing";
+import { getServerSiteLocale } from "@/lib/i18n/server";
 
-export const metadata = {
-  title: fortifySalesMarketingEvent.pageTitle,
-  description: fortifySalesMarketingEvent.subtitle,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerSiteLocale();
+  const event = getFortifySalesMarketingEvent(locale);
+  return {
+    title: event.pageTitle,
+    description: event.subtitle,
+  };
+}
 
-export default function FortifySalesMarketingEventPage() {
-  return <EventDetailTemplate {...fortifySalesMarketingEvent} />;
+export default async function FortifySalesMarketingEventPage() {
+  const locale = await getServerSiteLocale();
+  const event = getFortifySalesMarketingEvent(locale);
+  return <EventDetailTemplate {...event} />;
 }

@@ -1,6 +1,6 @@
 /** Routes that render without the standard site header and footer. */
 export const FULL_PAGE_ROUTES = [
-  "/fortify-survey",
+  "/fortify-registration",
   "/admin",
   "/login",
   "/auth/onboarding",

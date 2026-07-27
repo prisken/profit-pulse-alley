@@ -2,7 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Calendar, MapPin } from "lucide-react";
 
-import { fortifySalesMarketingEvent } from "@/lib/events/fortify-sales-marketing";
+import {
+  FORTIFY_LUNCH_LEARN_POSTER,
+  FORTIFY_LUNCH_LEARN_REGISTRATION_PATH,
+  getFortifySalesMarketingEvent,
+} from "@/lib/events/fortify-sales-marketing";
 import { fortifyYourFutureEvent } from "@/lib/events/fortify-your-future";
 import { getFortifySalesMarketingShowcase } from "@/lib/events/upcoming-event-display";
 import { getServerSiteLocale } from "@/lib/i18n/server";
@@ -23,9 +27,12 @@ const focusRing =
 const ctaPrimary =
   `inline-flex min-h-11 w-full items-center justify-center rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 sm:w-auto ${focusRing}`;
 
+const ctaSecondary =
+  `inline-flex min-h-11 w-full items-center justify-center rounded-full border border-foreground/20 bg-background px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-foreground/[0.04] sm:w-auto ${focusRing}`;
+
 export default async function EventsHubPage() {
   const locale = await getServerSiteLocale();
-  const upcoming = fortifySalesMarketingEvent;
+  const upcoming = getFortifySalesMarketingEvent(locale);
   const upcomingShowcase = getFortifySalesMarketingShowcase(locale);
 
   return (
@@ -51,19 +58,19 @@ export default async function EventsHubPage() {
           {translate(locale, "events.hub.upcomingHeading")}
         </h2>
         <article className="mt-4 overflow-hidden rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-background to-background shadow-sm sm:mt-6 sm:rounded-2xl">
-          <div className="relative aspect-[4/3] max-h-[14rem] w-full bg-zinc-950 sm:aspect-[16/9] sm:max-h-none">
+          <div className="relative aspect-[3/4] max-h-[20rem] w-full bg-zinc-950 sm:aspect-[16/10] sm:max-h-[22rem]">
             <Image
-              src="/images/fortify-hero-chess-king.png"
+              src={FORTIFY_LUNCH_LEARN_POSTER}
               alt={upcoming.heroImage?.alt ?? upcoming.title}
               fill
-              className="object-cover object-center"
+              className="object-contain object-center"
               sizes="(max-width: 768px) 100vw, 1024px"
               priority
             />
           </div>
           <div className="p-4 sm:p-6">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-600 dark:text-amber-400 sm:text-xs">
-              {translate(locale, "events.hub.comingSoon")}
+              {translate(locale, "events.hub.openRegistration")}
             </p>
             <h3 className="mt-1.5 text-base font-bold text-foreground sm:mt-2 sm:text-xl">
               {upcomingShowcase.title}
@@ -96,7 +103,16 @@ export default async function EventsHubPage() {
             </dl>
 
             <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:gap-3">
-              <Link href="/events/fortify-sales-marketing" className={ctaPrimary}>
+              <Link
+                href={FORTIFY_LUNCH_LEARN_REGISTRATION_PATH}
+                className={ctaPrimary}
+              >
+                {translate(locale, "events.hub.registerNow")}
+              </Link>
+              <Link
+                href="/events/fortify-sales-marketing"
+                className={ctaSecondary}
+              >
                 {translate(locale, "events.hub.viewDetails")}
               </Link>
             </div>

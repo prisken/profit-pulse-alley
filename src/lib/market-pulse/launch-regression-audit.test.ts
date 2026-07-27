@@ -106,12 +106,12 @@ describe("Launch regression audit — admin authorization wiring", () => {
   });
 });
 
-describe("Launch regression audit — /fortify-survey", () => {
-  it("remains a static survey page without redirects", () => {
-    const page = readSource("src/app/fortify-survey/page.tsx");
-    const layout = readSource("src/app/fortify-survey/layout.tsx");
+describe("Launch regression audit — /fortify-registration", () => {
+  it("remains a static registration page without redirects", () => {
+    const page = readSource("src/app/fortify-registration/page.tsx");
+    const layout = readSource("src/app/fortify-registration/layout.tsx");
 
-    expect(page).toContain("FortifyYourFutureSurvey");
+    expect(page).toContain("FortifyRegistration");
     expect(page).not.toMatch(/\bredirect\s*\(/);
     expect(layout).not.toMatch(/\bredirect\s*\(/);
   });

@@ -265,9 +265,10 @@ export const zhHantMessages: Messages = {
   "home.events.upcoming.salesMarketing.titleZh":
     "守業增值創未來（Lunch & Learn）",
   "home.events.upcoming.salesMarketing.subtitle":
-    "專為香港創業者而設的 Lunch & Learn，詳細內容即將公布。",
-  "home.events.upcoming.salesMarketing.date": "7月",
-  "home.events.upcoming.salesMarketing.location": "待定",
+    "Ghost in the Shopping Cart! — Amazon 的 AI 銷售引擎。嘉賓講者 Vickie Yau。免費 Lunch & Learn，地點 WeWork Taikoo。",
+  "home.events.upcoming.salesMarketing.date":
+    "2026年7月30日（星期四），12:30–13:30",
+  "home.events.upcoming.salesMarketing.location": "WeWork Taikoo 22B 室",
   "home.events.past1.title": "《我兩樣都要》線下戰略會議",
   "home.events.past1.summary":
     "創業者與 Vicky Huang、Marcy Chan 探討如何在拓展業務的同時累積長遠財富。",
@@ -284,9 +285,11 @@ export const zhHantMessages: Messages = {
   "events.hub.pastHeading": "過往活動",
   "events.hub.viewDetails": "查看詳情",
   "events.hub.comingSoon": "敬請期待",
+  "events.hub.openRegistration": "免費 · 開放報名",
+  "events.hub.registerNow": "立即報名",
   "events.hub.archivedClosed": "已存檔 — 報名已結束",
   "events.hub.upcoming.salesMarketing.blurb":
-    "專為香港創業者而設的 Lunch & Learn，詳細內容即將公布。",
+    "Ghost in the Shopping Cart! — Amazon 的 AI 銷售引擎，嘉賓講者 Vickie Yau。免費輕食午餐、專業形象照、實用討論與商業協作。",
 
   "home.philosophy.srHeading": "我們的理念",
   "home.philosophy.heading": "以系統思維思考",

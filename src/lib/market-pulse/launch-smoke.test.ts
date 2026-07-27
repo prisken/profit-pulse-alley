@@ -282,21 +282,21 @@ describe("Launch smoke — admin access and readiness", () => {
   });
 });
 
-describe("Launch smoke — /fortify-survey regression", () => {
-  it("keeps the survey route as a static page without redirects", () => {
+describe("Launch smoke — /fortify-registration regression", () => {
+  it("keeps the registration route as a static page without redirects", () => {
     const pagePath = path.join(
       process.cwd(),
-      "src/app/fortify-survey/page.tsx",
+      "src/app/fortify-registration/page.tsx",
     );
     const layoutPath = path.join(
       process.cwd(),
-      "src/app/fortify-survey/layout.tsx",
+      "src/app/fortify-registration/layout.tsx",
     );
 
     const page = readFileSync(pagePath, "utf8");
     const layout = readFileSync(layoutPath, "utf8");
 
-    expect(page).toContain("FortifyYourFutureSurvey");
+    expect(page).toContain("FortifyRegistration");
     expect(page).not.toMatch(/\bredirect\s*\(/);
     expect(layout).not.toMatch(/\bredirect\s*\(/);
   });
