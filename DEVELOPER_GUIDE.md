@@ -80,6 +80,8 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | **Matching Pulse request** | `/matching-pulse/request` | Logged-in | Post need / offer / partnership; guests → `/login?callbackUrl=…`; **i18n** (EN / zh-Hant) |
 | **Matching Pulse my requests** | `/matching-pulse/my-requests` | Logged-in | Submitter’s own requests only (no `adminNotes`) |
 | **Matching Pulse admin** | `/admin/matching-pulse` | `ADMIN` only | Request review board + detail; status / notes / tags; CSV export |
+| **Workshop Pyramid Lab** | `/workshop/pyramid` | Public | **Hidden** live-session wizard (QR / direct URL only; noindex; no nav). **SSOT:** [`docs/workshop-pyramid-lab.md`](docs/workshop-pyramid-lab.md) |
+| **Workshop leads admin** | `/admin/workshop` | `ADMIN` only | Lead table + CSV; see SSOT doc |
 | **Fortify registration** | `/fortify-registration` | Public | Lunch & Learn signup (Google Form). Legacy `/fortify-survey` → **301 redirect** here |
 | **Login** | `/login` | Public | Sign In + Create Account; Google + magic link; **i18n** |
 | **OAuth onboarding** | `/auth/onboarding` | Logged-in | **Optional** contact number; skip to play; `/api/auth/complete-onboarding` JWT refresh |

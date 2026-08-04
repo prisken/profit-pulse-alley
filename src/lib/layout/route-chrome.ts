@@ -4,6 +4,7 @@ export const FULL_PAGE_ROUTES = [
   "/admin",
   "/login",
   "/auth/onboarding",
+  "/workshop/pyramid",
 ] as const;
 
 /** Routes with no site chrome — full-screen product experience. */

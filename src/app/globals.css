@@ -110,6 +110,113 @@ video {
     0 0 0 4px color-mix(in srgb, var(--mp-pulse) 75%, transparent);
 }
 
+/*
+ * Workshop Pyramid Lab — touch-hardened range slider
+ * Visible knob ~28px; hit target 44×44 (transparent padding via radial fill).
+ * touch-action: none prevents page scroll while dragging the thumb/track.
+ */
+.workshop-range {
+  --workshop-range-thumb-fill: #34d399;
+  --workshop-range-thumb-ring: #09090b;
+  display: block;
+  width: 100%;
+  height: 2.75rem; /* 44px vertical hit strip */
+  margin: 0;
+  cursor: pointer;
+  appearance: none;
+  background: transparent;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workshop-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.workshop-range:focus-visible {
+  outline: none;
+}
+
+.workshop-range:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--workshop-range-thumb-fill) 55%, transparent),
+    0 2px 6px rgb(0 0 0 / 0.35);
+}
+
+.workshop-range:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--workshop-range-thumb-fill) 55%, transparent),
+    0 2px 6px rgb(0 0 0 / 0.35);
+}
+
+.workshop-range::-webkit-slider-runnable-track {
+  height: 0.625rem;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.15);
+}
+
+.workshop-range::-moz-range-track {
+  height: 0.625rem;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.15);
+}
+
+/* 44×44 hit target; ~28px colored knob drawn inside via radial-gradient */
+.workshop-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  /* Center 44px thumb on 10px (0.625rem) track: (10 − 44) / 2 = −17px */
+  top: -17px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at center,
+    var(--workshop-range-thumb-fill) 0 10px,
+    var(--workshop-range-thumb-ring) 10px 12px,
+    transparent 12.5px
+  );
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+  /* Thumb itself must not scroll the page while grabbed */
+  touch-action: none;
+  cursor: grab;
+}
+
+.workshop-range--dragging::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.workshop-range::-moz-range-thumb {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at center,
+    var(--workshop-range-thumb-fill) 0 10px,
+    var(--workshop-range-thumb-ring) 10px 12px,
+    transparent 12.5px
+  );
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+  touch-action: none;
+  cursor: grab;
+}
+
+.workshop-range--dragging::-moz-range-thumb {
+  cursor: grabbing;
+}
+
+/* Workshop Pyramid Lab — kill 300ms tap delay / double-tap zoom on controls */
+.workshop-lab button,
+.workshop-lab [role="button"],
+.workshop-lab [role="radio"],
+.workshop-lab [role="tab"] {
+  touch-action: manipulation;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-spin {
     animation: none;

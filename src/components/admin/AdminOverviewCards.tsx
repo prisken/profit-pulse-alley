@@ -197,6 +197,14 @@ export default function AdminOverviewCards({ overview }: Readonly<Props>) {
           {t("auth.admin.quickActions.leaderboard")}
         </Link>
       </div>
+      <p className="mt-3">
+        <Link
+          href="/admin/workshop"
+          className="text-xs font-medium text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-300 hover:underline"
+        >
+          {t("auth.admin.quickActions.workshopLeads")}
+        </Link>
+      </p>
     </section>
   );
 }

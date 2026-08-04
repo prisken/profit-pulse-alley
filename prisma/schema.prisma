@@ -426,6 +426,45 @@ model MatchingPulseRequest {
   @@index([createdAt])
 }
 
+// --- Workshop Pyramid Lab (hidden workshop tool) ---
+
+model WorkshopSession {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  age              Int
+  monthlyIncome    Float
+  industry         String
+  householdStatus  String?
+  tone             String   @default("professional")
+  // shape v2 — see src/lib/workshop/types.ts
+  aiPyramidJson    Json // AI-predicted pyramid, before user edits
+  // shape v2 — see src/lib/workshop/types.ts
+  finalPyramidJson Json // user-confirmed/edited pyramid
+  // shape v2 — see src/lib/workshop/types.ts
+  macroResultJson  Json? // deterministic macro / goal-achievability simulation
+  expensesJson     Json? // AI-predicted then user-edited monthly expense breakdown
+  riskQuizJson     Json? // 5-question risk quiz answers + derived profile
+  // shape v2 — see src/lib/workshop/types.ts
+  crisisJson       Json? // AI-generated crisis + structured per-layer alerts
+  // shape v2 — see src/lib/workshop/types.ts
+  goalsJson        Json? // financial rating + ranked action goals
+  lead             WorkshopLead?
+}
+
+model WorkshopLead {
+  id           String          @id @default(cuid())
+  sessionId    String          @unique
+  session      WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  name         String
+  email        String
+  phone        String
+  selectedGoal String?
+  createdAt    DateTime        @default(now())
+
+  @@index([createdAt])
+  @@index([email])
+}
+
 // --- Auth.js Prisma Adapter models ---
 
 model Account {

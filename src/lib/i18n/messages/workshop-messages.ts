@@ -1,0 +1,427 @@
+/** Workshop Pyramid Lab user-facing strings (English). */
+
+export const workshopEnMessages = {
+  "workshop.brand": "Workshop Pyramid Lab",
+  "workshop.meta.title": "Workshop Pyramid Lab | Profit Pulse Ally",
+  "workshop.meta.description": "Private workshop pyramid lab session.",
+  "workshop.loading": "Loading workshop…",
+
+  "workshop.steps.stepOfTotal": "Step {n} of {total}",
+  "workshop.steps.labels.intake": "Intake",
+  "workshop.steps.labels.pyramid": "Pyramid",
+  "workshop.steps.labels.expenses": "Expenses",
+  "workshop.steps.labels.stresstest": "Stress Test",
+  "workshop.steps.labels.riskquiz": "Risk Quiz",
+  "workshop.steps.labels.crisis": "Crisis",
+  "workshop.steps.labels.summary": "Summary",
+  "workshop.steps.labels.capture": "Capture",
+  "workshop.steps.sessionReady": "session ready",
+  "workshop.steps.progressAria": "Workshop progress: step {n} of {total}",
+
+  "workshop.tone.heading": "How should your AI advisor talk to you?",
+  "workshop.tone.options.fun.label": "Fun & Metaphorical",
+  "workshop.tone.options.fun.description":
+    "Playful analogies — games, adventures, sports",
+  "workshop.tone.options.professional.label": "Professional & Formal",
+  "workshop.tone.options.professional.description":
+    "Precise, advisor-grade language",
+  "workshop.tone.options.simple.label": "Simple & Educational",
+  "workshop.tone.options.simple.description": "Plain language, no jargon",
+  "workshop.tone.options.direct.label": "Direct & No-Nonsense",
+  "workshop.tone.options.direct.description": "Blunt, urgent, tough-love",
+  "workshop.tone.options.warm.label": "Warm & Encouraging",
+  "workshop.tone.options.warm.description": "Empathetic coach tone",
+
+  "workshop.intake.ageLabel": "Age",
+  "workshop.intake.agePlaceholder": "e.g. 32",
+  "workshop.intake.incomeLabel": "Monthly income (HKD)",
+  "workshop.intake.incomePlaceholder": "e.g. 45000",
+  "workshop.intake.industryLabel": "Industry",
+  "workshop.intake.industryPlaceholder": "Start typing or pick a suggestion",
+  "workshop.intake.industryOtherPlaceholder": "Other industry",
+  "workshop.intake.householdLabel": "Household status",
+  "workshop.intake.householdPlaceholder": "Select status",
+  "workshop.intake.submitButton": "Analyze my pyramid",
+  "workshop.intake.analyzingMessage": "AI is analyzing your profile...",
+  "workshop.intake.analyzingSubtext": "Benchmarking against Hong Kong peers",
+  "workshop.intake.errorAge": "Enter an age between 16 and 100.",
+  "workshop.intake.errorIncome": "Enter a valid monthly income in HKD.",
+  "workshop.intake.errorIndustry": "Select or enter your industry.",
+  "workshop.intake.errorHousehold": "Select your household status.",
+  "workshop.intake.errorTone": "Choose how your AI advisor should talk to you.",
+  "workshop.intake.errorAnalyze":
+    "Could not analyze your profile. Please try again.",
+  "workshop.intake.retryTitle": "Couldn’t analyze your profile",
+
+  "workshop.intake.industries.tech": "Tech",
+  "workshop.intake.industries.finance": "Finance",
+  "workshop.intake.industries.healthcare": "Healthcare",
+  "workshop.intake.industries.legal": "Legal",
+  "workshop.intake.industries.realEstate": "Real Estate",
+  "workshop.intake.industries.civilService": "Civil Service",
+  "workshop.intake.industries.education": "Education",
+  "workshop.intake.industries.hospitality": "F&B/Hospitality",
+  "workshop.intake.industries.selfEmployed": "Self-Employed",
+  "workshop.intake.industries.other": "Other",
+
+  "workshop.intake.household.single": "Single",
+  "workshop.intake.household.marriedNoKids": "Married no kids",
+  "workshop.intake.household.marriedWithKids": "Married with kids",
+  "workshop.intake.household.singleParent": "Single parent",
+
+  "workshop.pyramid.intro":
+    "Tune each layer to match your reality. Status colors compare your current numbers to deterministic benchmarks — Confirm saves and continues.",
+  "workshop.pyramid.graphicTitle": "Your pyramid",
+  "workshop.pyramid.statusPrefix": "Status · {status}",
+  "workshop.pyramid.layers.protection.title": "Protection",
+  "workshop.pyramid.layers.emergencyFund.title": "Emergency Fund",
+  "workshop.pyramid.layers.goals.title": "Goals",
+  "workshop.pyramid.layers.investment.title": "Investment & Fun",
+  "workshop.pyramid.band.protection": "Protection",
+  "workshop.pyramid.band.emergencyFund": "Emergency",
+  "workshop.pyramid.band.goals": "Goals",
+  "workshop.pyramid.band.investment": "Invest",
+
+  "workshop.pyramid.protection.medicalLabel": "Medical coverage",
+  "workshop.pyramid.protection.criticalIllnessLabel":
+    "Critical illness amount (HKD)",
+  "workshop.pyramid.protection.recommendedPrefix": "Recommended:",
+  "workshop.pyramid.protection.stepHint": "adjusts in 5% steps",
+  "workshop.pyramid.protection.cardLabel": "Protection",
+
+  "workshop.pyramid.emergencyFund.savedLabel": "Saved amount (HKD)",
+  "workshop.pyramid.emergencyFund.recommendedMonths":
+    "Recommended: {months} months of expenses ≈ {amount}",
+  "workshop.pyramid.emergencyFund.placeholderHint":
+    "(using a rough {percent}% of income until expenses are set)",
+  "workshop.pyramid.emergencyFund.cardLabel": "Emergency fund",
+
+  "workshop.pyramid.goals.addButton": "+ Add a goal",
+  "workshop.pyramid.goals.deleteButton": "Delete goal",
+  "workshop.pyramid.goals.cardLabel": "Goals",
+  "workshop.pyramid.goals.countOne": "{count} goal",
+  "workshop.pyramid.goals.countPlural": "{count} goals",
+  "workshop.pyramid.goals.combinedTargets": "Combined targets {amount}",
+  "workshop.pyramid.goals.newGoalDefault": "New goal",
+  "workshop.pyramid.goals.fallbackLabel": "Goal",
+  "workshop.pyramid.goals.iconLabel": "Icon",
+  "workshop.pyramid.goals.iconPickerAria": "Goal icon",
+  "workshop.pyramid.goals.nextIconHint": "Icon for the next goal",
+  "workshop.pyramid.goals.labelField": "Label",
+  "workshop.pyramid.goals.amountField": "Target amount (HKD)",
+  "workshop.pyramid.goals.yearField": "Target year",
+  "workshop.pyramid.goals.targetYearSubtext": "Target year {year}",
+  "workshop.pyramid.goals.iconPicker.heart": "Wedding / love",
+  "workshop.pyramid.goals.iconPicker.graduationCap": "Education",
+  "workshop.pyramid.goals.iconPicker.home": "Home",
+  "workshop.pyramid.goals.iconPicker.plane": "Travel",
+  "workshop.pyramid.goals.iconPicker.baby": "Family",
+  "workshop.pyramid.goals.iconPicker.piggyBank": "Savings",
+
+  "workshop.pyramid.investment.lowLabel": "Low risk",
+  "workshop.pyramid.investment.midLabel": "Mid risk",
+  "workshop.pyramid.investment.highLabel": "High risk",
+  "workshop.pyramid.investment.monthlyInvestmentLabel":
+    "Monthly investment (HKD)",
+  "workshop.pyramid.investment.monthlyFunLabel": "Monthly fun (HKD)",
+  "workshop.pyramid.investment.cardLabel": "Investment & fun",
+  "workshop.pyramid.investment.riskHeading": "Risk allocation",
+  "workshop.pyramid.investment.riskHint":
+    "Tap − / + in {step}% steps, or drag the large thumbs. Mix always totals 100%. Rec: {low}% / {mid}% / {high}% (L/M/H)",
+  "workshop.pyramid.investment.recShort": "rec {n}%",
+  "workshop.pyramid.investment.total": "Total {n}%",
+  "workshop.pyramid.investment.decreaseAria": "Decrease {label} by {step}%",
+  "workshop.pyramid.investment.increaseAria": "Increase {label} by {step}%",
+  "workshop.pyramid.investment.investCardLabel": "Monthly investment",
+  "workshop.pyramid.investment.investSubtext": "Invested each month",
+  "workshop.pyramid.investment.funCardLabel": "Monthly fun",
+  "workshop.pyramid.investment.funSubtext": "Guilt-free spending buffer",
+  "workshop.pyramid.investment.perMonth": "{amount} / mo",
+  "workshop.pyramid.investment.funBudgetLine":
+    "Fun budget {fun} / mo · Risk L/M/H {low}/{mid}/{high}",
+
+  "workshop.pyramid.confirmButton": "Confirm My Pyramid",
+  "workshop.pyramid.saving": "Saving…",
+  "workshop.pyramid.whyThisMatters": "Why this matters →",
+  "workshop.pyramid.whyThisMattersOpen": "Why this matters",
+  "workshop.pyramid.saveErrorTitle": "Couldn’t save your pyramid",
+  "workshop.pyramid.saveErrorFallback":
+    "Could not save your pyramid. Please try again.",
+  "workshop.pyramid.needIntake":
+    "Complete intake first so we can load your AI pyramid estimate.",
+  "workshop.pyramid.goToIntake": "Go to intake",
+  "workshop.pyramid.snagTitle": "Pyramid step hit a snag",
+  "workshop.pyramid.snagDescription":
+    "Something went wrong editing your pyramid. Retry to continue.",
+
+  "workshop.expenses.categories.housing": "Housing",
+  "workshop.expenses.categories.foodLiving": "Food & Living",
+  "workshop.expenses.categories.transport": "Transport",
+  "workshop.expenses.categories.insurance": "Insurance",
+  "workshop.expenses.categories.discretionary": "Discretionary",
+  "workshop.expenses.totalLabel": "Monthly total",
+  "workshop.expenses.confirmButton": "Confirm expenses",
+  "workshop.expenses.intro":
+    "Tweak each monthly category. The total always sums your numbers — we never trust an AI total.",
+  "workshop.expenses.estimating": "Estimating your monthly expenses…",
+  "workshop.expenses.estimatingSubtext":
+    "Insurance is reasoned from your confirmed protection layer.",
+  "workshop.expenses.predictErrorTitle": "Couldn’t estimate expenses",
+  "workshop.expenses.predictErrorFallback":
+    "Could not estimate your expenses. Please try again.",
+  "workshop.expenses.confirmErrorFallback":
+    "Could not save your expenses. Please try again.",
+  "workshop.expenses.confirming": "Saving…",
+  "workshop.expenses.amountAria": "{label} monthly amount in HKD",
+  "workshop.expenses.needPyramid":
+    "Confirm your pyramid first so we can estimate expenses.",
+  "workshop.expenses.goToPyramid": "Go to pyramid",
+  "workshop.expenses.snagTitle": "Expenses step hit a snag",
+  "workshop.expenses.snagDescription":
+    "We couldn’t finish estimating your expenses. Retry to continue.",
+
+  "workshop.stressTest.scrubberLabel": "Year scrubber",
+  "workshop.stressTest.emergencyFundCardTitle": "Emergency fund",
+  "workshop.stressTest.targetVsProjected": "Target: {target} · Projected: {projected}",
+  "workshop.stressTest.notReachedLabel": "Not reached",
+  "workshop.stressTest.continueButton": "See My Crisis Test",
+  "workshop.stressTest.intro":
+    "Scrub the timeline to see surplus evolve. Green goals stay quiet — amber and red get a short why.",
+  "workshop.stressTest.todayBaseline": "Today · baseline",
+  "workshop.stressTest.income": "Income",
+  "workshop.stressTest.expenses": "Expenses",
+  "workshop.stressTest.surplus": "Surplus",
+  "workshop.stressTest.horizonHint": "+{years}y · {maxYear}",
+  "workshop.stressTest.narrating": "Writing tone notes for amber/red items…",
+  "workshop.stressTest.running": "Running your goal stress test…",
+  "workshop.stressTest.runningSubtext":
+    "Deterministic math first — AI notes fade in after.",
+  "workshop.stressTest.sectionEmergency": "Emergency fund",
+  "workshop.stressTest.sectionGoals": "Goals",
+  "workshop.stressTest.efTarget": "Target: {months} mo",
+  "workshop.stressTest.efAlreadyFunded": "Already funded",
+  "workshop.stressTest.efFundedIn": "funded in {months} mo",
+  "workshop.stressTest.goalTarget": "Target: {year}",
+  "workshop.stressTest.goalProjected": "Projected: {year}",
+  "workshop.stressTest.reachedByScrub": " · reached by scrub year",
+  "workshop.stressTest.errorTitle": "Stress test hit a snag",
+  "workshop.stressTest.errorFallback":
+    "Could not run the stress test. Please try again.",
+  "workshop.stressTest.needExpenses":
+    "Confirm expenses first so we can run the stress test.",
+  "workshop.stressTest.goToExpenses": "Go to expenses",
+  "workshop.stressTest.snagTitle": "Stress test hit a snag",
+  "workshop.stressTest.snagDescription":
+    "The goal stress test failed. Retry to continue.",
+  "workshop.stressTest.yearScrubAria": "Scrub stress-test year",
+  "workshop.stressTest.yearValueAria": "Year {year}",
+  "workshop.stressTest.noteFallback":
+    "This layer is behind the plan based on the projected surplus path.",
+
+  "workshop.riskQuiz.questions.q1.text":
+    "A sudden windfall of HK$200,000 lands in your account. You mostly…",
+  "workshop.riskQuiz.questions.q1.choiceA":
+    "Park it in cash / high-interest savings — sleep easy",
+  "workshop.riskQuiz.questions.q1.choiceB":
+    "Split it — some cash buffer, some diversified funds",
+  "workshop.riskQuiz.questions.q1.choiceC":
+    "Put most of it into growth assets / opportunities",
+  "workshop.riskQuiz.questions.q2.text":
+    "Markets drop 20% in a month. Your instinct is to…",
+  "workshop.riskQuiz.questions.q2.choiceA": "Sell or pause — protect what’s left",
+  "workshop.riskQuiz.questions.q2.choiceB":
+    "Hold steady and reassess on a schedule",
+  "workshop.riskQuiz.questions.q2.choiceC":
+    "Buy the dip if I still have surplus cash",
+  "workshop.riskQuiz.questions.q3.text":
+    "Which best describes your income right now?",
+  "workshop.riskQuiz.questions.q3.choiceA": "Stable salary / civil / long tenure",
+  "workshop.riskQuiz.questions.q3.choiceB":
+    "Solid job with some variable bonus / commission",
+  "workshop.riskQuiz.questions.q3.choiceC":
+    "Variable / self-employed / high upside swings",
+  "workshop.riskQuiz.questions.q4.text":
+    "Who depends on your income day to day?",
+  "workshop.riskQuiz.questions.q4.choiceA":
+    "Partner and/or kids — others rely on me heavily",
+  "workshop.riskQuiz.questions.q4.choiceB":
+    "Some shared support — not fully on my shoulders",
+  "workshop.riskQuiz.questions.q4.choiceC":
+    "Mostly just me — fewer hard dependents",
+  "workshop.riskQuiz.questions.q5.text":
+    "How ready do you feel for a 3–6 month income shock?",
+  "workshop.riskQuiz.questions.q5.choiceA":
+    "Uneasy — I’d feel exposed quickly",
+  "workshop.riskQuiz.questions.q5.choiceB":
+    "Okay-ish — I’d manage with some cutbacks",
+  "workshop.riskQuiz.questions.q5.choiceC":
+    "Confident — buffer and options feel solid",
+  "workshop.riskQuiz.progressLabel": "Question {n} of 5",
+  "workshop.riskQuiz.continueButton": "See My Crisis Test",
+  "workshop.riskQuiz.nextButton": "Next",
+  "workshop.riskQuiz.saving": "Saving…",
+  "workshop.riskQuiz.saveErrorTitle": "Couldn’t save risk quiz",
+  "workshop.riskQuiz.saveErrorFallback":
+    "Could not save your risk profile. Please try again.",
+  "workshop.riskQuiz.needEarlier":
+    "Complete earlier steps before the risk quiz.",
+  "workshop.riskQuiz.goToIntake": "Go to intake",
+  "workshop.riskQuiz.snagTitle": "Risk quiz hit a snag",
+  "workshop.riskQuiz.snagDescription":
+    "We couldn’t save your risk profile. Retry to continue.",
+  "workshop.riskQuiz.choiceLetter": "Choice {letter}",
+
+  "workshop.crisis.continueButton": "See My Summary",
+  "workshop.crisis.goalsUnderCrisisHeading": "Your goals under this crisis",
+  "workshop.crisis.loading": "Building your {profile} crisis scenario…",
+  "workshop.crisis.loadingSubtext":
+    "Hyper-specific to your age, industry, and risk profile.",
+  "workshop.crisis.badge": "Crisis · {profile}",
+  "workshop.crisis.layerImpacts": "Layer impacts",
+  "workshop.crisis.hitsLayer": "Hits · {layer}",
+  "workshop.crisis.incomeHit": "Income hit",
+  "workshop.crisis.oneTime": "One-time",
+  "workshop.crisis.duration": "Duration",
+  "workshop.crisis.durationMonths": "{n} mo",
+  "workshop.crisis.errorTitle": "Crisis reveal hit a snag",
+  "workshop.crisis.errorFallback":
+    "Could not generate your crisis scenario. Please try again.",
+  "workshop.crisis.needRiskQuiz":
+    "Complete the risk quiz first so we can tailor your crisis.",
+  "workshop.crisis.goToRiskQuiz": "Go to risk quiz",
+  "workshop.crisis.snagTitle": "Crisis step hit a snag",
+  "workshop.crisis.snagDescription":
+    "We couldn’t finish generating your crisis scenario. Retry to continue.",
+  "workshop.crisis.impactFallback": "Impact",
+  "workshop.crisis.arrowNotReached": "Not reached",
+
+  "workshop.riskProfile.labels.conservative": "Conservative",
+  "workshop.riskProfile.labels.balanced": "Balanced",
+  "workshop.riskProfile.labels.aggressive": "Aggressive",
+
+  "workshop.summary.ratingLabels.needsAttention": "Needs attention",
+  "workshop.summary.ratingLabels.goodRoomToGrow": "Good, room to grow",
+  "workshop.summary.ratingLabels.strongFoundation": "Strong foundation",
+  "workshop.summary.breakdownLabels.protection": "Protection",
+  "workshop.summary.breakdownLabels.emergencyFund": "Emergency fund",
+  "workshop.summary.breakdownLabels.goalsOnTrack": "Goals on track",
+  "workshop.summary.breakdownLabels.crisisResilience": "Crisis resilience",
+  "workshop.summary.selectGoalPrompt": "Choose your #1 focus",
+  "workshop.summary.impactPointsLabel": "Impact: +{n} pts",
+  "workshop.summary.getBlueprintButton": "Get My Blueprint",
+  "workshop.summary.ratingHeading": "Your financial rating",
+  "workshop.summary.breakdownHeading": "Breakdown",
+  "workshop.summary.actionGoalsAria": "Action goals",
+  "workshop.summary.focusRank": "#{rank} focus · {category}",
+  "workshop.summary.categories.protection": "Protection",
+  "workshop.summary.categories.savings": "Savings",
+  "workshop.summary.categories.investment": "Investment",
+  "workshop.summary.categories.goal": "Goal",
+  "workshop.summary.scoring":
+    "Scoring your pyramid and drafting action goals…",
+  "workshop.summary.errorTitle": "Summary hit a snag",
+  "workshop.summary.errorFallback":
+    "Could not generate your rating and action goals. Please try again.",
+  "workshop.summary.needCrisis":
+    "Complete the crisis reveal first so we can score your plan.",
+  "workshop.summary.goToCrisis": "Go to crisis",
+  "workshop.summary.snagTitle": "Summary hit a snag",
+  "workshop.summary.snagDescription":
+    "We couldn’t finish your rating and action goals. Retry to continue.",
+
+  "workshop.capture.nameLabel": "Name",
+  "workshop.capture.emailLabel": "Email",
+  "workshop.capture.phoneLabel": "Phone",
+  "workshop.capture.phoneRequired": "Phone number is required.",
+  "workshop.capture.phoneInvalid":
+    "Enter a valid phone number (e.g. +85212345678 or another +country code).",
+  "workshop.capture.phoneInvalidHk":
+    "Hong Kong numbers should be +852 followed by 8 digits.",
+  "workshop.capture.phonePlaceholder": "+85291234567",
+  "workshop.capture.namePlaceholder": "Your full name",
+  "workshop.capture.emailPlaceholder": "you@example.com",
+  "workshop.capture.downloadButton": "Save & download blueprint",
+  "workshop.capture.submitting": "Saving…",
+  "workshop.capture.downloadAgainButton": "Download again",
+  "workshop.capture.thankYouMessage": "Thank you — your blueprint is ready",
+  "workshop.capture.thankYouBody":
+    "We saved your details and started your PDF download. Your #1 goal:",
+  "workshop.capture.backToSummary": "Back to summary",
+  "workshop.capture.intro":
+    "Enter your details to unlock Your AI Financial Blueprint PDF — pyramid, crisis summary, goals, and monthly savings target.",
+  "workshop.capture.selectedGoal": "Selected goal:",
+  "workshop.capture.requiredMark": "*",
+  "workshop.capture.saveError":
+    "Could not save your details. Please try again.",
+  "workshop.capture.needSummary":
+    "Choose your #1 focus on the summary before capturing your blueprint.",
+  "workshop.capture.goToSummary": "Go to summary",
+  "workshop.capture.snagTitle": "Capture step hit a snag",
+  "workshop.capture.snagDescription":
+    "Something went wrong preparing your blueprint. Retry to continue.",
+
+  "workshop.errors.aiFailedRetry":
+    "We couldn’t finish this step. Your progress so far is still here — try again.",
+  "workshop.errors.retryButton": "Retry",
+  "workshop.errors.backButton": "Back",
+  "workshop.errors.somethingWrong": "Something went wrong",
+  "workshop.errors.stepSnag": "This step hit a snag",
+  "workshop.errors.aiStepFailed":
+    "The AI step failed unexpectedly. Retry to continue your workshop.",
+  "workshop.errors.unexpected": "Unexpected workshop error.",
+  "workshop.errors.missingApiKey":
+    "DEEPSEEK_API_KEY is missing. Set it in .env.local and restart npm run dev.",
+  "workshop.errors.staleSchemaRestart":
+    "Workshop database models look out of date. Restart npm run dev after prisma generate.",
+  "workshop.errors.wizardSnagTitle": "Workshop hit a snag",
+  "workshop.errors.wizardSnagDescription":
+    "Something unexpected happened. Retry this step — your earlier answers are still here.",
+
+  "workshop.pdf.title": "Your AI Financial Blueprint",
+  "workshop.pdf.subtitle":
+    "A structured workshop snapshot of your financial pyramid, stress test, and next actions.",
+  "workshop.pdf.subtitleByTone.fun":
+    "Your money adventure map from today's workshop — playful, but grounded in your numbers.",
+  "workshop.pdf.subtitleByTone.professional":
+    "A structured workshop snapshot of your financial pyramid, stress test, and next actions.",
+  "workshop.pdf.subtitleByTone.simple":
+    "A plain-language blueprint of where you stand and what to strengthen first.",
+  "workshop.pdf.subtitleByTone.direct":
+    "The hard facts from your workshop: gaps, shocks, and the moves that move the score.",
+  "workshop.pdf.subtitleByTone.warm":
+    "An encouraging coach's summary — progress celebrated, next steps made doable.",
+  "workshop.pdf.disclaimer":
+    "Profit Pulse Ally · Workshop Pyramid Lab · For educational workshop use only — not regulated financial advice.",
+  "workshop.pdf.pyramidSectionTitle": "Your pyramid",
+  "workshop.pdf.ratingSectionTitle": "Financial rating",
+  "workshop.pdf.goalsSectionTitle": "Goal progress",
+  "workshop.pdf.riskAllocationTitle": "Risk allocation",
+  "workshop.pdf.crisisSectionTitle": "Crisis summary",
+  "workshop.pdf.actionGoalsTitle": "Your 3 action goals",
+  "workshop.pdf.ratingUnavailable": "Rating not available.",
+  "workshop.pdf.notReached": "Not reached",
+  "workshop.pdf.targetProjected": "Target {target} · Projected {projected}",
+  "workshop.pdf.myFocus": "(My #1 focus)",
+  "workshop.pdf.impactLine": "Impact: +{n} pts · {category}",
+  "workshop.pdf.lowMidHigh": "Low {low}%",
+  "workshop.pdf.midPct": "Mid {mid}%",
+  "workshop.pdf.highPct": "High {high}%",
+  "workshop.pdf.expensesTotal":
+    "Monthly expenses total {amount} across {count} categories.",
+  "workshop.pdf.riskProfileMeta": "Risk profile: {profile} ({score}/100)",
+  "workshop.pdf.ageIndustry": "Age {age} · {industry}",
+  "workshop.pdf.crisisStats":
+    "Income hit −{percent}% · One-time {amount} · {months} months · Profile {profile}",
+  "workshop.pdf.investPerMonth": "{amount}/mo invest",
+  "workshop.pdf.protectionDetail": "{percent}% · CI {amount}",
+  "workshop.pdf.impactMonths": "{n} mo",
+
+  "workshop.layerFlags.green": "Strong",
+  "workshop.layerFlags.amber": "Watch",
+  "workshop.layerFlags.red": "Needs Attention",
+
+  "workshop.stat.edit": "Edit",
+  "workshop.stat.editAria": "Edit {label}",
+} as const;
+
+export type WorkshopMessageKey = keyof typeof workshopEnMessages;

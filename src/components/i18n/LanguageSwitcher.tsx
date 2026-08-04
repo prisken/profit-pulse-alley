@@ -15,11 +15,14 @@ const focusRing =
 type LanguageSwitcherProps = {
   variant?: "default" | "dark" | "compact";
   className?: string;
+  /** Enlarge locale chips to ≥44px hit targets (workshop / touch UIs). */
+  touchFriendly?: boolean;
 };
 
 export default function LanguageSwitcher({
   variant = "default",
   className = "",
+  touchFriendly = false,
 }: Readonly<LanguageSwitcherProps>) {
   const { locale, setLocale, t } = useLocale();
   const [isPending, startTransition] = useTransition();
@@ -58,8 +61,12 @@ export default function LanguageSwitcher({
             aria-label={label.aria}
             title={label.aria}
             onClick={() => handleSelect(code)}
-            className={`min-h-8 rounded-full px-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${focusRing} ${
-              isCompact ? "min-w-[2rem]" : "min-w-[2.25rem]"
+            className={`touch-manipulation rounded-full text-xs font-semibold transition-colors disabled:opacity-50 ${focusRing} ${
+              touchFriendly
+                ? "min-h-11 min-w-11 px-3"
+                : isCompact
+                  ? "min-h-8 min-w-[2rem] px-2.5"
+                  : "min-h-8 min-w-[2.25rem] px-2.5"
             } ${
               active
                 ? isDark

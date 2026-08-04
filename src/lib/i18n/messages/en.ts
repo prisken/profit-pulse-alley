@@ -2,6 +2,7 @@ import { marketPulseEnMessages } from "@/lib/i18n/messages/market-pulse-messages
 import { authAppEnMessages } from "@/lib/i18n/messages/auth-app-messages";
 import { acquisitionEnMessages } from "@/lib/i18n/messages/acquisition-messages";
 import { matchingPulseEnMessages } from "@/lib/i18n/messages/matching-pulse-messages";
+import { workshopEnMessages } from "@/lib/i18n/messages/workshop-messages";
 
 export const enMessages = {
   "nav.marketPulse": "Market Pulse",
@@ -531,6 +532,7 @@ export const enMessages = {
   ...authAppEnMessages,
   ...acquisitionEnMessages,
   ...matchingPulseEnMessages,
+  ...workshopEnMessages,
 } as const;
 
 export type MessageKey = keyof typeof enMessages;
