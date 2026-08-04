@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useState, useTransition, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
+import { icons, type LucideIcon } from "lucide-react";
 
+import CollapsibleWidget from "@/components/workshop/CollapsibleWidget";
 import {
   WorkshopRetryPanel,
 } from "@/components/workshop/WorkshopErrorBoundary";
 import WorkshopNumberField from "@/components/workshop/WorkshopNumberField";
-import WorkshopStatCard from "@/components/workshop/WorkshopStatCard";
 import WorkshopStickyFooter from "@/components/workshop/WorkshopStickyFooter";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
@@ -37,6 +43,11 @@ function formatHkd(value: number): string {
   }).format(Math.round(value));
 }
 
+function resolveIcon(name: string): LucideIcon {
+  const Icon = icons[name as keyof typeof icons];
+  return Icon ?? icons.Circle;
+}
+
 function withLiveTotal(categories: ExpensesState["categories"]): ExpensesState {
   const next = categories.map((cat) => ({
     ...cat,
@@ -46,6 +57,13 @@ function withLiveTotal(categories: ExpensesState["categories"]): ExpensesState {
     categories: next,
     totalHKD: next.reduce((sum, cat) => sum + cat.amountHKD, 0),
   };
+}
+
+function expenseRatioPercent(totalHKD: number, monthlyIncome: number): number {
+  if (!Number.isFinite(monthlyIncome) || monthlyIncome <= 0) {
+    return 0;
+  }
+  return Math.round((Math.max(0, totalHKD) / monthlyIncome) * 100);
 }
 
 type WorkshopExpensesStepProps = Readonly<{
@@ -61,6 +79,45 @@ type WorkshopExpensesStepProps = Readonly<{
   onBack: () => void;
   onContinue: () => void;
 }>;
+
+function ExpensesTotalBanner({
+  totalHKD,
+  monthlyIncome,
+  sticky = false,
+}: Readonly<{
+  totalHKD: number;
+  monthlyIncome: number;
+  sticky?: boolean;
+}>) {
+  const { t } = useTranslations();
+  const ratio = expenseRatioPercent(totalHKD, monthlyIncome);
+
+  return (
+    <div
+      className={[
+        "rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5",
+        sticky
+          ? "sticky top-0 z-20 -mx-0.5 border-emerald-200/80 bg-white/95 backdrop-blur-md"
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+        {t("workshop.expenses.totalLabel")}
+      </p>
+      <p className="mt-1.5 font-mono text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+        {formatHkd(totalHKD)}
+      </p>
+      <p className="mt-2.5 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
+        {t("workshop.expenses.expenseRatio").replace(
+          "{percent}",
+          String(ratio),
+        )}
+      </p>
+    </div>
+  );
+}
 
 export default function WorkshopExpensesStep({
   sessionId,
@@ -178,13 +235,13 @@ export default function WorkshopExpensesStep({
     body = (
       <div className="space-y-4 py-6 text-center">
         <div
-          className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-400/30 border-t-emerald-400"
+          className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-500"
           aria-hidden="true"
         />
-        <p className="text-sm font-medium text-zinc-200">
+        <p className="text-sm font-medium text-slate-800">
           {t("workshop.expenses.estimating")}
         </p>
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-slate-500">
           {t("workshop.expenses.estimatingSubtext")}
         </p>
       </div>
@@ -201,48 +258,61 @@ export default function WorkshopExpensesStep({
   } else if (expenses) {
     body = (
       <>
-        <p className="text-sm leading-relaxed text-zinc-400">
+        <p className="text-sm leading-relaxed text-slate-600">
           {t("workshop.expenses.intro")}
         </p>
 
-        <div className="space-y-3">
+        <ExpensesTotalBanner
+          totalHKD={expenses.totalHKD}
+          monthlyIncome={monthlyIncome}
+          sticky
+        />
+
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
           {expenses.categories.map((cat, index) => {
             const label = t(EXPENSE_CATEGORY_LABEL_KEYS[cat.key]);
             const isLast = index === expenses.categories.length - 1;
+            const Icon = resolveIcon(cat.icon);
             return (
-              <WorkshopStatCard
+              <CollapsibleWidget
                 key={cat.key}
-                icon={cat.icon}
-                label={label}
-                valueContent={
-                  <WorkshopNumberField
-                    variant="currency"
-                    min={0}
-                    value={cat.amountHKD}
-                    disabled={isConfirming}
-                    enterKeyHint={isLast ? "done" : "next"}
-                    aria-label={t("workshop.expenses.amountAria").replace(
-                      "{label}",
-                      label,
-                    )}
-                    onChange={(amountHKD) =>
-                      updateCategoryAmount(cat.key, amountHKD)
-                    }
-                  />
+                className="shadow-none"
+                defaultExpanded={index === 0}
+                icon={
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-700">
+                    <Icon className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+                  </span>
                 }
-              />
+                title={label}
+                subtitle={
+                  <span className="font-mono tabular-nums text-slate-900">
+                    {formatHkd(cat.amountHKD)}
+                  </span>
+                }
+              >
+                <WorkshopNumberField
+                  variant="currency"
+                  min={0}
+                  value={cat.amountHKD}
+                  disabled={isConfirming}
+                  enterKeyHint={isLast ? "done" : "next"}
+                  aria-label={t("workshop.expenses.amountAria").replace(
+                    "{label}",
+                    label,
+                  )}
+                  onChange={(amountHKD) =>
+                    updateCategoryAmount(cat.key, amountHKD)
+                  }
+                />
+              </CollapsibleWidget>
             );
           })}
         </div>
 
-        <div className="rounded-2xl border-2 border-emerald-400/40 bg-gradient-to-br from-emerald-500/15 via-white/[0.04] to-transparent px-4 py-5 sm:px-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-300/90">
-            {t("workshop.expenses.totalLabel")}
-          </p>
-          <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            {formatHkd(expenses.totalHKD)}
-          </p>
-        </div>
+        <ExpensesTotalBanner
+          totalHKD={expenses.totalHKD}
+          monthlyIncome={monthlyIncome}
+        />
 
         {confirmError ? (
           <WorkshopRetryPanel
@@ -278,5 +348,7 @@ export default function WorkshopExpensesStep({
     );
   }
 
-  return <div className="min-w-0 overflow-x-hidden space-y-5 sm:space-y-6">{body}</div>;
+  return (
+    <div className="min-w-0 space-y-5 overflow-x-hidden sm:space-y-6">{body}</div>
+  );
 }

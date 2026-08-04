@@ -13,5 +13,9 @@ export const metadata = {
 };
 
 export default function WorkshopPyramidPage() {
-  return <WorkshopWizard />;
+  return (
+    <div className="min-h-screen bg-slate-50/80 text-slate-900">
+      <WorkshopWizard />
+    </div>
+  );
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import { createElement, useId, useState } from "react";
-import { icons, type LucideIcon } from "lucide-react";
+import { Target, icons, type LucideIcon } from "lucide-react";
 
+import CollapsibleWidget from "@/components/workshop/CollapsibleWidget";
 import WorkshopNumberField from "@/components/workshop/WorkshopNumberField";
 import WorkshopStatCard from "@/components/workshop/WorkshopStatCard";
 import { useTranslations } from "@/components/providers/LocaleProvider";
@@ -20,10 +21,22 @@ import type {
 } from "@/lib/workshop/types";
 
 const fieldClass =
-  "mt-1.5 w-full min-h-11 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-base text-white outline-none placeholder:text-zinc-500 focus-visible:border-emerald-400/40 focus-visible:ring-2 focus-visible:ring-emerald-400/40 sm:text-sm";
+  "mt-1.5 w-full min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-900 shadow-sm outline-none placeholder:text-slate-400 focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/30 sm:text-sm";
 
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white";
+
+const FLAG_LABEL_KEYS: Record<LayerFlag, MessageKey> = {
+  green: "workshop.layerFlags.green",
+  amber: "workshop.layerFlags.amber",
+  red: "workshop.layerFlags.red",
+};
+
+const FLAG_PILL: Record<LayerFlag, string> = {
+  green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  amber: "border-amber-200 bg-amber-50 text-amber-800",
+  red: "border-rose-200 bg-rose-50 text-rose-700",
+};
 
 const GOAL_ICON_OPTIONS = [
   { id: "Heart", labelKey: "workshop.pyramid.goals.iconPicker.heart" },
@@ -119,8 +132,8 @@ function GoalIconPicker({
               "inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-xl border transition-colors",
               focusRing,
               selected
-                ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-200"
-                : "border-white/10 bg-white/[0.03] text-zinc-400 hover:border-white/20 hover:text-zinc-200",
+                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800",
             ].join(" ")}
           >
             {createElement(resolveLucide(option.id), {
@@ -190,147 +203,175 @@ export default function GoalsLayerEditor({
           String(goals.length),
         );
 
+  const rationaleText =
+    rationale == null || rationale === ""
+      ? ""
+      : pickBilingual(rationale, locale);
+
   return (
-    <div className="min-w-0 space-y-3">
-      <WorkshopStatCard
-        icon="Target"
-        status={status}
-        label={t("workshop.pyramid.goals.cardLabel")}
-        value={countLabel}
-        subtext={t("workshop.pyramid.goals.combinedTargets").replace(
-          "{amount}",
-          formatHkd(total),
-        )}
-        expandableText={rationale}
-      />
+    <CollapsibleWidget
+      icon={
+        <span className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-700">
+          <Target className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+        </span>
+      }
+      title={t("workshop.pyramid.layers.goals.title")}
+      subtitle={countLabel}
+      badge={
+        status ? (
+          <span
+            className={[
+              "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+              FLAG_PILL[status],
+            ].join(" ")}
+          >
+            {t(FLAG_LABEL_KEYS[status])}
+          </span>
+        ) : null
+      }
+      defaultExpanded={status !== "green"}
+    >
+      <div className="min-w-0 space-y-3">
+        <p className="text-sm text-slate-600">
+          {t("workshop.pyramid.goals.combinedTargets").replace(
+            "{amount}",
+            formatHkd(total),
+          )}
+        </p>
 
-      <div className="space-y-3" id={listId}>
-        {goals.map((goal) => {
-          const localizedLabel = pickBilingual(goal.label, locale);
-          return (
-            <div
-              key={goal.id}
-              className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] px-3.5 py-3.5 sm:px-4"
-            >
-              <WorkshopStatCard
-                icon={resolveGoalIcon(goal.icon)}
-                label={
-                  localizedLabel || t("workshop.pyramid.goals.fallbackLabel")
-                }
-                value={formatHkd(goal.targetAmountHKD)}
-                subtext={t("workshop.pyramid.goals.targetYearSubtext").replace(
-                  "{year}",
-                  String(goal.targetYear),
-                )}
-              />
+        {rationaleText ? (
+          <p className="text-pretty text-sm leading-relaxed text-slate-600">
+            {rationaleText}
+          </p>
+        ) : null}
 
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs font-medium text-zinc-400">
-                    {t("workshop.pyramid.goals.iconLabel")}
-                  </p>
-                  <div className="mt-1.5">
-                    <GoalIconPicker
-                      value={resolveGoalIcon(goal.icon)}
+        <div className="space-y-3" id={listId}>
+          {goals.map((goal) => {
+            const localizedLabel = pickBilingual(goal.label, locale);
+            return (
+              <div
+                key={goal.id}
+                className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-3.5 sm:px-4"
+              >
+                <WorkshopStatCard
+                  icon={resolveGoalIcon(goal.icon)}
+                  label={
+                    localizedLabel || t("workshop.pyramid.goals.fallbackLabel")
+                  }
+                  value={formatHkd(goal.targetAmountHKD)}
+                  subtext={t(
+                    "workshop.pyramid.goals.targetYearSubtext",
+                  ).replace("{year}", String(goal.targetYear))}
+                />
+
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs font-medium text-slate-500">
+                      {t("workshop.pyramid.goals.iconLabel")}
+                    </p>
+                    <div className="mt-1.5">
+                      <GoalIconPicker
+                        value={resolveGoalIcon(goal.icon)}
+                        disabled={disabled}
+                        onChange={(icon) => updateGoal(goal.id, { icon })}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor={`goal-label-${goal.id}`}
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      {t("workshop.pyramid.goals.labelField")}
+                    </label>
+                    <input
+                      id={`goal-label-${goal.id}`}
+                      type="text"
                       disabled={disabled}
-                      onChange={(icon) => updateGoal(goal.id, { icon })}
+                      value={localizedLabel}
+                      onChange={(e) =>
+                        updateGoal(goal.id, {
+                          label: patchBilingual(
+                            goal.label,
+                            locale,
+                            e.target.value,
+                          ),
+                        })
+                      }
+                      className={fieldClass}
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label
-                    htmlFor={`goal-label-${goal.id}`}
-                    className="text-sm font-medium text-zinc-200"
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <WorkshopNumberField
+                      id={`goal-amount-${goal.id}`}
+                      variant="currency"
+                      label={t("workshop.pyramid.goals.amountField")}
+                      min={0}
+                      disabled={disabled}
+                      value={goal.targetAmountHKD}
+                      enterKeyHint="next"
+                      onChange={(targetAmountHKD) =>
+                        updateGoal(goal.id, { targetAmountHKD })
+                      }
+                    />
+                    <WorkshopNumberField
+                      id={`goal-year-${goal.id}`}
+                      variant="year"
+                      label={t("workshop.pyramid.goals.yearField")}
+                      min={2000}
+                      max={2100}
+                      disabled={disabled}
+                      value={goal.targetYear}
+                      enterKeyHint="done"
+                      onChange={(targetYear) =>
+                        updateGoal(goal.id, { targetYear })
+                      }
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={disabled || goals.length <= 1}
+                    onClick={() => removeGoal(goal.id)}
+                    className={[
+                      "inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50",
+                      focusRing,
+                    ].join(" ")}
                   >
-                    {t("workshop.pyramid.goals.labelField")}
-                  </label>
-                  <input
-                    id={`goal-label-${goal.id}`}
-                    type="text"
-                    disabled={disabled}
-                    value={localizedLabel}
-                    onChange={(e) =>
-                      updateGoal(goal.id, {
-                        label: patchBilingual(
-                          goal.label,
-                          locale,
-                          e.target.value,
-                        ),
-                      })
-                    }
-                    className={fieldClass}
-                  />
+                    {t("workshop.pyramid.goals.deleteButton")}
+                  </button>
                 </div>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <WorkshopNumberField
-                    id={`goal-amount-${goal.id}`}
-                    variant="currency"
-                    label={t("workshop.pyramid.goals.amountField")}
-                    min={0}
-                    disabled={disabled}
-                    value={goal.targetAmountHKD}
-                    enterKeyHint="next"
-                    onChange={(targetAmountHKD) =>
-                      updateGoal(goal.id, { targetAmountHKD })
-                    }
-                  />
-                  <WorkshopNumberField
-                    id={`goal-year-${goal.id}`}
-                    variant="year"
-                    label={t("workshop.pyramid.goals.yearField")}
-                    min={2000}
-                    max={2100}
-                    disabled={disabled}
-                    value={goal.targetYear}
-                    enterKeyHint="done"
-                    onChange={(targetYear) =>
-                      updateGoal(goal.id, { targetYear })
-                    }
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  disabled={disabled || goals.length <= 1}
-                  onClick={() => removeGoal(goal.id)}
-                  className={[
-                    "inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-200 transition-colors hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-50",
-                    focusRing,
-                  ].join(" ")}
-                >
-                  {t("workshop.pyramid.goals.deleteButton")}
-                </button>
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-3.5 py-3.5 sm:px-4">
-        <p className="text-xs font-medium text-zinc-400">
-          {t("workshop.pyramid.goals.nextIconHint")}
-        </p>
-        <div className="mt-1.5">
-          <GoalIconPicker
-            value={draftIcon}
-            disabled={disabled}
-            onChange={setDraftIcon}
-          />
+            );
+          })}
         </div>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={addGoal}
-          className={[
-            "mt-3 inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-2.5 text-sm font-semibold text-emerald-200 transition-colors hover:bg-emerald-400/15 sm:w-auto",
-            focusRing,
-          ].join(" ")}
-        >
-          {t("workshop.pyramid.goals.addButton")}
-        </button>
+
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-3.5 py-3.5 sm:px-4">
+          <p className="text-xs font-medium text-slate-500">
+            {t("workshop.pyramid.goals.nextIconHint")}
+          </p>
+          <div className="mt-1.5">
+            <GoalIconPicker
+              value={draftIcon}
+              disabled={disabled}
+              onChange={setDraftIcon}
+            />
+          </div>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={addGoal}
+            className={[
+              "mt-3 inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-100 sm:w-auto",
+              focusRing,
+            ].join(" ")}
+          >
+            {t("workshop.pyramid.goals.addButton")}
+          </button>
+        </div>
       </div>
-    </div>
+    </CollapsibleWidget>
   );
 }

@@ -145,16 +145,26 @@ export type BlueprintPdfInput = {
 };
 
 const FLAG_FILL: Record<LayerFlag, string> = {
-  green: "#34d399",
+  green: "#10b981",
   amber: "#fbbf24",
-  red: "#f87171",
+  red: "#f43f5e",
 };
 
+/** Ink on bright trapezoid fills — white on emerald/rose; dark on amber. */
 const FLAG_INK: Record<LayerFlag, string> = {
-  green: "#064e3b",
-  amber: "#78350f",
-  red: "#7f1d1d",
+  green: "#ffffff",
+  amber: "#0f172a",
+  red: "#ffffff",
 };
+
+const PDF_COLORS = {
+  pageBg: "#ffffff",
+  body: "#0f172a",
+  muted: "#64748b",
+  border: "#e2e8f0",
+  track: "#f1f5f9",
+  emerald: "#059669",
+} as const;
 
 const styles = StyleSheet.create({
   page: {
@@ -164,31 +174,45 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontFamily: PDF_FONT_FAMILY,
     fontWeight: 400,
-    color: "#18181b",
-    backgroundColor: "#fafafa",
+    color: PDF_COLORS.body,
+    backgroundColor: PDF_COLORS.pageBg,
   },
   header: {
     marginBottom: 14,
-    borderBottomWidth: 2,
-    borderBottomColor: "#059669",
+    borderBottomWidth: 1,
+    borderBottomColor: PDF_COLORS.border,
     paddingBottom: 10,
   },
   title: {
     fontSize: 18,
     fontFamily: PDF_FONT_FAMILY,
     fontWeight: 700,
-    color: "#064e3b",
+    color: PDF_COLORS.body,
+  },
+  titleDirect: {
+    fontSize: 18,
+    fontFamily: PDF_FONT_FAMILY,
+    fontWeight: 700,
+    color: PDF_COLORS.body,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
   },
   subtitle: {
     marginTop: 4,
     fontSize: 9,
-    color: "#3f3f46",
+    color: PDF_COLORS.muted,
+    lineHeight: 1.35,
+  },
+  subtitleWarm: {
+    marginTop: 4,
+    fontSize: 9,
+    color: "#9f1239",
     lineHeight: 1.35,
   },
   meta: {
     marginTop: 4,
     fontSize: 8,
-    color: "#71717a",
+    color: PDF_COLORS.muted,
   },
   section: {
     marginTop: 12,
@@ -198,7 +222,16 @@ const styles = StyleSheet.create({
     fontFamily: PDF_FONT_FAMILY,
     fontWeight: 700,
     marginBottom: 6,
-    color: "#14532d",
+    color: PDF_COLORS.body,
+  },
+  sectionTitleDirect: {
+    fontSize: 11,
+    fontFamily: PDF_FONT_FAMILY,
+    fontWeight: 700,
+    marginBottom: 6,
+    color: PDF_COLORS.body,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   row: {
     flexDirection: "row",
@@ -220,56 +253,58 @@ const styles = StyleSheet.create({
   card: {
     padding: 8,
     borderWidth: 1,
-    borderColor: "#e4e4e7",
-    borderRadius: 4,
-    backgroundColor: "#ffffff",
+    borderColor: PDF_COLORS.border,
+    borderRadius: 6,
+    backgroundColor: PDF_COLORS.pageBg,
   },
   label: {
-    color: "#71717a",
+    color: PDF_COLORS.muted,
     fontSize: 8,
   },
   value: {
     fontFamily: PDF_FONT_FAMILY,
     fontWeight: 700,
     fontSize: 9,
+    color: PDF_COLORS.body,
   },
   small: {
     fontSize: 8,
-    color: "#52525b",
+    color: PDF_COLORS.muted,
     lineHeight: 1.35,
   },
   goalBlock: {
     marginBottom: 6,
     padding: 8,
     borderWidth: 1,
-    borderColor: "#e4e4e7",
-    borderRadius: 4,
-    backgroundColor: "#ffffff",
+    borderColor: PDF_COLORS.border,
+    borderRadius: 6,
+    backgroundColor: PDF_COLORS.pageBg,
   },
   goalTitle: {
     fontFamily: PDF_FONT_FAMILY,
     fontWeight: 700,
     fontSize: 9,
     marginBottom: 2,
+    color: PDF_COLORS.body,
   },
   goalTitleSelected: {
     fontFamily: PDF_FONT_FAMILY,
     fontWeight: 700,
     fontSize: 9,
     marginBottom: 2,
-    color: "#047857",
+    color: PDF_COLORS.emerald,
   },
   impact: {
     fontFamily: PDF_FONT_FAMILY,
     fontWeight: 700,
     fontSize: 9,
-    color: "#047857",
+    color: PDF_COLORS.emerald,
     marginBottom: 2,
   },
   barTrack: {
     height: 10,
     borderRadius: 4,
-    backgroundColor: "#e4e4e7",
+    backgroundColor: PDF_COLORS.track,
     overflow: "hidden",
     flexDirection: "row",
   },
@@ -296,7 +331,7 @@ const styles = StyleSheet.create({
     left: 36,
     right: 36,
     fontSize: 7,
-    color: "#a1a1aa",
+    color: PDF_COLORS.muted,
     textAlign: "center",
     lineHeight: 1.3,
   },
@@ -310,15 +345,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: "center",
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: PDF_FONT_FAMILY,
     fontWeight: 700,
+    color: PDF_COLORS.body,
   },
   gaugeLabel: {
     marginTop: 4,
     fontSize: 8,
     textAlign: "center",
-    color: "#52525b",
+    color: PDF_COLORS.muted,
   },
   pyramidWrap: {
     alignItems: "center",
@@ -336,6 +372,18 @@ const styles = StyleSheet.create({
     gap: 3,
   },
 });
+
+function sectionTitleStyle(tone: WorkshopTone) {
+  return tone === "direct" ? styles.sectionTitleDirect : styles.sectionTitle;
+}
+
+function documentTitleStyle(tone: WorkshopTone) {
+  return tone === "direct" ? styles.titleDirect : styles.title;
+}
+
+function documentSubtitleStyle(tone: WorkshopTone) {
+  return tone === "warm" ? styles.subtitleWarm : styles.subtitle;
+}
 
 function formatHkd(value: number): string {
   return `HK$${Math.round(value).toLocaleString("en-HK")}`;
@@ -507,7 +555,7 @@ function RatingGauge({ score, label }: { score: number; label: string }) {
             cx={55}
             cy={55}
             r={r}
-            stroke="#e4e4e7"
+            stroke="#e2e8f0"
             strokeWidth={9}
             fill="none"
           />
@@ -523,7 +571,7 @@ function RatingGauge({ score, label }: { score: number; label: string }) {
             transform="rotate(-90 55 55)"
           />
         </Svg>
-        <Text style={[styles.gaugeScore, { color: FLAG_INK[band] }]}>
+        <Text style={styles.gaugeScore}>
           {Math.round(score)}
         </Text>
       </View>
@@ -657,8 +705,10 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.title}>{t("workshop.pdf.title")}</Text>
-          <Text style={styles.subtitle}>
+          <Text style={documentTitleStyle(data.tone)}>
+            {t("workshop.pdf.title")}
+          </Text>
+          <Text style={documentSubtitleStyle(data.tone)}>
             {t(TONE_SUBTITLE_KEYS[data.tone] ?? TONE_SUBTITLE_KEYS.professional)}
           </Text>
           <Text style={styles.meta}>{metaParts.join(" · ")}</Text>
@@ -666,7 +716,7 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
 
         <View style={styles.twoCol}>
           <View style={[styles.col, styles.card]}>
-            <Text style={styles.sectionTitle}>
+            <Text style={sectionTitleStyle(data.tone)}>
               {t("workshop.pdf.pyramidSectionTitle")}
             </Text>
             <PyramidGraphic
@@ -676,7 +726,7 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
             />
           </View>
           <View style={[styles.colLast, styles.card, { alignItems: "center" }]}>
-            <Text style={styles.sectionTitle}>
+            <Text style={sectionTitleStyle(data.tone)}>
               {t("workshop.pdf.ratingSectionTitle")}
             </Text>
             {rating ? (
@@ -712,9 +762,9 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
         </View>
 
         <View style={[styles.section, styles.card]}>
-          <Text style={styles.sectionTitle}>
-            {t("workshop.pdf.riskAllocationTitle")}
-          </Text>
+          <Text style={sectionTitleStyle(data.tone)}>
+              {t("workshop.pdf.riskAllocationTitle")}
+            </Text>
           <RiskAllocationBar
             low={risk.low}
             mid={risk.mid}
@@ -733,7 +783,7 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
 
         {goalProjections.length > 0 ? (
           <View style={[styles.section, styles.card]} wrap={false}>
-            <Text style={styles.sectionTitle}>
+            <Text style={sectionTitleStyle(data.tone)}>
               {t("workshop.pdf.goalsSectionTitle")}
             </Text>
             {goalProjections.map((goal) => {
@@ -768,7 +818,7 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
 
         {data.crisis ? (
           <View style={[styles.section, styles.card]} wrap={false}>
-            <Text style={styles.sectionTitle}>
+            <Text style={sectionTitleStyle(data.tone)}>
               {t("workshop.pdf.crisisSectionTitle")}
             </Text>
             <Text style={styles.value}>
@@ -818,7 +868,7 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
 
         {actionGoals.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
+            <Text style={sectionTitleStyle(data.tone)}>
               {t("workshop.pdf.actionGoalsTitle")}
             </Text>
             {actionGoals.map((goal: ActionGoal) => {

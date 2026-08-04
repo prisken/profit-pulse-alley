@@ -15,6 +15,7 @@ import {
   runGoalStressTest,
 } from "@/lib/workshop/macro-simulation";
 import { generateCrisisAction } from "@/lib/workshop/pyramid-actions";
+import { getToneUiTheme } from "@/lib/workshop/tone";
 import type {
   CrisisImpact,
   CrisisState,
@@ -79,6 +80,7 @@ export default function WorkshopCrisisStep({
   onResolved,
 }: WorkshopCrisisStepProps) {
   const { t, locale } = useTranslations();
+  const toneTheme = getToneUiTheme(tone);
   const [crisis, setCrisis] = useState<CrisisState | null>(null);
   const [baseline, setBaseline] = useState<StressTestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -223,47 +225,101 @@ export default function WorkshopCrisisStep({
     return (
       <div className="space-y-4 py-8 text-center">
         <div
-          className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-red-400/30 border-t-red-400"
+          className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-rose-200 border-t-rose-500"
           aria-hidden="true"
         />
-        <p className="text-sm font-medium text-zinc-200">
+        <p className="text-sm font-medium text-slate-800">
           {t("workshop.crisis.loading").replace("{profile}", profileLabel)}
         </p>
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-slate-500">
           {t("workshop.crisis.loadingSubtext")}
         </p>
       </div>
     );
   }
 
+  const showFunEmojis = tone === "fun";
+  const isDirect = tone === "direct";
+
   return (
     <div className="min-w-0 space-y-6 sm:space-y-7">
-      <article className="overflow-hidden rounded-2xl border border-red-400/35 bg-gradient-to-br from-red-500/20 via-zinc-950/80 to-transparent px-4 py-5 sm:px-6 sm:py-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-red-300/90">
-          {t("workshop.crisis.badge").replace("{profile}", profileLabel)}
-        </p>
-        <h3 className="mt-2 text-balance text-xl font-semibold tracking-tight text-white sm:text-2xl">
+      <article
+        className={[
+          "overflow-hidden rounded-2xl border px-4 py-5 shadow-sm sm:px-6 sm:py-6",
+          toneTheme.cardAccentClass,
+        ].join(" ")}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={toneTheme.badgeClass}>
+            <span className="mr-1" aria-hidden="true">
+              {toneTheme.iconEmoji}
+            </span>
+            {t("workshop.crisis.badge").replace("{profile}", profileLabel)}
+          </span>
+          {showFunEmojis ? (
+            <span className="text-lg" aria-hidden="true">
+              💥 🚨 🎯 ⚡ 🔥
+            </span>
+          ) : null}
+        </div>
+        <h3
+          className={[
+            "mt-3 text-balance text-xl tracking-tight sm:text-2xl",
+            toneTheme.headingStyle,
+            isDirect ? "uppercase" : "",
+          ].join(" ")}
+        >
+          {showFunEmojis ? (
+            <span className="mr-1.5" aria-hidden="true">
+              😱
+            </span>
+          ) : null}
           {pickBilingual(crisis.title, locale)}
+          {showFunEmojis ? (
+            <span className="ml-1.5" aria-hidden="true">
+              🎢
+            </span>
+          ) : null}
         </h3>
-        <p className="mt-3 text-sm leading-relaxed text-zinc-200">
+        <p
+          className={[
+            "mt-3 text-sm leading-relaxed text-slate-700",
+            isDirect ? "font-medium" : "",
+          ].join(" ")}
+        >
           {pickBilingual(crisis.description, locale)}
         </p>
-        <dl className="mt-4 grid grid-cols-3 gap-1.5 text-center text-[10px] text-zinc-400 sm:gap-2 sm:text-[11px]">
-          <div className="min-w-0 rounded-xl border border-white/10 bg-black/20 px-1.5 py-2 sm:px-2">
+        <dl className="mt-4 grid grid-cols-3 gap-1.5 text-center text-[10px] text-slate-500 sm:gap-2 sm:text-[11px]">
+          <div className="min-w-0 rounded-xl border border-rose-200 bg-white/80 px-1.5 py-2 sm:px-2">
             <dt>{t("workshop.crisis.incomeHit")}</dt>
-            <dd className="mt-1 break-words font-mono text-xs text-red-200 sm:text-sm">
+            <dd
+              className={[
+                "mt-1 break-words font-mono text-xs text-rose-700 sm:text-sm",
+                isDirect ? "font-bold uppercase" : "",
+              ].join(" ")}
+            >
               −{crisis.monthlyIncomeImpactPercent}%
             </dd>
           </div>
-          <div className="min-w-0 rounded-xl border border-white/10 bg-black/20 px-1.5 py-2 sm:px-2">
+          <div className="min-w-0 rounded-xl border border-rose-200 bg-white/80 px-1.5 py-2 sm:px-2">
             <dt>{t("workshop.crisis.oneTime")}</dt>
-            <dd className="mt-1 break-words font-mono text-xs text-red-200 sm:text-sm">
+            <dd
+              className={[
+                "mt-1 break-words font-mono text-xs text-rose-700 sm:text-sm",
+                isDirect ? "font-bold uppercase" : "",
+              ].join(" ")}
+            >
               {formatHkd(crisis.oneTimeCostHKD)}
             </dd>
           </div>
-          <div className="min-w-0 rounded-xl border border-white/10 bg-black/20 px-1.5 py-2 sm:px-2">
+          <div className="min-w-0 rounded-xl border border-rose-200 bg-white/80 px-1.5 py-2 sm:px-2">
             <dt>{t("workshop.crisis.duration")}</dt>
-            <dd className="mt-1 break-words font-mono text-xs text-red-200 sm:text-sm">
+            <dd
+              className={[
+                "mt-1 break-words font-mono text-xs text-rose-700 sm:text-sm",
+                isDirect ? "font-bold uppercase" : "",
+              ].join(" ")}
+            >
               {t("workshop.crisis.durationMonths").replace(
                 "{n}",
                 String(crisis.durationMonths),
@@ -274,7 +330,7 @@ export default function WorkshopCrisisStep({
       </article>
 
       <section className="space-y-3">
-        <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">
+        <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           {t("workshop.crisis.layerImpacts")}
         </h4>
         {crisis.impacts.map((impact, index) => (
@@ -282,19 +338,21 @@ export default function WorkshopCrisisStep({
             key={`${impact.layer}-${index}`}
             icon={impact.icon}
             status="red"
+            className="border-rose-200 bg-rose-50/60 text-rose-900"
             label={pickBilingual(impact.headline, locale)}
             value={impactValue(impact)}
-            subtext={t("workshop.crisis.hitsLayer").replace(
+            expandableText={t("workshop.crisis.hitsLayer").replace(
               "{layer}",
               t(LAYER_LABEL_KEYS[impact.layer]),
             )}
+            defaultExpanded
           />
         ))}
       </section>
 
       {delayedGoals.length > 0 ? (
-        <section className="rounded-2xl border border-white/10 bg-white/[0.02] px-3.5 py-4 sm:px-4">
-          <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">
+        <section className="rounded-2xl border border-slate-200 bg-white px-3.5 py-4 shadow-sm sm:px-4">
+          <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             {t("workshop.crisis.goalsUnderCrisisHeading")}
           </h4>
           <ul className="mt-3 space-y-2.5">
@@ -303,12 +361,12 @@ export default function WorkshopCrisisStep({
                 key={goal.id}
                 className="flex items-baseline justify-between gap-3 text-sm"
               >
-                <span className="min-w-0 truncate text-zinc-200">
+                <span className="min-w-0 truncate text-slate-800">
                   {pickBilingual(goal.label, locale)}
                 </span>
-                <span className="shrink-0 font-mono text-xs text-zinc-400">
+                <span className="shrink-0 font-mono text-xs text-slate-500">
                   {goal.before ?? "—"} →{" "}
-                  <span className="text-red-300">
+                  <span className="font-semibold text-rose-700">
                     {goal.after ?? t("workshop.crisis.arrowNotReached")}
                   </span>
                 </span>

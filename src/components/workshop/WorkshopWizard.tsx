@@ -58,9 +58,9 @@ import {
 const MIN_PREDICT_MS = 1500;
 
 const fieldClass =
-  "mt-1.5 w-full min-h-11 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-base text-white outline-none placeholder:text-zinc-500 focus-visible:border-emerald-400/40 focus-visible:ring-2 focus-visible:ring-emerald-400/40 sm:text-sm";
+  "mt-1.5 w-full min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-900 shadow-sm outline-none placeholder:text-slate-400 focus-visible:border-emerald-500/50 focus-visible:ring-2 focus-visible:ring-emerald-500/30 sm:text-sm";
 
-const labelClass = "block text-sm font-medium text-zinc-200";
+const labelClass = "block text-sm font-medium text-slate-700";
 
 const primaryBtnClass = `${workshopPrimaryBtnClass} touch-manipulation disabled:cursor-not-allowed disabled:opacity-60`;
 
@@ -202,7 +202,7 @@ export default function WorkshopWizard() {
   }
 
   return (
-    <main className="workshop-lab min-h-dvh overflow-x-hidden bg-mp-obsidian text-white">
+    <main className="workshop-lab min-h-screen overflow-x-hidden bg-slate-50/80 text-slate-900">
       <div className="mx-auto flex w-full max-w-2xl flex-col px-[max(0.75rem,env(safe-area-inset-left))] py-6 pr-[max(0.75rem,env(safe-area-inset-right))] pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-6 sm:py-12 sm:pb-12">
         {/* Shared chrome — always above every step body (no step may overlay this). */}
         <header className="shrink-0">
@@ -213,15 +213,15 @@ export default function WorkshopWizard() {
           */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
             <div className="min-w-0 flex-1 text-left sm:text-center sm:pl-11">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-400/90">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-600">
                 {t("workshop.brand")}
               </p>
-              <h1 className="mt-2 text-balance text-xl font-semibold tracking-tight sm:text-3xl">
+              <h1 className="mt-2 text-balance text-xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                 {stepLabel}
               </h1>
             </div>
             <LanguageSwitcher
-              variant="dark"
+              variant="projection"
               touchFriendly
               className="shrink-0 self-start sm:mt-0.5"
             />
@@ -245,10 +245,10 @@ export default function WorkshopWizard() {
                       // dots stay legible on ~360px Android widths.
                       "h-3 w-3 rounded-full transition-colors",
                       isActive
-                        ? "bg-emerald-400"
+                        ? "bg-emerald-500 shadow-sm shadow-emerald-500/40"
                         : isComplete
-                          ? "bg-emerald-400/45"
-                          : "bg-white/20",
+                          ? "bg-emerald-300"
+                          : "bg-slate-200",
                     ].join(" ")}
                     aria-label={`${stepOfTotal}: ${label}`}
                     aria-current={isActive ? "step" : undefined}
@@ -258,10 +258,10 @@ export default function WorkshopWizard() {
             </nav>
           </div>
 
-          <p className="mt-2 font-mono text-xs tabular-nums text-zinc-500 sm:text-center">
+          <p className="mt-2 font-mono text-xs tabular-nums text-slate-500 sm:text-center">
             {stepOfTotal}
             {sessionId ? (
-              <span className="ml-2 text-zinc-600">
+              <span className="ml-2 text-slate-400">
                 · {t("workshop.steps.sessionReady")}
               </span>
             ) : null}
@@ -269,7 +269,7 @@ export default function WorkshopWizard() {
         </header>
 
         <section
-          className={`mt-6 min-w-0 overflow-x-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 sm:mt-8 sm:p-8 ${workshopStickyContentPadClass}`}
+          className={`mt-6 min-w-0 overflow-x-hidden rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm sm:mt-8 sm:p-8 ${workshopStickyContentPadClass}`}
           aria-labelledby="workshop-step-heading"
         >
           <h2 id="workshop-step-heading" className="sr-only">
@@ -357,8 +357,8 @@ export default function WorkshopWizard() {
                         className={[
                           "inline-flex min-h-11 touch-manipulation items-center rounded-full border px-3.5 py-2 text-xs transition-colors",
                           industry === key
-                            ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-200"
-                            : "border-white/10 bg-white/[0.03] text-zinc-400 hover:border-white/20 hover:text-zinc-200",
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900",
                         ].join(" ")}
                       >
                         {t(INDUSTRY_LABEL_KEYS[key])}
@@ -426,7 +426,7 @@ export default function WorkshopWizard() {
                 {intakeError && !intakeAiFailed ? (
                   <p
                     role="alert"
-                    className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200"
+                    className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-800"
                   >
                     {intakeError}
                   </p>
@@ -434,15 +434,15 @@ export default function WorkshopWizard() {
 
                 {isPredicting ? (
                   <div
-                    className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-4 text-center"
+                    className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-center"
                     role="status"
                     aria-live="polite"
                   >
-                    <div className="mx-auto h-8 w-8 animate-pulse rounded-full bg-emerald-400/30" />
-                    <p className="mt-3 text-sm font-medium text-emerald-100">
+                    <div className="mx-auto h-8 w-8 animate-pulse rounded-full bg-emerald-400/50" />
+                    <p className="mt-3 text-sm font-medium text-emerald-900">
                       {t("workshop.intake.analyzingMessage")}
                     </p>
-                    <p className="mt-1 text-xs text-emerald-200/70">
+                    <p className="mt-1 text-xs text-emerald-700/80">
                       {t("workshop.intake.analyzingSubtext")}
                     </p>
                   </div>

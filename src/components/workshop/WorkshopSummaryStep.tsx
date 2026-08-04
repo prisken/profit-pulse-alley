@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
+import { icons, type LucideIcon } from "lucide-react";
 
+import CollapsibleWidget from "@/components/workshop/CollapsibleWidget";
 import {
   WorkshopRetryPanel,
 } from "@/components/workshop/WorkshopErrorBoundary";
-import WorkshopStatCard from "@/components/workshop/WorkshopStatCard";
 import WorkshopStickyFooter from "@/components/workshop/WorkshopStickyFooter";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
@@ -70,10 +71,15 @@ function scoreBand(score: number): "red" | "amber" | "green" {
 }
 
 const BAND_STROKE = {
-  red: "#f87171",
+  red: "#f43f5e",
   amber: "#fbbf24",
-  green: "#34d399",
+  green: "#10b981",
 } as const;
+
+function resolveIcon(name: string): LucideIcon {
+  const Icon = icons[name as keyof typeof icons];
+  return Icon ?? icons.Circle;
+}
 
 function RatingGauge({ score, label }: { score: number; label: string }) {
   const band = scoreBand(score);
@@ -84,14 +90,14 @@ function RatingGauge({ score, label }: { score: number; label: string }) {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="relative h-36 w-36 sm:h-40 sm:w-40">
+      <div className="relative h-40 w-40 sm:h-44 sm:w-44">
         <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90">
           <circle
             cx="70"
             cy="70"
             r={radius}
             fill="none"
-            stroke="rgba(255,255,255,0.08)"
+            stroke="#e2e8f0"
             strokeWidth="10"
           />
           <circle
@@ -107,14 +113,14 @@ function RatingGauge({ score, label }: { score: number; label: string }) {
             className="transition-[stroke-dashoffset] duration-700 ease-out"
           />
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center rotate-0">
-          <p className="font-mono text-3xl font-semibold tabular-nums text-white sm:text-4xl">
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <p className="font-mono text-5xl font-semibold tabular-nums text-slate-900">
             {Math.round(score)}
-            <span className="text-base text-zinc-500">/100</span>
           </p>
+          <p className="font-mono text-sm text-slate-400">/100</p>
         </div>
       </div>
-      <p className="mt-3 text-center text-sm font-semibold text-zinc-100">
+      <p className="mt-3 text-center text-sm font-semibold text-slate-800">
         {label}
       </p>
     </div>
@@ -274,10 +280,10 @@ export default function WorkshopSummaryStep({
     return (
       <div className="space-y-4 py-8 text-center">
         <div
-          className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-400/30 border-t-emerald-400"
+          className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-500"
           aria-hidden="true"
         />
-        <p className="text-sm font-medium text-zinc-200">
+        <p className="text-sm font-medium text-slate-800">
           {t("workshop.summary.scoring")}
         </p>
       </div>
@@ -289,8 +295,8 @@ export default function WorkshopSummaryStep({
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-7">
-      <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] via-zinc-950/40 to-transparent px-4 py-6 sm:px-6">
-        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
           {t("workshop.summary.ratingHeading")}
         </p>
         <div className="mt-4">
@@ -299,30 +305,30 @@ export default function WorkshopSummaryStep({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           {t("workshop.summary.breakdownHeading")}
         </h3>
-        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] px-3.5 py-4 sm:px-4">
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white px-3.5 py-4 shadow-sm sm:px-4">
           {BREAKDOWN_ROWS.map((row) => {
             const value = rating.breakdown[row.key];
             const band = scoreBand(value);
             return (
               <div key={row.key}>
                 <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
-                  <span className="text-zinc-300">{t(row.labelKey)}</span>
-                  <span className="font-mono tabular-nums text-zinc-400">
+                  <span className="text-slate-700">{t(row.labelKey)}</span>
+                  <span className="font-mono tabular-nums text-slate-500">
                     {value}%
                   </span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
                   <div
                     className={[
                       "h-full rounded-full transition-[width] duration-500",
                       band === "green"
-                        ? "bg-emerald-400"
+                        ? "bg-emerald-500"
                         : band === "amber"
                           ? "bg-amber-400"
-                          : "bg-red-400",
+                          : "bg-rose-500",
                     ].join(" ")}
                     style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
                   />
@@ -334,7 +340,7 @@ export default function WorkshopSummaryStep({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           {t("workshop.summary.selectGoalPrompt")}
         </h3>
         <div
@@ -360,29 +366,48 @@ export default function WorkshopSummaryStep({
                 className={[
                   "w-full cursor-pointer touch-manipulation rounded-2xl text-left transition-shadow",
                   selected
-                    ? "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-zinc-950"
+                    ? "ring-2 ring-emerald-500/60 ring-offset-2 ring-offset-slate-50"
                     : "ring-0",
                 ].join(" ")}
               >
-                <WorkshopStatCard
-                  icon={goal.icon}
-                  status={
-                    goal.rank === 1
-                      ? "red"
-                      : goal.rank === 2
-                        ? "amber"
-                        : "green"
+                <CollapsibleWidget
+                  defaultExpanded={goal.rank === 1 || selected}
+                  icon={
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-700">
+                      {createElement(resolveIcon(goal.icon), {
+                        className: "h-5 w-5",
+                        strokeWidth: 2,
+                      })}
+                    </span>
                   }
-                  label={pickBilingual(goal.title, locale)}
-                  value={t("workshop.summary.impactPointsLabel").replace(
-                    "{n}",
-                    String(goal.impactPoints),
-                  )}
-                  subtext={t("workshop.summary.focusRank")
-                    .replace("{rank}", String(goal.rank))
-                    .replace("{category}", t(ACTION_GOAL_CATEGORY_KEYS[goal.category]))}
-                  expandableText={goal.reasoning}
-                />
+                  title={
+                    <span className="text-sm font-semibold text-slate-900">
+                      {pickBilingual(goal.title, locale)}
+                    </span>
+                  }
+                  badge={
+                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                      {t("workshop.summary.impactPointsLabel").replace(
+                        "{n}",
+                        String(goal.impactPoints),
+                      )}
+                    </span>
+                  }
+                >
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      {t("workshop.summary.focusRank")
+                        .replace("{rank}", String(goal.rank))
+                        .replace(
+                          "{category}",
+                          t(ACTION_GOAL_CATEGORY_KEYS[goal.category]),
+                        )}
+                    </p>
+                    <p className="text-pretty text-sm leading-relaxed text-slate-600">
+                      {pickBilingual(goal.reasoning, locale)}
+                    </p>
+                  </div>
+                </CollapsibleWidget>
               </div>
             );
           })}

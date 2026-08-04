@@ -15,12 +15,12 @@ import type { Bilingual } from "@/lib/workshop/types";
  * Safari focus zoom on larger phones in landscape / narrow desktop widths.
  */
 const fieldClass =
-  "mt-1.5 w-full min-h-12 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-base text-white outline-none placeholder:text-zinc-500 focus-visible:border-emerald-400/40 focus-visible:ring-2 focus-visible:ring-emerald-400/40";
+  "mt-1.5 w-full min-h-12 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-base text-slate-900 outline-none placeholder:text-slate-400 transition-colors focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus-visible:border-emerald-500 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-500/20";
 
 const fieldErrorClass =
-  "mt-1.5 w-full min-h-12 rounded-xl border border-red-400/50 bg-white/[0.04] px-3 py-3 text-base text-white outline-none placeholder:text-zinc-500 focus-visible:border-red-400/60 focus-visible:ring-2 focus-visible:ring-red-400/40";
+  "mt-1.5 w-full min-h-12 rounded-xl border border-rose-400 bg-rose-50 px-3 py-3 text-base text-slate-900 outline-none placeholder:text-slate-400 focus:border-rose-500 focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus-visible:border-rose-500 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-rose-500/20";
 
-const labelClass = "block text-sm font-medium text-zinc-200";
+const labelClass = "block text-sm font-medium text-slate-700";
 
 type WorkshopCaptureStepProps = Readonly<{
   sessionId: string;
@@ -131,16 +131,16 @@ export default function WorkshopCaptureStep({
   if (completed) {
     return (
       <div className="min-w-0 space-y-5 text-center">
-        <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-6 sm:px-5 sm:py-8">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-6 shadow-sm sm:px-5 sm:py-8">
           <p className="text-2xl" aria-hidden="true">
             ✅
           </p>
-          <h3 className="mt-3 text-balance text-xl font-semibold text-white">
+          <h3 className="mt-3 text-balance text-xl font-semibold text-slate-900">
             {t("workshop.capture.thankYouMessage")}
           </h3>
-          <p className="mx-auto mt-2 max-w-md text-pretty text-sm leading-relaxed text-zinc-300">
+          <p className="mx-auto mt-2 max-w-md text-pretty text-sm leading-relaxed text-slate-600">
             {t("workshop.capture.thankYouBody")}{" "}
-            <span className="font-medium text-emerald-200">{goalTitle}</span>
+            <span className="font-medium text-emerald-800">{goalTitle}</span>
           </p>
         </div>
 
@@ -164,11 +164,11 @@ export default function WorkshopCaptureStep({
       // (which would pop the mobile keyboard immediately).
       autoComplete="on"
     >
-      <p className="text-sm leading-relaxed text-zinc-400">
+      <p className="text-sm leading-relaxed text-slate-600">
         {t("workshop.capture.intro")}
       </p>
 
-      <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3.5 py-3 text-sm leading-relaxed text-emerald-100">
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm leading-relaxed text-emerald-900">
         {t("workshop.capture.selectedGoal")}{" "}
         <span className="font-semibold break-words">{goalTitle}</span>
       </div>
@@ -176,7 +176,7 @@ export default function WorkshopCaptureStep({
       <div>
         <label htmlFor="workshop-lead-name" className={labelClass}>
           {t("workshop.capture.nameLabel")}{" "}
-          <span className="text-red-300" aria-hidden="true">
+          <span className="text-rose-600" aria-hidden="true">
             {requiredMark}
           </span>
         </label>
@@ -199,7 +199,7 @@ export default function WorkshopCaptureStep({
       <div>
         <label htmlFor="workshop-lead-email" className={labelClass}>
           {t("workshop.capture.emailLabel")}{" "}
-          <span className="text-red-300" aria-hidden="true">
+          <span className="text-rose-600" aria-hidden="true">
             {requiredMark}
           </span>
         </label>
@@ -223,7 +223,7 @@ export default function WorkshopCaptureStep({
       <div>
         <label htmlFor="workshop-lead-phone" className={labelClass}>
           {t("workshop.capture.phoneLabel")}{" "}
-          <span className="text-red-300" aria-hidden="true">
+          <span className="text-rose-600" aria-hidden="true">
             {requiredMark}
           </span>
         </label>
@@ -260,7 +260,7 @@ export default function WorkshopCaptureStep({
           <p
             id="workshop-lead-phone-error"
             role="alert"
-            className="mt-1.5 text-sm text-red-300"
+            className="mt-1.5 text-sm text-rose-700"
           >
             {phoneError}
           </p>
@@ -270,7 +270,7 @@ export default function WorkshopCaptureStep({
       {error ? (
         <p
           role="alert"
-          className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-800"
         >
           {error}
         </p>

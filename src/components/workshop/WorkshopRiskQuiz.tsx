@@ -17,8 +17,7 @@ import {
 import type { RiskQuizAnswer, RiskProfile } from "@/lib/workshop/types";
 
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
-
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white";
 
 function resolveIcon(name: string): LucideIcon {
   const Icon = icons[name as keyof typeof icons];
@@ -138,10 +137,10 @@ export default function WorkshopRiskQuiz({
               className={[
                 "h-2.5 w-2.5 rounded-full transition-colors",
                 active
-                  ? "bg-emerald-400"
+                  ? "bg-emerald-500 shadow-sm shadow-emerald-500/40"
                   : done
-                    ? "bg-emerald-400/50"
-                    : "bg-white/20",
+                    ? "bg-emerald-300"
+                    : "bg-slate-200",
               ].join(" ")}
               aria-current={active ? "step" : undefined}
             />
@@ -151,7 +150,7 @@ export default function WorkshopRiskQuiz({
 
       <div className="text-center">
         <span
-          className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+          className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700"
           aria-hidden="true"
         >
           {createElement(resolveIcon(question.icon), {
@@ -159,10 +158,10 @@ export default function WorkshopRiskQuiz({
             strokeWidth: 2,
           })}
         </span>
-        <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+        <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
           {progressLabel}
         </p>
-        <h3 className="mt-2 text-balance text-lg font-semibold tracking-tight text-white sm:text-xl">
+        <h3 className="mt-2 text-balance text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
           {prompt}
         </h3>
       </div>
@@ -180,11 +179,11 @@ export default function WorkshopRiskQuiz({
               disabled={isSaving}
               onClick={() => selectChoice(choice.id)}
               className={[
-                "flex min-h-14 w-full touch-manipulation items-start gap-3 rounded-2xl border px-3.5 py-3.5 text-left transition-colors sm:px-4",
+                "flex min-h-14 w-full touch-manipulation items-start gap-3 rounded-xl border-2 p-4 text-left shadow-sm transition-all",
                 focusRing,
                 isSelected
-                  ? "border-emerald-400/50 bg-emerald-400/10 shadow-[0_0_0_1px_rgba(52,211,153,0.15)]"
-                  : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]",
+                  ? "border-emerald-500 bg-emerald-50/50"
+                  : "border-slate-200 bg-white hover:border-emerald-500",
                 isSaving ? "opacity-60" : "",
               ].join(" ")}
             >
@@ -192,8 +191,8 @@ export default function WorkshopRiskQuiz({
                 className={[
                   "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border",
                   isSelected
-                    ? "border-emerald-400/45 bg-emerald-400/15 text-emerald-200"
-                    : "border-white/10 bg-white/[0.05] text-zinc-300",
+                    ? "border-emerald-300 bg-emerald-100 text-emerald-700"
+                    : "border-slate-200 bg-slate-50 text-slate-600",
                 ].join(" ")}
                 aria-hidden="true"
               >
@@ -203,13 +202,13 @@ export default function WorkshopRiskQuiz({
                 })}
               </span>
               <span className="min-w-0 flex-1 pt-0.5">
-                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                   {t("workshop.riskQuiz.choiceLetter").replace(
                     "{letter}",
                     choice.id.toUpperCase(),
                   )}
                 </span>
-                <span className="mt-1 block break-words text-sm leading-snug text-zinc-100 [overflow-wrap:anywhere] sm:text-[15px]">
+                <span className="mt-1 block break-words text-sm leading-snug text-slate-800 [overflow-wrap:anywhere] sm:text-[15px]">
                   {choiceLabel}
                 </span>
               </span>

@@ -10,10 +10,10 @@ export const workshopStickyContentPadClass =
   "pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]";
 
 const primaryBtnClass =
-  "inline-flex min-h-14 w-full flex-1 touch-manipulation items-center justify-center rounded-xl bg-emerald-500 px-5 py-3.5 text-base font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(16,185,129,0.35)] transition-colors hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-14 w-full flex-1 touch-manipulation items-center justify-center rounded-xl bg-emerald-500 px-5 py-3.5 text-base font-semibold text-white shadow-sm shadow-emerald-500/25 transition-colors hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60";
 
 const secondaryBtnClass =
-  "inline-flex min-h-12 w-full touch-manipulation items-center justify-center rounded-xl border border-white/20 bg-zinc-950/40 px-5 py-3 text-sm font-medium text-zinc-100 transition-colors hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[7.5rem]";
+  "inline-flex min-h-12 w-full touch-manipulation items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[7.5rem]";
 
 /** Ignore sub-pixel visualViewport noise when the keyboard is already open. */
 const KEYBOARD_JITTER_PX = 24;
@@ -130,15 +130,15 @@ export default function WorkshopStickyFooter({
     >
       <div
         className={[
-          "pointer-events-auto border-t border-white/10",
-          "bg-zinc-950/95 backdrop-blur-md",
+          "pointer-events-auto border-t border-slate-200",
+          "bg-white/90 backdrop-blur",
           "px-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))]",
           "pt-3",
           // Home indicator clearance when keyboard is closed; tighten when lifted.
           keyboardOffset > 0
             ? "pb-3"
             : "pb-[max(0.75rem,env(safe-area-inset-bottom))]",
-          "shadow-[0_-8px_28px_rgba(0,0,0,0.45)]",
+          "shadow-lg",
         ].join(" ")}
       >
         <div className="mx-auto flex w-full max-w-2xl flex-col-reverse gap-2 sm:flex-row sm:items-stretch sm:gap-3">

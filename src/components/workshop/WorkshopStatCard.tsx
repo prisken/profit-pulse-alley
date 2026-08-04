@@ -1,16 +1,16 @@
 "use client";
 
-import { createElement, useId, useState, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronDown, Pencil, icons, type LucideIcon } from "lucide-react";
+import { createElement, type ReactNode } from "react";
+import { Pencil, icons, type LucideIcon } from "lucide-react";
 
+import CollapsibleWidget from "@/components/workshop/CollapsibleWidget";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { pickBilingual } from "@/lib/workshop/bilingual";
 import type { Bilingual, LayerFlag } from "@/lib/workshop/types";
 
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white";
 
 type StatusTone = NonNullable<WorkshopStatCardProps["status"]>;
 
@@ -19,30 +19,30 @@ const STATUS_STYLES: Record<
   { ring: string; badge: string; icon: string; pill: string }
 > = {
   green: {
-    ring: "border-emerald-400/45 shadow-[0_0_0_1px_rgba(52,211,153,0.12)]",
-    badge: "border-emerald-400/40 bg-emerald-400/15",
-    icon: "text-emerald-200",
-    pill: "border-emerald-400/40 bg-emerald-400/15 text-emerald-200",
+    ring: "border-emerald-200 shadow-[0_0_0_1px_rgba(16,185,129,0.08)]",
+    badge: "border-emerald-200 bg-emerald-50",
+    icon: "text-emerald-600",
+    pill: "border-emerald-200 bg-emerald-50 text-emerald-700",
   },
   amber: {
-    ring: "border-amber-400/45 shadow-[0_0_0_1px_rgba(251,191,36,0.12)]",
-    badge: "border-amber-400/40 bg-amber-400/15",
-    icon: "text-amber-200",
-    pill: "border-amber-400/40 bg-amber-400/15 text-amber-200",
+    ring: "border-amber-200 shadow-[0_0_0_1px_rgba(245,158,11,0.1)]",
+    badge: "border-amber-200 bg-amber-50",
+    icon: "text-amber-600",
+    pill: "border-amber-200 bg-amber-50 text-amber-800",
   },
   red: {
-    ring: "border-red-400/45 shadow-[0_0_0_1px_rgba(248,113,113,0.12)]",
-    badge: "border-red-400/40 bg-red-400/15",
-    icon: "text-red-200",
-    pill: "border-red-400/40 bg-red-400/15 text-red-200",
+    ring: "border-rose-200 shadow-[0_0_0_1px_rgba(244,63,94,0.1)]",
+    badge: "border-rose-200 bg-rose-50",
+    icon: "text-rose-600",
+    pill: "border-rose-200 bg-rose-50 text-rose-700",
   },
 };
 
 const NEUTRAL = {
-  ring: "border-white/10",
-  badge: "border-white/10 bg-white/[0.05]",
-  icon: "text-zinc-300",
-  pill: "border-white/10 bg-white/[0.05] text-zinc-300",
+  ring: "border-slate-200/80",
+  badge: "border-slate-200 bg-slate-50",
+  icon: "text-slate-600",
+  pill: "border-slate-200 bg-slate-50 text-slate-600",
 };
 
 const FLAG_LABEL_KEYS: Record<LayerFlag, MessageKey> = {
@@ -56,6 +56,10 @@ function resolveIcon(name: string): LucideIcon {
   return Icon ?? icons.Circle;
 }
 
+function defaultExpandedForStatus(status?: LayerFlag): boolean {
+  return status === "amber" || status === "red";
+}
+
 export type WorkshopStatCardProps = Readonly<{
   icon: string;
   status?: LayerFlag;
@@ -66,11 +70,20 @@ export type WorkshopStatCardProps = Readonly<{
   valueContent?: ReactNode;
   subtext?: string;
   expandableText?: string | Bilingual;
+  /** Extra detail body (shown inside the collapsible panel when present). */
+  children?: ReactNode;
   onEdit?: () => void;
+  /**
+   * Override accordion open state.
+   * Defaults to `false` for green / unset, `true` for amber / red.
+   */
+  defaultExpanded?: boolean;
+  className?: string;
 }>;
 
 /**
  * Generic icon + value card for workshop steps. Layout (grid/stack) is caller-owned.
+ * Light ProjectionLab surface; collapses detail when `expandableText` or `children` exist.
  */
 export default function WorkshopStatCard({
   icon,
@@ -80,12 +93,12 @@ export default function WorkshopStatCard({
   valueContent,
   subtext,
   expandableText,
+  children,
   onEdit,
+  defaultExpanded,
+  className,
 }: WorkshopStatCardProps) {
   const { t, locale } = useTranslations();
-  const [expanded, setExpanded] = useState(false);
-  const panelId = useId();
-  const reduceMotion = useReducedMotion();
   const tone = status ? STATUS_STYLES[status] : NEUTRAL;
 
   const resolvedExpandable =
@@ -93,131 +106,140 @@ export default function WorkshopStatCard({
       ? ""
       : pickBilingual(expandableText, locale);
 
+  const hasCollapsibleBody =
+    Boolean(resolvedExpandable) || children != null;
+
+  const resolvedDefaultExpanded =
+    defaultExpanded ?? defaultExpandedForStatus(status);
+
+  const iconNode = (
+    <span
+      className={[
+        "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border",
+        tone.badge,
+        tone.icon,
+      ].join(" ")}
+      aria-hidden="true"
+    >
+      {createElement(resolveIcon(icon), {
+        className: "h-5 w-5",
+        strokeWidth: 2,
+      })}
+    </span>
+  );
+
+  const statusBadge = status ? (
+    <span
+      className={[
+        "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+        tone.pill,
+      ].join(" ")}
+    >
+      {t(FLAG_LABEL_KEYS[status])}
+    </span>
+  ) : null;
+
+  const editButton = onEdit ? (
+    <button
+      type="button"
+      onClick={onEdit}
+      className={[
+        "inline-flex min-h-11 min-w-11 shrink-0 touch-manipulation items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900",
+        focusRing,
+      ].join(" ")}
+      aria-label={t("workshop.stat.editAria").replace("{label}", label)}
+    >
+      <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+      {t("workshop.stat.edit")}
+    </button>
+  ) : null;
+
+  const valueBlock = valueContent ? (
+    <div className="min-w-0">{valueContent}</div>
+  ) : value != null && value !== "" ? (
+    <p className="min-w-0 break-words text-2xl font-semibold tracking-tight text-slate-900 [overflow-wrap:anywhere] sm:text-[1.65rem]">
+      {value}
+    </p>
+  ) : null;
+
+  const subtextBlock = subtext ? (
+    <p className="text-pretty text-xs leading-relaxed text-slate-500 sm:text-[13px]">
+      {subtext}
+    </p>
+  ) : null;
+
+  if (hasCollapsibleBody) {
+    return (
+      <CollapsibleWidget
+        className={[tone.ring, className].filter(Boolean).join(" ")}
+        icon={iconNode}
+        title={
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+            {label}
+          </span>
+        }
+        subtitle={
+          !valueContent && value != null && value !== "" ? (
+            <span className="text-slate-900">{value}</span>
+          ) : undefined
+        }
+        badge={
+          <>
+            {statusBadge}
+            {editButton}
+          </>
+        }
+        defaultExpanded={resolvedDefaultExpanded}
+      >
+        <div className="space-y-2.5">
+          {valueContent ? valueBlock : null}
+          {subtextBlock}
+          {resolvedExpandable ? (
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                {t("workshop.ui.showDetails")}
+              </p>
+              <p className="text-pretty text-sm leading-relaxed text-slate-600">
+                {resolvedExpandable}
+              </p>
+            </div>
+          ) : null}
+          {children}
+        </div>
+      </CollapsibleWidget>
+    );
+  }
+
   return (
     <article
       className={[
-        "min-w-0 rounded-2xl border bg-white/[0.03] px-3.5 py-3.5 sm:px-4 sm:py-4",
+        "min-w-0 overflow-hidden rounded-2xl border bg-white px-3.5 py-3.5 shadow-sm transition-all duration-200 hover:shadow-md sm:px-4 sm:py-4",
         tone.ring,
-      ].join(" ")}
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <div className="flex items-start gap-3">
-        <span
-          className={[
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border",
-            tone.badge,
-            tone.icon,
-          ].join(" ")}
-          aria-hidden="true"
-        >
-          {createElement(resolveIcon(icon), {
-            className: "h-5 w-5",
-            strokeWidth: 2,
-          })}
-        </span>
+        {iconNode}
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex flex-wrap items-center gap-2">
-              <p className="min-w-0 break-words text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+              <p className="min-w-0 break-words text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                 {label}
               </p>
-              {status ? (
-                <span
-                  className={[
-                    "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                    tone.pill,
-                  ].join(" ")}
-                >
-                  {t(FLAG_LABEL_KEYS[status])}
-                </span>
-              ) : null}
+              {statusBadge}
             </div>
-            {onEdit ? (
-              <button
-                type="button"
-                onClick={onEdit}
-                className={[
-                  "inline-flex min-h-11 min-w-11 shrink-0 touch-manipulation items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 text-[11px] font-medium text-zinc-300 transition-colors hover:border-white/20 hover:text-white",
-                  focusRing,
-                ].join(" ")}
-                aria-label={t("workshop.stat.editAria").replace(
-                  "{label}",
-                  label,
-                )}
-              >
-                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                {t("workshop.stat.edit")}
-              </button>
-            ) : null}
+            {editButton}
           </div>
 
-          {valueContent ? (
-            <div className="mt-1.5 min-w-0">{valueContent}</div>
-          ) : (
-            <p className="mt-1.5 min-w-0 break-words text-2xl font-semibold tracking-tight text-white [overflow-wrap:anywhere] sm:text-[1.65rem]">
-              {value}
-            </p>
-          )}
-
-          {subtext ? (
-            <p className="mt-1 text-pretty text-xs leading-relaxed text-zinc-500 sm:text-[13px]">
-              {subtext}
-            </p>
-          ) : null}
+          <div className="mt-1.5 space-y-1">
+            {valueBlock}
+            {subtextBlock}
+          </div>
         </div>
       </div>
-
-      {resolvedExpandable ? (
-        <div className="mt-3 border-t border-white/10 pt-2.5">
-          <button
-            type="button"
-            className={[
-              "inline-flex min-h-11 w-full touch-manipulation items-center justify-between gap-2 rounded-lg px-2 py-2.5 text-left text-xs font-semibold text-emerald-300/90 transition-colors hover:text-emerald-200",
-              focusRing,
-            ].join(" ")}
-            aria-expanded={expanded}
-            aria-controls={panelId}
-            onClick={() => setExpanded((prev) => !prev)}
-          >
-            <span className="min-w-0 flex-1 text-pretty break-words">
-              {expanded
-                ? t("workshop.pyramid.whyThisMattersOpen")
-                : t("workshop.pyramid.whyThisMatters")}
-            </span>
-            <ChevronDown
-              className={[
-                "h-4 w-4 shrink-0 transition-transform duration-200",
-                expanded ? "rotate-180" : "",
-              ].join(" ")}
-              aria-hidden="true"
-            />
-          </button>
-
-          <AnimatePresence initial={false}>
-            {expanded ? (
-              <motion.div
-                id={panelId}
-                key="why"
-                initial={reduceMotion ? false : { height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={
-                  reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }
-                }
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
-                }
-                className="overflow-hidden"
-              >
-                <p className="pb-1 pt-1.5 text-pretty text-sm leading-relaxed text-zinc-300">
-                  {resolvedExpandable}
-                </p>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-        </div>
-      ) : null}
     </article>
   );
 }

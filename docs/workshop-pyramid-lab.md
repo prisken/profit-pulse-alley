@@ -214,6 +214,14 @@ Fixed bottom action bar on every step (primary CTA + optional Back):
 - Stress-test year scrubber: parent `touch-pan-y`, scrubber wrapper `touch-none`; same tap-to-jump behavior
 - Workshop buttons / radios use `touch-action: manipulation` (class + `.workshop-lab` CSS) to drop the legacy 300ms tap delay
 
+#### ProjectionLab light aesthetic + tone UI
+
+Workshop UI uses a **light ProjectionLab-inspired** canvas (`bg-slate-50/80 text-slate-900`) with emerald accents, white cards, and `border-slate-200` — not dark mode. Progress dots, sticky footer (`bg-white/90 backdrop-blur`), number fields, and capture inputs follow the same light tokens. PDF export mirrors this in `generate-pdf.tsx` (`#ffffff` page, `#0f172a` body, `#e2e8f0` borders; high-contrast pyramid bands with white/dark labels; light SVG rating gauge).
+
+**`CollapsibleWidget`** (`src/components/workshop/CollapsibleWidget.tsx`) — framer-motion accordion used for pyramid layer editors, expense categories, stress-test goals, crisis impact cards, summary action goals, and expandable `WorkshopStatCard` detail. Expand/collapse copy comes from `workshop.ui.expand|collapse|showDetails|hideDetails`.
+
+**`getToneUiTheme(tone)`** (`src/lib/workshop/tone.ts`) — returns Tailwind tokens (`badgeClass`, `cardAccentClass`, `headingStyle`, `iconEmoji`) per tone. Applied on tone selector selection, crisis alert chrome, stress notes, and related cards. PDF title formatting is tone-aware separately: **direct** → uppercase headers; **warm** → supportive rose-tinted subtitle (copy still from `workshop.pdf.subtitleByTone.*`).
+
 ### i18n & bilingual AI copy
 
 User-facing UI strings live in the **workshop message catalogs** (not hard-coded English in components):
@@ -423,14 +431,16 @@ Score 0–100 → **`labelKey`** bands (not a raw English display string):
 
 **Graphical contents (as graphical as practical without icon fonts):**
 
-1. Header: localized “Your AI Financial Blueprint” / “你的 AI 財務藍圖” + tone-appropriate subtitle from catalog
-2. SVG pyramid: 4 stacked trapezoids colored by layer flag + key figures (layer labels localized)
-3. SVG rating gauge (0–100) with score centered + translated `labelKey`
+1. Header: localized “Your AI Financial Blueprint” / “你的 AI 財務藍圖” + tone-appropriate subtitle from catalog (**direct** → uppercase title/section headers; **warm** → rose-tinted supportive subtitle style)
+2. SVG pyramid: 4 high-contrast trapezoids colored by layer flag + clean white/dark labels + key figures (layer labels localized)
+3. SVG rating gauge (0–100) with crisp light arc (`#e2e8f0`) and centered slate score + translated `labelKey`
 4. Horizontal goal progress bars (not pie); goal labels from `Bilingual`
 5. 3-segment risk allocation bar (low/mid/high — not donut)
 6. Crisis impacts: colored square + bilingual headlines
 7. Three action goals with impact points + bilingual title/reasoning excerpt
 8. Footer educational disclaimer from `workshop.pdf.disclaimer`
+
+**Light aesthetic:** page `#ffffff`, body `#0f172a`, borders `#e2e8f0` — aligned with the ProjectionLab wizard chrome.
 
 Capture UI triggers download shortly after successful lead save; “Download again” uses the same URL.
 
@@ -594,5 +604,6 @@ Production smoke: hit canonical URL; scan QR; run one full attendee path; confir
 | 2026-08-04 | **Mobile UX hardening:** `WorkshopNumberField` (text + inputMode, ≥16px, currency/percent adornments); `WorkshopStickyFooter` with `visualViewport` keyboard avoidance; 44px slider thumbs + risk ±5% nudges under 400px; capture tel attrs; narrow/CJK overflow pass (360–428); tap-target + `touch-manipulation` sweep. |
 | 2026-08-04 | **AI stability:** DeepSeek timeout 45s; 3× backoff retries on 429/5xx/timeout; `callDeepSeekParsed` re-requests on bad JSON/bilingual; deterministic intake/expenses fallback; `/workshop/pyramid` `maxDuration = 60`. |
 | 2026-08-04 | **Build fix:** move sync fallback helpers out of `"use server"` `pyramid-actions.ts` into `ai-fallbacks.ts` (Next requires exported server actions to be async). |
+| 2026-08-04 | **ProjectionLab light aesthetic:** wizard shell + steps on slate/white canvas; `CollapsibleWidget` across layers/expenses/stress/crisis/summary; `getToneUiTheme` chrome; PDF light stylesheet (white page, slate body/borders, high-contrast pyramid, light SVG gauge, tone-aware titles). |
 
 When you change behavior, update **this file** in the same PR.

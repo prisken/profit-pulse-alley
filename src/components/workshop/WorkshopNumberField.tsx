@@ -34,12 +34,12 @@ export type WorkshopNumberFieldProps = Readonly<{
 }>;
 
 const INPUT_CLASS =
-  "w-full min-h-12 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-base text-white outline-none placeholder:text-zinc-500 focus-visible:border-emerald-400/40 focus-visible:ring-2 focus-visible:ring-emerald-400/40 font-mono tabular-nums";
+  "w-full min-h-12 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-base text-slate-900 outline-none placeholder:text-slate-400 transition-colors focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus-visible:border-emerald-500 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-500/20 font-mono tabular-nums";
 
 const CURRENCY_INPUT_CLASS = `${INPUT_CLASS} pl-8`;
 const PERCENT_INPUT_CLASS = `${INPUT_CLASS} pr-10`;
 
-const LABEL_CLASS = "mb-1.5 block text-sm font-medium text-zinc-200";
+const LABEL_CLASS = "mb-1.5 block text-sm font-medium text-slate-700";
 
 /** Digits with optional one decimal point (no thousand separators). */
 const EDIT_PATTERN = /^\d*\.?\d*$/;
@@ -251,7 +251,7 @@ export default function WorkshopNumberField({
         {showCurrencyAdornment ? (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-base text-zinc-500"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-base text-slate-500"
           >
             $
           </span>
@@ -275,7 +275,7 @@ export default function WorkshopNumberField({
         {showPercentAdornment ? (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-base text-zinc-500"
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-base text-slate-500"
           >
             %
           </span>

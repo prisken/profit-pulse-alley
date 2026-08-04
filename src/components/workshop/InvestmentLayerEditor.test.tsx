@@ -9,6 +9,12 @@ import InvestmentLayerEditor from "@/components/workshop/InvestmentLayerEditor";
 import type { InvestmentLayer } from "@/lib/workshop/types";
 
 const STRINGS: Record<string, string> = {
+  "workshop.ui.expand": "Expand",
+  "workshop.ui.collapse": "Collapse",
+  "workshop.pyramid.layers.investment.title": "Investment & Fun",
+  "workshop.layerFlags.green": "Strong",
+  "workshop.layerFlags.amber": "Watch",
+  "workshop.layerFlags.red": "Needs Attention",
   "workshop.pyramid.investment.cardLabel": "Investment",
   "workshop.pyramid.investment.perMonth": "{amount}/mo",
   "workshop.pyramid.investment.funBudgetLine":

@@ -6,9 +6,7 @@ import EmergencyFundLayerEditor from "@/components/workshop/EmergencyFundLayerEd
 import GoalsLayerEditor from "@/components/workshop/GoalsLayerEditor";
 import InvestmentLayerEditor from "@/components/workshop/InvestmentLayerEditor";
 import ProtectionLayerEditor from "@/components/workshop/ProtectionLayerEditor";
-import {
-  WorkshopRetryPanel,
-} from "@/components/workshop/WorkshopErrorBoundary";
+import { WorkshopRetryPanel } from "@/components/workshop/WorkshopErrorBoundary";
 import WorkshopStickyFooter from "@/components/workshop/WorkshopStickyFooter";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
@@ -24,22 +22,10 @@ import type {
   PyramidState,
 } from "@/lib/workshop/types";
 
-const FLAG_RING: Record<LayerFlag, string> = {
-  green: "border-emerald-400/55 bg-emerald-400/15 text-emerald-200",
-  amber: "border-amber-400/55 bg-amber-400/15 text-amber-200",
-  red: "border-red-400/55 bg-red-400/15 text-red-200",
-};
-
 const FLAG_BAR: Record<LayerFlag, string> = {
-  green: "bg-emerald-400/85",
-  amber: "bg-amber-400/85",
-  red: "bg-red-400/85",
-};
-
-const FLAG_LABEL_KEYS: Record<LayerFlag, MessageKey> = {
-  green: "workshop.layerFlags.green",
-  amber: "workshop.layerFlags.amber",
-  red: "workshop.layerFlags.red",
+  green: "bg-emerald-500 text-white shadow-md shadow-emerald-500/25",
+  amber: "bg-amber-400 text-amber-950 shadow-md shadow-amber-400/30",
+  red: "bg-rose-500 text-white shadow-md shadow-rose-500/25",
 };
 
 const BAND_LABEL_KEYS: Record<keyof LayerFlags, MessageKey> = {
@@ -63,13 +49,13 @@ function WorkshopPyramidGraphic({ flags }: { flags: LayerFlags }) {
 
   return (
     <div
-      className="min-w-0 overflow-x-hidden rounded-2xl border border-white/10 bg-zinc-950/40 px-2.5 py-5 sm:px-6"
+      className="min-w-0 overflow-x-hidden rounded-2xl border border-slate-200/80 bg-white px-2.5 py-5 shadow-sm sm:px-6"
       aria-hidden="true"
     >
-      <p className="text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+      <p className="text-center text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
         {t("workshop.pyramid.graphicTitle")}
       </p>
-      <div className="mt-4 flex w-full min-w-0 flex-col items-center gap-1.5">
+      <div className="mt-4 flex w-full min-w-0 flex-col items-center gap-2">
         {bands.map((band) => {
           const label = t(BAND_LABEL_KEYS[band.key]);
           return (
@@ -80,9 +66,7 @@ function WorkshopPyramidGraphic({ flags }: { flags: LayerFlags }) {
             >
               <div
                 className={[
-                  // CJK: avoid uppercase/wide tracking (widens glyphs / clips in trapezoid).
-                  // English: slightly tighter letter-spacing on narrow bands.
-                  "flex h-9 w-full max-w-full items-center justify-center overflow-hidden px-2 text-center text-[10px] font-semibold leading-tight tracking-normal text-zinc-950/80 sm:h-10 sm:px-3 sm:text-[11px]",
+                  "flex h-9 w-full max-w-full items-center justify-center overflow-hidden px-2 text-center text-[10px] font-semibold leading-tight tracking-normal sm:h-10 sm:px-3 sm:text-[11px]",
                   FLAG_BAR[flags[band.key]],
                 ].join(" ")}
                 style={{
@@ -90,49 +74,13 @@ function WorkshopPyramidGraphic({ flags }: { flags: LayerFlags }) {
                   clipPath: "polygon(10% 0, 90% 0, 100% 100%, 0 100%)",
                 }}
               >
-                <span className="block max-w-full truncate normal-case">
+                <span className="block max-w-full truncate normal-case drop-shadow-sm">
                   {label}
                 </span>
               </div>
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function LayerSectionHeader({
-  icon,
-  label,
-  status,
-}: {
-  icon: string;
-  label: string;
-  status: LayerFlag;
-}) {
-  const { t } = useTranslations();
-  return (
-    <div className="mb-3 flex min-w-0 items-center gap-2.5">
-      <span
-        className={[
-          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-base",
-          FLAG_RING[status],
-        ].join(" ")}
-        aria-hidden="true"
-      >
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <h3 className="text-balance text-sm font-semibold text-white sm:text-base">
-          {label}
-        </h3>
-        <p className="text-[11px] uppercase tracking-wide text-zinc-500">
-          {t("workshop.pyramid.statusPrefix").replace(
-            "{status}",
-            t(FLAG_LABEL_KEYS[status]),
-          )}
-        </p>
       </div>
     </div>
   );
@@ -193,19 +141,14 @@ export default function WorkshopPyramidStep({
   }
 
   return (
-    <div className="min-w-0 overflow-x-hidden space-y-6 sm:space-y-7">
-      <p className="text-pretty text-sm leading-relaxed text-zinc-400">
+    <div className="min-w-0 space-y-5 overflow-x-hidden sm:space-y-6">
+      <p className="text-pretty text-sm leading-relaxed text-slate-600">
         {t("workshop.pyramid.intro")}
       </p>
 
       <WorkshopPyramidGraphic flags={layerFlags} />
 
-      <section>
-        <LayerSectionHeader
-          icon="🛡️"
-          label={t("workshop.pyramid.layers.protection.title")}
-          status={layerFlags.protection}
-        />
+      <div className="space-y-3">
         <ProtectionLayerEditor
           value={pyramid.protection}
           onChange={(protection) => onChange({ ...pyramid, protection })}
@@ -215,14 +158,7 @@ export default function WorkshopPyramidStep({
           rationale={rationale ?? undefined}
           disabled={isConfirming}
         />
-      </section>
 
-      <section>
-        <LayerSectionHeader
-          icon="🏦"
-          label={t("workshop.pyramid.layers.emergencyFund.title")}
-          status={layerFlags.emergencyFund}
-        />
         <EmergencyFundLayerEditor
           value={pyramid.emergencyFund}
           onChange={(emergencyFund) => onChange({ ...pyramid, emergencyFund })}
@@ -231,28 +167,14 @@ export default function WorkshopPyramidStep({
           status={layerFlags.emergencyFund}
           disabled={isConfirming}
         />
-      </section>
 
-      <section>
-        <LayerSectionHeader
-          icon="🎯"
-          label={t("workshop.pyramid.layers.goals.title")}
-          status={layerFlags.goals}
-        />
         <GoalsLayerEditor
           value={pyramid.goals}
           onChange={(goals) => onChange({ ...pyramid, goals })}
           status={layerFlags.goals}
           disabled={isConfirming}
         />
-      </section>
 
-      <section>
-        <LayerSectionHeader
-          icon="🚀"
-          label={t("workshop.pyramid.layers.investment.title")}
-          status={layerFlags.investment}
-        />
         <InvestmentLayerEditor
           value={pyramid.investment}
           onChange={(investment) => onChange({ ...pyramid, investment })}
@@ -260,7 +182,7 @@ export default function WorkshopPyramidStep({
           status={layerFlags.investment}
           disabled={isConfirming}
         />
-      </section>
+      </div>
 
       {error ? (
         <WorkshopRetryPanel

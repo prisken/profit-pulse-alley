@@ -159,7 +159,8 @@ export const workshopEnMessages = {
   "workshop.expenses.categories.transport": "Transport",
   "workshop.expenses.categories.insurance": "Insurance",
   "workshop.expenses.categories.discretionary": "Discretionary",
-  "workshop.expenses.totalLabel": "Monthly total",
+  "workshop.expenses.totalLabel": "Total Monthly Expenses",
+  "workshop.expenses.expenseRatio": "Expense Ratio: {percent}% of Income",
   "workshop.expenses.confirmButton": "Confirm expenses",
   "workshop.expenses.intro":
     "Tweak each monthly category. The total always sums your numbers — we never trust an AI total.",
@@ -376,6 +377,11 @@ export const workshopEnMessages = {
   "workshop.errors.wizardSnagTitle": "Workshop hit a snag",
   "workshop.errors.wizardSnagDescription":
     "Something unexpected happened. Retry this step — your earlier answers are still here.",
+
+  "workshop.ui.expand": "Expand",
+  "workshop.ui.collapse": "Collapse",
+  "workshop.ui.showDetails": "Show details",
+  "workshop.ui.hideDetails": "Hide details",
 
   "workshop.pdf.title": "Your AI Financial Blueprint",
   "workshop.pdf.subtitle":

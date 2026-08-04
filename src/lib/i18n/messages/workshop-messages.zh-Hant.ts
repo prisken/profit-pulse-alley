@@ -152,7 +152,8 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.expenses.categories.transport": "交通",
   "workshop.expenses.categories.insurance": "保險",
   "workshop.expenses.categories.discretionary": "酌情開支",
-  "workshop.expenses.totalLabel": "每月合計",
+  "workshop.expenses.totalLabel": "每月總開支",
+  "workshop.expenses.expenseRatio": "開支佔收入比率：{percent}%",
   "workshop.expenses.confirmButton": "確認開支",
   "workshop.expenses.intro":
     "調整各項每月開支。合計一律由你的數字加總——我們不會採信 AI 的合計。",
@@ -332,6 +333,11 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.errors.wizardSnagTitle": "工作坊出現問題",
   "workshop.errors.wizardSnagDescription":
     "發生未預期情況。請重試此步驟——你較早的答案仍然保留。",
+
+  "workshop.ui.expand": "展開",
+  "workshop.ui.collapse": "折疊",
+  "workshop.ui.showDetails": "顯示詳情",
+  "workshop.ui.hideDetails": "隱藏詳情",
 
   "workshop.pdf.title": "你的 AI 財務藍圖",
   "workshop.pdf.subtitle":
