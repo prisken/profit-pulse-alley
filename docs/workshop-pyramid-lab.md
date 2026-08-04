@@ -305,11 +305,13 @@ Do **not** `export type { SomeType }` (re-export) from `"use server"` files — 
 | SDK | `openai` (^7.x) pointed at DeepSeek |
 | Base URL | `https://api.deepseek.com/v1` |
 | Default model | `deepseek-chat` (also supports `deepseek-reasoner`) |
-| Timeout | 20s |
+| Timeout | **45s** per attempt (`REQUEST_TIMEOUT_MS`) |
 | Env | `DEEPSEEK_API_KEY` (required) |
-| JSON mode | `response_format: json_object` + system reminder |
-| Retry | **Once** on network/timeout only — not on API/HTTP errors |
-| Init | **Lazy** client construction (SDK requires non-empty apiKey at `new OpenAI(...)`) |
+| JSON mode | `response_format: json_object` + system reminder; strips ```json fences if present |
+| Retry | **Up to 3** completion attempts with exponential backoff on network/timeout, empty content, **429**, and **5xx**. Parse/schema failures re-request via `callDeepSeekParsed` (2 parse attempts). Non-retryable: missing key, ordinary 4xx |
+| Fallbacks | Intake pyramid + expenses: after AI retries fail, use **deterministic local guesses** so the live session can continue (rationale explains the fallback in EN / zh-Hant). Stress notes: empty array. Crisis / goals / action goals: still surface Retry |
+| Serverless | `maxDuration = 60` on `/workshop/pyramid` so Vercel does not kill mid-retry |
+| Init | **Lazy** client construction (SDK requires non-empty apiKey at `new OpenAI(...)`); SDK `maxRetries: 0` (we own backoff) |
 | Tone | Every call that narrates must include `getToneInstruction(tone)` |
 | Bilingual | Narrative calls set `bilingualFields: true` → appends `BILINGUAL_JSON_INSTRUCTION`; parsers use `assertStrictBilingual` |
 
@@ -503,7 +505,7 @@ After schema changes: `npx prisma db push` (or migrate) + `npx prisma generate`,
 | `WorkshopRetryPanel` | Friendly panel for caught AI / save failures (intake, expenses predict/confirm, stress narrate, crisis, summary, pyramid confirm, risk quiz save) |
 | Intake | Validation errors = alert; AI failures = Retry (resubmit) |
 | Stress / crisis / summary | In-step Retry via `retryToken` / remount |
-| DeepSeek client | One network retry; clear message if key missing |
+| DeepSeek client | Up to 3 network/429/5xx retries + parse re-request; intake/expenses deterministic fallback; clear message if key missing |
 | Stale Prisma | Explicit “restart npm run dev” message when `workshopSession` missing |
 
 ---
@@ -590,5 +592,6 @@ Production smoke: hit canonical URL; scan QR; run one full attendee path; confir
 | 2026-08-04 | **v2 rewrite:** 8-step flow (tone, expenses, stress test, risk quiz, crisis impacts, rating/action goals); redesigned pyramid layers; required phone; graphical PDF; admin risk profile + rating columns. |
 | 2026-08-04 | **Bilingual EN / zh-Hant rollout:** `workshop-messages` catalogs + `LanguageSwitcher` on every wizard step; `Bilingual` AI fields; `SummaryRating.labelKey`; locale-aware PDF with Noto Sans TC. |
 | 2026-08-04 | **Mobile UX hardening:** `WorkshopNumberField` (text + inputMode, ≥16px, currency/percent adornments); `WorkshopStickyFooter` with `visualViewport` keyboard avoidance; 44px slider thumbs + risk ±5% nudges under 400px; capture tel attrs; narrow/CJK overflow pass (360–428); tap-target + `touch-manipulation` sweep. |
+| 2026-08-04 | **AI stability:** DeepSeek timeout 45s; 3× backoff retries on 429/5xx/timeout; `callDeepSeekParsed` re-requests on bad JSON/bilingual; deterministic intake/expenses fallback; `/workshop/pyramid` `maxDuration = 60`. |
 
 When you change behavior, update **this file** in the same PR.

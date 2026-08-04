@@ -45,6 +45,13 @@ function resolveWorkshopErrorMessage(
   ) {
     return t("workshop.errors.staleSchemaRestart");
   }
+  if (
+    raw.includes("Server Components render") ||
+    raw.includes("omitted in production") ||
+    /\bdigest\b/i.test(raw)
+  ) {
+    return t("workshop.errors.aiFailedRetry");
+  }
   // Server sometimes returns a MessageKey for phone/capture errors.
   if (raw.startsWith("workshop.")) {
     return t(raw as MessageKey);

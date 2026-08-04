@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/workshop/deepseek-client", () => ({
-  callDeepSeek: vi.fn(),
-}));
+vi.mock("@/lib/workshop/deepseek-client", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/workshop/deepseek-client")>();
+  return {
+    ...actual,
+    callDeepSeekParsed: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -14,14 +19,15 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { callDeepSeek } from "@/lib/workshop/deepseek-client";
+import { callDeepSeekParsed } from "@/lib/workshop/deepseek-client";
 import { prisma } from "@/lib/prisma";
 import {
+  buildDeterministicPyramidGuess,
   generateCrisisAction,
   predictPyramidAction,
 } from "@/lib/workshop/pyramid-actions";
 
-const mockedDeepSeek = vi.mocked(callDeepSeek);
+const mockedParsed = vi.mocked(callDeepSeekParsed);
 const mockedCreate = vi.mocked(prisma.workshopSession.create);
 
 const predictInput = {
@@ -32,41 +38,42 @@ const predictInput = {
   tone: "professional" as const,
 };
 
-function samplePyramidAi(overrides: Record<string, unknown> = {}) {
+function sampleParsedPyramid() {
   return {
-    protection: {
-      medicalCoveragePercent: 70,
-      criticalIllnessAmountHKD: 300_000,
-    },
-    emergencyFund: { savedAmountHKD: 80_000 },
-    goals: {
-      goals: [
-        {
-          id: "home",
-          icon: "Home",
-          label: { en: "Home", zhHant: "置業" },
-          targetAmountHKD: 2_000_000,
-          targetYear: 2030,
-        },
-        {
-          id: "retire",
-          icon: "PiggyBank",
-          label: { en: "Retirement", zhHant: "退休" },
-          targetAmountHKD: 4_000_000,
-          targetYear: 2055,
-        },
-      ],
-    },
-    investment: {
-      riskAllocation: { low: 30, mid: 50, high: 20 },
-      monthlyInvestmentHKD: 8_000,
-      monthlyFunHKD: 2_000,
+    pyramid: {
+      protection: {
+        medicalCoveragePercent: 70,
+        criticalIllnessAmountHKD: 300_000,
+      },
+      emergencyFund: { savedAmountHKD: 80_000 },
+      goals: {
+        goals: [
+          {
+            id: "home",
+            icon: "Home",
+            label: { en: "Home", zhHant: "置業" },
+            targetAmountHKD: 2_000_000,
+            targetYear: 2030,
+          },
+          {
+            id: "retire",
+            icon: "PiggyBank",
+            label: { en: "Retirement", zhHant: "退休" },
+            targetAmountHKD: 4_000_000,
+            targetYear: 2055,
+          },
+        ],
+      },
+      investment: {
+        riskAllocation: { low: 30, mid: 50, high: 20 },
+        monthlyInvestmentHKD: 8_000,
+        monthlyFunHKD: 2_000,
+      },
     },
     rationale: {
       en: "Coverage looks typical for this profile.",
       zhHant: "以這個背景來說，保障水平屬常見水平。",
     },
-    ...overrides,
   };
 }
 
@@ -76,51 +83,26 @@ describe("pyramid AI bilingual validation", () => {
     mockedCreate.mockResolvedValue({ id: "session_test" } as never);
   });
 
-  it("predictPyramidAction rejects rationale missing zhHant with a clear field error", async () => {
-    mockedDeepSeek.mockResolvedValue(
-      JSON.stringify(
-        samplePyramidAi({
-          rationale: { en: "English only rationale" },
-        }),
-      ),
-    );
+  it("predictPyramidAction persists a valid bilingual AI pyramid", async () => {
+    mockedParsed.mockResolvedValue(sampleParsedPyramid());
 
-    await expect(predictPyramidAction(predictInput)).rejects.toThrow(
-      /rationale\.zhHant/,
-    );
-    expect(mockedCreate).not.toHaveBeenCalled();
+    const result = await predictPyramidAction(predictInput);
+    expect(result.sessionId).toBe("session_test");
+    expect(result.rationale.zhHant).toContain("保障");
+    expect(mockedCreate).toHaveBeenCalledOnce();
   });
 
-  it("predictPyramidAction rejects goal label missing zhHant with a clear field error", async () => {
-    mockedDeepSeek.mockResolvedValue(
-      JSON.stringify(
-        samplePyramidAi({
-          goals: {
-            goals: [
-              {
-                id: "home",
-                icon: "Home",
-                label: { en: "Home" },
-                targetAmountHKD: 2_000_000,
-                targetYear: 2030,
-              },
-              {
-                id: "retire",
-                icon: "PiggyBank",
-                label: { en: "Retirement", zhHant: "退休" },
-                targetAmountHKD: 4_000_000,
-                targetYear: 2055,
-              },
-            ],
-          },
-        }),
+  it("predictPyramidAction falls back when AI bilingual parse keeps failing", async () => {
+    mockedParsed.mockRejectedValue(
+      new Error(
+        'Invalid bilingual "rationale.zhHant": Traditional Chinese text is missing or empty.',
       ),
     );
 
-    await expect(predictPyramidAction(predictInput)).rejects.toThrow(
-      /goals\.goals\[0\]\.label\.zhHant/,
-    );
-    expect(mockedCreate).not.toHaveBeenCalled();
+    const result = await predictPyramidAction(predictInput);
+    expect(result.sessionId).toBe("session_test");
+    expect(result.rationale.zhHant).toContain("本地估算");
+    expect(mockedCreate).toHaveBeenCalledOnce();
   });
 
   it("generateCrisisAction rejects title missing zhHant with a clear field error", async () => {
@@ -131,31 +113,10 @@ describe("pyramid AI bilingual validation", () => {
       id: "session_test",
     } as never);
 
-    mockedDeepSeek.mockResolvedValue(
-      JSON.stringify({
-        title: { en: "Industry shock only" },
-        description: {
-          en: "A short description.",
-          zhHant: "一段簡短說明。",
-        },
-        monthlyIncomeImpactPercent: 40,
-        oneTimeCostHKD: 50_000,
-        durationMonths: 6,
-        impacts: [
-          {
-            layer: "emergencyFund",
-            icon: "PiggyBank",
-            headline: { en: "Cash short", zhHant: "現金不足" },
-            detailMonths: 3,
-          },
-          {
-            layer: "goals",
-            icon: "Target",
-            headline: { en: "Goals delayed", zhHant: "目標延期" },
-            detailMonths: 12,
-          },
-        ],
-      }),
+    mockedParsed.mockRejectedValue(
+      new Error(
+        'Invalid bilingual "title.zhHant": Traditional Chinese text is missing or empty.',
+      ),
     );
 
     await expect(
@@ -168,5 +129,23 @@ describe("pyramid AI bilingual validation", () => {
         tone: "professional",
       }),
     ).rejects.toThrow(/title\.zhHant/);
+  });
+});
+
+describe("buildDeterministicPyramidGuess", () => {
+  it("returns a complete bilingual pyramid under recommended benchmarks", () => {
+    const { pyramid, rationale } = buildDeterministicPyramidGuess({
+      age: 40,
+      monthlyIncome: 25_000,
+      industry: "finance",
+    });
+    expect(pyramid.goals.goals.length).toBeGreaterThanOrEqual(2);
+    expect(rationale.en.length).toBeGreaterThan(10);
+    expect(rationale.zhHant.length).toBeGreaterThan(10);
+    expect(
+      pyramid.investment.riskAllocation.low +
+        pyramid.investment.riskAllocation.mid +
+        pyramid.investment.riskAllocation.high,
+    ).toBe(100);
   });
 });

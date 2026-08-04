@@ -10,9 +10,17 @@ import type { WorkshopTone } from "@/lib/workshop/types";
 
 const DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1";
 const DEFAULT_MODEL = "deepseek-chat" as const;
-const REQUEST_TIMEOUT_MS = 20_000;
+
+/** Per-attempt SDK timeout — bilingual JSON completions often need >20s. */
+export const REQUEST_TIMEOUT_MS = 45_000;
+
+/** Total createCompletion attempts (includes the first try). */
+export const MAX_COMPLETION_ATTEMPTS = 3;
+
 const JSON_ONLY_REMINDER =
   "Respond with valid JSON only. Do not include markdown fences or commentary.";
+
+const RETRYABLE_HTTP_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 
 function requireDeepSeekApiKey(): string {
   const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
@@ -37,6 +45,7 @@ function getDeepSeekClient(): OpenAI {
       baseURL: DEEPSEEK_BASE_URL,
       apiKey,
       timeout: REQUEST_TIMEOUT_MS,
+      maxRetries: 0, // we own retry / backoff below
     });
   }
   return deepseekClient;
@@ -58,7 +67,18 @@ export type CallDeepSeekParams = {
   bilingualFields?: boolean;
 };
 
-function isRetryableNetworkError(error: unknown): boolean {
+/** Strip ```json … ``` fences some models still emit despite json_object mode. */
+export function stripMarkdownJsonFence(content: string): string {
+  const trimmed = content.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return fenced ? fenced[1].trim() : trimmed;
+}
+
+/**
+ * Errors worth another attempt: timeouts, connection drops, rate limits, 5xx,
+ * empty model content. Explicit 4xx (except 408/429) are not retried.
+ */
+export function isRetryableDeepSeekError(error: unknown): boolean {
   if (error instanceof APIConnectionTimeoutError) {
     return true;
   }
@@ -66,8 +86,8 @@ function isRetryableNetworkError(error: unknown): boolean {
     return true;
   }
   if (error instanceof APIError) {
-    // Explicit API / HTTP errors from DeepSeek — do not retry.
-    return false;
+    const status = error.status;
+    return typeof status === "number" && RETRYABLE_HTTP_STATUS.has(status);
   }
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
@@ -76,10 +96,27 @@ function isRetryableNetworkError(error: unknown): boolean {
       message.includes("network") ||
       message.includes("econnreset") ||
       message.includes("etimedout") ||
-      message.includes("socket hang up")
+      message.includes("socket hang up") ||
+      message.includes("empty response") ||
+      message.includes("overloaded") ||
+      message.includes("rate limit") ||
+      message.includes("temporarily unavailable")
     );
   }
   return false;
+}
+
+/** Exponential backoff with light jitter: ~400ms, ~1200ms, … */
+export function retryBackoffMs(attemptIndex: number): number {
+  const base = 400 * 3 ** attemptIndex;
+  const jitter = Math.floor(Math.random() * 200);
+  return base + jitter;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 function buildSystemPrompt(
@@ -133,12 +170,12 @@ async function createCompletion(params: {
   if (!content) {
     throw new Error("DeepSeek returned an empty response.");
   }
-  return content;
+  return stripMarkdownJsonFence(content);
 }
 
 /**
  * Single entry point for Workshop Pyramid Lab AI calls.
- * Retries once on network/timeout failures only — not on API errors.
+ * Retries on network/timeout, 429, and transient 5xx (with backoff).
  */
 export async function callDeepSeek(
   params: CallDeepSeekParams,
@@ -158,12 +195,89 @@ export async function callDeepSeek(
     jsonMode,
   };
 
-  try {
-    return await createCompletion(request);
-  } catch (error) {
-    if (!isRetryableNetworkError(error)) {
-      throw error;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_COMPLETION_ATTEMPTS; attempt++) {
+    try {
+      return await createCompletion(request);
+    } catch (error) {
+      lastError = error;
+      const canRetry =
+        attempt < MAX_COMPLETION_ATTEMPTS - 1 &&
+        isRetryableDeepSeekError(error);
+      if (!canRetry) {
+        throw error;
+      }
+      const delay = retryBackoffMs(attempt);
+      console.warn(
+        `[workshop/deepseek] attempt ${attempt + 1}/${MAX_COMPLETION_ATTEMPTS} failed (${error instanceof Error ? error.message : "unknown"}); retrying in ${delay}ms`,
+      );
+      await sleep(delay);
     }
-    return createCompletion(request);
   }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("DeepSeek request failed after retries.");
+}
+
+/**
+ * Call DeepSeek then parse. Retries the full call when the model returns
+ * unusable JSON / schema (common intermittent bilingual failures).
+ */
+export async function callDeepSeekParsed<T>(
+  params: CallDeepSeekParams,
+  parse: (raw: string) => T,
+  options?: { maxParseAttempts?: number },
+): Promise<T> {
+  const maxParseAttempts = options?.maxParseAttempts ?? 2;
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < maxParseAttempts; attempt++) {
+    try {
+      const raw = await callDeepSeek(params);
+      return parse(raw);
+    } catch (error) {
+      lastError = error;
+      if (!isTransientWorkshopAiError(error)) {
+        throw error;
+      }
+      if (attempt >= maxParseAttempts - 1) {
+        break;
+      }
+      const delay = retryBackoffMs(attempt);
+      console.warn(
+        `[workshop/deepseek] parse attempt ${attempt + 1}/${maxParseAttempts} failed (${error instanceof Error ? error.message : "unknown"}); re-requesting`,
+      );
+      await sleep(delay);
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("DeepSeek parse failed after retries.");
+}
+
+/** True when another model call might succeed (not config / auth / schema bugs). */
+export function isTransientWorkshopAiError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return true;
+  }
+  const message = error.message;
+  if (message.includes("DEEPSEEK_API_KEY")) {
+    return false;
+  }
+  if (
+    message.includes("out of date") ||
+    message.includes("prisma generate") ||
+    message.includes("Workshop database models")
+  ) {
+    return false;
+  }
+  if (message.includes("Session ID is required")) {
+    return false;
+  }
+  if (message.includes("not initialized correctly")) {
+    return false;
+  }
+  return true;
 }

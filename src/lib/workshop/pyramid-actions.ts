@@ -2,7 +2,10 @@
 
 import { Prisma } from "@prisma/client";
 
-import { callDeepSeek } from "@/lib/workshop/deepseek-client";
+import {
+  callDeepSeekParsed,
+  isTransientWorkshopAiError,
+} from "@/lib/workshop/deepseek-client";
 import { assertStrictBilingual } from "@/lib/workshop/bilingual";
 import { translate } from "@/lib/i18n/messages";
 import {
@@ -193,6 +196,78 @@ type ParsedAiPyramid = {
   rationale: Bilingual;
 };
 
+/**
+ * Local CURRENT-state guess when DeepSeek is down / times out / returns bad JSON.
+ * Numbers are intentionally below recommended benchmarks so layer flags still teach.
+ */
+export function buildDeterministicPyramidGuess(input: {
+  age: number;
+  monthlyIncome: number;
+  industry: string;
+}): ParsedAiPyramid {
+  const benchmarks = buildPyramidBenchmarks({
+    age: input.age,
+    monthlyIncomeHKD: input.monthlyIncome,
+    industry: input.industry,
+  });
+  const year = new Date().getFullYear();
+  const retirementYears = Math.max(5, 65 - Math.round(input.age));
+
+  const pyramid: PyramidState = {
+    protection: {
+      medicalCoveragePercent: Math.round(
+        benchmarks.medicalCoveragePercent * 0.7,
+      ),
+      criticalIllnessAmountHKD: Math.round(
+        benchmarks.criticalIllnessAmountHKD * 0.4,
+      ),
+    },
+    emergencyFund: {
+      savedAmountHKD: Math.round(benchmarks.emergencyFundTargetHKD * 0.35),
+    },
+    goals: {
+      goals: [
+        {
+          id: "retirement",
+          icon: "PiggyBank",
+          label: {
+            en: "Retirement nest egg",
+            zhHant: "退休儲備",
+          },
+          targetAmountHKD: Math.round(input.monthlyIncome * 12 * 15),
+          targetYear: year + retirementYears,
+        },
+        {
+          id: "family-buffer",
+          icon: "Shield",
+          label: {
+            en: "Family buffer",
+            zhHant: "家庭應急金",
+          },
+          targetAmountHKD: Math.round(input.monthlyIncome * 6),
+          targetYear: year + 5,
+        },
+      ],
+    },
+    investment: {
+      riskAllocation: { ...benchmarks.riskAllocation },
+      monthlyInvestmentHKD: Math.round(
+        benchmarks.suggestedMonthlyInvestmentHKD * 0.6,
+      ),
+      monthlyFunHKD: Math.round(input.monthlyIncome * 0.05),
+    },
+  };
+
+  return {
+    pyramid,
+    rationale: {
+      en: "We used a local estimate based on your age, income, and industry while the AI assistant was temporarily unavailable. Adjust any numbers that do not match your situation.",
+      zhHant:
+        "AI 助手暫時未能回應，我們已根據你的年齡、收入與行業提供本地估算。請按實際情況調整數字。",
+    },
+  };
+}
+
 function parseAiPyramidPrediction(raw: string): ParsedAiPyramid {
   let parsed: unknown;
   try {
@@ -362,19 +437,45 @@ export async function predictPyramidAction(
     "Estimate CURRENT coverage and balances — not ideal recommendations.",
   ].join("\n");
 
-  const raw = await callDeepSeek({
-    systemPrompt: PREDICT_PYRAMID_SYSTEM_PROMPT,
-    userPrompt,
-    jsonMode: true,
-    tone: validated.tone,
-    bilingualFields: true,
-  });
-
-  const { pyramid: aiPyramid, rationale } = parseAiPyramidPrediction(raw);
   const industryForMath = formatIndustryForAi(
     validated.industry,
     validated.industryOther,
   );
+
+  let aiPyramid: PyramidState;
+  let rationale: Bilingual;
+
+  try {
+    const parsed = await callDeepSeekParsed(
+      {
+        systemPrompt: PREDICT_PYRAMID_SYSTEM_PROMPT,
+        userPrompt,
+        jsonMode: true,
+        tone: validated.tone,
+        bilingualFields: true,
+      },
+      parseAiPyramidPrediction,
+      { maxParseAttempts: 2 },
+    );
+    aiPyramid = parsed.pyramid;
+    rationale = parsed.rationale;
+  } catch (error) {
+    if (!isTransientWorkshopAiError(error)) {
+      throw error;
+    }
+    console.warn(
+      "[workshop] predictPyramidAction: AI unavailable after retries; using deterministic fallback",
+      error instanceof Error ? error.message : error,
+    );
+    const fallback = buildDeterministicPyramidGuess({
+      age: validated.age,
+      monthlyIncome: validated.monthlyIncome,
+      industry: industryForMath,
+    });
+    aiPyramid = fallback.pyramid;
+    rationale = fallback.rationale;
+  }
+
   const benchmarks = buildPyramidBenchmarks({
     age: validated.age,
     monthlyIncomeHKD: validated.monthlyIncome,
@@ -537,6 +638,39 @@ function sumExpenseCategories(
   categories: Array<{ amountHKD: number }>,
 ): number {
   return categories.reduce((sum, cat) => sum + Math.max(0, Math.round(cat.amountHKD)), 0);
+}
+
+/** Ratio-based monthly spend when DeepSeek fails — editable in the next step. */
+export function buildDeterministicExpensesGuess(input: {
+  monthlyIncome: number;
+  pyramid: PyramidState;
+}): ExpensesState {
+  const income = Math.max(0, input.monthlyIncome);
+  const medical = input.pyramid.protection.medicalCoveragePercent;
+  const ci = input.pyramid.protection.criticalIllnessAmountHKD;
+  const insurance = Math.max(
+    0,
+    Math.round(medical * 12 + ci * 0.00035),
+  );
+
+  const amounts: Record<ExpenseCategoryKey, number> = {
+    housing: Math.round(income * 0.32),
+    food_living: Math.round(income * 0.16),
+    transport: Math.round(income * 0.06),
+    insurance,
+    discretionary: Math.round(income * 0.08),
+  };
+
+  const categories: ExpenseCategory[] = EXPENSE_CATEGORY_DEFS.map((def) => ({
+    key: def.key,
+    icon: def.icon,
+    amountHKD: amounts[def.key],
+  }));
+
+  return {
+    categories,
+    totalHKD: sumExpenseCategories(categories),
+  };
 }
 
 function normalizeExpenseKey(value: string): string {
@@ -721,14 +855,32 @@ export async function predictExpensesAction(
     "Reason carefully about Insurance from the protection numbers above.",
   ].join("\n");
 
-  const raw = await callDeepSeek({
-    systemPrompt: PREDICT_EXPENSES_SYSTEM_PROMPT,
-    userPrompt,
-    jsonMode: true,
-    tone: input.tone,
-  });
+  let expenses: ExpensesState;
+  try {
+    expenses = await callDeepSeekParsed(
+      {
+        systemPrompt: PREDICT_EXPENSES_SYSTEM_PROMPT,
+        userPrompt,
+        jsonMode: true,
+        tone: input.tone,
+      },
+      parseExpensesPrediction,
+      { maxParseAttempts: 2 },
+    );
+  } catch (error) {
+    if (!isTransientWorkshopAiError(error)) {
+      throw error;
+    }
+    console.warn(
+      "[workshop] predictExpensesAction: AI unavailable after retries; using deterministic fallback",
+      error instanceof Error ? error.message : error,
+    );
+    expenses = buildDeterministicExpensesGuess({
+      monthlyIncome: input.monthlyIncome,
+      pyramid: input.pyramid,
+    });
+  }
 
-  const expenses = parseExpensesPrediction(raw);
   const expensesJson = expenses as unknown as Prisma.InputJsonValue;
 
   const updated = await prisma.workshopSession.updateMany({
@@ -1022,15 +1174,28 @@ export async function narrateStressTestAction(
       JSON.stringify(flaggedPayload),
     ].join("\n");
 
-    const raw = await callDeepSeek({
-      systemPrompt: NARRATE_STRESS_SYSTEM_PROMPT,
-      userPrompt,
-      jsonMode: true,
-      tone: context.tone,
-      bilingualFields: true,
-    });
-
-    notes = parseStressTestNotes(raw, flaggedIds);
+    try {
+      notes = await callDeepSeekParsed(
+        {
+          systemPrompt: NARRATE_STRESS_SYSTEM_PROMPT,
+          userPrompt,
+          jsonMode: true,
+          tone: context.tone,
+          bilingualFields: true,
+        },
+        (raw) => parseStressTestNotes(raw, flaggedIds),
+        { maxParseAttempts: 2 },
+      );
+    } catch (error) {
+      if (!isTransientWorkshopAiError(error)) {
+        throw error;
+      }
+      console.warn(
+        "[workshop] narrateStressTestAction: AI notes unavailable; continuing without notes",
+        error instanceof Error ? error.message : error,
+      );
+      notes = [];
+    }
   }
 
   const macroResultJson = {
@@ -1187,14 +1352,16 @@ export async function narrateMacroTimelineAction(
     JSON.stringify(timeline.yearByYear, null, 2),
   ].join("\n");
 
-  const raw = await callDeepSeek({
-    systemPrompt: NARRATE_MACRO_SYSTEM_PROMPT,
-    userPrompt,
-    jsonMode: true,
-    bilingualFields: true,
-  });
-
-  const milestoneNotes = parseMilestoneNotes(raw, expectedYears);
+  const milestoneNotes = await callDeepSeekParsed(
+    {
+      systemPrompt: NARRATE_MACRO_SYSTEM_PROMPT,
+      userPrompt,
+      jsonMode: true,
+      bilingualFields: true,
+    },
+    (raw) => parseMilestoneNotes(raw, expectedYears),
+    { maxParseAttempts: 2 },
+  );
 
   const macroResultJson = {
     timeline,
@@ -1454,15 +1621,17 @@ export async function generateCrisisAction(
     flavorHint,
   ].join("\n");
 
-  const raw = await callDeepSeek({
-    systemPrompt: GENERATE_CRISIS_SYSTEM_PROMPT,
-    userPrompt,
-    jsonMode: true,
-    tone: persona.tone,
-    bilingualFields: true,
-  });
-
-  const crisis = parseCrisisState(raw, persona.riskProfile);
+  const crisis = await callDeepSeekParsed(
+    {
+      systemPrompt: GENERATE_CRISIS_SYSTEM_PROMPT,
+      userPrompt,
+      jsonMode: true,
+      tone: persona.tone,
+      bilingualFields: true,
+    },
+    (raw) => parseCrisisState(raw, persona.riskProfile),
+    { maxParseAttempts: 2 },
+  );
 
   await prisma.workshopSession.update({
     where: { id: session.id },
@@ -1696,14 +1865,16 @@ export async function generateGoalsAction(
     }`,
   ].join("\n");
 
-  const raw = await callDeepSeek({
-    systemPrompt: GENERATE_GOALS_SYSTEM_PROMPT,
-    userPrompt,
-    jsonMode: true,
-    bilingualFields: true,
-  });
-
-  const result = parseGoalsResult(raw);
+  const result = await callDeepSeekParsed(
+    {
+      systemPrompt: GENERATE_GOALS_SYSTEM_PROMPT,
+      userPrompt,
+      jsonMode: true,
+      bilingualFields: true,
+    },
+    parseGoalsResult,
+    { maxParseAttempts: 2 },
+  );
 
   await prisma.workshopSession.update({
     where: { id: session.id },
@@ -2006,15 +2177,17 @@ export async function generateActionGoalsAction(
     "Write title + reasoning for each seed. Cite real numbers above.",
   ].join("\n");
 
-  const raw = await callDeepSeek({
-    systemPrompt: GENERATE_ACTION_GOALS_SYSTEM_PROMPT,
-    userPrompt,
-    jsonMode: true,
-    tone: input.tone,
-    bilingualFields: true,
-  });
-
-  const actionGoals = parseActionGoalsResult(raw, seeds);
+  const actionGoals = await callDeepSeekParsed(
+    {
+      systemPrompt: GENERATE_ACTION_GOALS_SYSTEM_PROMPT,
+      userPrompt,
+      jsonMode: true,
+      tone: input.tone,
+      bilingualFields: true,
+    },
+    (raw) => parseActionGoalsResult(raw, seeds),
+    { maxParseAttempts: 2 },
+  );
   const summary: SummaryState = { rating, actionGoals };
 
   await prisma.workshopSession.update({
