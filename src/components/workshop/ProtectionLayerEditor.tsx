@@ -1,6 +1,6 @@
 "use client";
 
-import { Shield } from "lucide-react";
+import { Calculator, Shield } from "lucide-react";
 
 import CollapsibleWidget from "@/components/workshop/CollapsibleWidget";
 import WorkshopNumberField from "@/components/workshop/WorkshopNumberField";
@@ -9,8 +9,8 @@ import { useTranslations } from "@/components/providers/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { pickBilingual } from "@/lib/workshop/bilingual";
 import {
-  getCriticalIllnessBenchmarkHKD,
   getMedicalCoverageBenchmarkPercent,
+  type CriticalIllnessBreakdown,
 } from "@/lib/workshop/pyramid-benchmarks";
 import type {
   Bilingual,
@@ -24,6 +24,11 @@ function formatHkd(value: number): string {
     currency: "HKD",
     maximumFractionDigits: 0,
   }).format(Math.round(value));
+}
+
+function formatMultiple(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
 const FLAG_LABEL_KEYS: Record<LayerFlag, MessageKey> = {
@@ -43,8 +48,9 @@ type ProtectionLayerEditorProps = Readonly<{
   onChange: (next: ProtectionLayer) => void;
   age: number;
   monthlyIncomeHKD: number;
+  ciBreakdown: CriticalIllnessBreakdown;
+  explanation: Bilingual;
   status?: LayerFlag;
-  rationale?: Bilingual | string;
   disabled?: boolean;
 }>;
 
@@ -52,24 +58,22 @@ export default function ProtectionLayerEditor({
   value,
   onChange,
   age,
-  monthlyIncomeHKD,
+  monthlyIncomeHKD: _monthlyIncomeHKD,
+  ciBreakdown,
+  explanation,
   status,
-  rationale,
   disabled = false,
 }: ProtectionLayerEditorProps) {
   const { t, locale } = useTranslations();
   const medicalBenchmark = getMedicalCoverageBenchmarkPercent(age);
-  const ciBenchmark = getCriticalIllnessBenchmarkHKD(
-    age,
-    Math.max(0, monthlyIncomeHKD) * 12,
-  );
 
   const recommendedPrefix = t("workshop.pyramid.protection.recommendedPrefix");
   const summaryValue = `${Math.round(value.medicalCoveragePercent)}% · ${formatHkd(value.criticalIllnessAmountHKD)} CI`;
-  const rationaleText =
-    rationale == null || rationale === ""
-      ? ""
-      : pickBilingual(rationale, locale);
+  const explanationText = pickBilingual(explanation, locale);
+  const formulaText = t("workshop.pyramid.protection.ciFormula")
+    .replace("{multiple}", formatMultiple(ciBreakdown.multiple))
+    .replace("{annual}", formatHkd(ciBreakdown.annualIncomeHKD))
+    .replace("{recommended}", formatHkd(ciBreakdown.recommendedHKD));
 
   return (
     <CollapsibleWidget
@@ -95,12 +99,6 @@ export default function ProtectionLayerEditor({
       defaultExpanded={status !== "green"}
     >
       <div className="space-y-5">
-        {rationaleText ? (
-          <p className="text-pretty text-sm leading-relaxed text-slate-600">
-            {rationaleText}
-          </p>
-        ) : null}
-
         <div className="space-y-5 rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3.5 sm:px-4">
           <div>
             <WorkshopNumberField
@@ -160,10 +158,30 @@ export default function ProtectionLayerEditor({
               className="mt-0"
             />
             <p className="mt-1.5 text-[11px] text-slate-500">
-              {recommendedPrefix} {formatHkd(ciBenchmark)}
+              {recommendedPrefix} {formatHkd(ciBreakdown.recommendedHKD)}
             </p>
           </div>
         </div>
+
+        <CollapsibleWidget
+          icon={
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600">
+              <Calculator className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            </span>
+          }
+          title={t("workshop.pyramid.calc.heading")}
+          defaultExpanded={false}
+          className="border-slate-200/90 shadow-none"
+        >
+          <div className="space-y-2">
+            <p className="font-mono text-sm tabular-nums text-slate-800">
+              {formulaText}
+            </p>
+            <p className="text-pretty text-sm leading-relaxed text-slate-600">
+              {explanationText}
+            </p>
+          </div>
+        </CollapsibleWidget>
       </div>
     </CollapsibleWidget>
   );

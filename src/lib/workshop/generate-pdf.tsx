@@ -14,16 +14,22 @@ import {
 } from "@react-pdf/renderer";
 
 import { pickBilingual } from "@/lib/workshop/bilingual";
+import { computePassiveCoverageRatio } from "@/lib/workshop/coverage-ratio";
 import type { SiteLocale } from "@/lib/i18n/locales";
 import {
   translate,
   translateWith,
   type MessageKey,
 } from "@/lib/i18n/messages";
+import {
+  deriveTradeOffDecisions,
+  type TradeOffDecisionsSummary,
+} from "@/lib/workshop/trade-off-decisions";
 import type {
   ActionGoal,
-  CrisisState,
+  CrisisStressTestSummary,
   ExpensesState,
+  GoalJourneyState,
   LayerFlag,
   LayerFlags,
   PyramidState,
@@ -34,6 +40,7 @@ import type {
   SummaryState,
   WorkshopTone,
 } from "@/lib/workshop/types";
+import type { TimelineResult } from "@/lib/workshop/timeline-engine";
 
 /** Single family covers Latin + Traditional Chinese (OFL Noto Sans TC). */
 const PDF_FONT_FAMILY = "NotoSansTC";
@@ -72,6 +79,78 @@ const RATING_LABEL_KEYS: Record<SummaryRatingLabelKey, MessageKey> = {
   goodRoomToGrow: "workshop.summary.ratingLabels.goodRoomToGrow",
   strongFoundation: "workshop.summary.ratingLabels.strongFoundation",
 };
+
+const CRISIS_STRESS_SCENARIO_KEYS: Record<
+  CrisisStressTestSummary["scenario"],
+  MessageKey
+> = {
+  medical: "workshop.summary.crisisStress.scenario.medical",
+  critical_illness: "workshop.summary.crisisStress.scenario.critical_illness",
+  job_loss: "workshop.summary.crisisStress.scenario.job_loss",
+  market_crash: "workshop.summary.crisisStress.scenario.market_crash",
+  accident: "workshop.summary.crisisStress.scenario.accident",
+};
+
+const CRISIS_STRESS_VERDICT_KEYS: Record<
+  CrisisStressTestSummary["verdict"],
+  MessageKey
+> = {
+  SHIELDED: "workshop.summary.crisisStress.verdict.SHIELDED",
+  PARTIAL: "workshop.summary.crisisStress.verdict.PARTIAL",
+  PENETRATED: "workshop.summary.crisisStress.verdict.PENETRATED",
+};
+
+function crisisStressBody(
+  stress: CrisisStressTestSummary,
+  locale: SiteLocale,
+  t: (key: MessageKey) => string,
+): string {
+  const scenario = t(CRISIS_STRESS_SCENARIO_KEYS[stress.scenario]);
+  const goalName = stress.affectedGoalLabel
+    ? pickBilingual(stress.affectedGoalLabel, locale)
+    : "";
+  const shielded = formatHkd(stress.shieldedAmount);
+  const penetration = formatHkd(stress.penetrationAmount);
+  const wiped = formatHkd(
+    Math.max(
+      stress.penetrationAmount,
+      stress.oneTimeCostHKD - stress.shieldedAmount,
+    ),
+  );
+
+  if (stress.verdict === "SHIELDED") {
+    return goalName
+      ? t("workshop.summary.crisisStress.shieldedWithGoal")
+          .replace("{scenario}", scenario)
+          .replace("{amount}", shielded)
+          .replace("{goal}", goalName)
+      : t("workshop.summary.crisisStress.shieldedNoGoal")
+          .replace("{scenario}", scenario)
+          .replace("{amount}", shielded);
+  }
+  if (stress.verdict === "PARTIAL") {
+    return goalName
+      ? t("workshop.summary.crisisStress.partialWithGoal")
+          .replace("{scenario}", scenario)
+          .replace("{shielded}", shielded)
+          .replace("{penetration}", penetration)
+          .replace("{goal}", goalName)
+      : t("workshop.summary.crisisStress.partialNoGoal")
+          .replace("{scenario}", scenario)
+          .replace("{shielded}", shielded)
+          .replace("{penetration}", penetration);
+  }
+  if (goalName && stress.delayYears != null && stress.delayYears > 0) {
+    return t("workshop.summary.crisisStress.penetratedWithGoal")
+      .replace("{scenario}", scenario)
+      .replace("{amount}", wiped)
+      .replace("{goal}", goalName)
+      .replace("{years}", String(stress.delayYears));
+  }
+  return t("workshop.summary.crisisStress.penetratedNoGoal")
+    .replace("{scenario}", scenario)
+    .replace("{amount}", wiped);
+}
 
 const TONE_SUBTITLE_KEYS: Record<WorkshopTone, MessageKey> = {
   fun: "workshop.pdf.subtitleByTone.fun",
@@ -133,15 +212,19 @@ export type BlueprintPdfInput = {
   phone?: string;
   industry: string;
   age: number;
+  retirementAge?: number;
   tone: WorkshopTone;
   pyramid: PyramidState;
   layerFlags: LayerFlags;
   expenses: ExpensesState | null;
   riskQuiz: RiskQuizState | null;
   stressTest: StressTestResult | null;
-  crisis: CrisisState | null;
+  /** v3 life timeline when macroResultJson is versioned; null for legacy sessions. */
+  timeline: TimelineResult | null;
   summary: SummaryState | null;
   selectedGoal: string | null;
+  /** Goal journey decisions for "Your Trade-Off Decisions". */
+  goalJourney: GoalJourneyState | null;
 };
 
 const FLAG_FILL: Record<LayerFlag, string> = {
@@ -444,7 +527,11 @@ function PyramidGraphic({
       topW: 70,
       bottomW: 110,
       detail: translateWith(locale, "workshop.pdf.investPerMonth", {
-        amount: formatHkd(pyramid.investment.monthlyInvestmentHKD),
+        amount: formatHkd(
+          pyramid.investment.lumpSumHKD ??
+            pyramid.investment.monthlyInvestmentHKD ??
+            0,
+        ),
       }),
     },
     {
@@ -674,7 +761,9 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
   const { locale } = data;
   const rating = data.summary?.rating ?? null;
   const actionGoals = data.summary?.actionGoals ?? [];
+  const crisisStressTest = data.summary?.crisisStressTest ?? null;
   const risk = data.pyramid.investment.riskAllocation;
+  const timeline = data.timeline;
   const goalProjections = data.stressTest?.goalProjections ?? [];
   const t = (key: MessageKey) => translate(locale, key);
   const tWith = (key: MessageKey, vars: Record<string, string | number>) =>
@@ -700,6 +789,20 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
       }),
     );
   }
+
+  const retirementAge =
+    timeline?.retirement.retirementAge ?? data.retirementAge ?? null;
+  const efOversaved = timeline?.emergencyFund.status === "oversaved";
+
+  const tradeOffs: TradeOffDecisionsSummary | null = deriveTradeOffDecisions({
+    pyramid: data.pyramid,
+    journey: data.goalJourney,
+  });
+  const showTradeOffs =
+    tradeOffs != null &&
+    (tradeOffs.secured.length > 0 ||
+      tradeOffs.deprioritized.length > 0 ||
+      tradeOffs.squeezesAccepted.length > 0);
 
   return (
     <Document>
@@ -761,16 +864,211 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
           </View>
         </View>
 
+        {timeline || retirementAge != null ? (
+          <View style={[styles.section, styles.card]} wrap={false}>
+            <Text style={sectionTitleStyle(data.tone)}>
+              {t("workshop.pdf.retirementSectionTitle")}
+            </Text>
+            <Text style={[styles.small, { marginBottom: 4 }]}>
+              {t("workshop.pdf.realTermsCaption")}
+            </Text>
+            <Text style={styles.small}>
+              {tWith("workshop.pdf.retirementAgeLine", {
+                age: retirementAge ?? "—",
+              })}
+            </Text>
+            {timeline ? (
+              <>
+                <Text style={[styles.small, { marginTop: 2 }]}>
+                  {tWith("workshop.pdf.retirementPassiveLine", {
+                    amount: formatHkd(
+                      timeline.retirement.passiveIncomeAtRetirement,
+                    ),
+                  })}
+                </Text>
+                <Text style={[styles.small, { marginTop: 2 }]}>
+                  {tWith("workshop.pdf.retirementAssetsLine", {
+                    amount: formatHkd(timeline.retirement.assetsAtRetirement),
+                  })}
+                </Text>
+                {(() => {
+                  const retRow = timeline.rows.find(
+                    (r) => r.age === timeline.retirement.retirementAge,
+                  );
+                  if (!retRow || retRow.expenses <= 0) {
+                    return null;
+                  }
+                  const coverage = computePassiveCoverageRatio(
+                    timeline.retirement.passiveIncomeAtRetirement,
+                    retRow.expenses,
+                  );
+                  if (coverage.percent == null) {
+                    return null;
+                  }
+                  return (
+                    <Text style={[styles.small, { marginTop: 2 }]}>
+                      {tWith("workshop.pdf.retirementCoverageLine", {
+                        percent: Math.round(coverage.percent),
+                      })}
+                    </Text>
+                  );
+                })()}
+                {(timeline.retirementTargets ?? []).map((rt) => (
+                  <Text
+                    key={rt.goalId}
+                    style={[styles.small, { marginTop: 2 }]}
+                  >
+                    {rt.met
+                      ? tWith("workshop.pdf.retirementNestEggMet", {
+                          target: formatHkd(rt.targetHKD),
+                          projected: formatHkd(rt.projectedAssetsHKD),
+                        })
+                      : tWith("workshop.pdf.retirementNestEggGap", {
+                          target: formatHkd(rt.targetHKD),
+                          projected: formatHkd(rt.projectedAssetsHKD),
+                          gap: formatHkd(rt.gapHKD),
+                        })}
+                  </Text>
+                ))}
+                <Text style={[styles.small, { marginTop: 2 }]}>
+                  {timeline.retirement.assetsDepletedAtAge != null
+                    ? tWith("workshop.pdf.retirementDepletedLine", {
+                        age: timeline.retirement.assetsDepletedAtAge,
+                      })
+                    : t("workshop.pdf.retirementSustainedLine")}
+                </Text>
+              </>
+            ) : null}
+          </View>
+        ) : null}
+
+        {showTradeOffs && tradeOffs ? (
+          <View style={[styles.section, styles.card]} wrap={false}>
+            <Text style={sectionTitleStyle(data.tone)}>
+              {t("workshop.pdf.tradeOffsTitle")}
+            </Text>
+            {tradeOffs.secured.length > 0 ? (
+              <View style={{ marginTop: 6 }}>
+                <Text style={styles.label}>
+                  {t("workshop.pdf.tradeOffsSecuredHeading")}
+                </Text>
+                {tradeOffs.secured.map((row) => (
+                  <Text
+                    key={row.goalId}
+                    style={[styles.small, { marginBottom: 2 }]}
+                  >
+                    {row.usedLiquidation
+                      ? tWith("workshop.pdf.tradeOffsSecuredWithLiquidation", {
+                          goal: pickBilingual(row.label, locale),
+                          age: row.targetAge,
+                        })
+                      : tWith("workshop.pdf.tradeOffsSecuredNoLiquidation", {
+                          goal: pickBilingual(row.label, locale),
+                          age: row.targetAge,
+                        })}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+            {tradeOffs.deprioritized.length > 0 ? (
+              <View style={{ marginTop: 6 }}>
+                <Text style={styles.label}>
+                  {t("workshop.pdf.tradeOffsDeprioritizedHeading")}
+                </Text>
+                {tradeOffs.deprioritized.map((row) => (
+                  <Text
+                    key={row.goalId}
+                    style={[styles.small, { marginBottom: 2 }]}
+                  >
+                    {tWith("workshop.pdf.tradeOffsDeprioritizedLine", {
+                      goal: pickBilingual(row.label, locale),
+                      age: row.targetAge,
+                    })}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+            {tradeOffs.squeezesAccepted.length > 0 ? (
+              <View style={{ marginTop: 6 }}>
+                <Text style={styles.label}>
+                  {t("workshop.pdf.tradeOffsSqueezesHeading")}
+                </Text>
+                {tradeOffs.squeezesAccepted.map((row) => (
+                  <Text
+                    key={row.category}
+                    style={[styles.small, { marginBottom: 2 }]}
+                  >
+                    {tWith("workshop.pdf.tradeOffsSqueezeLine", {
+                      category: t(
+                        row.category === "fun"
+                          ? "workshop.pdf.tradeOffsCategoryFun"
+                          : "workshop.pdf.tradeOffsCategoryDiscretionary",
+                      ),
+                      amount: formatHkd(row.monthlyAmount),
+                    })}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {crisisStressTest ? (
+          <View style={[styles.section, styles.card]} wrap={false}>
+            <Text style={sectionTitleStyle(data.tone)}>
+              {t("workshop.pdf.crisisStressHeading")}
+            </Text>
+            <Text style={[styles.value, { marginTop: 2 }]}>
+              {t(CRISIS_STRESS_SCENARIO_KEYS[crisisStressTest.scenario])} ·{" "}
+              {t(CRISIS_STRESS_VERDICT_KEYS[crisisStressTest.verdict])}
+            </Text>
+            <Text style={[styles.small, { marginTop: 4 }]}>
+              {tWith("workshop.pdf.crisisStressAmounts", {
+                shielded: formatHkd(crisisStressTest.shieldedAmount),
+                penetrated: formatHkd(crisisStressTest.penetrationAmount),
+              })}
+            </Text>
+            {crisisStressTest.affectedGoalLabel ? (
+              <Text style={[styles.small, { marginTop: 2 }]}>
+                {tWith("workshop.pdf.crisisStressAffectedGoal", {
+                  goal: pickBilingual(
+                    crisisStressTest.affectedGoalLabel,
+                    locale,
+                  ),
+                  years:
+                    crisisStressTest.delayYears != null
+                      ? String(crisisStressTest.delayYears)
+                      : "—",
+                })}
+              </Text>
+            ) : null}
+            <Text style={[styles.small, { marginTop: 4 }]}>
+              {crisisStressBody(crisisStressTest, locale, t)}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={[styles.section, styles.card]}>
           <Text style={sectionTitleStyle(data.tone)}>
-              {t("workshop.pdf.riskAllocationTitle")}
-            </Text>
+            {t("workshop.pdf.riskAllocationTitle")}
+          </Text>
+          <Text style={[styles.small, { marginBottom: 4 }]}>
+            {tWith("workshop.pdf.lumpSumLine", {
+              amount: formatHkd(data.pyramid.investment.lumpSumHKD),
+            })}
+          </Text>
           <RiskAllocationBar
             low={risk.low}
             mid={risk.mid}
             high={risk.high}
             locale={locale}
           />
+          <Text style={[styles.small, { marginTop: 4 }]}>
+            {t("workshop.pdf.returnBandsDisplay")}
+          </Text>
+          <Text style={[styles.small, { marginTop: 2 }]}>
+            {t("workshop.pdf.returnAssumptionsDisclaimer")}
+          </Text>
           {data.expenses ? (
             <Text style={[styles.small, { marginTop: 6 }]}>
               {tWith("workshop.pdf.expensesTotal", {
@@ -779,9 +1077,89 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
               })}
             </Text>
           ) : null}
+          {efOversaved && timeline ? (
+            <Text style={[styles.small, { marginTop: 6 }]}>
+              {tWith("workshop.pdf.efOversavedNote", {
+                excess: formatHkd(timeline.emergencyFund.excessHKD ?? 0),
+                opportunity: formatHkd(
+                  timeline.emergencyFund.opportunityCostHKD ?? 0,
+                ),
+              })}
+            </Text>
+          ) : null}
         </View>
 
-        {goalProjections.length > 0 ? (
+        {timeline && timeline.goals.length > 0 ? (
+          <View style={[styles.section, styles.card]} wrap={false}>
+            <Text style={sectionTitleStyle(data.tone)}>
+              {t("workshop.pdf.goalsSectionTitle")}
+            </Text>
+            {timeline.goals.map((goal) => {
+              const fromPyramid = data.pyramid.goals.goals.find(
+                (g) => g.id === goal.goalId,
+              );
+              const label = fromPyramid
+                ? pickBilingual(fromPyramid.label, locale)
+                : goal.goalId;
+              const isRetirementTarget =
+                goal.goalType === "retirementTarget" ||
+                fromPyramid?.goalType === "retirementTarget";
+              if (isRetirementTarget) {
+                const rt = (timeline.retirementTargets ?? []).find(
+                  (r) => r.goalId === goal.goalId,
+                );
+                const targetAmt = formatHkd(
+                  rt?.targetHKD ?? goal.inflatedTargetHKD,
+                );
+                const projectedAmt = formatHkd(
+                  rt?.projectedAssetsHKD ??
+                    timeline.retirement.assetsAtRetirement,
+                );
+                return (
+                  <View key={goal.goalId} style={{ marginBottom: 6 }}>
+                    <View style={styles.barLabelRow}>
+                      <Text style={styles.value}>{label}</Text>
+                      <Text style={styles.small}>
+                        {tWith("workshop.pdf.retirementTargetLine", {
+                          target: targetAmt,
+                          projected: projectedAmt,
+                        })}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              }
+              const attained =
+                goal.attainedAtAge != null
+                  ? tWith("workshop.pdf.goalAttainedAge", {
+                      age: goal.attainedAtAge,
+                    })
+                  : t("workshop.pdf.notReached");
+              const pct =
+                goal.status === "green"
+                  ? 100
+                  : goal.status === "amber"
+                    ? 65
+                    : goal.attainedAtAge != null
+                      ? 40
+                      : 15;
+              return (
+                <View key={goal.goalId} style={{ marginBottom: 6 }}>
+                  <View style={styles.barLabelRow}>
+                    <Text style={styles.value}>{label}</Text>
+                    <Text style={styles.small}>
+                      {tWith("workshop.pdf.goalInflatedAttained", {
+                        amount: formatHkd(goal.inflatedTargetHKD),
+                        attained,
+                      })}
+                    </Text>
+                  </View>
+                  <ProgressBar percent={pct} color={FLAG_FILL[goal.status]} />
+                </View>
+              );
+            })}
+          </View>
+        ) : goalProjections.length > 0 ? (
           <View style={[styles.section, styles.card]} wrap={false}>
             <Text style={sectionTitleStyle(data.tone)}>
               {t("workshop.pdf.goalsSectionTitle")}
@@ -813,56 +1191,6 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
                 </View>
               );
             })}
-          </View>
-        ) : null}
-
-        {data.crisis ? (
-          <View style={[styles.section, styles.card]} wrap={false}>
-            <Text style={sectionTitleStyle(data.tone)}>
-              {t("workshop.pdf.crisisSectionTitle")}
-            </Text>
-            <Text style={styles.value}>
-              {pickBilingual(data.crisis.title, locale)}
-            </Text>
-            <Text style={[styles.small, { marginTop: 2 }]}>
-              {pickBilingual(data.crisis.description, locale)}
-            </Text>
-            <Text style={[styles.small, { marginTop: 4 }]}>
-              {tWith("workshop.pdf.crisisStats", {
-                percent: data.crisis.monthlyIncomeImpactPercent,
-                amount: formatHkd(data.crisis.oneTimeCostHKD),
-                months: data.crisis.durationMonths,
-                profile: profileLabel(data.crisis.riskProfile),
-              })}
-            </Text>
-            <View style={{ marginTop: 6 }}>
-              {data.crisis.impacts.map((impact, index) => (
-                <View
-                  key={`${impact.layer}-${index}`}
-                  style={styles.impactRow}
-                >
-                  <View
-                    style={[styles.swatch, { backgroundColor: FLAG_FILL.red }]}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.value}>
-                      {pickBilingual(impact.headline, locale)}
-                    </Text>
-                    <Text style={styles.small}>
-                      {impact.layer}
-                      {impact.detailHKD != null
-                        ? ` · ${formatHkd(impact.detailHKD)}`
-                        : ""}
-                      {impact.detailMonths != null
-                        ? ` · ${tWith("workshop.pdf.impactMonths", {
-                            n: impact.detailMonths,
-                          })}`
-                        : ""}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
           </View>
         ) : null}
 

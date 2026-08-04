@@ -9,13 +9,19 @@ import WorkshopStatCard from "@/components/workshop/WorkshopStatCard";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import {
-  bilingualBoth,
+  workshopEnMessages,
+  type WorkshopMessageKey,
+} from "@/lib/i18n/messages/workshop-messages";
+import { workshopZhHantMessages } from "@/lib/i18n/messages/workshop-messages.zh-Hant";
+import {
   patchBilingual,
   pickBilingual,
 } from "@/lib/workshop/bilingual";
+import { deriveGoalYear } from "@/lib/workshop/goal-year";
 import type {
   Bilingual,
   GoalItem,
+  GoalType,
   GoalsLayer,
   LayerFlag,
 } from "@/lib/workshop/types";
@@ -38,16 +44,30 @@ const FLAG_PILL: Record<LayerFlag, string> = {
   red: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
+/** Lucide icon id → default bilingual label catalog key. */
+const GOAL_ICON_DEFAULT_KEYS: Record<string, WorkshopMessageKey> = {
+  House: "workshop.goals.defaults.home",
+  Car: "workshop.goals.defaults.car",
+  GraduationCap: "workshop.goals.defaults.education",
+  Plane: "workshop.goals.defaults.travel",
+  Heart: "workshop.goals.defaults.wedding",
+  Briefcase: "workshop.goals.defaults.business",
+  PiggyBank: "workshop.goals.defaults.retirementNestEgg",
+  Target: "workshop.goals.defaults.other",
+};
+
 const GOAL_ICON_OPTIONS = [
-  { id: "Heart", labelKey: "workshop.pyramid.goals.iconPicker.heart" },
+  { id: "House", labelKey: "workshop.pyramid.goals.iconPicker.home" },
+  { id: "Car", labelKey: "workshop.pyramid.goals.iconPicker.car" },
   {
     id: "GraduationCap",
     labelKey: "workshop.pyramid.goals.iconPicker.graduationCap",
   },
-  { id: "House", labelKey: "workshop.pyramid.goals.iconPicker.home" },
   { id: "Plane", labelKey: "workshop.pyramid.goals.iconPicker.plane" },
-  { id: "Baby", labelKey: "workshop.pyramid.goals.iconPicker.baby" },
+  { id: "Heart", labelKey: "workshop.pyramid.goals.iconPicker.heart" },
+  { id: "Briefcase", labelKey: "workshop.pyramid.goals.iconPicker.briefcase" },
   { id: "PiggyBank", labelKey: "workshop.pyramid.goals.iconPicker.piggyBank" },
+  { id: "Target", labelKey: "workshop.pyramid.goals.iconPicker.other" },
 ] as const satisfies ReadonlyArray<{ id: string; labelKey: MessageKey }>;
 
 const ALLOWED_ICONS = new Set<string>(GOAL_ICON_OPTIONS.map((o) => o.id));
@@ -87,12 +107,31 @@ function uniqueGoalId(label: string, existing: GoalItem[]): string {
 }
 
 function resolveGoalIcon(icon: string): string {
-  return ALLOWED_ICONS.has(icon) ? icon : "Target";
+  if (ALLOWED_ICONS.has(icon)) {
+    return icon;
+  }
+  // Legacy AI / older sessions
+  if (icon === "Home" || icon === "Baby") {
+    return icon === "Home" ? "House" : "Target";
+  }
+  return "Target";
+}
+
+function defaultLabelForIcon(icon: string): Bilingual {
+  const key =
+    GOAL_ICON_DEFAULT_KEYS[resolveGoalIcon(icon)] ??
+    GOAL_ICON_DEFAULT_KEYS.Target!;
+  return {
+    en: workshopEnMessages[key],
+    zhHant: workshopZhHantMessages[key],
+  };
 }
 
 type GoalsLayerEditorProps = Readonly<{
   value: GoalsLayer;
   onChange: (next: GoalsLayer) => void;
+  /** Current user age — used to derive `targetYear` from `targetAge`. */
+  userAge: number;
   status?: LayerFlag;
   rationale?: Bilingual | string;
   disabled?: boolean;
@@ -150,46 +189,78 @@ function GoalIconPicker({
 export default function GoalsLayerEditor({
   value,
   onChange,
+  userAge,
   status,
   rationale,
   disabled = false,
 }: GoalsLayerEditorProps) {
   const { t, locale } = useTranslations();
   const listId = useId();
-  const [draftIcon, setDraftIcon] = useState<string>("Heart");
+  const [draftIcon, setDraftIcon] = useState<string>("House");
+  /** Per-goal: true once the user manually edits the label field. */
+  const [labelTouched, setLabelTouched] = useState<Record<string, boolean>>({});
 
   const goals = value.goals;
   const total = goals.reduce((sum, goal) => sum + goal.targetAmountHKD, 0);
+  const minTargetAge = Math.max(1, Math.round(userAge) + 1);
 
   function updateGoal(id: string, patch: Partial<GoalItem>) {
     onChange({
-      goals: goals.map((goal) =>
-        goal.id === id ? { ...goal, ...patch } : goal,
-      ),
+      goals: goals.map((goal) => {
+        if (goal.id !== id) {
+          return goal;
+        }
+        const next = { ...goal, ...patch };
+        if (
+          typeof patch.targetAge === "number" &&
+          Number.isFinite(patch.targetAge)
+        ) {
+          next.targetAge = Math.round(patch.targetAge);
+          next.targetYear = deriveGoalYear(next.targetAge, userAge);
+        }
+        return next;
+      }),
+    });
+  }
+
+  function changeGoalIcon(id: string, icon: string) {
+    const resolved = resolveGoalIcon(icon);
+    const touched = labelTouched[id] === true;
+    updateGoal(id, {
+      icon: resolved,
+      ...(!touched ? { label: defaultLabelForIcon(resolved) } : {}),
     });
   }
 
   function removeGoal(id: string) {
     onChange({ goals: goals.filter((goal) => goal.id !== id) });
+    setLabelTouched((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   }
 
   function addGoal() {
-    const defaultText = t("workshop.pyramid.goals.newGoalDefault");
-    const label = bilingualBoth(defaultText);
-    const id = uniqueGoalId(defaultText, goals);
-    const year = new Date().getFullYear() + 5;
+    const icon = resolveGoalIcon(draftIcon);
+    const label = defaultLabelForIcon(icon);
+    const id = uniqueGoalId(label.en, goals);
+    const targetAge = Math.min(90, Math.max(minTargetAge, Math.round(userAge) + 5));
     onChange({
       goals: [
         ...goals,
         {
           id,
-          icon: draftIcon,
+          icon,
           label,
           targetAmountHKD: 100_000,
-          targetYear: year,
+          targetAge,
+          targetYear: deriveGoalYear(targetAge, userAge),
+          goalType: "spend",
         },
       ],
     });
+    setLabelTouched((prev) => ({ ...prev, [id]: false }));
   }
 
   const countLabel =
@@ -248,6 +319,7 @@ export default function GoalsLayerEditor({
         <div className="space-y-3" id={listId}>
           {goals.map((goal) => {
             const localizedLabel = pickBilingual(goal.label, locale);
+            const derivedYear = deriveGoalYear(goal.targetAge, userAge);
             return (
               <div
                 key={goal.id}
@@ -259,9 +331,9 @@ export default function GoalsLayerEditor({
                     localizedLabel || t("workshop.pyramid.goals.fallbackLabel")
                   }
                   value={formatHkd(goal.targetAmountHKD)}
-                  subtext={t(
-                    "workshop.pyramid.goals.targetYearSubtext",
-                  ).replace("{year}", String(goal.targetYear))}
+                  subtext={t("workshop.pyramid.goals.targetAgeSubtext")
+                    .replace("{age}", String(goal.targetAge))
+                    .replace("{year}", String(derivedYear))}
                 />
 
                 <div className="space-y-3">
@@ -273,7 +345,7 @@ export default function GoalsLayerEditor({
                       <GoalIconPicker
                         value={resolveGoalIcon(goal.icon)}
                         disabled={disabled}
-                        onChange={(icon) => updateGoal(goal.id, { icon })}
+                        onChange={(icon) => changeGoalIcon(goal.id, icon)}
                       />
                     </div>
                   </div>
@@ -290,15 +362,19 @@ export default function GoalsLayerEditor({
                       type="text"
                       disabled={disabled}
                       value={localizedLabel}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        setLabelTouched((prev) => ({
+                          ...prev,
+                          [goal.id]: true,
+                        }));
                         updateGoal(goal.id, {
                           label: patchBilingual(
                             goal.label,
                             locale,
                             e.target.value,
                           ),
-                        })
-                      }
+                        });
+                      }}
                       className={fieldClass}
                     />
                   </div>
@@ -316,19 +392,72 @@ export default function GoalsLayerEditor({
                         updateGoal(goal.id, { targetAmountHKD })
                       }
                     />
-                    <WorkshopNumberField
-                      id={`goal-year-${goal.id}`}
-                      variant="year"
-                      label={t("workshop.pyramid.goals.yearField")}
-                      min={2000}
-                      max={2100}
-                      disabled={disabled}
-                      value={goal.targetYear}
-                      enterKeyHint="done"
-                      onChange={(targetYear) =>
-                        updateGoal(goal.id, { targetYear })
-                      }
-                    />
+                    <div className="min-w-0">
+                      <WorkshopNumberField
+                        id={`goal-age-${goal.id}`}
+                        variant="age"
+                        label={t("workshop.pyramid.goals.ageField")}
+                        min={minTargetAge}
+                        max={90}
+                        disabled={disabled}
+                        value={goal.targetAge}
+                        enterKeyHint="done"
+                        onChange={(targetAge) =>
+                          updateGoal(goal.id, { targetAge })
+                        }
+                      />
+                      <p className="mt-1.5 text-xs tabular-nums text-slate-500">
+                        {t("workshop.pyramid.goals.derivedYearHint").replace(
+                          "{year}",
+                          String(derivedYear),
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    className="flex flex-wrap gap-2"
+                    role="radiogroup"
+                    aria-label={t("workshop.pyramid.goals.goalType.aria")}
+                  >
+                    {(
+                      [
+                        {
+                          id: "spend" as GoalType,
+                          labelKey:
+                            "workshop.pyramid.goals.goalType.spend" as const,
+                        },
+                        {
+                          id: "retirementTarget" as GoalType,
+                          labelKey:
+                            "workshop.pyramid.goals.goalType.retirementTarget" as const,
+                        },
+                      ] as const
+                    ).map((option) => {
+                      const selected =
+                        (goal.goalType ?? "spend") === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          disabled={disabled}
+                          onClick={() =>
+                            updateGoal(goal.id, { goalType: option.id })
+                          }
+                          className={[
+                            "inline-flex min-h-11 flex-1 touch-manipulation items-center justify-center rounded-xl border px-3 py-2 text-xs font-medium transition-colors sm:text-sm",
+                            focusRing,
+                            selected
+                              ? "border-emerald-500 bg-emerald-50 text-emerald-800"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
+                          ].join(" ")}
+                        >
+                          {t(option.labelKey)}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <button

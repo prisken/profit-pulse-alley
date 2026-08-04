@@ -7,7 +7,6 @@ import { useTranslations } from "@/components/providers/LocaleProvider";
 import {
   predictPyramidAction,
 } from "@/lib/workshop/pyramid-actions";
-import WorkshopCrisisStep from "@/components/workshop/WorkshopCrisisStep";
 import WorkshopCaptureStep from "@/components/workshop/WorkshopCaptureStep";
 import WorkshopPyramidStep from "@/components/workshop/WorkshopPyramidStep";
 import WorkshopExpensesStep from "@/components/workshop/WorkshopExpensesStep";
@@ -27,9 +26,7 @@ import WorkshopStickyFooter, {
 import type {
   ActionGoal,
   Bilingual,
-  CrisisState,
   ExpensesState,
-  RiskProfile,
   PyramidState,
   StressTestResult,
   SummaryState,
@@ -87,11 +84,16 @@ export default function WorkshopWizard() {
   const [pyramidRationale, setPyramidRationale] = useState<Bilingual | null>(
     null,
   );
+  const [protectionExplanation, setProtectionExplanation] =
+    useState<Bilingual | null>(null);
+  const [emergencyFundExplanation, setEmergencyFundExplanation] =
+    useState<Bilingual | null>(null);
   const [benchmarks, setBenchmarks] =
     useState<PyramidBenchmarkSnapshot | null>(null);
   const [expenses, setExpenses] = useState<ExpensesState | null>(null);
 
   const [age, setAge] = useState(0);
+  const [retirementAge, setRetirementAge] = useState(65);
   const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [industry, setIndustry] = useState<WorkshopIndustryKey | "">("");
   const [industryOther, setIndustryOther] = useState("");
@@ -109,11 +111,7 @@ export default function WorkshopWizard() {
     ? formatIndustryForAi(industry, industryOther)
     : "Other";
 
-  const [riskProfile, setRiskProfile] = useState<RiskProfile | null>(null);
   const [stressTest, setStressTest] = useState<StressTestResult | null>(null);
-  const [crisisScenario, setCrisisScenario] = useState<CrisisState | null>(
-    null,
-  );
   const [summary, setSummary] = useState<SummaryState | null>(null);
   const [selectedActionGoal, setSelectedActionGoal] =
     useState<ActionGoal | null>(null);
@@ -134,6 +132,15 @@ export default function WorkshopWizard() {
     const incomeNum = monthlyIncome;
     if (!Number.isFinite(ageNum) || ageNum < 16 || ageNum > 100) {
       setIntakeError(t("workshop.intake.errorAge"));
+      return;
+    }
+    let retirementAgeNum = retirementAge;
+    if (!Number.isFinite(retirementAgeNum)) {
+      retirementAgeNum = 65;
+    }
+    retirementAgeNum = Math.min(80, Math.max(40, Math.round(retirementAgeNum)));
+    if (retirementAgeNum <= ageNum) {
+      setIntakeError(t("workshop.intake.errorRetirementAge"));
       return;
     }
     if (!Number.isFinite(incomeNum) || incomeNum < 0) {
@@ -163,6 +170,7 @@ export default function WorkshopWizard() {
     try {
       const result = await predictPyramidAction({
         age: ageNum,
+        retirementAge: retirementAgeNum,
         monthlyIncome: incomeNum,
         industry,
         industryOther: industry === "other" ? industryOther.trim() : undefined,
@@ -183,6 +191,8 @@ export default function WorkshopWizard() {
         investment: result.investment,
       });
       setPyramidRationale(result.rationale);
+      setProtectionExplanation(result.protectionExplanation);
+      setEmergencyFundExplanation(result.emergencyFundExplanation);
       setBenchmarks(result.benchmarks);
       goToStep("pyramid");
     } catch (error) {
@@ -305,19 +315,39 @@ export default function WorkshopWizard() {
                   </div>
                 </div>
 
-                <WorkshopNumberField
-                  id="workshop-age"
-                  variant="age"
-                  label={t("workshop.intake.ageLabel")}
-                  min={16}
-                  max={100}
-                  required
-                  disabled={isPredicting}
-                  value={age}
-                  onChange={setAge}
-                  enterKeyHint="next"
-                  placeholder={t("workshop.intake.agePlaceholder")}
-                />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
+                  <WorkshopNumberField
+                    id="workshop-age"
+                    variant="age"
+                    label={t("workshop.intake.ageLabel")}
+                    min={16}
+                    max={100}
+                    required
+                    disabled={isPredicting}
+                    value={age}
+                    onChange={setAge}
+                    enterKeyHint="next"
+                    placeholder={t("workshop.intake.agePlaceholder")}
+                  />
+                  <div>
+                    <WorkshopNumberField
+                      id="workshop-retirement-age"
+                      variant="age"
+                      label={t("workshop.intake.retirementAgeLabel")}
+                      min={40}
+                      max={80}
+                      required
+                      disabled={isPredicting}
+                      value={retirementAge}
+                      onChange={setRetirementAge}
+                      enterKeyHint="next"
+                      placeholder={t("workshop.intake.retirementAgePlaceholder")}
+                    />
+                    <p className="mt-1.5 text-xs leading-snug text-slate-500">
+                      {t("workshop.intake.retirementAgeHint")}
+                    </p>
+                  </div>
+                </div>
 
                 <WorkshopNumberField
                   id="workshop-income"
@@ -459,7 +489,12 @@ export default function WorkshopWizard() {
               />
             ) : null}
 
-            {step === "pyramid" && pyramid && sessionId && benchmarks ? (
+            {step === "pyramid" &&
+            pyramid &&
+            sessionId &&
+            benchmarks &&
+            protectionExplanation &&
+            emergencyFundExplanation ? (
               <WorkshopErrorBoundary
                 title={t("workshop.pyramid.snagTitle")}
                 description={t("workshop.pyramid.snagDescription")}
@@ -471,6 +506,8 @@ export default function WorkshopWizard() {
                   onChange={setPyramid}
                   benchmarks={benchmarks}
                   rationale={pyramidRationale}
+                  protectionExplanation={protectionExplanation}
+                  emergencyFundExplanation={emergencyFundExplanation}
                   age={Number(age) || 30}
                   monthlyIncomeHKD={Number(monthlyIncome) || 0}
                   industry={industryForDownstream}
@@ -553,6 +590,9 @@ export default function WorkshopWizard() {
                   onBack={() => goToStep("expenses")}
                   onContinue={(result) => {
                     setStressTest(result);
+                    // Invalidate Summary so Step 6 re-runs stress test + action goals.
+                    setSummary(null);
+                    setSelectedActionGoal(null);
                     goToStep("riskquiz");
                   }}
                 />
@@ -579,14 +619,21 @@ export default function WorkshopWizard() {
               <WorkshopErrorBoundary
                 title={t("workshop.riskQuiz.snagTitle")}
                 description={t("workshop.riskQuiz.snagDescription")}
-                onBack={() => goToStep("stresstest")}
+                onBack={() => {
+                  setSummary(null);
+                  setSelectedActionGoal(null);
+                  goToStep("stresstest");
+                }}
               >
                 <WorkshopRiskQuiz
                   sessionId={sessionId}
-                  onBack={() => goToStep("stresstest")}
-                  onContinue={(result) => {
-                    setRiskProfile(result.profile);
-                    goToStep("crisis");
+                  onBack={() => {
+                    setSummary(null);
+                    setSelectedActionGoal(null);
+                    goToStep("stresstest");
+                  }}
+                  onContinue={() => {
+                    goToStep("summary");
                   }}
                 />
               </WorkshopErrorBoundary>
@@ -607,64 +654,16 @@ export default function WorkshopWizard() {
               </div>
             ) : null}
 
-            {step === "crisis" &&
-            sessionId &&
-            pyramid &&
-            expenses &&
-            tone &&
-            riskProfile ? (
-              <WorkshopErrorBoundary
-                title={t("workshop.crisis.snagTitle")}
-                description={t("workshop.crisis.snagDescription")}
-                onBack={() => goToStep("riskquiz")}
-              >
-                <WorkshopCrisisStep
-                  sessionId={sessionId}
-                  age={Number(age) || 30}
-                  industry={industryForDownstream}
-                  monthlyIncome={Number(monthlyIncome) || 0}
-                  householdStatus={householdStatus}
-                  expenses={expenses}
-                  pyramid={pyramid}
-                  tone={tone}
-                  riskProfile={riskProfile}
-                  stressTest={stressTest}
-                  onBack={() => goToStep("riskquiz")}
-                  onContinue={() => goToStep("summary")}
-                  onResolved={({ crisis }) => {
-                    setCrisisScenario(crisis);
-                  }}
-                />
-              </WorkshopErrorBoundary>
-            ) : null}
-
-            {step === "crisis" &&
-            (!sessionId || !pyramid || !expenses || !tone || !riskProfile) ? (
-              <div className="space-y-4">
-                <p className="text-sm text-zinc-400">
-                  {t("workshop.crisis.needRiskQuiz")}
-                </p>
-                <button
-                  type="button"
-                  className={primaryBtnClass}
-                  onClick={() => goToStep("riskquiz")}
-                >
-                  {t("workshop.crisis.goToRiskQuiz")}
-                </button>
-              </div>
-            ) : null}
-
             {step === "summary" &&
             sessionId &&
             pyramid &&
             benchmarks &&
             expenses &&
-            crisisScenario &&
             tone ? (
               <WorkshopErrorBoundary
                 title={t("workshop.summary.snagTitle")}
                 description={t("workshop.summary.snagDescription")}
-                onBack={() => goToStep("crisis")}
+                onBack={() => goToStep("riskquiz")}
               >
                 <WorkshopSummaryStep
                   sessionId={sessionId}
@@ -674,11 +673,15 @@ export default function WorkshopWizard() {
                   expenses={expenses}
                   pyramid={pyramid}
                   benchmarks={benchmarks}
-                  crisis={crisisScenario}
+                  crisis={null}
                   tone={tone}
                   stressTest={stressTest}
                   initialSummary={summary}
-                  onBack={() => goToStep("crisis")}
+                  onBack={() => {
+                    // Returning from capture keeps summary; leaving toward quiz
+                    // keeps cache only until journey is revisited (cleared above).
+                    goToStep("riskquiz");
+                  }}
                   onContinue={(goal) => {
                     setSelectedActionGoal(goal);
                     goToStep("capture");
@@ -689,22 +692,17 @@ export default function WorkshopWizard() {
             ) : null}
 
             {step === "summary" &&
-            (!sessionId ||
-              !pyramid ||
-              !benchmarks ||
-              !expenses ||
-              !crisisScenario ||
-              !tone) ? (
+            (!sessionId || !pyramid || !benchmarks || !expenses || !tone) ? (
               <div className="space-y-4">
                 <p className="text-sm text-zinc-400">
-                  {t("workshop.summary.needCrisis")}
+                  {t("workshop.summary.needEarlier")}
                 </p>
                 <button
                   type="button"
                   className={primaryBtnClass}
-                  onClick={() => goToStep("crisis")}
+                  onClick={() => goToStep("riskquiz")}
                 >
-                  {t("workshop.summary.goToCrisis")}
+                  {t("workshop.summary.goToRiskQuiz")}
                 </button>
               </div>
             ) : null}

@@ -42,11 +42,22 @@ describe("CollapsibleWidget", () => {
       </CollapsibleWidget>,
     );
 
+    const toggle = screen.getByRole("button", { name: /expand/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText("Hidden detail")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /expand/i }));
+
+    await user.click(toggle);
+    expect(screen.getByRole("button", { name: /collapse/i })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
     expect(screen.getByText("Hidden detail")).toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: /collapse/i }));
-    expect(screen.queryByText("Hidden detail")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /expand/i })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 });
 
@@ -89,5 +100,22 @@ describe("WorkshopStatCard", () => {
     const article = container.querySelector("article");
     expect(article?.className).toContain("bg-white");
     expect(article?.className).toMatch(/border-slate|border-emerald|border-/);
+  });
+});
+
+describe("CollapsibleWidget disabled", () => {
+  it("stays collapsed and non-interactive when disabled", async () => {
+    const user = userEvent.setup();
+    render(
+      <CollapsibleWidget title="Locked goal" disabled defaultExpanded>
+        <p>Should stay hidden</p>
+      </CollapsibleWidget>,
+    );
+
+    expect(screen.queryByText("Should stay hidden")).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: /expand/i });
+    expect(toggle).toBeDisabled();
+    await user.click(toggle);
+    expect(screen.queryByText("Should stay hidden")).not.toBeInTheDocument();
   });
 });

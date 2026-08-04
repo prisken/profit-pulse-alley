@@ -1,6 +1,7 @@
 /**
- * Workshop Pyramid Lab wizard step order.
- * riskquiz and crisis stay separate so the step-dot indicator stays accurate.
+ * Workshop Pyramid Lab wizard step order (7 steps).
+ * Crisis is no longer a standalone screen — shock math lives in
+ * `crisis-stress-test.ts` for Summary to consume in a follow-up.
  * Display labels come from workshop.steps.labels.* in the i18n catalog.
  */
 
@@ -12,7 +13,6 @@ export type WizardStep =
   | "expenses"
   | "stresstest"
   | "riskquiz"
-  | "crisis"
   | "summary"
   | "capture";
 
@@ -22,7 +22,6 @@ export const WIZARD_STEPS: readonly WizardStep[] = [
   "expenses",
   "stresstest",
   "riskquiz",
-  "crisis",
   "summary",
   "capture",
 ] as const;
@@ -35,7 +34,6 @@ export const WIZARD_STEP_LABEL_KEYS: Record<WizardStep, MessageKey> = {
   expenses: "workshop.steps.labels.expenses",
   stresstest: "workshop.steps.labels.stresstest",
   riskquiz: "workshop.steps.labels.riskquiz",
-  crisis: "workshop.steps.labels.crisis",
   summary: "workshop.steps.labels.summary",
   capture: "workshop.steps.labels.capture",
 };

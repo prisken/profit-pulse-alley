@@ -12,7 +12,7 @@ import type {
   ProtectionLayer,
   PyramidState,
 } from "@/lib/workshop/types";
-import type { PyramidBenchmarkSnapshot } from "@/lib/workshop/pyramid-benchmarks";
+import { buildPyramidBenchmarks } from "@/lib/workshop/pyramid-benchmarks";
 
 /**
  * Dev-only fixture for touch / responsive / CJK QA without DeepSeek.
@@ -31,19 +31,24 @@ export default function WorkshopTouchFixture() {
         label: { en: "Emergency top-up", zhHant: "應急金補足目標" },
         icon: "PiggyBank",
         targetAmountHKD: 120_000,
+        targetAge: 40,
         targetYear: nowYear + 3,
+        goalType: "spend",
       },
       {
         id: "g2",
         label: { en: "Home down payment", zhHant: "置業首期儲蓄" },
         icon: "House",
         targetAmountHKD: 800_000,
+        targetAge: 40,
         targetYear: nowYear + 8,
+        goalType: "spend",
       },
     ],
   });
   const [investment, setInvestment] = useState<InvestmentLayer>({
-    monthlyInvestmentHKD: 5000,
+    lumpSumHKD: 5000,
+    monthlyInvestmentHKD: 0,
     monthlyFunHKD: 1000,
     riskAllocation: { low: 40, mid: 40, high: 20 },
   });
@@ -56,13 +61,16 @@ export default function WorkshopTouchFixture() {
     investment,
   };
 
-  const benchmarks: PyramidBenchmarkSnapshot = {
-    medicalCoveragePercent: 50,
-    criticalIllnessAmountHKD: 600_000,
-    emergencyFundTargetMonths: 6,
-    emergencyFundTargetHKD: 120_000,
-    riskAllocation: { low: 40, mid: 40, high: 20 },
-    suggestedMonthlyInvestmentHKD: 5_000,
+  const benchmarks = buildPyramidBenchmarks({
+    age: 32,
+    monthlyIncomeHKD: 65_000,
+    industry: "Tech",
+  });
+
+  const fixtureExplanation = {
+    en: "Fixture explanation for overflow checks on the calculation panel.",
+    zhHant:
+      "這是用來檢查繁體中文在計算說明面板上是否會溢出容器的說明文字，請確認不會被裁切。",
   };
 
   const expenses: ExpensesState = {
@@ -98,6 +106,8 @@ export default function WorkshopTouchFixture() {
             zhHant:
               "這是用來檢查繁體中文在窄螢幕上是否會溢出容器的說明文字，請確認不會被裁切。",
           }}
+          protectionExplanation={fixtureExplanation}
+          emergencyFundExplanation={fixtureExplanation}
           age={32}
           monthlyIncomeHKD={65_000}
           industry="Tech"

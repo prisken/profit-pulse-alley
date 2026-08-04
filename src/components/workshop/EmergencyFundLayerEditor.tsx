@@ -1,21 +1,21 @@
 "use client";
 
-import { PiggyBank } from "lucide-react";
+import { Calculator, PiggyBank } from "lucide-react";
 
 import CollapsibleWidget from "@/components/workshop/CollapsibleWidget";
 import WorkshopNumberField from "@/components/workshop/WorkshopNumberField";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { pickBilingual } from "@/lib/workshop/bilingual";
-import { getEmergencyFundTargetMonths } from "@/lib/workshop/pyramid-benchmarks";
+import {
+  BENCHMARK_EXPENSE_RATIO,
+  type EmergencyFundBreakdown,
+} from "@/lib/workshop/pyramid-benchmarks";
 import type {
   Bilingual,
   EmergencyFundLayer,
   LayerFlag,
 } from "@/lib/workshop/types";
-
-/** Placeholder expense ratio until the expenses step exists. */
-const PLACEHOLDER_EXPENSE_RATIO = 0.6;
 
 function formatHkd(value: number): string {
   return new Intl.NumberFormat("en-HK", {
@@ -40,38 +40,33 @@ const FLAG_PILL: Record<LayerFlag, string> = {
 type EmergencyFundLayerEditorProps = Readonly<{
   value: EmergencyFundLayer;
   onChange: (next: EmergencyFundLayer) => void;
-  industry: string;
-  monthlyIncomeHKD: number;
+  efBreakdown: EmergencyFundBreakdown;
+  explanation: Bilingual;
   status?: LayerFlag;
-  rationale?: Bilingual | string;
   disabled?: boolean;
 }>;
 
 export default function EmergencyFundLayerEditor({
   value,
   onChange,
-  industry,
-  monthlyIncomeHKD,
+  efBreakdown,
+  explanation,
   status,
-  rationale,
   disabled = false,
 }: EmergencyFundLayerEditorProps) {
   const { t, locale } = useTranslations();
-  const targetMonths = getEmergencyFundTargetMonths(industry);
-  const estimatedMonthlyExpenses =
-    Math.max(0, monthlyIncomeHKD) * PLACEHOLDER_EXPENSE_RATIO;
-  const recommendedHKD = Math.round(targetMonths * estimatedMonthlyExpenses);
+  const monthlyBurn = Math.round(
+    efBreakdown.monthlyIncomeHKD * BENCHMARK_EXPENSE_RATIO,
+  );
 
   const recommendedLine = t("workshop.pyramid.emergencyFund.recommendedMonths")
-    .replace("{months}", String(targetMonths))
-    .replace("{amount}", formatHkd(recommendedHKD));
-  const placeholderHint = t(
-    "workshop.pyramid.emergencyFund.placeholderHint",
-  ).replace("{percent}", String(Math.round(PLACEHOLDER_EXPENSE_RATIO * 100)));
-  const rationaleText =
-    rationale == null || rationale === ""
-      ? ""
-      : pickBilingual(rationale, locale);
+    .replace("{months}", String(efBreakdown.targetMonths))
+    .replace("{amount}", formatHkd(efBreakdown.recommendedHKD));
+  const explanationText = pickBilingual(explanation, locale);
+  const formulaText = t("workshop.pyramid.emergencyFund.efFormula")
+    .replace("{months}", String(efBreakdown.targetMonths))
+    .replace("{burn}", formatHkd(monthlyBurn))
+    .replace("{recommended}", formatHkd(efBreakdown.recommendedHKD));
 
   return (
     <CollapsibleWidget
@@ -97,12 +92,6 @@ export default function EmergencyFundLayerEditor({
       defaultExpanded={status !== "green"}
     >
       <div className="space-y-4">
-        {rationaleText ? (
-          <p className="text-pretty text-sm leading-relaxed text-slate-600">
-            {rationaleText}
-          </p>
-        ) : null}
-
         <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-3.5 sm:px-4">
           <WorkshopNumberField
             id="workshop-emergency-saved"
@@ -116,9 +105,31 @@ export default function EmergencyFundLayerEditor({
           />
           <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
             {recommendedLine}
-            <span className="block text-slate-400">{placeholderHint}</span>
           </p>
         </div>
+
+        <CollapsibleWidget
+          icon={
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600">
+              <Calculator className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            </span>
+          }
+          title={t("workshop.pyramid.calc.heading")}
+          defaultExpanded={false}
+          className="border-slate-200/90 shadow-none"
+        >
+          <div className="space-y-2">
+            <p className="font-mono text-sm tabular-nums text-slate-800">
+              {formulaText}
+            </p>
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              {t("workshop.pyramid.emergencyFund.efFormulaNote")}
+            </p>
+            <p className="text-pretty text-sm leading-relaxed text-slate-600">
+              {explanationText}
+            </p>
+          </div>
+        </CollapsibleWidget>
       </div>
     </CollapsibleWidget>
   );

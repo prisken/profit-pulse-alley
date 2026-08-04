@@ -8,10 +8,14 @@ export const WORKSHOP_LEADS_CSV_HEADERS = [
   "phone",
   "industry",
   "age",
+  "retirementAge",
+  "assetsDepletedAtAge",
   "weakestLayer",
   "riskProfile",
   "ratingScore",
   "selectedGoal",
+  "stressTestVerdict",
+  "profileBehaviorMismatch",
 ] as const;
 
 /**
@@ -28,10 +32,20 @@ export function buildWorkshopLeadsCsv(leads: WorkshopAdminLeadRow[]): string {
       lead.phone.trim(),
       lead.industry,
       String(lead.age),
+      lead.retirementAge == null ? "" : String(lead.retirementAge),
+      lead.assetsDepletedAtAge == null
+        ? ""
+        : String(lead.assetsDepletedAtAge),
       lead.weakestLayer ?? "",
       lead.riskProfile ?? "",
       lead.ratingScore == null ? "" : String(lead.ratingScore),
       lead.selectedGoal?.trim() ?? "",
+      lead.stressTestVerdict ?? "",
+      lead.profileBehaviorMismatch == null
+        ? ""
+        : lead.profileBehaviorMismatch
+          ? "true"
+          : "false",
     ]
       .map((value) => csvEscape(value))
       .join(","),

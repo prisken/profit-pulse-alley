@@ -24,6 +24,7 @@ function baseInput(locale: SiteLocale): BlueprintPdfInput {
     phone: "+85291234567",
     industry: locale === "zh-Hant" ? "金融業" : "Finance",
     age: 32,
+    retirementAge: 65,
     tone: "professional",
     pyramid: {
       protection: {
@@ -38,13 +39,16 @@ function baseInput(locale: SiteLocale): BlueprintPdfInput {
             icon: "Home",
             label: bilingual("Home purchase", "置業"),
             targetAmountHKD: 2_000_000,
+            targetAge: 40,
             targetYear: 2030,
+            goalType: "spend",
           },
         ],
       },
       investment: {
         riskAllocation: { low: 30, mid: 50, high: 20 },
-        monthlyInvestmentHKD: 8_000,
+        lumpSumHKD: 200_000,
+        monthlyInvestmentHKD: 5_000,
         monthlyFunHKD: 2_000,
       },
     },
@@ -83,25 +87,7 @@ function baseInput(locale: SiteLocale): BlueprintPdfInput {
         },
       ],
     },
-    crisis: {
-      title: bilingual("Industry income shock", "行業收入衝擊"),
-      description: bilingual(
-        "An English crisis description confirming Latin glyphs.",
-        "這是一段繁體中文說明，用來確認 PDF 字型可正確顯示中文字形。",
-      ),
-      riskProfile: "balanced",
-      monthlyIncomeImpactPercent: 40,
-      oneTimeCostHKD: 50_000,
-      durationMonths: 6,
-      impacts: [
-        {
-          layer: "emergencyFund",
-          icon: "PiggyBank",
-          headline: bilingual("Cash runway shortens", "現金緩衝縮短"),
-          detailMonths: 3,
-        },
-      ],
-    },
+    timeline: null,
     summary: {
       rating: {
         score: 62,
@@ -112,6 +98,21 @@ function baseInput(locale: SiteLocale): BlueprintPdfInput {
           goalsOnTrack: 80,
           crisisResilience: 60,
         },
+      },
+      crisisStressTest: {
+        scenario: "job_loss",
+        crisisType: "job_loss",
+        shieldedAmount: 0,
+        penetrationAmount: 50_000,
+        affectedGoalId: "home",
+        affectedGoalLabel: bilingual("Home purchase", "置業"),
+        delayYears: 2,
+        verdict: "PENETRATED",
+        resilienceScore: 28,
+        oneTimeCostHKD: 50_000,
+        incomeHitPct: 40,
+        marketDropPct: 0,
+        durationMonths: 6,
       },
       actionGoals: [
         {
@@ -128,6 +129,18 @@ function baseInput(locale: SiteLocale): BlueprintPdfInput {
       ],
     },
     selectedGoal: "Top up emergency fund",
+    goalJourney: {
+      decisions: [
+        {
+          goalId: "home",
+          status: "applied",
+          allowLiquidation: true,
+          acceptedSqueeze: true,
+          squeezeCutsHKD: { fun: 12_000, discretionary: 0 },
+        },
+      ],
+      updatedAt: new Date(0).toISOString(),
+    },
   };
 }
 
@@ -154,21 +167,30 @@ async function renderLocale(locale: SiteLocale, outDir: string) {
   writeFileSync(file, pdf);
 
   const expectedTitle = translate(locale, "workshop.pdf.title");
-  const expectedCrisis = translate(locale, "workshop.pdf.crisisSectionTitle");
+  const expectedTradeOffs = translate(locale, "workshop.pdf.tradeOffsTitle");
+  const expectedStress = translate(locale, "workshop.pdf.crisisStressHeading");
   const titleOk =
     pdf.toString("latin1").includes(expectedTitle) ||
     hasUtf16Be(pdf, expectedTitle);
-  const crisisOk =
-    pdf.toString("latin1").includes(expectedCrisis) ||
-    hasUtf16Be(pdf, expectedCrisis);
+  const tradeOffsOk =
+    pdf.toString("latin1").includes(expectedTradeOffs) ||
+    hasUtf16Be(pdf, expectedTradeOffs);
+  const stressOk =
+    pdf.toString("latin1").includes(expectedStress) ||
+    hasUtf16Be(pdf, expectedStress);
 
   // Compressed streams may hide literals — require at least one catalog marker
   // OR (for zh) a larger file than EN baseline checked by caller.
   console.log(
     `  ${locale}: ${pdf.length} bytes → ${file}` +
-      ` (title literal=${titleOk}, crisisSection literal=${crisisOk})`,
+      ` (title literal=${titleOk}, tradeOffs literal=${tradeOffsOk}, stressTest literal=${stressOk})`,
   );
-  return { pdf, titleOk, crisisOk, expectedTitle, expectedCrisis };
+  return {
+    pdf,
+    titleOk,
+    sectionOk: tradeOffsOk || stressOk,
+    expectedTitle,
+  };
 }
 
 async function main() {
@@ -179,7 +201,7 @@ async function main() {
   const en = await renderLocale("en", outDir);
   const zh = await renderLocale("zh-Hant", outDir);
 
-  if (!en.titleOk && !en.crisisOk) {
+  if (!en.titleOk && !en.sectionOk) {
     // Streams are often Flate-compressed — size + font embed is the automated check.
     console.log(
       "  note: EN catalog literals not found uncompressed (expected with Flate); relying on size + visual check",

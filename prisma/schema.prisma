@@ -432,16 +432,18 @@ model WorkshopSession {
   id               String   @id @default(cuid())
   createdAt        DateTime @default(now())
   age              Int
+  retirementAge    Int      @default(65)
   monthlyIncome    Float
   industry         String
   householdStatus  String?
   tone             String   @default("professional")
-  // shape v2 — see src/lib/workshop/types.ts
+  // shape v3 — see src/lib/workshop/types.ts (v2 JSON still parseable)
   aiPyramidJson    Json // AI-predicted pyramid, before user edits
-  // shape v2 — see src/lib/workshop/types.ts
+  // shape v3 — see src/lib/workshop/types.ts (v2 JSON still parseable)
   finalPyramidJson Json // user-confirmed/edited pyramid
-  // shape v2 — see src/lib/workshop/types.ts
+  // shape v2/v3 — see src/lib/workshop/types.ts
   macroResultJson  Json? // deterministic macro / goal-achievability simulation
+  goalJourneyJson  Json? // goal-journey decisions applied over the canonical plan
   expensesJson     Json? // AI-predicted then user-edited monthly expense breakdown
   riskQuizJson     Json? // 5-question risk quiz answers + derived profile
   // shape v2 — see src/lib/workshop/types.ts
@@ -452,14 +454,18 @@ model WorkshopSession {
 }
 
 model WorkshopLead {
-  id           String          @id @default(cuid())
-  sessionId    String          @unique
-  session      WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  name         String
-  email        String
-  phone        String
-  selectedGoal String?
-  createdAt    DateTime        @default(now())
+  id                       String          @id @default(cuid())
+  sessionId                String          @unique
+  session                  WorkshopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  name                     String
+  email                    String
+  phone                    String
+  selectedGoal             String?
+  /** Summary crisis stress-test verdict: SHIELDED | PARTIAL | PENETRATED */
+  stressTestVerdict        String?
+  /** Risk-quiz profile vs goal-journey behavior gap (advisor follow-up). */
+  profileBehaviorMismatch  Boolean?
+  createdAt                DateTime        @default(now())
 
   @@index([createdAt])
   @@index([email])

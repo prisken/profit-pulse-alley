@@ -34,6 +34,10 @@ export const workshopEnMessages = {
 
   "workshop.intake.ageLabel": "Age",
   "workshop.intake.agePlaceholder": "e.g. 32",
+  "workshop.intake.retirementAgeLabel": "Retirement age",
+  "workshop.intake.retirementAgePlaceholder": "e.g. 65",
+  "workshop.intake.retirementAgeHint":
+    "When you plan to stop full-time work (40–80). Must be after your current age.",
   "workshop.intake.incomeLabel": "Monthly income (HKD)",
   "workshop.intake.incomePlaceholder": "e.g. 45000",
   "workshop.intake.industryLabel": "Industry",
@@ -45,6 +49,8 @@ export const workshopEnMessages = {
   "workshop.intake.analyzingMessage": "AI is analyzing your profile...",
   "workshop.intake.analyzingSubtext": "Benchmarking against Hong Kong peers",
   "workshop.intake.errorAge": "Enter an age between 16 and 100.",
+  "workshop.intake.errorRetirementAge":
+    "Retirement age must be greater than your current age (40–80).",
   "workshop.intake.errorIncome": "Enter a valid monthly income in HKD.",
   "workshop.intake.errorIndustry": "Select or enter your industry.",
   "workshop.intake.errorHousehold": "Select your household status.",
@@ -88,6 +94,8 @@ export const workshopEnMessages = {
   "workshop.pyramid.protection.recommendedPrefix": "Recommended:",
   "workshop.pyramid.protection.stepHint": "adjusts in 5% steps",
   "workshop.pyramid.protection.cardLabel": "Protection",
+  "workshop.pyramid.protection.ciFormula":
+    "{multiple} × annual income ({annual}) = {recommended}",
 
   "workshop.pyramid.emergencyFund.savedLabel": "Saved amount (HKD)",
   "workshop.pyramid.emergencyFund.recommendedMonths":
@@ -95,6 +103,12 @@ export const workshopEnMessages = {
   "workshop.pyramid.emergencyFund.placeholderHint":
     "(using a rough {percent}% of income until expenses are set)",
   "workshop.pyramid.emergencyFund.cardLabel": "Emergency fund",
+  "workshop.pyramid.emergencyFund.efFormula":
+    "{months} × estimated monthly burn ({burn}) = {recommended}",
+  "workshop.pyramid.emergencyFund.efFormulaNote":
+    "Based on income for now; the stress-test step later refines against your actual expenses.",
+
+  "workshop.pyramid.calc.heading": "How we calculated this",
 
   "workshop.pyramid.goals.addButton": "+ Add a goal",
   "workshop.pyramid.goals.deleteButton": "Delete goal",
@@ -111,19 +125,55 @@ export const workshopEnMessages = {
   "workshop.pyramid.goals.amountField": "Target amount (HKD)",
   "workshop.pyramid.goals.yearField": "Target year",
   "workshop.pyramid.goals.targetYearSubtext": "Target year {year}",
+  "workshop.pyramid.goals.targetAgeSubtext": "By age {age} ({year})",
+  "workshop.pyramid.goals.ageField": "Target age",
+  "workshop.pyramid.goals.derivedYearHint": "≈ {year}",
+  "workshop.pyramid.goals.goalType.aria": "Goal type",
+  "workshop.pyramid.goals.goalType.spend": "Spend at target age",
+  "workshop.pyramid.goals.goalType.retirementTarget":
+    "Retirement nest-egg target",
   "workshop.pyramid.goals.iconPicker.heart": "Wedding / love",
   "workshop.pyramid.goals.iconPicker.graduationCap": "Education",
   "workshop.pyramid.goals.iconPicker.home": "Home",
   "workshop.pyramid.goals.iconPicker.plane": "Travel",
+  "workshop.pyramid.goals.iconPicker.car": "Car",
+  "workshop.pyramid.goals.iconPicker.briefcase": "Business",
+  "workshop.pyramid.goals.iconPicker.piggyBank": "Retirement",
+  "workshop.pyramid.goals.iconPicker.other": "Other",
   "workshop.pyramid.goals.iconPicker.baby": "Family",
-  "workshop.pyramid.goals.iconPicker.piggyBank": "Savings",
+
+  "workshop.goals.defaults.home": "Buy a home",
+  "workshop.goals.defaults.car": "Buy a car",
+  "workshop.goals.defaults.education": "Education fund",
+  "workshop.goals.defaults.travel": "Travel fund",
+  "workshop.goals.defaults.wedding": "Wedding fund",
+  "workshop.goals.defaults.business": "Start a business",
+  "workshop.goals.defaults.retirementNestEgg": "Retirement nest egg",
+  "workshop.goals.defaults.other": "Other goal",
 
   "workshop.pyramid.investment.lowLabel": "Low risk",
   "workshop.pyramid.investment.midLabel": "Mid risk",
   "workshop.pyramid.investment.highLabel": "High risk",
+  "workshop.pyramid.investment.lowBandHint":
+    "1–3% /yr — capital preservation",
+  "workshop.pyramid.investment.midBandHint": "8–12% /yr — growth",
+  "workshop.pyramid.investment.highBandHint":
+    "20–40% /yr — speculative, high volatility",
+  "workshop.pyramid.investment.returnBandsDisclaimer":
+    "Projections in this tool use conservative blended assumptions (2% / 6% / 10%), not the top of these ranges.",
   "workshop.pyramid.investment.monthlyInvestmentLabel":
     "Monthly investment (HKD)",
-  "workshop.pyramid.investment.monthlyFunLabel": "Monthly fun (HKD)",
+  "workshop.pyramid.investment.monthlyInvesting.label": "Monthly investing (HKD)",
+  "workshop.pyramid.investment.monthlyInvesting.helper":
+    "Monthly surplus available ≈ {amount}",
+  "workshop.pyramid.investment.monthlyInvesting.amberWarning":
+    "Monthly investing exceeds available surplus (income − expenses − fun).",
+  "workshop.pyramid.investment.lumpSumLabel":
+    "Current invested amount (lump sum)",
+  "workshop.pyramid.investment.lumpSumSummary": "{amount} invested",
+  "workshop.pyramid.investment.monthlyFunLabel": "Monthly fun budget (HKD)",
+  "workshop.pyramid.investment.funCrisisHint":
+    "Fun budget is the first thing cut in a crisis.",
   "workshop.pyramid.investment.cardLabel": "Investment & fun",
   "workshop.pyramid.investment.riskHeading": "Risk allocation",
   "workshop.pyramid.investment.riskHint":
@@ -132,8 +182,8 @@ export const workshopEnMessages = {
   "workshop.pyramid.investment.total": "Total {n}%",
   "workshop.pyramid.investment.decreaseAria": "Decrease {label} by {step}%",
   "workshop.pyramid.investment.increaseAria": "Increase {label} by {step}%",
-  "workshop.pyramid.investment.investCardLabel": "Monthly investment",
-  "workshop.pyramid.investment.investSubtext": "Invested each month",
+  "workshop.pyramid.investment.investCardLabel": "Invested capital",
+  "workshop.pyramid.investment.investSubtext": "Current total invested",
   "workshop.pyramid.investment.funCardLabel": "Monthly fun",
   "workshop.pyramid.investment.funSubtext": "Guilt-free spending buffer",
   "workshop.pyramid.investment.perMonth": "{amount} / mo",
@@ -181,30 +231,137 @@ export const workshopEnMessages = {
   "workshop.expenses.snagDescription":
     "We couldn’t finish estimating your expenses. Retry to continue.",
 
-  "workshop.stressTest.scrubberLabel": "Year scrubber",
+  "workshop.stressTest.scrubberLabel": "Age scrubber",
   "workshop.stressTest.emergencyFundCardTitle": "Emergency fund",
   "workshop.stressTest.targetVsProjected": "Target: {target} · Projected: {projected}",
   "workshop.stressTest.notReachedLabel": "Not reached",
-  "workshop.stressTest.continueButton": "See My Crisis Test",
+  "workshop.stressTest.continueButton": "Continue to Risk Quiz",
   "workshop.stressTest.intro":
-    "Scrub the timeline to see surplus evolve. Green goals stay quiet — amber and red get a short why.",
+    "Scrub your life timeline — cash flow, assets, and goals update together. Green stays quiet; amber, red, and oversaved get a short why.",
+  "workshop.stressTest.journeyIntro":
+    "Your monthly surplus of {surplus} is the fuel for the goals below.",
+  "workshop.stressTest.overviewCashFlow": "This month",
+  "workshop.stressTest.overviewAssets": "Assets today",
   "workshop.stressTest.todayBaseline": "Today · baseline",
   "workshop.stressTest.income": "Income",
-  "workshop.stressTest.expenses": "Expenses",
+  "workshop.stressTest.salaryIncome": "Salary (annual)",
+  "workshop.stressTest.passiveIncome": "Passive income (annual)",
+  "workshop.stressTest.expenses": "Expenses (annual)",
   "workshop.stressTest.surplus": "Surplus",
-  "workshop.stressTest.horizonHint": "+{years}y · {maxYear}",
-  "workshop.stressTest.narrating": "Writing tone notes for amber/red items…",
-  "workshop.stressTest.running": "Running your goal stress test…",
+  "workshop.stressTest.liquidPool": "Liquid",
+  "workshop.stressTest.investedPool": "Invested",
+  "workshop.stressTest.chartCashFlow": "Annual cash flow",
+  "workshop.stressTest.chartAssets": "Assets over time",
+  "workshop.stressTest.realTermsCaption":
+    "All figures in today's purchasing power",
+  "workshop.stressTest.retirementMarker": "Retirement",
+  "workshop.stressTest.depletedMarker": "Assets run out",
+  "workshop.stressTest.depletedYearsAfter": "{n} years after retirement",
+  "workshop.stressTest.goalMilestone": "Goal",
+  "workshop.stressTest.ageStat": "Age {age}",
+  "workshop.stressTest.scrubAge": "Age {age}",
+  "workshop.stressTest.scrubBubble": "{year} · Age {age}",
+  "workshop.stressTest.horizonHint": "Age {minAge} → {maxAge}",
+  "workshop.stressTest.phaseWorking": "Working",
+  "workshop.stressTest.phaseRetirement": "Retirement",
+  "workshop.stressTest.legendLiquid": "Liquid",
+  "workshop.stressTest.legendInvested": "Invested",
+  "workshop.stressTest.legendIncome": "Income",
+  "workshop.stressTest.legendExpenses": "Expenses",
+  "workshop.stressTest.coverageRatio": "Passive coverage",
+  "workshop.stressTest.annualSuffix": "annual",
+  "workshop.stressTest.nestEggTarget": "Target {amount}",
+  "workshop.stressTest.liquidationNote": "Sold investments to fund goal",
+  "workshop.stressTest.headlineCoverageLabel": "Passive coverage",
+  "workshop.stressTest.headlineCoverageValue": "{percent}%",
+  "workshop.stressTest.headlineCoverageDetail":
+    "At retirement, passive income covers that year’s expenses",
+  "workshop.stressTest.headlineAssetsLabel": "Asset runway",
+  "workshop.stressTest.headlineAssetsToAge": "Age {age}",
+  "workshop.stressTest.headlineAssetsToAgeDetail": "Assets run out at this age",
+  "workshop.stressTest.headlineAssetsSustained": "Past 90 ✓",
+  "workshop.stressTest.headlineAssetsSustainedDetail":
+    "Assets last through age 90 in this model",
+  "workshop.stressTest.headlineOversavedLabel": "Idle cash",
+  "workshop.stressTest.headlineOversaved": "{excess}",
+  "workshop.stressTest.headlineOversavedDetail":
+    "Could be ≈{opportunity} more by retirement if invested",
+  "workshop.stressTest.narrating": "Writing tone notes for amber/red/oversaved items…",
+  "workshop.stressTest.running": "Running your life timeline…",
   "workshop.stressTest.runningSubtext":
     "Deterministic math first — AI notes fade in after.",
   "workshop.stressTest.sectionEmergency": "Emergency fund",
   "workshop.stressTest.sectionGoals": "Goals",
-  "workshop.stressTest.efTarget": "Target: {months} mo",
-  "workshop.stressTest.efAlreadyFunded": "Already funded",
-  "workshop.stressTest.efFundedIn": "funded in {months} mo",
-  "workshop.stressTest.goalTarget": "Target: {year}",
-  "workshop.stressTest.goalProjected": "Projected: {year}",
-  "workshop.stressTest.reachedByScrub": " · reached by scrub year",
+  "workshop.stressTest.sectionRetirement": "Retirement runway",
+  "workshop.journey.railTitle": "Goal journey",
+  "workshop.journey.ageMarker": "Age {age}",
+  "workshop.journey.retirementLabel": "Retirement",
+  "workshop.journey.retirementSubtitle": "Nest-egg check at age {age}",
+  "workshop.journey.statusOnTrack": "✓ On track",
+  "workshop.journey.statusDelayed": "⏱ Delayed",
+  "workshop.journey.statusGivenUp": "✕ Given up",
+  "workshop.journey.revisitBadge": "May need to revisit",
+  "workshop.journey.lockedHint": "Locked",
+  "workshop.journey.stubPlaceholder":
+    "Decision levers and squeeze recommendation will appear here.",
+  "workshop.journey.stubApply": "Apply goal (stub)",
+  "workshop.journey.stubGiveUp": "Give up (stub)",
+  "workshop.journey.outlookHeadline":
+    "On your current plan, you reach {target} at age {age}",
+  "workshop.journey.outlookNever":
+    "On your current plan, you do not reach {target} by age 90",
+  "workshop.journey.yearsLate": "{n} years late",
+  "workshop.journey.outlookWithSqueeze":
+    "With the spending cut accepted, achievable at age {age}",
+  "workshop.journey.liquidationToggle":
+    "Allow using emergency fund / investments for this goal",
+  "workshop.journey.liquidationConsequence":
+    "→ achievable around age {age}, but liquid cover drops to about {months} months",
+  "workshop.journey.squeezeHeading": "Spending squeeze",
+  "workshop.journey.donutCurrent": "Current",
+  "workshop.journey.donutRecommended": "AI Recommended",
+  "workshop.journey.donutOutflow": "Outflow",
+  "workshop.journey.acceptSqueeze": "Accept AI recommendation",
+  "workshop.journey.squeezeAccepted": "Recommendation accepted",
+  "workshop.journey.applyGoal": "Apply goal",
+  "workshop.journey.giveUpGoal": "Give up goal",
+  "workshop.journey.loadingOutlook": "Checking this goal on your plan…",
+  "workshop.journey.loadErrorTitle": "Couldn’t load this goal",
+  "workshop.journey.loadError": "Could not compute this goal’s outlook. Retry.",
+  "workshop.journey.reasoningErrorTitle": "Couldn’t load the explanation",
+  "workshop.journey.reasoningError":
+    "The squeeze numbers are ready — retry to load the AI explanation.",
+  "workshop.journey.reasoningLoading": "Writing the recommendation…",
+  "workshop.journey.decisionError": "Could not save this decision. Please retry.",
+  "workshop.journey.retirementReadOnly":
+    "Retirement is the finale of this journey — nest-egg details appear after your spend goals.",
+  "workshop.journey.finaleRecapHeading": "Decision recap",
+  "workshop.journey.finaleRecapSummary":
+    "{onTime} goals achieved on time, {delayed} delayed, {givenUp} given up",
+  "workshop.journey.finaleMonthlyPlan":
+    "Monthly plan after squeezes: {before}/mo → {after}/mo",
+  "workshop.journey.finaleTimelineMissing":
+    "Timeline data is still loading — open this card again in a moment.",
+  "workshop.stressTest.efTarget": "Target: {months} mo · {amount}",
+  "workshop.stressTest.efAlreadyFunded": "On target",
+  "workshop.stressTest.efOversavedLabel": "Oversaved",
+  "workshop.stressTest.efOversavedDetail":
+    "Excess {excess} could grow to ≈ {opportunity} by retirement if invested",
+  "workshop.stressTest.assetsDepletedStat": "Assets run out at age {age}",
+  "workshop.stressTest.assetsNeverDepleted": "Assets last through age 90 in this model",
+  "workshop.stressTest.passiveAtRetirement":
+    "Passive income at retirement: {amount}/yr",
+  "workshop.stressTest.goalInflatedTarget": "Inflated target: {amount}",
+  "workshop.stressTest.goalReachedAtAge": "Reached at age {age}",
+  "workshop.stressTest.goalNotReached": "Not reached by age 90",
+  "workshop.stressTest.goalTargetAge": "Target age {age}",
+  "workshop.stressTest.goalNestEggSubtitle":
+    "Nest-egg target {target} · projected {projected}",
+  "workshop.stressTest.scrubStatus.attained": "Attained",
+  "workshop.stressTest.scrubStatus.on_track": "On track",
+  "workshop.stressTest.scrubStatus.late": "Late",
+  "workshop.stressTest.scrubStatus.never": "Not reached",
+  "workshop.stressTest.reachedByScrub": "Reached by scrub year",
   "workshop.stressTest.errorTitle": "Stress test hit a snag",
   "workshop.stressTest.errorFallback":
     "Could not run the stress test. Please try again.",
@@ -213,11 +370,11 @@ export const workshopEnMessages = {
   "workshop.stressTest.goToExpenses": "Go to expenses",
   "workshop.stressTest.snagTitle": "Stress test hit a snag",
   "workshop.stressTest.snagDescription":
-    "The goal stress test failed. Retry to continue.",
-  "workshop.stressTest.yearScrubAria": "Scrub stress-test year",
-  "workshop.stressTest.yearValueAria": "Year {year}",
+    "The life timeline could not finish. Retry to continue.",
+  "workshop.stressTest.yearScrubAria": "Scrub life-timeline age",
+  "workshop.stressTest.yearValueAria": "Age {age}, calendar year {year}",
   "workshop.stressTest.noteFallback":
-    "This layer is behind the plan based on the projected surplus path.",
+    "Based on the projected life timeline, this layer needs attention.",
 
   "workshop.riskQuiz.questions.q1.text":
     "A sudden windfall of HK$200,000 lands in your account. You mostly…",
@@ -258,7 +415,17 @@ export const workshopEnMessages = {
   "workshop.riskQuiz.questions.q5.choiceC":
     "Confident — buffer and options feel solid",
   "workshop.riskQuiz.progressLabel": "Question {n} of 5",
-  "workshop.riskQuiz.continueButton": "See My Crisis Test",
+  "workshop.riskQuiz.bridgeIntro":
+    "You just made some real trade-offs. Now let's see how your instincts compare.",
+  "workshop.riskQuiz.resultHeading": "Your risk profile",
+  "workshop.riskQuiz.resultScore": "Score {score}/100",
+  "workshop.riskQuiz.consistencyConservativeGap":
+    "Your quiz says Conservative — but you used your investments for {x} of {y} goals. Interesting gap worth discussing.",
+  "workshop.riskQuiz.consistencyAggressiveGap":
+    "Your quiz says Aggressive — yet you protected your assets and gave up a goal instead. Your instincts may be more cautious than you think.",
+  "workshop.riskQuiz.consistencyAligned":
+    "Your quiz says {profile} — and your goal journey decisions track with that.",
+  "workshop.riskQuiz.continueButton": "See My Summary",
   "workshop.riskQuiz.nextButton": "Next",
   "workshop.riskQuiz.saving": "Saving…",
   "workshop.riskQuiz.saveErrorTitle": "Couldn’t save risk quiz",
@@ -276,8 +443,33 @@ export const workshopEnMessages = {
   "workshop.crisis.goalsUnderCrisisHeading": "Your goals under this crisis",
   "workshop.crisis.loading": "Building your {profile} crisis scenario…",
   "workshop.crisis.loadingSubtext":
-    "Hyper-specific to your age, industry, and risk profile.",
+    "AI picks the scenario — math computes every HKD impact.",
   "workshop.crisis.badge": "Crisis · {profile}",
+  "workshop.crisis.typeLabel": "Type",
+  "workshop.crisis.types.medical": "Medical",
+  "workshop.crisis.types.critical_illness": "Critical illness",
+  "workshop.crisis.types.job_loss": "Job loss",
+  "workshop.crisis.types.market_crash": "Market crash",
+  "workshop.crisis.types.accident": "Accident",
+  "workshop.crisis.types.family": "Family",
+  "workshop.crisis.marketDrop": "Market drop",
+  "workshop.crisis.sectionCoverage": "Protection offset",
+  "workshop.crisis.coverageOffsetTitle": "Your protection vs this bill",
+  "workshop.crisis.coverageOffsetValue":
+    "Your protection covered {covered} of this {gross} bill",
+  "workshop.crisis.coverageOffsetDetail":
+    "Uncovered remainder: {uncovered}. Offset source: {kind}.",
+  "workshop.crisis.coverageKind.medical": "Medical coverage {pct}%",
+  "workshop.crisis.coverageKind.ci": "Critical illness sum assured",
+  "workshop.crisis.coverageKind.none": "No matching cover",
+  "workshop.crisis.sectionCutOrder": "Where the hit landed",
+  "workshop.crisis.cut.fun": "Fun budget",
+  "workshop.crisis.cut.funValue": "Your fun budget absorbed {amount}",
+  "workshop.crisis.cut.discretionary": "Discretionary expenses cut",
+  "workshop.crisis.cut.liquid": "Cash / emergency fund drawn",
+  "workshop.crisis.cut.invested": "Investments liquidated",
+  "workshop.crisis.cut.market": "Invested assets marked down",
+  "workshop.crisis.goalAge": "age {age}",
   "workshop.crisis.layerImpacts": "Layer impacts",
   "workshop.crisis.hitsLayer": "Hits · {layer}",
   "workshop.crisis.incomeHit": "Income hit",
@@ -312,6 +504,27 @@ export const workshopEnMessages = {
   "workshop.summary.getBlueprintButton": "Get My Blueprint",
   "workshop.summary.ratingHeading": "Your financial rating",
   "workshop.summary.breakdownHeading": "Breakdown",
+  "workshop.summary.crisisStress.heading": "Crisis Stress Test",
+  "workshop.summary.crisisStress.verdict.SHIELDED": "Shielded",
+  "workshop.summary.crisisStress.verdict.PARTIAL": "Partial",
+  "workshop.summary.crisisStress.verdict.PENETRATED": "Penetrated",
+  "workshop.summary.crisisStress.scenario.medical": "Medical Crisis",
+  "workshop.summary.crisisStress.scenario.critical_illness": "Critical Illness",
+  "workshop.summary.crisisStress.scenario.job_loss": "Income Loss",
+  "workshop.summary.crisisStress.scenario.market_crash": "Market Drawdown",
+  "workshop.summary.crisisStress.scenario.accident": "Accident",
+  "workshop.summary.crisisStress.shieldedWithGoal":
+    "{scenario} simulated. Your protection absorbed {amount}. Your {goal} goal remains untouched.",
+  "workshop.summary.crisisStress.shieldedNoGoal":
+    "{scenario} simulated. Your protection absorbed {amount}. Your goals remain untouched.",
+  "workshop.summary.crisisStress.partialWithGoal":
+    "{scenario} simulated. Protection covered {shielded}, but {penetration} still hit your plan. Your {goal} goal may feel pressure.",
+  "workshop.summary.crisisStress.partialNoGoal":
+    "{scenario} simulated. Protection covered {shielded}, but {penetration} still hit your plan.",
+  "workshop.summary.crisisStress.penetratedWithGoal":
+    "Crisis simulated. {scenario} wiped out {amount}. Your {goal} goal is delayed by {years} years.",
+  "workshop.summary.crisisStress.penetratedNoGoal":
+    "Crisis simulated. {scenario} wiped out {amount}. Your plan took a direct hit.",
   "workshop.summary.actionGoalsAria": "Action goals",
   "workshop.summary.focusRank": "#{rank} focus · {category}",
   "workshop.summary.categories.protection": "Protection",
@@ -323,9 +536,9 @@ export const workshopEnMessages = {
   "workshop.summary.errorTitle": "Summary hit a snag",
   "workshop.summary.errorFallback":
     "Could not generate your rating and action goals. Please try again.",
-  "workshop.summary.needCrisis":
-    "Complete the crisis reveal first so we can score your plan.",
-  "workshop.summary.goToCrisis": "Go to crisis",
+  "workshop.summary.needEarlier":
+    "Complete the risk quiz first so we can score your plan.",
+  "workshop.summary.goToRiskQuiz": "Go to risk quiz",
   "workshop.summary.snagTitle": "Summary hit a snag",
   "workshop.summary.snagDescription":
     "We couldn’t finish your rating and action goals. Retry to continue.",
@@ -383,6 +596,8 @@ export const workshopEnMessages = {
   "workshop.ui.showDetails": "Show details",
   "workshop.ui.hideDetails": "Hide details",
 
+  "workshop.allocation.changed": "Changed",
+
   "workshop.pdf.title": "Your AI Financial Blueprint",
   "workshop.pdf.subtitle":
     "A structured workshop snapshot of your financial pyramid, stress test, and next actions.",
@@ -400,9 +615,32 @@ export const workshopEnMessages = {
     "Profit Pulse Ally · Workshop Pyramid Lab · For educational workshop use only — not regulated financial advice.",
   "workshop.pdf.pyramidSectionTitle": "Your pyramid",
   "workshop.pdf.ratingSectionTitle": "Financial rating",
+  "workshop.pdf.crisisStressHeading": "Crisis Stress Test",
+  "workshop.pdf.crisisStressAmounts":
+    "Shielded {shielded} · Penetrated {penetrated}",
+  "workshop.pdf.crisisStressAffectedGoal":
+    "Affected goal: {goal} (delay {years} years)",
+  "workshop.pdf.tradeOffsTitle": "Your Trade-Off Decisions",
+  "workshop.pdf.tradeOffsSecuredHeading": "Goals secured",
+  "workshop.pdf.tradeOffsSecuredWithLiquidation":
+    "{goal} (age {age}) — secured with investment liquidation allowed",
+  "workshop.pdf.tradeOffsSecuredNoLiquidation":
+    "{goal} (age {age}) — secured without liquidating investments",
+  "workshop.pdf.tradeOffsDeprioritizedHeading": "Goals deliberately deprioritized",
+  "workshop.pdf.tradeOffsDeprioritizedLine":
+    "{goal} (age {age}) — set aside to protect higher priorities",
+  "workshop.pdf.tradeOffsSqueezesHeading": "Monthly squeezes accepted",
+  "workshop.pdf.tradeOffsSqueezeLine": "{category}: −{amount}/mo",
+  "workshop.pdf.tradeOffsCategoryFun": "Fun spending",
+  "workshop.pdf.tradeOffsCategoryDiscretionary": "Discretionary spending",
   "workshop.pdf.goalsSectionTitle": "Goal progress",
   "workshop.pdf.riskAllocationTitle": "Risk allocation",
   "workshop.pdf.crisisSectionTitle": "Crisis summary",
+  "workshop.pdf.planDecisionsTitle": "Your Plan Decisions",
+  "workshop.pdf.planDecisionsSummary":
+    "{onTime} goals achieved on time, {delayed} delayed, {givenUp} given up",
+  "workshop.pdf.planDecisionsMonthly":
+    "Monthly plan after squeezes: {before}/mo → {after}/mo",
   "workshop.pdf.actionGoalsTitle": "Your 3 action goals",
   "workshop.pdf.ratingUnavailable": "Rating not available.",
   "workshop.pdf.notReached": "Not reached",
@@ -418,7 +656,36 @@ export const workshopEnMessages = {
   "workshop.pdf.ageIndustry": "Age {age} · {industry}",
   "workshop.pdf.crisisStats":
     "Income hit −{percent}% · One-time {amount} · {months} months · Profile {profile}",
-  "workshop.pdf.investPerMonth": "{amount}/mo invest",
+  "workshop.pdf.crisisCoverageLine":
+    "Protection covered {covered} of {gross} (uncovered {uncovered})",
+  "workshop.pdf.retirementSectionTitle": "Retirement snapshot",
+  "workshop.pdf.realTermsCaption":
+    "All figures in today's purchasing power",
+  "workshop.pdf.retirementAgeLine": "Retirement age: {age}",
+  "workshop.pdf.retirementPassiveLine":
+    "Passive income at retirement: {amount}/yr",
+  "workshop.pdf.retirementAssetsLine": "Assets at retirement: {amount}",
+  "workshop.pdf.retirementDepletedLine": "Assets run out at age {age}",
+  "workshop.pdf.retirementSustainedLine":
+    "Assets sustained past age 90 in this model",
+  "workshop.pdf.retirementCoverageLine":
+    "Passive coverage at retirement: {percent}% of that year’s expenses",
+  "workshop.pdf.retirementNestEggMet":
+    "Nest-egg target {target} — projected {projected} (met)",
+  "workshop.pdf.retirementNestEggGap":
+    "Nest-egg target {target} — projected {projected} (gap {gap})",
+  "workshop.pdf.lumpSumLine": "Invested capital (lump sum): {amount}",
+  "workshop.pdf.returnBandsDisplay":
+    "Display bands (educational): Low ~1–3% · Mid ~8–12% · High ~20–40%",
+  "workshop.pdf.returnAssumptionsDisclaimer":
+    "Projections use conservative blended assumptions (2% / 6% / 10%), not the top of these ranges.",
+  "workshop.pdf.efOversavedNote":
+    "Emergency fund oversaved: {excess} excess could grow to ≈ {opportunity} by retirement if invested.",
+  "workshop.pdf.goalInflatedAttained": "Inflated target {amount} · {attained}",
+  "workshop.pdf.goalAttainedAge": "reached at age {age}",
+  "workshop.pdf.retirementTargetLine":
+    "Target: {target} — projected {projected}",
+  "workshop.pdf.investPerMonth": "{amount} invested",
   "workshop.pdf.protectionDetail": "{percent}% · CI {amount}",
   "workshop.pdf.impactMonths": "{n} mo",
 

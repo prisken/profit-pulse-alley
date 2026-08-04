@@ -9,9 +9,13 @@ const sampleLead: WorkshopAdminLeadRow = {
   email: "alex@example.com",
   phone: "+85212345678",
   selectedGoal: 'Rebuild foundation after "layoff"',
+  stressTestVerdict: "PENETRATED",
+  profileBehaviorMismatch: true,
   createdAt: "2026-08-04T02:00:00.000Z",
   industry: "Tech",
   age: 34,
+  retirementAge: 65,
+  assetsDepletedAtAge: 82,
   weakestLayer: "foundation",
   riskProfile: "balanced",
   ratingScore: 62,
@@ -22,25 +26,32 @@ describe("buildWorkshopLeadsCsv", () => {
     const csv = buildWorkshopLeadsCsv([sampleLead]);
     expect(
       csv.startsWith(
-        "createdAt,name,email,phone,industry,age,weakestLayer,riskProfile,ratingScore,selectedGoal",
+        "createdAt,name,email,phone,industry,age,retirementAge,assetsDepletedAtAge,weakestLayer,riskProfile,ratingScore,selectedGoal,stressTestVerdict,profileBehaviorMismatch",
       ),
     ).toBe(true);
     expect(csv).toContain("Alex Chan");
+    expect(csv).toContain(",65,82,");
     expect(csv).toContain("foundation");
     expect(csv).toContain("balanced");
     expect(csv).toContain(",62,");
     expect(csv).toContain('"Rebuild foundation after ""layoff"""');
+    expect(csv).toContain("PENETRATED");
+    expect(csv).toContain(",true");
   });
 
-  it("exports empty risk profile and rating when missing", () => {
+  it("exports empty retirement/depletion/risk/rating when missing", () => {
     const csv = buildWorkshopLeadsCsv([
       {
         ...sampleLead,
+        retirementAge: null,
+        assetsDepletedAtAge: null,
         riskProfile: null,
         ratingScore: null,
         selectedGoal: "Top up CI",
+        stressTestVerdict: null,
+        profileBehaviorMismatch: null,
       },
     ]);
-    expect(csv).toContain(",foundation,,,Top up CI");
+    expect(csv).toContain(",34,,,foundation,,,Top up CI,,");
   });
 });

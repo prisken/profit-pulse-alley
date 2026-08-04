@@ -52,24 +52,28 @@ const FLAG_PILL: Record<LayerFlag, string> = {
 const RISK_SLIDERS: Array<{
   key: RiskAllocationKey;
   labelKey: MessageKey;
+  bandHintKey: MessageKey;
   accent: WorkshopRangeAccent;
   bar: string;
 }> = [
   {
     key: "low",
     labelKey: "workshop.pyramid.investment.lowLabel",
+    bandHintKey: "workshop.pyramid.investment.lowBandHint",
     accent: "sky",
     bar: "bg-sky-400",
   },
   {
     key: "mid",
     labelKey: "workshop.pyramid.investment.midLabel",
+    bandHintKey: "workshop.pyramid.investment.midBandHint",
     accent: "amber",
     bar: "bg-amber-400",
   },
   {
     key: "high",
     labelKey: "workshop.pyramid.investment.highLabel",
+    bandHintKey: "workshop.pyramid.investment.highBandHint",
     accent: "emerald",
     bar: "bg-emerald-500",
   },
@@ -79,15 +83,37 @@ type InvestmentLayerEditorProps = Readonly<{
   value: InvestmentLayer;
   onChange: (next: InvestmentLayer) => void;
   age: number;
+  /** Gross monthly income — enables surplus helper / amber warning. */
+  monthlyIncomeHKD?: number;
+  /**
+   * Confirmed monthly expenses total. When omitted, surplus helper line is hidden
+   * (pyramid step runs before expenses are confirmed).
+   */
+  monthlyExpensesHKD?: number;
   status?: LayerFlag;
   rationale?: Bilingual | string;
   disabled?: boolean;
 }>;
 
+function patchInvestment(
+  value: InvestmentLayer,
+  patch: Partial<InvestmentLayer>,
+): InvestmentLayer {
+  return {
+    riskAllocation: patch.riskAllocation ?? value.riskAllocation,
+    lumpSumHKD: patch.lumpSumHKD ?? value.lumpSumHKD,
+    monthlyInvestmentHKD:
+      patch.monthlyInvestmentHKD ?? value.monthlyInvestmentHKD,
+    monthlyFunHKD: patch.monthlyFunHKD ?? value.monthlyFunHKD,
+  };
+}
+
 export default function InvestmentLayerEditor({
   value,
   onChange,
   age,
+  monthlyIncomeHKD,
+  monthlyExpensesHKD,
   status,
   rationale,
   disabled = false,
@@ -96,20 +122,36 @@ export default function InvestmentLayerEditor({
   const benchmark = getRiskAllocationBenchmark(age);
   const risk = value.riskAllocation;
 
+  const expensesConfirmed =
+    monthlyExpensesHKD != null && Number.isFinite(monthlyExpensesHKD);
+  const availableSurplus =
+    monthlyIncomeHKD != null &&
+    Number.isFinite(monthlyIncomeHKD) &&
+    expensesConfirmed
+      ? Math.round(
+          Math.max(0, monthlyIncomeHKD) -
+            Math.max(0, monthlyExpensesHKD) -
+            Math.max(0, value.monthlyFunHKD),
+        )
+      : null;
+  const overSurplus =
+    availableSurplus != null && value.monthlyInvestmentHKD > availableSurplus;
+
   function updateRisk(key: RiskAllocationKey, nextValue: number) {
-    onChange({
-      ...value,
-      riskAllocation: redistributeRiskAllocation(risk, key, nextValue),
-    });
+    onChange(
+      patchInvestment(value, {
+        riskAllocation: redistributeRiskAllocation(risk, key, nextValue),
+      }),
+    );
   }
 
   function nudgeRisk(key: RiskAllocationKey, delta: number) {
     updateRisk(key, risk[key] + delta);
   }
 
-  const summaryValue = t("workshop.pyramid.investment.perMonth").replace(
+  const summaryValue = t("workshop.pyramid.investment.lumpSumSummary").replace(
     "{amount}",
-    formatHkd(value.monthlyInvestmentHKD),
+    formatHkd(value.lumpSumHKD),
   );
   const rationaleText =
     rationale == null || rationale === ""
@@ -153,6 +195,34 @@ export default function InvestmentLayerEditor({
             {rationaleText}
           </p>
         ) : null}
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3.5 sm:px-4">
+          <WorkshopNumberField
+            id="workshop-monthly-investing"
+            variant="currency"
+            label={t("workshop.pyramid.investment.monthlyInvesting.label")}
+            min={0}
+            disabled={disabled}
+            value={value.monthlyInvestmentHKD}
+            enterKeyHint="next"
+            onChange={(monthlyInvestmentHKD) =>
+              onChange(patchInvestment(value, { monthlyInvestmentHKD }))
+            }
+          />
+          {availableSurplus != null ? (
+            <p className="mt-1.5 text-[11px] leading-snug text-slate-500">
+              {t("workshop.pyramid.investment.monthlyInvesting.helper").replace(
+                "{amount}",
+                formatHkd(availableSurplus),
+              )}
+            </p>
+          ) : null}
+          {overSurplus ? (
+            <p className="mt-1.5 text-[11px] leading-snug text-amber-800">
+              {t("workshop.pyramid.investment.monthlyInvesting.amberWarning")}
+            </p>
+          ) : null}
+        </div>
 
         <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3.5 sm:px-4">
           <div>
@@ -258,10 +328,17 @@ export default function InvestmentLayerEditor({
                   <p className="mt-1 hidden text-right font-mono text-sm tabular-nums text-emerald-700 min-[400px]:block">
                     {risk[slider.key]}%
                   </p>
+                  <p className="mt-1 text-[11px] leading-snug text-slate-500">
+                    {t(slider.bandHintKey)}
+                  </p>
                 </div>
               );
             })}
           </div>
+
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            {t("workshop.pyramid.investment.returnBandsDisclaimer")}
+          </p>
 
           <p className="font-mono text-[11px] tabular-nums text-slate-500">
             {t("workshop.pyramid.investment.total").replace(
@@ -276,23 +353,20 @@ export default function InvestmentLayerEditor({
             <WorkshopStatCard
               icon="Rocket"
               label={t("workshop.pyramid.investment.investCardLabel")}
-              value={formatHkd(value.monthlyInvestmentHKD)}
+              value={formatHkd(value.lumpSumHKD)}
               subtext={t("workshop.pyramid.investment.investSubtext")}
             />
             <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3.5 sm:px-4">
               <WorkshopNumberField
-                id="workshop-monthly-invest"
+                id="workshop-lump-sum"
                 variant="currency"
-                label={t("workshop.pyramid.investment.monthlyInvestmentLabel")}
+                label={t("workshop.pyramid.investment.lumpSumLabel")}
                 min={0}
                 disabled={disabled}
-                value={value.monthlyInvestmentHKD}
+                value={value.lumpSumHKD}
                 enterKeyHint="next"
-                onChange={(monthlyInvestmentHKD) =>
-                  onChange({
-                    ...value,
-                    monthlyInvestmentHKD,
-                  })
+                onChange={(lumpSumHKD) =>
+                  onChange(patchInvestment(value, { lumpSumHKD }))
                 }
               />
             </div>
@@ -315,12 +389,12 @@ export default function InvestmentLayerEditor({
                 value={value.monthlyFunHKD}
                 enterKeyHint="done"
                 onChange={(monthlyFunHKD) =>
-                  onChange({
-                    ...value,
-                    monthlyFunHKD,
-                  })
+                  onChange(patchInvestment(value, { monthlyFunHKD }))
                 }
               />
+              <p className="mt-1.5 text-[11px] leading-snug text-slate-500">
+                {t("workshop.pyramid.investment.funCrisisHint")}
+              </p>
             </div>
           </div>
         </div>

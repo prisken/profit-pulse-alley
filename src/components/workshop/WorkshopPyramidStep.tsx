@@ -92,6 +92,8 @@ type WorkshopPyramidStepProps = Readonly<{
   onChange: (next: PyramidState) => void;
   benchmarks: PyramidBenchmarkSnapshot;
   rationale: Bilingual | null;
+  protectionExplanation: Bilingual;
+  emergencyFundExplanation: Bilingual;
   age: number;
   monthlyIncomeHKD: number;
   industry: string;
@@ -105,9 +107,11 @@ export default function WorkshopPyramidStep({
   onChange,
   benchmarks,
   rationale,
+  protectionExplanation,
+  emergencyFundExplanation,
   age,
   monthlyIncomeHKD,
-  industry,
+  industry: _industry,
   onBack,
   onContinue,
 }: WorkshopPyramidStepProps) {
@@ -116,8 +120,11 @@ export default function WorkshopPyramidStep({
   const [isConfirming, startConfirmTransition] = useTransition();
 
   const layerFlags = useMemo(
-    () => computeLayerFlags(pyramid, benchmarks),
-    [pyramid, benchmarks],
+    () =>
+      computeLayerFlags(pyramid, benchmarks, {
+        monthlyIncomeHKD,
+      }),
+    [pyramid, benchmarks, monthlyIncomeHKD],
   );
 
   function handleConfirm() {
@@ -154,16 +161,17 @@ export default function WorkshopPyramidStep({
           onChange={(protection) => onChange({ ...pyramid, protection })}
           age={age}
           monthlyIncomeHKD={monthlyIncomeHKD}
+          ciBreakdown={benchmarks.ciBreakdown}
+          explanation={protectionExplanation}
           status={layerFlags.protection}
-          rationale={rationale ?? undefined}
           disabled={isConfirming}
         />
 
         <EmergencyFundLayerEditor
           value={pyramid.emergencyFund}
           onChange={(emergencyFund) => onChange({ ...pyramid, emergencyFund })}
-          industry={industry}
-          monthlyIncomeHKD={monthlyIncomeHKD}
+          efBreakdown={benchmarks.efBreakdown}
+          explanation={emergencyFundExplanation}
           status={layerFlags.emergencyFund}
           disabled={isConfirming}
         />
@@ -171,6 +179,7 @@ export default function WorkshopPyramidStep({
         <GoalsLayerEditor
           value={pyramid.goals}
           onChange={(goals) => onChange({ ...pyramid, goals })}
+          userAge={age}
           status={layerFlags.goals}
           disabled={isConfirming}
         />
@@ -179,6 +188,7 @@ export default function WorkshopPyramidStep({
           value={pyramid.investment}
           onChange={(investment) => onChange({ ...pyramid, investment })}
           age={age}
+          monthlyIncomeHKD={monthlyIncomeHKD}
           status={layerFlags.investment}
           disabled={isConfirming}
         />

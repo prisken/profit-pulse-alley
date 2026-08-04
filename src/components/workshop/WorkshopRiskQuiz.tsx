@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement, useState, useTransition } from "react";
+import { createElement, useEffect, useMemo, useState, useTransition } from "react";
 import { icons, type LucideIcon } from "lucide-react";
 
 import {
@@ -8,20 +8,53 @@ import {
 } from "@/components/workshop/WorkshopErrorBoundary";
 import WorkshopStickyFooter from "@/components/workshop/WorkshopStickyFooter";
 import { useTranslations } from "@/components/providers/LocaleProvider";
-import { saveRiskQuizAction } from "@/lib/workshop/pyramid-actions";
+import type { MessageKey } from "@/lib/i18n/messages";
+import {
+  loadGoalJourneyAction,
+  saveRiskQuizAction,
+} from "@/lib/workshop/pyramid-actions";
 import {
   RISK_QUIZ_QUESTIONS,
   computeRiskProfile,
   type RiskQuizChoiceId,
 } from "@/lib/workshop/risk-quiz";
-import type { RiskQuizAnswer, RiskProfile } from "@/lib/workshop/types";
+import { deriveRiskQuizJourneyConsistency } from "@/lib/workshop/risk-quiz-consistency";
+import type {
+  GoalJourneyState,
+  RiskQuizAnswer,
+  RiskProfile,
+} from "@/lib/workshop/types";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white";
 
+const PROFILE_LABEL_KEYS: Record<RiskProfile, MessageKey> = {
+  conservative: "workshop.riskProfile.labels.conservative",
+  balanced: "workshop.riskProfile.labels.balanced",
+  aggressive: "workshop.riskProfile.labels.aggressive",
+};
+
 function resolveIcon(name: string): LucideIcon {
   const Icon = icons[name as keyof typeof icons];
   return Icon ?? icons.Circle;
+}
+
+function formatConsistencyMessage(
+  t: (key: MessageKey) => string,
+  result: NonNullable<ReturnType<typeof deriveRiskQuizJourneyConsistency>>,
+): string {
+  let message = t(result.messageKey);
+  for (const [key, value] of Object.entries(result.vars)) {
+    if (key === "profileKey" && typeof value === "string") {
+      message = message.replace(
+        "{profile}",
+        t(value as MessageKey),
+      );
+      continue;
+    }
+    message = message.replace(`{${key}}`, String(value));
+  }
+  return message;
 }
 
 type WorkshopRiskQuizProps = Readonly<{
@@ -33,6 +66,12 @@ type WorkshopRiskQuizProps = Readonly<{
     profile: RiskProfile;
   }) => void;
 }>;
+
+type QuizResult = {
+  answers: RiskQuizAnswer[];
+  score: number;
+  profile: RiskProfile;
+};
 
 export default function WorkshopRiskQuiz({
   sessionId,
@@ -46,11 +85,39 @@ export default function WorkshopRiskQuiz({
   >({});
   const [error, setError] = useState<string | null>(null);
   const [isSaving, startSaveTransition] = useTransition();
+  const [result, setResult] = useState<QuizResult | null>(null);
+  const [journey, setJourney] = useState<GoalJourneyState | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const loaded = await loadGoalJourneyAction(sessionId);
+        if (!cancelled) {
+          setJourney(loaded);
+        }
+      } catch {
+        if (!cancelled) {
+          setJourney(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
   const question = RISK_QUIZ_QUESTIONS[stepIndex]!;
   const prompt = t(question.promptKey);
   const selected = choices[question.id];
   const isLast = stepIndex === RISK_QUIZ_QUESTIONS.length - 1;
+
+  const consistency = useMemo(() => {
+    if (!result) {
+      return null;
+    }
+    return deriveRiskQuizJourneyConsistency(result.profile, journey);
+  }, [result, journey]);
 
   function selectChoice(choiceId: RiskQuizChoiceId) {
     setChoices((prev) => ({ ...prev, [question.id]: choiceId }));
@@ -58,6 +125,10 @@ export default function WorkshopRiskQuiz({
   }
 
   function handleBack() {
+    if (result) {
+      setResult(null);
+      return;
+    }
     if (stepIndex === 0) {
       onBack();
       return;
@@ -76,6 +147,10 @@ export default function WorkshopRiskQuiz({
   }
 
   function handleNext() {
+    if (result) {
+      onContinue(result);
+      return;
+    }
     if (!selected) {
       return;
     }
@@ -95,7 +170,7 @@ export default function WorkshopRiskQuiz({
           score,
           profile,
         });
-        onContinue({ answers, score, profile });
+        setResult({ answers, score, profile });
       } catch (err) {
         setError(
           err instanceof Error
@@ -117,6 +192,45 @@ export default function WorkshopRiskQuiz({
     );
   }
 
+  if (result) {
+    return (
+      <div className="min-w-0 space-y-6 sm:space-y-7">
+        <div
+          className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-5 text-center"
+          data-testid="workshop-risk-quiz-result"
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-800">
+            {t("workshop.riskQuiz.resultHeading")}
+          </p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+            {t(PROFILE_LABEL_KEYS[result.profile])}
+          </p>
+          <p className="mt-1 text-sm text-slate-600">
+            {t("workshop.riskQuiz.resultScore").replace(
+              "{score}",
+              String(result.score),
+            )}
+          </p>
+          {consistency ? (
+            <p
+              className="mt-4 text-sm leading-relaxed text-slate-700"
+              data-testid="workshop-risk-quiz-consistency"
+            >
+              {formatConsistencyMessage(t, consistency)}
+            </p>
+          ) : null}
+        </div>
+
+        <WorkshopStickyFooter
+          primaryLabel={t("workshop.riskQuiz.continueButton")}
+          onPrimaryClick={handleNext}
+          secondaryLabel={t("workshop.errors.backButton")}
+          onSecondaryClick={handleBack}
+        />
+      </div>
+    );
+  }
+
   const progressLabel = t("workshop.riskQuiz.progressLabel").replace(
     "{n}",
     String(stepIndex + 1),
@@ -124,6 +238,10 @@ export default function WorkshopRiskQuiz({
 
   return (
     <div className="min-w-0 space-y-6 sm:space-y-7">
+      <p className="text-center text-sm leading-relaxed text-slate-600">
+        {t("workshop.riskQuiz.bridgeIntro")}
+      </p>
+
       <div
         className="flex items-center justify-center gap-2"
         aria-label={progressLabel}

@@ -42,6 +42,33 @@ describe("getRiskAllocationBenchmark", () => {
   });
 });
 
+describe("buildPyramidBenchmarks breakdowns", () => {
+  it("exposes ciBreakdown matching criticalIllnessAmountHKD", () => {
+    const snap = buildPyramidBenchmarks({
+      age: 35,
+      monthlyIncomeHKD: 40_000,
+      industry: "Tech",
+    });
+    expect(snap.ciBreakdown.annualIncomeHKD).toBe(480_000);
+    expect(snap.ciBreakdown.recommendedHKD).toBe(snap.criticalIllnessAmountHKD);
+    expect(snap.ciBreakdown.recommendedHKD).toBe(
+      Math.round(snap.ciBreakdown.annualIncomeHKD * snap.ciBreakdown.multiple),
+    );
+  });
+
+  it("exposes efBreakdown matching emergencyFundTargetHKD (income-based)", () => {
+    const snap = buildPyramidBenchmarks({
+      age: 35,
+      monthlyIncomeHKD: 40_000,
+      industry: "Tech",
+    });
+    expect(snap.efBreakdown.targetMonths).toBe(snap.emergencyFundTargetMonths);
+    expect(snap.efBreakdown.recommendedHKD).toBe(snap.emergencyFundTargetHKD);
+    expect(snap.efBreakdown.monthlyIncomeHKD).toBe(40_000);
+    expect(snap.efBreakdown.industryKey).toBe("Tech");
+  });
+});
+
 describe("getEmergencyFundTargetMonths", () => {
   it("is higher for self-employed than civil service", () => {
     const selfEmployed = getEmergencyFundTargetMonths("Self-Employed");
@@ -86,20 +113,25 @@ describe("computeLayerFlags", () => {
           icon: "Heart",
           label: bilingualBoth("Wedding"),
           targetAmountHKD: 200_000,
+          targetAge: 40,
           targetYear: 2028,
+          goalType: "spend",
         },
         {
           id: "retire",
           icon: "PiggyBank",
           label: bilingualBoth("Retirement seed"),
           targetAmountHKD: 1_000_000,
+          targetAge: 40,
           targetYear: 2055,
+          goalType: "spend",
         },
       ],
     },
     investment: {
       riskAllocation: { low: 20, mid: 30, high: 50 },
-      monthlyInvestmentHKD: 5_000,
+      lumpSumHKD: 5_000,
+      monthlyInvestmentHKD: 4_000,
       monthlyFunHKD: 1_000,
     },
   });
@@ -124,6 +156,7 @@ describe("computeLayerFlags", () => {
         goals: { goals: [] },
         investment: {
           riskAllocation: { low: 20, mid: 30, high: 50 },
+          lumpSumHKD: 0,
           monthlyInvestmentHKD: 0,
           monthlyFunHKD: 0,
         },
@@ -134,5 +167,28 @@ describe("computeLayerFlags", () => {
     expect(weak.emergencyFund).toBe("red");
     expect(weak.goals).toBe("red");
     expect(weak.investment).toBe("red");
+  });
+
+  it("flags amber when monthly investing exceeds available surplus", () => {
+    const benchmarks = buildPyramidBenchmarks({
+      age: 32,
+      monthlyIncomeHKD: 40_000,
+      industry: "Tech",
+    });
+    // income 40k − expenses 30k − fun 1k = 9k surplus; investing 15k → amber
+    const flags = computeLayerFlags(
+      {
+        ...basePyramid(),
+        investment: {
+          riskAllocation: { low: 20, mid: 30, high: 50 },
+          lumpSumHKD: 50_000,
+          monthlyInvestmentHKD: 15_000,
+          monthlyFunHKD: 1_000,
+        },
+      },
+      benchmarks,
+      { monthlyIncomeHKD: 40_000, monthlyExpensesHKD: 30_000 },
+    );
+    expect(flags.investment).toBe("amber");
   });
 });

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { requireAdminSession } from "@/lib/market-pulse/admin-auth";
+import { parseMacroResultJson } from "@/lib/workshop/macro-result";
 import { prisma } from "@/lib/prisma";
 import type { RiskProfile } from "@/lib/workshop/types";
 
@@ -10,9 +11,13 @@ export type WorkshopAdminLeadRow = {
   email: string;
   phone: string;
   selectedGoal: string | null;
+  stressTestVerdict: string | null;
+  profileBehaviorMismatch: boolean | null;
   createdAt: string;
   industry: string;
   age: number;
+  retirementAge: number | null;
+  assetsDepletedAtAge: number | null;
   weakestLayer: string | null;
   riskProfile: RiskProfile | null;
   ratingScore: number | null;
@@ -66,6 +71,14 @@ function parseRatingScore(value: unknown): number | null {
   return null;
 }
 
+function parseAssetsDepletedAtAge(macroResultJson: unknown): number | null {
+  const parsed = parseMacroResultJson(macroResultJson);
+  if (parsed?.kind !== "lifeTimeline") {
+    return null;
+  }
+  return parsed.timeline.retirement.assetsDepletedAtAge;
+}
+
 export type WorkshopAdminListData = {
   adminEmail: string;
   leads: WorkshopAdminLeadRow[];
@@ -88,15 +101,19 @@ export async function getWorkshopAdminLeadsData(): Promise<WorkshopAdminListData
       email: true,
       phone: true,
       selectedGoal: true,
+      stressTestVerdict: true,
+      profileBehaviorMismatch: true,
       createdAt: true,
       session: {
         select: {
           industry: true,
           age: true,
+          retirementAge: true,
           finalPyramidJson: true,
           aiPyramidJson: true,
           riskQuizJson: true,
           goalsJson: true,
+          macroResultJson: true,
         },
       },
     },
@@ -110,9 +127,15 @@ export async function getWorkshopAdminLeadsData(): Promise<WorkshopAdminListData
       email: lead.email,
       phone: lead.phone,
       selectedGoal: lead.selectedGoal,
+      stressTestVerdict: lead.stressTestVerdict ?? null,
+      profileBehaviorMismatch: lead.profileBehaviorMismatch ?? null,
       createdAt: lead.createdAt.toISOString(),
       industry: lead.session.industry,
       age: lead.session.age,
+      retirementAge: lead.session.retirementAge ?? null,
+      assetsDepletedAtAge: parseAssetsDepletedAtAge(
+        lead.session.macroResultJson,
+      ),
       weakestLayer:
         parseWeakestLayer(lead.session.finalPyramidJson) ??
         parseWeakestLayer(lead.session.aiPyramidJson),

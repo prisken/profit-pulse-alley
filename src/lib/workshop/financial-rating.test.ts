@@ -2,11 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import { bilingualBoth } from "@/lib/workshop/bilingual";
 import {
+  GIVEN_UP_GOAL_CREDIT,
+  GOALS_RETIREMENT_BLEND,
+  OVERSAVED_EF_SCORE,
   RATING_WEIGHTS,
   computeFinancialRating,
   computeGoalImpactPoints,
+  scoreRetirementReadiness,
 } from "@/lib/workshop/financial-rating";
+import type { TimelineResult } from "@/lib/workshop/timeline-engine";
 import type {
+  CrisisImpactResult,
   CrisisState,
   PyramidState,
   StressTestResult,
@@ -27,13 +33,16 @@ const strongPyramid: PyramidState = {
         icon: "Heart",
         label: bilingualBoth("Wedding"),
         targetAmountHKD: 200_000,
+        targetAge: 40,
         targetYear: nowYear + 3,
+        goalType: "spend",
       },
     ],
   },
   investment: {
     riskAllocation: { low: 40, mid: 40, high: 20 },
-    monthlyInvestmentHKD: 8_000,
+    lumpSumHKD: 8_000,
+    monthlyInvestmentHKD: 5_000,
     monthlyFunHKD: 2_000,
   },
 };
@@ -51,19 +60,24 @@ const weakPyramid: PyramidState = {
         icon: "Home",
         label: bilingualBoth("Home"),
         targetAmountHKD: 2_000_000,
+        targetAge: 40,
         targetYear: nowYear + 5,
+        goalType: "spend",
       },
       {
         id: "edu",
         icon: "GraduationCap",
         label: bilingualBoth("Education"),
         targetAmountHKD: 800_000,
+        targetAge: 40,
         targetYear: nowYear + 8,
+        goalType: "spend",
       },
     ],
   },
   investment: {
     riskAllocation: { low: 80, mid: 15, high: 5 },
+    lumpSumHKD: 0,
     monthlyInvestmentHKD: 0,
     monthlyFunHKD: 0,
   },
@@ -136,13 +150,41 @@ const weakStress: StressTestResult = {
   ],
 };
 
+function makeImpactResult(
+  partial: Partial<CrisisImpactResult>,
+): CrisisImpactResult {
+  return {
+    crisisType: "job_loss",
+    coverage: null,
+    cutOrder: {
+      funAbsorbedHKD: 0,
+      discretionaryAbsorbedHKD: 0,
+      liquidAbsorbedHKD: 0,
+      investedAbsorbedHKD: 0,
+      remainingUncoveredHKD: 0,
+    },
+    marketDropHKD: 0,
+    incomeHitPct: 10,
+    durationMonths: 3,
+    oneTimeCostHKD: 20_000,
+    efStatusBefore: "green",
+    efStatusAfter: "green",
+    assetsDepletedAtAgeBefore: null,
+    assetsDepletedAtAgeAfter: null,
+    goalDelays: [],
+    ...partial,
+  };
+}
+
 const mildCrisis: CrisisState = {
+  crisisType: "job_loss",
   title: bilingualBoth("Mild industry soft patch"),
   description: bilingualBoth("A short, contained income dip."),
   riskProfile: "balanced",
   monthlyIncomeImpactPercent: 10,
   oneTimeCostHKD: 20_000,
   durationMonths: 3,
+  incomeHitPct: 10,
   impacts: [
     {
       layer: "investment",
@@ -157,15 +199,28 @@ const mildCrisis: CrisisState = {
       detailMonths: 6,
     },
   ],
+  impactResult: makeImpactResult({
+    crisisType: "job_loss",
+    incomeHitPct: 10,
+    cutOrder: {
+      funAbsorbedHKD: 5_000,
+      discretionaryAbsorbedHKD: 0,
+      liquidAbsorbedHKD: 0,
+      investedAbsorbedHKD: 0,
+      remainingUncoveredHKD: 0,
+    },
+  }),
 };
 
 const severeCrisis: CrisisState = {
+  crisisType: "critical_illness",
   title: bilingualBoth("Full-stack shock"),
   description: bilingualBoth("Income, health, and liquidity all hit at once."),
   riskProfile: "conservative",
   monthlyIncomeImpactPercent: 90,
   oneTimeCostHKD: 500_000,
   durationMonths: 18,
+  incomeHitPct: 90,
   impacts: [
     {
       layer: "protection",
@@ -192,7 +247,57 @@ const severeCrisis: CrisisState = {
       detailMonths: 36,
     },
   ],
+  impactResult: makeImpactResult({
+    crisisType: "critical_illness",
+    incomeHitPct: 90,
+    oneTimeCostHKD: 500_000,
+    coverage: {
+      grossCostHKD: 500_000,
+      coveredHKD: 0,
+      uncoveredHKD: 500_000,
+      coverageKind: "critical_illness",
+      ciAmountHKD: 0,
+    },
+    cutOrder: {
+      funAbsorbedHKD: 10_000,
+      discretionaryAbsorbedHKD: 20_000,
+      liquidAbsorbedHKD: 100_000,
+      investedAbsorbedHKD: 200_000,
+      remainingUncoveredHKD: 170_000,
+    },
+  }),
 };
+
+function makeTimeline(partial?: Partial<TimelineResult>): TimelineResult {
+  return {
+    rows: [],
+    goals: [
+      {
+        goalId: "wedding",
+        goalType: "spend",
+        targetAge: 40,
+        inflatedTargetHKD: 220_000,
+        attainedAtAge: 38,
+        status: "green",
+      },
+    ],
+    retirementTargets: [],
+    emergencyFund: {
+      status: "green",
+      targetHKD: 180_000,
+      targetMonths: 6,
+    },
+    retirement: {
+      retirementAge: 65,
+      passiveIncomeAtRetirement: 48_000,
+      assetsAtRetirement: 2_000_000,
+      assetsDepletedAtAge: null,
+    },
+    blendedRate: 0.06,
+    engineRevision: 2,
+    ...partial,
+  };
+}
 
 describe("RATING_WEIGHTS", () => {
   it("sums to 1.0", () => {
@@ -205,6 +310,27 @@ describe("RATING_WEIGHTS", () => {
   });
 });
 
+describe("scoreRetirementReadiness", () => {
+  it("scores 100 when assets never deplete", () => {
+    expect(scoreRetirementReadiness(makeTimeline())).toBe(100);
+  });
+
+  it("penalises early depletion", () => {
+    expect(
+      scoreRetirementReadiness(
+        makeTimeline({
+          retirement: {
+            retirementAge: 65,
+            passiveIncomeAtRetirement: 0,
+            assetsAtRetirement: 100_000,
+            assetsDepletedAtAge: 68,
+          },
+        }),
+      ),
+    ).toBe(20);
+  });
+});
+
 describe("computeFinancialRating", () => {
   it("scores near 100 for strong protection, funded EF, green goals, mild crisis", () => {
     const rating = computeFinancialRating({
@@ -212,6 +338,7 @@ describe("computeFinancialRating", () => {
       benchmarks: strongBenchmarks,
       stressTest: strongStress,
       crisis: mildCrisis,
+      timeline: makeTimeline(),
     });
 
     expect(rating.breakdown.protection).toBeGreaterThanOrEqual(95);
@@ -220,66 +347,216 @@ describe("computeFinancialRating", () => {
     expect(rating.score).toBeGreaterThanOrEqual(85);
     expect(rating.labelKey).toBe("strongFoundation");
     expect(rating).not.toHaveProperty("label");
-    expect(typeof (rating as { label?: unknown }).label).toBe("undefined");
   });
 
-  it("scores low with no protection, no emergency fund, red goals, and all-layer crisis", () => {
+  it("scores oversaved EF as a mild deduction (better than red)", () => {
+    const oversaved = computeFinancialRating({
+      pyramid: {
+        ...strongPyramid,
+        emergencyFund: { savedAmountHKD: 500_000 },
+      },
+      benchmarks: strongBenchmarks,
+      stressTest: strongStress,
+      crisis: mildCrisis,
+      timeline: makeTimeline({
+        emergencyFund: {
+          status: "oversaved",
+          targetHKD: 180_000,
+          targetMonths: 6,
+          excessHKD: 200_000,
+          opportunityCostHKD: 100_000,
+        },
+      }),
+    });
+    expect(oversaved.breakdown.emergencyFund).toBe(OVERSAVED_EF_SCORE);
+
+    const redEf = computeFinancialRating({
+      pyramid: weakPyramid,
+      benchmarks: weakBenchmarks,
+      stressTest: weakStress,
+      crisis: severeCrisis,
+      timeline: makeTimeline({
+        goals: [
+          {
+            goalId: "home",
+            goalType: "spend",
+            targetAge: 40,
+            inflatedTargetHKD: 2_000_000,
+            attainedAtAge: null,
+            status: "red",
+          },
+        ],
+        emergencyFund: {
+          status: "red",
+          targetHKD: 180_000,
+          targetMonths: 6,
+        },
+      }),
+    });
+    expect(oversaved.breakdown.emergencyFund).toBeGreaterThan(
+      redEf.breakdown.emergencyFund,
+    );
+  });
+
+  it("rewards high coverage offset and no invested liquidation in crisisResilience", () => {
+    const covered = computeFinancialRating({
+      pyramid: strongPyramid,
+      benchmarks: strongBenchmarks,
+      stressTest: strongStress,
+      crisis: {
+        ...mildCrisis,
+        crisisType: "medical",
+        impactResult: makeImpactResult({
+          crisisType: "medical",
+          incomeHitPct: 0,
+          coverage: {
+            grossCostHKD: 100_000,
+            coveredHKD: 80_000,
+            uncoveredHKD: 20_000,
+            coverageKind: "medical_percent",
+            medicalCoveragePercent: 80,
+          },
+          cutOrder: {
+            funAbsorbedHKD: 20_000,
+            discretionaryAbsorbedHKD: 0,
+            liquidAbsorbedHKD: 0,
+            investedAbsorbedHKD: 0,
+            remainingUncoveredHKD: 0,
+          },
+        }),
+      },
+      timeline: makeTimeline(),
+    });
+
+    expect(covered.breakdown.crisisResilience).toBeGreaterThan(
+      computeFinancialRating({
+        pyramid: weakPyramid,
+        benchmarks: weakBenchmarks,
+        stressTest: weakStress,
+        crisis: severeCrisis,
+        timeline: makeTimeline({
+          goals: [
+            {
+              goalId: "home",
+              goalType: "spend",
+              targetAge: 40,
+              inflatedTargetHKD: 2_000_000,
+              attainedAtAge: null,
+              status: "red",
+            },
+          ],
+          emergencyFund: { status: "red", targetHKD: 180_000, targetMonths: 6 },
+        }),
+      }).breakdown.crisisResilience,
+    );
+  });
+
+  it("scores low with no protection, no emergency fund, red goals, and harsh crisis", () => {
     const rating = computeFinancialRating({
       pyramid: weakPyramid,
       benchmarks: weakBenchmarks,
       stressTest: weakStress,
       crisis: severeCrisis,
+      timeline: makeTimeline({
+        goals: [
+          {
+            goalId: "home",
+            goalType: "spend",
+            targetAge: 40,
+            inflatedTargetHKD: 2_000_000,
+            attainedAtAge: null,
+            status: "red",
+          },
+          {
+            goalId: "edu",
+            goalType: "spend",
+            targetAge: 45,
+            inflatedTargetHKD: 800_000,
+            attainedAtAge: null,
+            status: "red",
+          },
+        ],
+        emergencyFund: { status: "red", targetHKD: 180_000, targetMonths: 6 },
+        retirement: {
+          retirementAge: 65,
+          passiveIncomeAtRetirement: 0,
+          assetsAtRetirement: 0,
+          assetsDepletedAtAge: 66,
+        },
+      }),
     });
 
     expect(rating.breakdown.protection).toBe(0);
     expect(rating.breakdown.emergencyFund).toBe(0);
-    expect(rating.breakdown.goalsOnTrack).toBe(0);
+    expect(rating.breakdown.goalsOnTrack).toBeLessThan(20);
     expect(rating.breakdown.crisisResilience).toBeLessThan(50);
     expect(rating.score).toBeLessThan(40);
     expect(rating.labelKey).toBe("needsAttention");
-    expect(rating).not.toHaveProperty("label");
   });
 
-  it("returns labelKey enum keys only — never a raw display label string", () => {
-    const strong = computeFinancialRating({
+  it("folds retirement readiness into goalsOnTrack (85/15 blend)", () => {
+    const sustained = computeFinancialRating({
       pyramid: strongPyramid,
       benchmarks: strongBenchmarks,
       stressTest: strongStress,
       crisis: mildCrisis,
+      timeline: makeTimeline({
+        goals: [
+          {
+            goalId: "wedding",
+            goalType: "spend",
+            targetAge: 40,
+            inflatedTargetHKD: 220_000,
+            attainedAtAge: 42,
+            status: "amber",
+          },
+        ],
+        retirement: {
+          retirementAge: 65,
+          passiveIncomeAtRetirement: 40_000,
+          assetsAtRetirement: 1_000_000,
+          assetsDepletedAtAge: null,
+        },
+      }),
     });
-    const weak = computeFinancialRating({
-      pyramid: weakPyramid,
-      benchmarks: weakBenchmarks,
-      stressTest: weakStress,
-      crisis: severeCrisis,
-    });
-    const mid = computeFinancialRating({
+    // amber goals = 50; retirement = 100 → 50*0.85 + 100*0.15 = 57.5 → 58
+    expect(sustained.breakdown.goalsOnTrack).toBe(
+      Math.round(
+        50 * GOALS_RETIREMENT_BLEND.goals +
+          100 * GOALS_RETIREMENT_BLEND.retirement,
+      ),
+    );
+
+    const earlyDeplete = computeFinancialRating({
       pyramid: strongPyramid,
       benchmarks: strongBenchmarks,
-      stressTest: {
-        ...strongStress,
-        goalProjections: strongStress.goalProjections.map((g) => ({
-          ...g,
-          status: "amber" as const,
-        })),
-      },
+      stressTest: strongStress,
       crisis: mildCrisis,
+      timeline: makeTimeline({
+        goals: [
+          {
+            goalId: "wedding",
+            goalType: "spend",
+            targetAge: 40,
+            inflatedTargetHKD: 220_000,
+            attainedAtAge: 42,
+            status: "amber",
+          },
+        ],
+        retirement: {
+          retirementAge: 65,
+          passiveIncomeAtRetirement: 0,
+          assetsAtRetirement: 50_000,
+          assetsDepletedAtAge: 68,
+        },
+      }),
     });
-
-    const allowed = new Set([
-      "needsAttention",
-      "goodRoomToGrow",
-      "strongFoundation",
-    ]);
-    for (const rating of [strong, weak, mid]) {
-      expect(allowed.has(rating.labelKey)).toBe(true);
-      // Display phrases like "Needs attention" must not appear as the return value.
-      expect(rating.labelKey.includes(" ")).toBe(false);
-      expect(Object.keys(rating)).not.toContain("label");
-    }
+    expect(earlyDeplete.breakdown.goalsOnTrack).toBeLessThan(
+      sustained.breakdown.goalsOnTrack,
+    );
   });
 
-  it("gives amber goals half credit on goalsOnTrack", () => {
+  it("gives amber goals half credit on the goals share of goalsOnTrack", () => {
     const rating = computeFinancialRating({
       pyramid: strongPyramid,
       benchmarks: strongBenchmarks,
@@ -303,10 +580,199 @@ describe("computeFinancialRating", () => {
         ],
       },
       crisis: mildCrisis,
+      timeline: makeTimeline({
+        goals: [
+          {
+            goalId: "wedding",
+            goalType: "spend",
+            targetAge: 40,
+            inflatedTargetHKD: 220_000,
+            attainedAtAge: 42,
+            status: "amber",
+          },
+          {
+            goalId: "other",
+            goalType: "spend",
+            targetAge: 45,
+            inflatedTargetHKD: 100_000,
+            attainedAtAge: 45,
+            status: "green",
+          },
+        ],
+      }),
     });
 
-    // (0.5 + 1) / 2 = 75
-    expect(rating.breakdown.goalsOnTrack).toBe(75);
+    // goals flags (0.5+1)/2 = 75; retirement 100 → 75*0.85 + 100*0.15 = 78.75 → 79
+    expect(rating.breakdown.goalsOnTrack).toBe(
+      Math.round(
+        75 * GOALS_RETIREMENT_BLEND.goals +
+          100 * GOALS_RETIREMENT_BLEND.retirement,
+      ),
+    );
+  });
+
+  it("scores given-up goals neutrally (not as red failures)", () => {
+    const withGivenUp = computeFinancialRating({
+      pyramid: strongPyramid,
+      benchmarks: strongBenchmarks,
+      stressTest: strongStress,
+      crisis: mildCrisis,
+      timeline: makeTimeline({
+        goals: [
+          {
+            goalId: "wedding",
+            goalType: "spend",
+            targetAge: 40,
+            inflatedTargetHKD: 220_000,
+            attainedAtAge: 40,
+            status: "green",
+          },
+        ],
+      }),
+      journey: {
+        decisions: [
+          {
+            goalId: "yacht",
+            status: "given_up",
+            allowLiquidation: false,
+            acceptedSqueeze: false,
+          },
+        ],
+        updatedAt: new Date().toISOString(),
+      },
+    });
+
+    const asRedFailure = computeFinancialRating({
+      pyramid: strongPyramid,
+      benchmarks: strongBenchmarks,
+      stressTest: strongStress,
+      crisis: mildCrisis,
+      timeline: makeTimeline({
+        goals: [
+          {
+            goalId: "wedding",
+            goalType: "spend",
+            targetAge: 40,
+            inflatedTargetHKD: 220_000,
+            attainedAtAge: 40,
+            status: "green",
+          },
+          {
+            goalId: "yacht",
+            goalType: "spend",
+            targetAge: 50,
+            inflatedTargetHKD: 2_000_000,
+            attainedAtAge: null,
+            status: "red",
+          },
+        ],
+      }),
+    });
+
+    // (1 + 0.6) / 2 = 80 flags; retirement 100 → 80*0.85 + 100*0.15 = 83
+    expect(withGivenUp.breakdown.goalsOnTrack).toBe(
+      Math.round(
+        ((1 + GIVEN_UP_GOAL_CREDIT) / 2) * 100 * GOALS_RETIREMENT_BLEND.goals +
+          100 * GOALS_RETIREMENT_BLEND.retirement,
+      ),
+    );
+    expect(withGivenUp.breakdown.goalsOnTrack).toBeGreaterThan(
+      asRedFailure.breakdown.goalsOnTrack,
+    );
+  });
+
+  it("scores retirementTarget goals via met / gap ≤20%", () => {
+    const met = computeFinancialRating({
+      pyramid: strongPyramid,
+      benchmarks: strongBenchmarks,
+      stressTest: strongStress,
+      crisis: mildCrisis,
+      timeline: makeTimeline({
+        goals: [
+          {
+            goalId: "nest",
+            goalType: "retirementTarget",
+            targetAge: 65,
+            inflatedTargetHKD: 2_000_000,
+            attainedAtAge: 65,
+            status: "green",
+          },
+        ],
+        retirementTargets: [
+          {
+            goalId: "nest",
+            targetHKD: 2_000_000,
+            projectedAssetsHKD: 2_500_000,
+            gapHKD: 0,
+            met: true,
+          },
+        ],
+      }),
+    });
+
+    const nearMiss = computeFinancialRating({
+      pyramid: strongPyramid,
+      benchmarks: strongBenchmarks,
+      stressTest: strongStress,
+      crisis: mildCrisis,
+      timeline: makeTimeline({
+        goals: [
+          {
+            goalId: "nest",
+            goalType: "retirementTarget",
+            targetAge: 65,
+            inflatedTargetHKD: 2_000_000,
+            attainedAtAge: null,
+            status: "amber",
+          },
+        ],
+        retirementTargets: [
+          {
+            goalId: "nest",
+            targetHKD: 2_000_000,
+            projectedAssetsHKD: 1_700_000,
+            gapHKD: 300_000,
+            met: false,
+          },
+        ],
+      }),
+    });
+
+    const miss = computeFinancialRating({
+      pyramid: strongPyramid,
+      benchmarks: strongBenchmarks,
+      stressTest: strongStress,
+      crisis: mildCrisis,
+      timeline: makeTimeline({
+        goals: [
+          {
+            goalId: "nest",
+            goalType: "retirementTarget",
+            targetAge: 65,
+            inflatedTargetHKD: 2_000_000,
+            attainedAtAge: null,
+            status: "red",
+          },
+        ],
+        retirementTargets: [
+          {
+            goalId: "nest",
+            targetHKD: 2_000_000,
+            projectedAssetsHKD: 500_000,
+            gapHKD: 1_500_000,
+            met: false,
+          },
+        ],
+      }),
+    });
+
+    // met → 100 goals pillar blend; nearMiss 0.5 → 50; miss 0 → 0 (before retirement blend)
+    expect(met.breakdown.goalsOnTrack).toBeGreaterThan(
+      nearMiss.breakdown.goalsOnTrack,
+    );
+    expect(nearMiss.breakdown.goalsOnTrack).toBeGreaterThan(
+      miss.breakdown.goalsOnTrack,
+    );
   });
 });
 
@@ -319,5 +785,14 @@ describe("computeGoalImpactPoints", () => {
       computeGoalImpactPoints("goalsOnTrack", 100, RATING_WEIGHTS.goalsOnTrack),
     ).toBe(30);
     expect(computeGoalImpactPoints("emergencyFund", 0, 0.25)).toBe(0);
+  });
+
+  it("boosts savings impact when EF is oversaved (redeploy excess lever)", () => {
+    const plain = computeGoalImpactPoints("savings", 12, 0.25);
+    const oversaved = computeGoalImpactPoints("savings", 12, 0.25, {
+      efStatus: "oversaved",
+      excessHKD: 200_000,
+    });
+    expect(oversaved).toBeGreaterThan(plain);
   });
 });

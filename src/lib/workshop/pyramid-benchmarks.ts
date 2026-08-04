@@ -1,5 +1,5 @@
 /**
- * Pure HK-oriented pyramid benchmarks for Workshop Pyramid Lab v2.
+ * Pure HK-oriented pyramid benchmarks for Workshop Pyramid Lab v2/v3.
  * No AI — deterministic recommendations only.
  */
 
@@ -15,6 +15,25 @@ export type RiskAllocationBenchmark = {
   high: number;
 };
 
+/** Critical-illness recommendation: multiple × annual income. */
+export type CriticalIllnessBreakdown = {
+  multiple: number;
+  annualIncomeHKD: number;
+  recommendedHKD: number;
+};
+
+/**
+ * Emergency-fund recommendation at the pyramid step.
+ * Income-based (monthlyIncome × BENCHMARK_EXPENSE_RATIO × targetMonths).
+ * Note: the stress-test step later refines against confirmed actual expenses.
+ */
+export type EmergencyFundBreakdown = {
+  targetMonths: number;
+  monthlyIncomeHKD: number;
+  recommendedHKD: number;
+  industryKey: string;
+};
+
 /** Deterministic recommendation snapshot shown beside AI guesses in the UI. */
 export type PyramidBenchmarkSnapshot = {
   medicalCoveragePercent: number;
@@ -23,9 +42,11 @@ export type PyramidBenchmarkSnapshot = {
   emergencyFundTargetHKD: number;
   riskAllocation: RiskAllocationBenchmark;
   suggestedMonthlyInvestmentHKD: number;
+  ciBreakdown: CriticalIllnessBreakdown;
+  efBreakdown: EmergencyFundBreakdown;
 };
 
-/** Rough expense ratio used only for emergency-fund target HKD. */
+/** Rough expense ratio used only for emergency-fund target HKD at pyramid step. */
 export const BENCHMARK_EXPENSE_RATIO = 0.65;
 
 function clamp(value: number, min: number, max: number): number {
@@ -58,8 +79,16 @@ export function getMedicalCoverageBenchmarkPercent(age: number): number {
 }
 
 /**
+ * CI cover multiple of annual income.
+ * Age 25 → 10×; age 65 → 5× (linear glide, clamped).
+ */
+export function getCriticalIllnessMultiple(age: number): number {
+  const a = Number.isFinite(age) ? age : 35;
+  return clamp(10 - (a - 25) * (5 / 40), 5, 10);
+}
+
+/**
  * Critical-illness cover rule of thumb as a multiple of annual income.
- * Younger ages get a higher multiple (closer to 10x); older ages glide toward 5x.
  */
 export function getCriticalIllnessBenchmarkHKD(
   age: number,
@@ -69,11 +98,20 @@ export function getCriticalIllnessBenchmarkHKD(
   if (income === 0) {
     return 0;
   }
+  return Math.round(income * getCriticalIllnessMultiple(age));
+}
 
-  const a = Number.isFinite(age) ? age : 35;
-  // Linear glide: age 25 → 10x, age 65 → 5x (clamped).
-  const multiple = clamp(10 - (a - 25) * (5 / 40), 5, 10);
-  return Math.round(income * multiple);
+export function buildCriticalIllnessBreakdown(input: {
+  age: number;
+  monthlyIncomeHKD: number;
+}): CriticalIllnessBreakdown {
+  const annualIncomeHKD = Math.max(0, input.monthlyIncomeHKD) * 12;
+  const multiple = getCriticalIllnessMultiple(input.age);
+  return {
+    multiple,
+    annualIncomeHKD,
+    recommendedHKD: Math.round(annualIncomeHKD * multiple),
+  };
 }
 
 /**
@@ -115,6 +153,23 @@ export function getEmergencyFundTargetMonths(industry: string): number {
   return 6;
 }
 
+export function buildEmergencyFundBreakdown(input: {
+  monthlyIncomeHKD: number;
+  industry: string;
+}): EmergencyFundBreakdown {
+  const monthlyIncomeHKD = Math.max(0, input.monthlyIncomeHKD);
+  const targetMonths = getEmergencyFundTargetMonths(input.industry);
+  // Income-proxy burn until the expenses step exists; stress-test later refines
+  // against confirmed monthly expenses.
+  const monthlyBurn = monthlyIncomeHKD * BENCHMARK_EXPENSE_RATIO;
+  return {
+    targetMonths,
+    monthlyIncomeHKD,
+    recommendedHKD: Math.round(targetMonths * monthlyBurn),
+    industryKey: input.industry,
+  };
+}
+
 /**
  * Classic equity glide path for risk allocation.
  * high = clamp(100 - age, 10, 90); remainder split low/mid with mid rising by age.
@@ -154,21 +209,25 @@ export function buildPyramidBenchmarks(input: {
   industry: string;
 }): PyramidBenchmarkSnapshot {
   const monthly = Math.max(0, input.monthlyIncomeHKD);
-  const annual = monthly * 12;
-  const months = getEmergencyFundTargetMonths(input.industry);
-  const monthlyBurn = monthly * BENCHMARK_EXPENSE_RATIO;
+  const ciBreakdown = buildCriticalIllnessBreakdown({
+    age: input.age,
+    monthlyIncomeHKD: monthly,
+  });
+  const efBreakdown = buildEmergencyFundBreakdown({
+    monthlyIncomeHKD: monthly,
+    industry: input.industry,
+  });
 
   return {
     medicalCoveragePercent: getMedicalCoverageBenchmarkPercent(input.age),
-    criticalIllnessAmountHKD: getCriticalIllnessBenchmarkHKD(
-      input.age,
-      annual,
-    ),
-    emergencyFundTargetMonths: months,
-    emergencyFundTargetHKD: Math.round(months * monthlyBurn),
+    criticalIllnessAmountHKD: ciBreakdown.recommendedHKD,
+    emergencyFundTargetMonths: efBreakdown.targetMonths,
+    emergencyFundTargetHKD: efBreakdown.recommendedHKD,
     riskAllocation: getRiskAllocationBenchmark(input.age),
     // Soft savings rate target (~10% of gross) for investment-layer flags.
     suggestedMonthlyInvestmentHKD: Math.round(monthly * 0.1),
+    ciBreakdown,
+    efBreakdown,
   };
 }
 
@@ -191,6 +250,38 @@ function worseFlag(a: LayerFlag, b: LayerFlag): LayerFlag {
   return rank[a] >= rank[b] ? a : b;
 }
 
+/** i18n key for amber when monthly investing exceeds available surplus. */
+export const MONTHLY_INVESTING_OVER_SURPLUS_KEY =
+  "workshop.pyramid.investment.monthlyInvesting.amberWarning" as const;
+
+export type ComputeLayerFlagsOptions = {
+  /** Gross monthly income (HKD). Enables surplus-vs-investing amber rule. */
+  monthlyIncomeHKD?: number;
+  /**
+   * Confirmed monthly expenses total (HKD). When omitted, uses
+   * `monthlyIncome × BENCHMARK_EXPENSE_RATIO` as a stand-in.
+   */
+  monthlyExpensesHKD?: number;
+};
+
+/**
+ * Available monthly surplus for investing helper / amber rule:
+ * income − expenses − fun. Expenses fall back to the benchmark burn ratio.
+ */
+export function availableMonthlySurplusHKD(input: {
+  monthlyIncomeHKD: number;
+  monthlyExpensesHKD?: number;
+  monthlyFunHKD: number;
+}): number {
+  const income = Math.max(0, input.monthlyIncomeHKD);
+  const expenses =
+    input.monthlyExpensesHKD != null && Number.isFinite(input.monthlyExpensesHKD)
+      ? Math.max(0, input.monthlyExpensesHKD)
+      : income * BENCHMARK_EXPENSE_RATIO;
+  const fun = Math.max(0, input.monthlyFunHKD);
+  return Math.round(income - expenses - fun);
+}
+
 /**
  * Compare a pyramid (usually AI current-state guesses) to deterministic benchmarks.
  * Flags are never AI-decided.
@@ -198,6 +289,7 @@ function worseFlag(a: LayerFlag, b: LayerFlag): LayerFlag {
 export function computeLayerFlags(
   pyramid: PyramidState,
   benchmarks: PyramidBenchmarkSnapshot,
+  options?: ComputeLayerFlagsOptions,
 ): LayerFlags {
   const medicalFlag = ratioToFlag(
     pyramid.protection.medicalCoveragePercent,
@@ -218,6 +310,26 @@ export function computeLayerFlags(
     goalsFlag = "amber";
   }
 
+  const monthlyInvest = Math.max(0, pyramid.investment.monthlyInvestmentHKD);
+  let investmentFlag = ratioToFlag(
+    monthlyInvest,
+    benchmarks.suggestedMonthlyInvestmentHKD,
+  );
+
+  if (
+    options?.monthlyIncomeHKD != null &&
+    Number.isFinite(options.monthlyIncomeHKD)
+  ) {
+    const surplus = availableMonthlySurplusHKD({
+      monthlyIncomeHKD: options.monthlyIncomeHKD,
+      monthlyExpensesHKD: options.monthlyExpensesHKD,
+      monthlyFunHKD: pyramid.investment.monthlyFunHKD,
+    });
+    if (monthlyInvest > surplus) {
+      investmentFlag = worseFlag(investmentFlag, "amber");
+    }
+  }
+
   return {
     protection: worseFlag(medicalFlag, ciFlag),
     emergencyFund: ratioToFlag(
@@ -225,9 +337,6 @@ export function computeLayerFlags(
       benchmarks.emergencyFundTargetHKD,
     ),
     goals: goalsFlag,
-    investment: ratioToFlag(
-      pyramid.investment.monthlyInvestmentHKD,
-      benchmarks.suggestedMonthlyInvestmentHKD,
-    ),
+    investment: investmentFlag,
   };
 }

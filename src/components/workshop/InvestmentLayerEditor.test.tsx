@@ -31,10 +31,23 @@ const STRINGS: Record<string, string> = {
   "workshop.pyramid.investment.total": "Total {n}%",
   "workshop.pyramid.investment.investCardLabel": "Invest",
   "workshop.pyramid.investment.investSubtext": "sub",
+  "workshop.pyramid.investment.lumpSumLabel": "Lump sum",
+  "workshop.pyramid.investment.lumpSumSummary": "{amount} invested",
   "workshop.pyramid.investment.monthlyInvestmentLabel": "Monthly invest",
+  "workshop.pyramid.investment.monthlyInvesting.label": "Monthly investing",
+  "workshop.pyramid.investment.monthlyInvesting.helper":
+    "Surplus available ≈ {amount}",
+  "workshop.pyramid.investment.monthlyInvesting.amberWarning":
+    "Investing exceeds surplus.",
   "workshop.pyramid.investment.funCardLabel": "Fun",
   "workshop.pyramid.investment.funSubtext": "sub",
   "workshop.pyramid.investment.monthlyFunLabel": "Monthly fun",
+  "workshop.pyramid.investment.funCrisisHint": "Fun is cut first in a crisis.",
+  "workshop.pyramid.investment.lowBandHint": "1–3% /yr",
+  "workshop.pyramid.investment.midBandHint": "8–12% /yr",
+  "workshop.pyramid.investment.highBandHint": "20–40% /yr",
+  "workshop.pyramid.investment.returnBandsDisclaimer":
+    "Tool uses 2/6/10 blended assumptions.",
 };
 
 vi.mock("@/components/providers/LocaleProvider", () => ({
@@ -45,7 +58,8 @@ vi.mock("@/components/providers/LocaleProvider", () => ({
 }));
 
 const baseValue: InvestmentLayer = {
-  monthlyInvestmentHKD: 5000,
+  lumpSumHKD: 5000,
+  monthlyInvestmentHKD: 2000,
   monthlyFunHKD: 1000,
   riskAllocation: { low: 40, mid: 40, high: 20 },
 };

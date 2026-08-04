@@ -18,6 +18,11 @@ export type CollapsibleWidgetProps = Readonly<{
   badge?: ReactNode;
   icon?: ReactNode;
   defaultExpanded?: boolean;
+  /** Controlled expansion — when set, overrides internal toggle state. */
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
+  /** Locked / non-interactive: stays collapsed and ignores expand clicks. */
+  disabled?: boolean;
   children: ReactNode;
   className?: string;
   headerClassName?: string;
@@ -32,17 +37,46 @@ export default function CollapsibleWidget({
   badge,
   icon,
   defaultExpanded = false,
+  expanded: expandedProp,
+  onExpandedChange,
+  disabled = false,
   children,
   className,
   headerClassName,
 }: CollapsibleWidgetProps) {
   const { t } = useTranslations();
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [uncontrolledExpanded, setUncontrolledExpanded] =
+    useState(defaultExpanded);
+  const isControlled = expandedProp !== undefined;
+  const isExpanded = disabled
+    ? false
+    : isControlled
+      ? expandedProp
+      : uncontrolledExpanded;
   const panelId = useId();
   const reduceMotion = useReducedMotion();
 
+  function setExpanded(next: boolean) {
+    if (disabled) {
+      return;
+    }
+    if (!isControlled) {
+      setUncontrolledExpanded(next);
+    }
+    onExpandedChange?.(next);
+  }
+
   return (
-    <div className={[DEFAULT_CARD_CLASS, className].filter(Boolean).join(" ")}>
+    <div
+      className={[
+        DEFAULT_CARD_CLASS,
+        disabled ? "pointer-events-none opacity-50 shadow-none hover:shadow-none" : "",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      data-disabled={disabled ? "true" : "false"}
+    >
       <div
         className={[
           "flex min-h-12 w-full items-center gap-2 px-3.5 py-2 sm:px-4",
@@ -56,13 +90,16 @@ export default function CollapsibleWidget({
           className={[
             "flex min-h-12 min-w-0 flex-1 touch-manipulation items-center gap-3 py-1 text-left",
             focusRing,
+            disabled ? "cursor-not-allowed" : "",
           ].join(" ")}
           aria-expanded={isExpanded}
           aria-controls={panelId}
+          aria-disabled={disabled || undefined}
+          disabled={disabled}
           aria-label={
             isExpanded ? t("workshop.ui.collapse") : t("workshop.ui.expand")
           }
-          onClick={() => setIsExpanded((prev) => !prev)}
+          onClick={() => setExpanded(!isExpanded)}
         >
           {icon ? (
             <span

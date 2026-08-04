@@ -10,13 +10,16 @@ import {
 import WorkshopStickyFooter from "@/components/workshop/WorkshopStickyFooter";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
+import type { SiteLocale } from "@/lib/i18n/locales";
 import { pickBilingual } from "@/lib/workshop/bilingual";
+import { formatCompactHkd } from "@/lib/workshop/format-compact-hkd";
 import { runGoalStressTest } from "@/lib/workshop/macro-simulation";
 import { generateActionGoalsAction } from "@/lib/workshop/pyramid-actions";
 import type { PyramidBenchmarkSnapshot } from "@/lib/workshop/pyramid-benchmarks";
 import type {
   ActionGoal,
   CrisisState,
+  CrisisStressTestSummary,
   ExpensesState,
   PyramidState,
   StressTestResult,
@@ -127,6 +130,130 @@ function RatingGauge({ score, label }: { score: number; label: string }) {
   );
 }
 
+const SCENARIO_LABEL_KEYS: Record<
+  CrisisStressTestSummary["scenario"],
+  MessageKey
+> = {
+  medical: "workshop.summary.crisisStress.scenario.medical",
+  critical_illness: "workshop.summary.crisisStress.scenario.critical_illness",
+  job_loss: "workshop.summary.crisisStress.scenario.job_loss",
+  market_crash: "workshop.summary.crisisStress.scenario.market_crash",
+  accident: "workshop.summary.crisisStress.scenario.accident",
+};
+
+const VERDICT_LABEL_KEYS: Record<
+  CrisisStressTestSummary["verdict"],
+  MessageKey
+> = {
+  SHIELDED: "workshop.summary.crisisStress.verdict.SHIELDED",
+  PARTIAL: "workshop.summary.crisisStress.verdict.PARTIAL",
+  PENETRATED: "workshop.summary.crisisStress.verdict.PENETRATED",
+};
+
+function CrisisStressTestBadge({
+  stress,
+  locale,
+  t,
+}: {
+  stress: CrisisStressTestSummary;
+  locale: SiteLocale;
+  t: (key: MessageKey) => string;
+}) {
+  const scenario = t(SCENARIO_LABEL_KEYS[stress.scenario]);
+  const goalName = stress.affectedGoalLabel
+    ? pickBilingual(stress.affectedGoalLabel, locale)
+    : null;
+  const shielded = formatCompactHkd(stress.shieldedAmount);
+  const penetration = formatCompactHkd(stress.penetrationAmount);
+  const wiped = formatCompactHkd(
+    Math.max(stress.penetrationAmount, stress.oneTimeCostHKD - stress.shieldedAmount),
+  );
+
+  let body: string;
+  if (stress.verdict === "SHIELDED") {
+    body = goalName
+      ? t("workshop.summary.crisisStress.shieldedWithGoal")
+          .replace("{scenario}", scenario)
+          .replace("{amount}", shielded)
+          .replace("{goal}", goalName)
+      : t("workshop.summary.crisisStress.shieldedNoGoal")
+          .replace("{scenario}", scenario)
+          .replace("{amount}", shielded);
+  } else if (stress.verdict === "PARTIAL") {
+    body = goalName
+      ? t("workshop.summary.crisisStress.partialWithGoal")
+          .replace("{scenario}", scenario)
+          .replace("{shielded}", shielded)
+          .replace("{penetration}", penetration)
+          .replace("{goal}", goalName)
+      : t("workshop.summary.crisisStress.partialNoGoal")
+          .replace("{scenario}", scenario)
+          .replace("{shielded}", shielded)
+          .replace("{penetration}", penetration);
+  } else if (goalName && stress.delayYears != null && stress.delayYears > 0) {
+    body = t("workshop.summary.crisisStress.penetratedWithGoal")
+      .replace("{scenario}", scenario)
+      .replace("{amount}", wiped)
+      .replace("{goal}", goalName)
+      .replace("{years}", String(stress.delayYears));
+  } else {
+    body = t("workshop.summary.crisisStress.penetratedNoGoal")
+      .replace("{scenario}", scenario)
+      .replace("{amount}", wiped);
+  }
+
+  const band =
+    stress.verdict === "SHIELDED"
+      ? "green"
+      : stress.verdict === "PARTIAL"
+        ? "amber"
+        : "red";
+
+  return (
+    <div
+      className={[
+        "mt-5 rounded-xl border px-4 py-3 text-left",
+        band === "green"
+          ? "border-emerald-200 bg-emerald-50"
+          : band === "amber"
+            ? "border-amber-200 bg-amber-50"
+            : "border-rose-200 bg-rose-50",
+      ].join(" ")}
+      data-verdict={stress.verdict}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+          {t("workshop.summary.crisisStress.heading")}
+        </p>
+        <span
+          className={[
+            "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold",
+            band === "green"
+              ? "bg-emerald-100 text-emerald-800"
+              : band === "amber"
+                ? "bg-amber-100 text-amber-900"
+                : "bg-rose-100 text-rose-800",
+          ].join(" ")}
+        >
+          {t(VERDICT_LABEL_KEYS[stress.verdict])}
+        </span>
+      </div>
+      <p
+        className={[
+          "mt-2 text-sm leading-relaxed",
+          band === "green"
+            ? "text-emerald-900"
+            : band === "amber"
+              ? "text-amber-950"
+              : "text-rose-950",
+        ].join(" ")}
+      >
+        {body}
+      </p>
+    </div>
+  );
+}
+
 type WorkshopSummaryStepProps = Readonly<{
   sessionId: string;
   age: number;
@@ -135,7 +262,7 @@ type WorkshopSummaryStepProps = Readonly<{
   expenses: ExpensesState;
   pyramid: PyramidState;
   benchmarks: PyramidBenchmarkSnapshot;
-  crisis: CrisisState;
+  crisis: CrisisState | null;
   tone: WorkshopTone;
   /** Prefer wizard-cached stress test when available. */
   stressTest?: StressTestResult | null;
@@ -213,7 +340,9 @@ export default function WorkshopSummaryStep({
             emergencyFundTargetHKD: benchmarks.emergencyFundTargetHKD,
           },
           stressTest,
-          crisis,
+          expenses,
+          monthlyIncome,
+          crisis: crisis ?? null,
           age,
           industry,
         });
@@ -290,7 +419,7 @@ export default function WorkshopSummaryStep({
     );
   }
 
-  const { rating, actionGoals } = summary;
+  const { rating, actionGoals, crisisStressTest } = summary;
   const ratingLabel = t(RATING_LABEL_KEYS[rating.labelKey]);
 
   return (
@@ -302,6 +431,13 @@ export default function WorkshopSummaryStep({
         <div className="mt-4">
           <RatingGauge score={rating.score} label={ratingLabel} />
         </div>
+        {crisisStressTest ? (
+          <CrisisStressTestBadge
+            stress={crisisStressTest}
+            locale={locale}
+            t={t}
+          />
+        ) : null}
       </section>
 
       <section className="space-y-3">

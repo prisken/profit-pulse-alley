@@ -19,12 +19,27 @@ export type EmergencyFundLayer = {
   savedAmountHKD: number;
 };
 
+export type GoalType = "spend" | "retirementTarget";
+
 export type GoalItem = {
   id: string;
   icon: string;
   label: Bilingual;
   targetAmountHKD: number;
+  /** Source of truth — age the user will be when the goal is due. */
+  targetAge: number;
+  /**
+   * Derived calendar year: `currentYear + (targetAge − userAge)`.
+   * Kept for stress-test / PDF display; recompute when age or targetAge changes.
+   */
   targetYear: number;
+  /**
+   * spend = cash outflow at target age; retirementTarget = nest-egg line (never deducted).
+   * Legacy sessions default to "spend".
+   */
+  goalType: GoalType;
+  /** Spend goals must explicitly opt in before invested assets may be liquidated. */
+  allowLiquidation?: boolean;
 };
 
 export type GoalsLayer = {
@@ -33,6 +48,9 @@ export type GoalsLayer = {
 
 export type InvestmentLayer = {
   riskAllocation: { low: number; mid: number; high: number };
+  /** Current total invested capital (HKD). */
+  lumpSumHKD: number;
+  /** Monthly contribution to invested pool during working years (HKD). */
   monthlyInvestmentHKD: number;
   monthlyFunHKD: number;
 };
@@ -70,6 +88,34 @@ export type ExpensesState = {
   totalHKD: number;
 };
 
+export type GoalJourneyDecision = {
+  goalId: string;
+  status: "pending" | "applied" | "given_up";
+  allowLiquidation: boolean;
+  acceptedSqueeze: boolean;
+  squeezeCutsHKD?: { fun: number; discretionary: number };
+};
+
+export type GoalJourneyState = {
+  decisions: GoalJourneyDecision[];
+  updatedAt: string;
+};
+
+export type AllocationSlice = {
+  key: string;
+  label: Bilingual;
+  amountHKD: number;
+  changed: boolean;
+};
+
+export type SqueezeRecommendation = {
+  requiredExtraMonthlyHKD: number;
+  currentAllocation: AllocationSlice[];
+  recommendedAllocation: AllocationSlice[];
+  achievableAtAge: number | null;
+  reasoning: Bilingual;
+};
+
 export type RiskProfile = "conservative" | "balanced" | "aggressive";
 
 export type RiskQuizAnswer = { questionId: string; choice: "a" | "b" | "c" };
@@ -87,16 +133,90 @@ export type CrisisImpact = {
   headline: Bilingual;
   detailHKD?: number;
   detailMonths?: number;
+  /** Engine stage id when impact was synthesised from crisis-engine. */
+  stageId?:
+    | "coverage"
+    | "fun"
+    | "discretionary"
+    | "liquid"
+    | "invested"
+    | "market"
+    | "income"
+    | "goals";
+};
+
+export type CrisisType =
+  | "medical"
+  | "critical_illness"
+  | "job_loss"
+  | "market_crash"
+  | "accident"
+  | "family";
+
+export const CRISIS_TYPES = [
+  "medical",
+  "critical_illness",
+  "job_loss",
+  "market_crash",
+  "accident",
+  "family",
+] as const satisfies ReadonlyArray<CrisisType>;
+
+export type CrisisCoverageOffset = {
+  grossCostHKD: number;
+  coveredHKD: number;
+  uncoveredHKD: number;
+  coverageKind: "medical_percent" | "critical_illness" | "none";
+  medicalCoveragePercent?: number;
+  ciAmountHKD?: number;
+};
+
+export type CrisisCutOrder = {
+  funAbsorbedHKD: number;
+  discretionaryAbsorbedHKD: number;
+  liquidAbsorbedHKD: number;
+  investedAbsorbedHKD: number;
+  remainingUncoveredHKD: number;
+};
+
+export type CrisisGoalDelay = {
+  goalId: string;
+  label: Bilingual;
+  beforeAge: number | null;
+  afterAge: number | null;
+};
+
+/** Deterministic engine output attached to CrisisState after applyCrisis. */
+export type CrisisImpactResult = {
+  crisisType: CrisisType;
+  coverage: CrisisCoverageOffset | null;
+  cutOrder: CrisisCutOrder;
+  marketDropHKD: number;
+  incomeHitPct: number;
+  durationMonths: number;
+  oneTimeCostHKD: number;
+  efStatusBefore: string;
+  efStatusAfter: string;
+  assetsDepletedAtAgeBefore: number | null;
+  assetsDepletedAtAgeAfter: number | null;
+  goalDelays: CrisisGoalDelay[];
 };
 
 export type CrisisState = {
+  crisisType: CrisisType;
   title: Bilingual;
   description: Bilingual;
   riskProfile: RiskProfile;
+  /** Synced from incomeHitPct for rating / PDF compat. */
   monthlyIncomeImpactPercent: number;
   oneTimeCostHKD: number;
   durationMonths: number;
+  /** Optional structured params (clamped server-side). */
+  incomeHitPct?: number;
+  marketDropPct?: number;
   impacts: CrisisImpact[];
+  /** Present after generateCrisisAction runs the engine. */
+  impactResult?: CrisisImpactResult;
 };
 
 export type GoalProjection = {
@@ -156,7 +276,35 @@ export type ActionGoal = {
   reasoning: Bilingual;
 };
 
+/**
+ * Persisted Summary crisis stress-test snapshot (additive on SummaryState).
+ * Omits heavy engine payload; rating uses resilienceScore as SSOT.
+ */
+export type CrisisStressTestSummary = {
+  scenario:
+    | "medical"
+    | "critical_illness"
+    | "job_loss"
+    | "market_crash"
+    | "accident";
+  crisisType: CrisisType;
+  shieldedAmount: number;
+  penetrationAmount: number;
+  affectedGoalId: string | null;
+  affectedGoalLabel: Bilingual | null;
+  delayYears: number | null;
+  verdict: "SHIELDED" | "PARTIAL" | "PENETRATED";
+  /** 0–100 — must match rating.breakdown.crisisResilience. */
+  resilienceScore: number;
+  oneTimeCostHKD: number;
+  incomeHitPct: number;
+  marketDropPct: number;
+  durationMonths: number;
+};
+
 export type SummaryState = {
   rating: SummaryRating;
   actionGoals: ActionGoal[];
+  /** Silent Summary stress test — additive; older sessions may omit. */
+  crisisStressTest?: CrisisStressTestSummary;
 };

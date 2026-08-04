@@ -10,18 +10,20 @@ import {
   buildPyramidBenchmarks,
   computeLayerFlags,
 } from "@/lib/workshop/pyramid-benchmarks";
+import { normalizePyramidState } from "@/lib/workshop/pyramid-normalize";
+import { parseGoalJourneyState } from "@/lib/workshop/goal-journey";
+import { stressTestFromMacroResult, parseMacroResultJson } from "@/lib/workshop/macro-result";
 import { prisma } from "@/lib/prisma";
 import type {
   ActionGoal,
   Bilingual,
   CrisisState,
+  CrisisType,
   ExpenseCategoryKey,
   ExpensesState,
-  LayerFlag,
   PyramidState,
   RiskProfile,
   RiskQuizState,
-  StressTestResult,
   SummaryRatingLabelKey,
   SummaryState,
   WorkshopTone,
@@ -96,64 +98,12 @@ function parseSummaryLabelKey(value: unknown): SummaryRatingLabelKey {
   return "needsAttention";
 }
 
-function parsePyramid(value: unknown): PyramidState | null {
-  const record = asRecord(value);
-  if (!record) {
+function parsePyramid(value: unknown, userAge: number): PyramidState | null {
+  try {
+    return normalizePyramidState(value, userAge);
+  } catch {
     return null;
   }
-  const protection = asRecord(record.protection);
-  const emergencyFund = asRecord(record.emergencyFund);
-  const goalsRoot = asRecord(record.goals);
-  const investment = asRecord(record.investment);
-  const risk = asRecord(investment?.riskAllocation);
-
-  if (!protection || !emergencyFund || !goalsRoot || !investment || !risk) {
-    return null;
-  }
-
-  const goalsRaw = Array.isArray(goalsRoot.goals) ? goalsRoot.goals : [];
-  const goals = goalsRaw
-    .map((item) => {
-      const row = asRecord(item);
-      if (!row) {
-        return null;
-      }
-      const id = String(row.id ?? "");
-      const label = tryCoerceBilingual(row.label, "goal.label");
-      if (!id || !label) {
-        return null;
-      }
-      return {
-        id,
-        icon: String(row.icon ?? "Target"),
-        label,
-        targetAmountHKD: asFiniteNumber(row.targetAmountHKD),
-        targetYear: Math.round(asFiniteNumber(row.targetYear)),
-      };
-    })
-    .filter((g): g is NonNullable<typeof g> => g !== null);
-
-  return {
-    protection: {
-      medicalCoveragePercent: asFiniteNumber(protection.medicalCoveragePercent),
-      criticalIllnessAmountHKD: asFiniteNumber(
-        protection.criticalIllnessAmountHKD,
-      ),
-    },
-    emergencyFund: {
-      savedAmountHKD: asFiniteNumber(emergencyFund.savedAmountHKD),
-    },
-    goals: { goals },
-    investment: {
-      riskAllocation: {
-        low: Math.round(asFiniteNumber(risk.low)),
-        mid: Math.round(asFiniteNumber(risk.mid)),
-        high: Math.round(asFiniteNumber(risk.high)),
-      },
-      monthlyInvestmentHKD: asFiniteNumber(investment.monthlyInvestmentHKD),
-      monthlyFunHKD: asFiniteNumber(investment.monthlyFunHKD),
-    },
-  };
 }
 
 function parseExpenses(value: unknown): ExpensesState | null {
@@ -286,6 +236,7 @@ function parseCrisis(value: unknown): CrisisState | null {
     .filter((i): i is NonNullable<typeof i> => i !== null);
 
   return {
+    crisisType: parseCrisisType(record.crisisType),
     title,
     description,
     riskProfile,
@@ -294,88 +245,31 @@ function parseCrisis(value: unknown): CrisisState | null {
     ),
     oneTimeCostHKD: asFiniteNumber(record.oneTimeCostHKD),
     durationMonths: Math.max(1, Math.round(asFiniteNumber(record.durationMonths, 1))),
+    incomeHitPct:
+      typeof record.incomeHitPct === "number"
+        ? asFiniteNumber(record.incomeHitPct)
+        : undefined,
+    marketDropPct:
+      typeof record.marketDropPct === "number"
+        ? asFiniteNumber(record.marketDropPct)
+        : undefined,
     impacts,
   };
 }
 
-function parseLayerFlag(value: unknown): LayerFlag {
-  if (value === "green" || value === "amber" || value === "red") {
+function parseCrisisType(value: unknown): CrisisType {
+  if (
+    value === "medical" ||
+    value === "critical_illness" ||
+    value === "job_loss" ||
+    value === "market_crash" ||
+    value === "accident" ||
+    value === "family"
+  ) {
     return value;
   }
-  return "amber";
-}
-
-function parseStressTest(value: unknown): StressTestResult | null {
-  const record = asRecord(value);
-  if (!record) {
-    return null;
-  }
-
-  const ef = asRecord(record.emergencyFundProjection);
-  const goalsRaw = Array.isArray(record.goalProjections)
-    ? record.goalProjections
-    : [];
-  const surplusRaw = Array.isArray(record.monthlySurplusByYear)
-    ? record.monthlySurplusByYear
-    : [];
-
-  const goalProjections = goalsRaw
-    .map((item) => {
-      const row = asRecord(item);
-      if (!row) {
-        return null;
-      }
-      const goalId = String(row.goalId ?? "");
-      const label = tryCoerceBilingual(row.label, "stressTest.goal.label");
-      if (!goalId || !label) {
-        return null;
-      }
-      const note =
-        row.note == null || row.note === ""
-          ? undefined
-          : tryCoerceBilingual(row.note, "stressTest.goal.note") ?? undefined;
-      return {
-        goalId,
-        label,
-        icon: String(row.icon ?? "Target"),
-        targetAmountHKD: asFiniteNumber(row.targetAmountHKD),
-        targetYear: Math.round(asFiniteNumber(row.targetYear)),
-        projectedYear:
-          row.projectedYear === null || row.projectedYear === undefined
-            ? null
-            : Math.round(asFiniteNumber(row.projectedYear)),
-        status: parseLayerFlag(row.status),
-        note,
-      };
-    })
-    .filter((g): g is NonNullable<typeof g> => g !== null);
-
-  if (!ef && goalProjections.length === 0 && surplusRaw.length === 0) {
-    return null;
-  }
-
-  return {
-    monthlySurplusByYear: surplusRaw
-      .map((item) => {
-        const row = asRecord(item);
-        if (!row) {
-          return null;
-        }
-        return {
-          year: Math.round(asFiniteNumber(row.year)),
-          income: asFiniteNumber(row.income),
-          expenses: asFiniteNumber(row.expenses),
-          surplus: asFiniteNumber(row.surplus),
-        };
-      })
-      .filter((r): r is NonNullable<typeof r> => r !== null),
-    emergencyFundProjection: {
-      targetMonths: asFiniteNumber(ef?.targetMonths, 6),
-      projectedMonths: asFiniteNumber(ef?.projectedMonths),
-      status: parseLayerFlag(ef?.status),
-    },
-    goalProjections,
-  };
+  // Legacy sessions without crisisType — harmless default for PDF display.
+  return "family";
 }
 
 function parseSummary(value: unknown): SummaryState | null {
@@ -433,6 +327,8 @@ function parseSummary(value: unknown): SummaryState | null {
     return null;
   }
 
+  const crisisStressTest = parseCrisisStressTest(record.crisisStressTest);
+
   return {
     rating: {
       score: asFiniteNumber(ratingRoot?.score),
@@ -445,6 +341,54 @@ function parseSummary(value: unknown): SummaryState | null {
       },
     },
     actionGoals,
+    ...(crisisStressTest ? { crisisStressTest } : {}),
+  };
+}
+
+function parseCrisisStressTest(
+  value: unknown,
+): import("@/lib/workshop/types").CrisisStressTestSummary | undefined {
+  const record = asRecord(value);
+  if (!record) {
+    return undefined;
+  }
+  const verdict = record.verdict;
+  const scenario = record.scenario;
+  if (
+    (verdict !== "SHIELDED" &&
+      verdict !== "PARTIAL" &&
+      verdict !== "PENETRATED") ||
+    (scenario !== "medical" &&
+      scenario !== "critical_illness" &&
+      scenario !== "job_loss" &&
+      scenario !== "market_crash" &&
+      scenario !== "accident")
+  ) {
+    return undefined;
+  }
+  const affectedLabel = tryCoerceBilingual(
+    record.affectedGoalLabel,
+    "crisisStressTest.affectedGoalLabel",
+  );
+  return {
+    scenario,
+    crisisType:
+      typeof record.crisisType === "string"
+        ? (record.crisisType as import("@/lib/workshop/types").CrisisType)
+        : scenario,
+    shieldedAmount: asFiniteNumber(record.shieldedAmount),
+    penetrationAmount: asFiniteNumber(record.penetrationAmount),
+    affectedGoalId:
+      typeof record.affectedGoalId === "string" ? record.affectedGoalId : null,
+    affectedGoalLabel: affectedLabel,
+    delayYears:
+      record.delayYears == null ? null : asFiniteNumber(record.delayYears),
+    verdict,
+    resilienceScore: asFiniteNumber(record.resilienceScore),
+    oneTimeCostHKD: asFiniteNumber(record.oneTimeCostHKD),
+    incomeHitPct: asFiniteNumber(record.incomeHitPct),
+    marketDropPct: asFiniteNumber(record.marketDropPct),
+    durationMonths: asFiniteNumber(record.durationMonths, 1),
   };
 }
 
@@ -470,7 +414,7 @@ export async function GET(_request: Request, context: RouteContext) {
     );
   }
 
-  const pyramid = parsePyramid(session.finalPyramidJson);
+  const pyramid = parsePyramid(session.finalPyramidJson, session.age);
   if (!pyramid) {
     return NextResponse.json(
       { error: "Confirmed pyramid data is missing for this session." },
@@ -485,8 +429,14 @@ export async function GET(_request: Request, context: RouteContext) {
   });
   const layerFlags = computeLayerFlags(pyramid, benchmarks);
 
-  // macroResultJson may be StressTestResult or { ...StressTestResult, notes }
-  const stressTest = parseStressTest(session.macroResultJson);
+  // macroResultJson: v3 lifeTimeline or legacy StressTestResult (+ optional notes)
+  const parsedMacro = parseMacroResultJson(session.macroResultJson);
+  const timeline =
+    parsedMacro?.kind === "lifeTimeline" ? parsedMacro.timeline : null;
+  const stressTest = stressTestFromMacroResult(
+    session.macroResultJson,
+    pyramid,
+  );
 
   const locale = await getServerSiteLocale();
 
@@ -497,15 +447,19 @@ export async function GET(_request: Request, context: RouteContext) {
     phone: session.lead.phone,
     industry: session.industry,
     age: session.age,
+    retirementAge: session.retirementAge,
     tone: parseTone(session.tone),
     pyramid,
     layerFlags,
     expenses: parseExpenses(session.expensesJson),
     riskQuiz: parseRiskQuiz(session.riskQuizJson),
     stressTest,
-    crisis: parseCrisis(session.crisisJson),
+    timeline,
     summary: parseSummary(session.goalsJson),
     selectedGoal: session.lead.selectedGoal,
+    goalJourney: session.goalJourneyJson
+      ? parseGoalJourneyState(session.goalJourneyJson)
+      : null,
   };
 
   try {

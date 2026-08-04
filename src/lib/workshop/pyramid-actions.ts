@@ -9,8 +9,10 @@ import {
 import {
   buildDeterministicExpensesGuess,
   buildDeterministicPyramidGuess,
+  buildDeterministicSqueezeReasoning,
 } from "@/lib/workshop/ai-fallbacks";
 import { assertStrictBilingual } from "@/lib/workshop/bilingual";
+import { deriveGoalAge, deriveGoalYear } from "@/lib/workshop/goal-year";
 import { translate } from "@/lib/i18n/messages";
 import {
   runGoalStressTest,
@@ -21,6 +23,38 @@ import {
   WAGE_CURVES,
 } from "@/lib/workshop/macro-simulation";
 import {
+  buildActionGoalsDecisionsPayload,
+  buildDeterministicActionGoalsFallback,
+} from "@/lib/workshop/action-goals-decisions";
+import { logActionGoalsFallback } from "@/lib/workshop/action-goal-fallbacks";
+import {
+  applyCrisis,
+  buildCrisisImpactsFromEngine,
+  runCrisisStressTest,
+  toCrisisStressTestSummary,
+} from "@/lib/workshop/crisis-stress-test";
+import {
+  MACRO_RESULT_VERSION_LIFE_TIMELINE,
+  parseMacroResultJson,
+  timelineToLegacyStressTest,
+} from "@/lib/workshop/macro-result";
+import { normalizePyramidState } from "@/lib/workshop/pyramid-normalize";
+import {
+  activeGoalsForJourney,
+  applyGoalDecision,
+  computeGoalOutlook,
+  currentJourneyAllocation,
+  emptyGoalJourneyState,
+  parseGoalJourneyState,
+  rerunTimelineForJourney,
+  type GoalOutlook,
+} from "@/lib/workshop/goal-journey";
+import { solveSqueeze } from "@/lib/workshop/squeeze-solver";
+import {
+  runLifeTimeline,
+  type TimelineResult,
+} from "@/lib/workshop/timeline-engine";
+import {
   buildPyramidBenchmarks,
   computeLayerFlags,
   type PyramidBenchmarkSnapshot,
@@ -29,6 +63,7 @@ import {
   RATING_WEIGHTS,
   computeFinancialRating,
   computeGoalImpactPoints,
+  type GoalImpactContext,
   type RatingCategory,
 } from "@/lib/workshop/financial-rating";
 import type {
@@ -36,11 +71,15 @@ import type {
   Bilingual,
   CrisisImpact,
   CrisisState,
+  CrisisType,
   ExpenseCategory,
   ExpenseCategoryKey,
   ExpensesState,
+  GoalJourneyDecision,
+  GoalJourneyState,
   GoalItem,
   LayerFlags,
+  SqueezeRecommendation,
   PyramidState,
   RiskProfile,
   RiskQuizAnswer,
@@ -50,6 +89,7 @@ import type {
   SummaryState,
   WorkshopTone,
 } from "@/lib/workshop/types";
+import { CRISIS_TYPES } from "@/lib/workshop/types";
 import {
   formatHouseholdForAi,
   formatIndustryForAi,
@@ -63,6 +103,8 @@ export type PyramidWeakestLayer = "foundation" | "core" | "growth" | "apex";
 
 export type PredictPyramidInput = {
   age: number;
+  /** Planned retirement age (validated: > age, clamped 40–80). */
+  retirementAge: number;
   monthlyIncome: number;
   /** Stable English industry enum key (e.g. "tech", "other"). */
   industry: string;
@@ -75,6 +117,8 @@ export type PredictPyramidInput = {
 export type PredictPyramidResult = PyramidState & {
   sessionId: string;
   rationale: Bilingual;
+  protectionExplanation: Bilingual;
+  emergencyFundExplanation: Bilingual;
   layerFlags: LayerFlags;
   benchmarks: PyramidBenchmarkSnapshot;
   /** AI risk-allocation guess (informational only — not bound to editable state). */
@@ -91,22 +135,28 @@ const WORKSHOP_TONES = new Set<WorkshopTone>([
 
 const PREDICT_PYRAMID_SYSTEM_PROMPT = `You are estimating a Hong Kong professional's CURRENT financial pyramid — what they likely already have today, NOT recommendations.
 
-Given age, monthly income (HKD), industry, and household status, return realistic CURRENT-state guesses:
+Given age, planned retirement age, monthly income (HKD), industry, and household status, return realistic CURRENT-state guesses:
 
 1) protection.medicalCoveragePercent — 0–100 integer guess of their current medical/hospital coverage %.
 2) protection.criticalIllnessAmountHKD — current CI sum assured in HKD (often 0 if they likely have none).
 3) emergencyFund.savedAmountHKD — current liquid emergency savings in HKD.
-4) goals.goals — array of 2–4 GoalItem objects inferred from age + household:
+4) goals.goals — array of 2–4 GoalItem objects inferred from age + household + retirement runway:
    - unmarried / single and under 35 → often include a wedding fund
    - age under 28 → may include further-education / upskilling fund
    - has kids (married with kids / single parent) → include kids' education fund
    - always include at least one sensible retirement-adjacent or long-horizon goal if the list would otherwise be thin
-   Each goal needs: id (short slug like "wedding"), icon (a lucide-react icon name string e.g. "Heart", "GraduationCap", "PiggyBank", "Home", "Plane"), label as bilingual { en, zhHant }, targetAmountHKD (income-relative), targetYear (an actual calendar year in the future).
-5) investment.monthlyInvestmentHKD and investment.monthlyFunHKD — plausible monthly amounts given income minus a rough expense load for their profile.
-6) investment.riskAllocation — your FIRST GUESS of how they might currently allocate risk as integer % { low, mid, high } summing to 100. This is informational flavor only.
-7) rationale — 2–3 sentences, tone-flavored, referencing THEIR specific guessed numbers (not generic advice). Must be bilingual { en, zhHant }.
+   - when retirementAge − age is short, prefer nearer-term goals and smaller retirement nest eggs
+   - You MAY propose at most ONE goal with goalType "retirementTarget" (nest-egg line at retirement — not a cash spend). All other goals must use goalType "spend" (cash outflow at target age). Always set goalType explicitly.
+   Each goal needs: id (short slug like "wedding"), icon (a lucide-react icon name string e.g. "Heart", "GraduationCap", "PiggyBank", "Home", "Plane"), label as bilingual { en, zhHant }, targetAmountHKD (income-relative), targetAge (age the person will be when the goal is due — preferred), goalType ("spend" | "retirementTarget"). You may also include targetYear (calendar year); the app derives the other from age + userAge.
+5) investment.lumpSumHKD — REQUIRED. Guess a plausible CURRENT total invested capital (HKD) already held today in stocks/funds/bonds/MPF excess — NOT a monthly contribution. Scale with age, income, industry, and remaining runway to retirementAge (shorter runway → often smaller lump sum; longer career of saving → larger).
+   Also investment.monthlyInvestmentHKD — REQUIRED. Guess a sensible MONTHLY amount they already put into investments (stocks/funds/MPF excess). Typical 10–30% of monthly income, never above estimated surplus (income − living costs − fun). Prefer ~15% of income when unsure.
+   Also investment.monthlyFunHKD — plausible monthly discretionary/fun budget.
+6) investment.riskAllocation — your FIRST GUESS of how they might currently allocate risk as integer % { low, mid, high } summing to 100. Shorter runway to retirementAge → bias toward higher low% / lower high%. This is informational flavor only.
+7) rationale — 2–3 sentences, tone-flavored, referencing THEIR specific guessed CURRENT numbers (not generic advice). Must be bilingual { en, zhHant }.
+8) protectionExplanation — bilingual { en, zhHant }. The user prompt includes a DETERMINISTIC critical-illness recommendation (multiple × annual income = recommended HKD). Explain WHY that computed guide makes sense for this age/income profile in the chosen tone. HARD RULE: do NOT invent a different recommended CI amount or multiple — only narrate the provided numbers.
+9) emergencyFundExplanation — bilingual { en, zhHant }. The user prompt includes a DETERMINISTIC emergency-fund target (industry months × income-based burn). Explain WHY that guide fits this industry/profile. HARD RULE: do NOT invent a different recommended EF amount or month count — only narrate the provided numbers. You may mention that later expense confirmation can refine the burn estimate.
 
-Do NOT invent recommended "should have" targets as the primary numbers — estimate CURRENT reality. Do not return markdown.
+Do NOT invent recommended "should have" targets as the primary pyramid CURRENT-state numbers — estimate CURRENT reality. Do not return markdown.
 
 Return ONLY valid JSON:
 {
@@ -119,16 +169,20 @@ Return ONLY valid JSON:
         "icon": string,
         "label": { "en": string, "zhHant": string },
         "targetAmountHKD": number,
-        "targetYear": number
+        "targetAge": number,
+        "goalType": "spend" | "retirementTarget"
       }
     ]
   },
   "investment": {
     "riskAllocation": { "low": number, "mid": number, "high": number },
+    "lumpSumHKD": number,
     "monthlyInvestmentHKD": number,
     "monthlyFunHKD": number
   },
-  "rationale": { "en": string, "zhHant": string }
+  "rationale": { "en": string, "zhHant": string },
+  "protectionExplanation": { "en": string, "zhHant": string },
+  "emergencyFundExplanation": { "en": string, "zhHant": string }
 }`;
 
 function assertFiniteNumber(value: unknown, field: string): number {
@@ -171,7 +225,11 @@ function parseRiskAllocation(
   return { low, mid, high };
 }
 
-function parseGoalItem(value: unknown, index: number): GoalItem {
+function parseGoalItem(
+  value: unknown,
+  index: number,
+  userAge: number,
+): GoalItem {
   const field = `goals.goals[${index}]`;
   const record = assertRecord(value, field);
   const id = assertNonEmptyString(record.id, `${field}.id`);
@@ -181,26 +239,62 @@ function parseGoalItem(value: unknown, index: number): GoalItem {
     record.targetAmountHKD,
     `${field}.targetAmountHKD`,
   );
-  const targetYear = Math.round(
-    assertFiniteNumber(record.targetYear, `${field}.targetYear`),
-  );
   if (targetAmountHKD < 0) {
     throw new Error(`Invalid pyramid prediction: "${field}.targetAmountHKD" cannot be negative.`);
   }
-  if (targetYear < 2000 || targetYear > 2100) {
+
+  const hasAge =
+    typeof record.targetAge === "number" && Number.isFinite(record.targetAge);
+  const hasYear =
+    typeof record.targetYear === "number" && Number.isFinite(record.targetYear);
+
+  let targetAge: number;
+  let targetYear: number;
+
+  if (hasAge) {
+    targetAge = Math.round(record.targetAge as number);
+    if (targetAge < 1 || targetAge > 120) {
+      throw new Error(
+        `Invalid pyramid prediction: "${field}.targetAge" must be a plausible age.`,
+      );
+    }
+    targetYear = deriveGoalYear(targetAge, userAge);
+  } else if (hasYear) {
+    targetYear = Math.round(record.targetYear as number);
+    if (targetYear < 2000 || targetYear > 2100) {
+      throw new Error(
+        `Invalid pyramid prediction: "${field}.targetYear" must be a plausible calendar year.`,
+      );
+    }
+    targetAge = deriveGoalAge(targetYear, userAge);
+  } else {
     throw new Error(
-      `Invalid pyramid prediction: "${field}.targetYear" must be a plausible calendar year.`,
+      `Invalid pyramid prediction: "${field}" needs targetAge or targetYear.`,
     );
   }
-  return { id, icon, label, targetAmountHKD, targetYear };
+
+  return {
+    id,
+    icon,
+    label,
+    targetAmountHKD,
+    targetAge,
+    targetYear,
+    goalType: record.goalType === "retirementTarget" ? "retirementTarget" : "spend",
+  };
 }
 
 type ParsedAiPyramid = {
   pyramid: PyramidState;
   rationale: Bilingual;
+  protectionExplanation: Bilingual;
+  emergencyFundExplanation: Bilingual;
 };
 
-function parseAiPyramidPrediction(raw: string): ParsedAiPyramid {
+function parseAiPyramidPrediction(
+  raw: string,
+  userAge: number,
+): ParsedAiPyramid {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -254,20 +348,48 @@ function parseAiPyramidPrediction(raw: string): ParsedAiPyramid {
       `Invalid pyramid prediction: "goals.goals" must contain 2–4 items (got ${goalsRaw.goals.length}).`,
     );
   }
-  const goals = goalsRaw.goals.map((item, index) => parseGoalItem(item, index));
-
-  const monthlyInvestmentHKD = assertFiniteNumber(
-    investmentRaw.monthlyInvestmentHKD,
-    "investment.monthlyInvestmentHKD",
+  const goals = goalsRaw.goals.map((item, index) =>
+    parseGoalItem(item, index, userAge),
   );
+
   const monthlyFunHKD = assertFiniteNumber(
     investmentRaw.monthlyFunHKD,
     "investment.monthlyFunHKD",
   );
-  if (monthlyInvestmentHKD < 0 || monthlyFunHKD < 0) {
+  if (monthlyFunHKD < 0) {
     throw new Error(
-      "Invalid pyramid prediction: investment monthly amounts cannot be negative.",
+      "Invalid pyramid prediction: investment.monthlyFunHKD cannot be negative.",
     );
+  }
+
+  let lumpSumHKD = 0;
+  if (
+    typeof investmentRaw.lumpSumHKD === "number" &&
+    Number.isFinite(investmentRaw.lumpSumHKD)
+  ) {
+    lumpSumHKD = Math.round(investmentRaw.lumpSumHKD);
+    if (lumpSumHKD < 0) {
+      throw new Error(
+        "Invalid pyramid prediction: investment.lumpSumHKD cannot be negative.",
+      );
+    }
+  } else {
+    throw new Error(
+      'Invalid pyramid prediction: "investment.lumpSumHKD" is required.',
+    );
+  }
+
+  let monthlyInvestmentHKD = 0;
+  if (
+    typeof investmentRaw.monthlyInvestmentHKD === "number" &&
+    Number.isFinite(investmentRaw.monthlyInvestmentHKD)
+  ) {
+    monthlyInvestmentHKD = Math.round(investmentRaw.monthlyInvestmentHKD);
+    if (monthlyInvestmentHKD < 0) {
+      throw new Error(
+        "Invalid pyramid prediction: investment.monthlyInvestmentHKD cannot be negative.",
+      );
+    }
   }
 
   const riskAllocation = parseRiskAllocation(
@@ -275,6 +397,14 @@ function parseAiPyramidPrediction(raw: string): ParsedAiPyramid {
     "investment.riskAllocation",
   );
   const rationale = assertStrictBilingual(root.rationale, "rationale");
+  const protectionExplanation = assertStrictBilingual(
+    root.protectionExplanation,
+    "protectionExplanation",
+  );
+  const emergencyFundExplanation = assertStrictBilingual(
+    root.emergencyFundExplanation,
+    "emergencyFundExplanation",
+  );
 
   return {
     pyramid: {
@@ -288,16 +418,20 @@ function parseAiPyramidPrediction(raw: string): ParsedAiPyramid {
       goals: { goals },
       investment: {
         riskAllocation,
-        monthlyInvestmentHKD: Math.round(monthlyInvestmentHKD),
+        lumpSumHKD,
+        monthlyInvestmentHKD,
         monthlyFunHKD: Math.round(monthlyFunHKD),
       },
     },
     rationale,
+    protectionExplanation,
+    emergencyFundExplanation,
   };
 }
 
 function validatePredictInput(input: PredictPyramidInput): {
   age: number;
+  retirementAge: number;
   monthlyIncome: number;
   industry: string;
   industryOther: string | null;
@@ -318,6 +452,17 @@ function validatePredictInput(input: PredictPyramidInput): {
     input.monthlyIncome < 0
   ) {
     throw new Error("Monthly income must be a non-negative number (HKD).");
+  }
+
+  const age = Math.round(input.age);
+  let retirementAge = Math.round(
+    typeof input.retirementAge === "number" && Number.isFinite(input.retirementAge)
+      ? input.retirementAge
+      : 65,
+  );
+  retirementAge = Math.min(80, Math.max(40, retirementAge));
+  if (retirementAge <= age) {
+    throw new Error("Retirement age must be greater than your current age.");
   }
 
   const industry = input.industry?.trim();
@@ -341,7 +486,8 @@ function validatePredictInput(input: PredictPyramidInput): {
   }
 
   return {
-    age: Math.round(input.age),
+    age,
+    retirementAge,
     monthlyIncome: input.monthlyIncome,
     industry,
     industryOther,
@@ -360,22 +506,38 @@ export async function predictPyramidAction(
 ): Promise<PredictPyramidResult> {
   const validated = validatePredictInput(input);
 
-  const userPrompt = [
-    `Age: ${validated.age}`,
-    `Monthly income (HKD): ${validated.monthlyIncome}`,
-    `Industry: ${formatIndustryForAi(validated.industry, validated.industryOther)}`,
-    `Household status: ${formatHouseholdForAi(validated.householdStatus)}`,
-    "",
-    "Estimate CURRENT coverage and balances — not ideal recommendations.",
-  ].join("\n");
-
   const industryForMath = formatIndustryForAi(
     validated.industry,
     validated.industryOther,
   );
 
+  const benchmarks = buildPyramidBenchmarks({
+    age: validated.age,
+    monthlyIncomeHKD: validated.monthlyIncome,
+    industry: industryForMath,
+  });
+
+  const userPrompt = [
+    `Age: ${validated.age}`,
+    `Planned retirement age: ${validated.retirementAge}`,
+    `Years until retirement (runway): ${validated.retirementAge - validated.age}`,
+    `Monthly income (HKD): ${validated.monthlyIncome}`,
+    `Industry: ${industryForMath}`,
+    `Household status: ${formatHouseholdForAi(validated.householdStatus)}`,
+    "",
+    "Estimate CURRENT coverage and balances — not ideal recommendations.",
+    "Factor the retirement runway into risk allocation and lumpSumHKD guesses (shorter runway → more conservative mix, often smaller invested capital).",
+    "",
+    "DETERMINISTIC GUIDES (for explanations only — do NOT change these amounts):",
+    `Critical illness: ${benchmarks.ciBreakdown.multiple.toFixed(1)} × annual income HKD ${benchmarks.ciBreakdown.annualIncomeHKD} = HKD ${benchmarks.ciBreakdown.recommendedHKD}`,
+    `Emergency fund: ${benchmarks.efBreakdown.targetMonths} months × income-based burn for industry "${benchmarks.efBreakdown.industryKey}" = HKD ${benchmarks.efBreakdown.recommendedHKD}`,
+    "Narrate protectionExplanation and emergencyFundExplanation using exactly these guide numbers.",
+  ].join("\n");
+
   let aiPyramid: PyramidState;
   let rationale: Bilingual;
+  let protectionExplanation: Bilingual;
+  let emergencyFundExplanation: Bilingual;
 
   try {
     const parsed = await callDeepSeekParsed(
@@ -386,11 +548,13 @@ export async function predictPyramidAction(
         tone: validated.tone,
         bilingualFields: true,
       },
-      parseAiPyramidPrediction,
+      (raw) => parseAiPyramidPrediction(raw, validated.age),
       { maxParseAttempts: 2 },
     );
     aiPyramid = parsed.pyramid;
     rationale = parsed.rationale;
+    protectionExplanation = parsed.protectionExplanation;
+    emergencyFundExplanation = parsed.emergencyFundExplanation;
   } catch (error) {
     if (!isTransientWorkshopAiError(error)) {
       throw error;
@@ -403,16 +567,13 @@ export async function predictPyramidAction(
       age: validated.age,
       monthlyIncome: validated.monthlyIncome,
       industry: industryForMath,
+      retirementAge: validated.retirementAge,
     });
     aiPyramid = fallback.pyramid;
     rationale = fallback.rationale;
+    protectionExplanation = fallback.protectionExplanation;
+    emergencyFundExplanation = fallback.emergencyFundExplanation;
   }
-
-  const benchmarks = buildPyramidBenchmarks({
-    age: validated.age,
-    monthlyIncomeHKD: validated.monthlyIncome,
-    industry: industryForMath,
-  });
 
   const finalPyramid: PyramidState = {
     ...aiPyramid,
@@ -423,16 +584,22 @@ export async function predictPyramidAction(
     },
   };
 
-  const layerFlags = computeLayerFlags(aiPyramid, benchmarks);
+  const layerFlags = computeLayerFlags(aiPyramid, benchmarks, {
+    monthlyIncomeHKD: validated.monthlyIncome,
+  });
 
   const aiPyramidJson = {
     ...aiPyramid,
     rationale,
+    protectionExplanation,
+    emergencyFundExplanation,
   } as unknown as Prisma.InputJsonValue;
 
   const finalPyramidJson = {
     ...finalPyramid,
     rationale,
+    protectionExplanation,
+    emergencyFundExplanation,
   } as unknown as Prisma.InputJsonValue;
 
   if (
@@ -447,6 +614,7 @@ export async function predictPyramidAction(
   const session = await prisma.workshopSession.create({
     data: {
       age: validated.age,
+      retirementAge: validated.retirementAge,
       monthlyIncome: validated.monthlyIncome,
       industry: validated.industry,
       householdStatus: validated.householdStatus,
@@ -461,6 +629,8 @@ export async function predictPyramidAction(
     ...finalPyramid,
     sessionId: session.id,
     rationale,
+    protectionExplanation,
+    emergencyFundExplanation,
     layerFlags,
     benchmarks,
     aiRiskAllocation: aiPyramid.investment.riskAllocation,
@@ -500,8 +670,43 @@ export async function confirmPyramidAction(
     throw new Error("Risk allocation must be non-negative percentages summing to 100.");
   }
 
-  const finalPyramidJson = {
+  const lumpSumHKD = Math.max(
+    0,
+    Math.round(
+      typeof pyramid.investment.lumpSumHKD === "number" &&
+        Number.isFinite(pyramid.investment.lumpSumHKD)
+        ? pyramid.investment.lumpSumHKD
+        : 0,
+    ),
+  );
+  const monthlyInvestmentHKD = Math.max(
+    0,
+    Math.round(
+      typeof pyramid.investment.monthlyInvestmentHKD === "number" &&
+        Number.isFinite(pyramid.investment.monthlyInvestmentHKD)
+        ? pyramid.investment.monthlyInvestmentHKD
+        : 0,
+    ),
+  );
+
+  const writablePyramid: PyramidState = {
     ...pyramid,
+    goals: {
+      goals: pyramid.goals.goals.map((g) => ({
+        ...g,
+        goalType: g.goalType === "retirementTarget" ? "retirementTarget" : "spend",
+      })),
+    },
+    investment: {
+      riskAllocation: { ...risk },
+      lumpSumHKD,
+      monthlyInvestmentHKD,
+      monthlyFunHKD: Math.max(0, Math.round(pyramid.investment.monthlyFunHKD)),
+    },
+  };
+
+  const finalPyramidJson = {
+    ...writablePyramid,
     ...(input.rationale ? { rationale: input.rationale } : {}),
   } as unknown as Prisma.InputJsonValue;
 
@@ -746,7 +951,7 @@ export async function predictExpensesAction(
     "",
     "Other confirmed pyramid context:",
     `- emergencyFund.savedAmountHKD: ${input.pyramid.emergencyFund.savedAmountHKD}`,
-    `- monthlyInvestmentHKD: ${input.pyramid.investment.monthlyInvestmentHKD}`,
+    `- lumpSumHKD: ${input.pyramid.investment.lumpSumHKD}`,
     `- monthlyFunHKD: ${input.pyramid.investment.monthlyFunHKD}`,
     `- goals: ${JSON.stringify(input.pyramid.goals.goals.map((g) => g.label))}`,
     "",
@@ -879,12 +1084,653 @@ export async function saveRiskQuizAction(
 }
 
 /**
- * Thin server wrapper around pure `runGoalStressTest` for client components.
+ * Legacy thin server wrapper around `runGoalStressTest` (v2 stress path).
+ * Prefer {@link runLifeTimelineAction} for the wizard stress-test step.
  */
 export async function runGoalStressTestAction(
   input: GoalStressTestInput,
 ): Promise<StressTestResult> {
   return runGoalStressTest(input);
+}
+
+function parseExpensesState(value: unknown): ExpensesState {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Confirmed expenses are missing. Please confirm expenses first.");
+  }
+  const record = value as Record<string, unknown>;
+  if (!Array.isArray(record.categories)) {
+    throw new Error("Confirmed expenses are incomplete.");
+  }
+  const categories = record.categories.map((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`Invalid expense category at index ${index}.`);
+    }
+    const row = item as Record<string, unknown>;
+    return {
+      key: String(row.key ?? "discretionary") as ExpenseCategoryKey,
+      icon: String(row.icon ?? "Circle"),
+      amountHKD: Math.max(0, Math.round(Number(row.amountHKD) || 0)),
+    };
+  });
+  const totalFromCats = categories.reduce((sum, c) => sum + c.amountHKD, 0);
+  const totalHKD =
+    typeof record.totalHKD === "number" && Number.isFinite(record.totalHKD)
+      ? Math.max(0, Math.round(record.totalHKD))
+      : totalFromCats;
+  return { totalHKD, categories };
+}
+
+export type RunLifeTimelineActionResult = {
+  timeline: TimelineResult;
+  /** Legacy StressTestResult bridge for crisis / summary / PDF consumers. */
+  legacyStressTest: StressTestResult;
+  /** Persisted Step 4 decisions — hydrate the rail after back-navigation. */
+  journey: GoalJourneyState;
+  /** Canonical post-journey pyramid / expenses from the session. */
+  pyramid: PyramidState;
+  expenses: ExpensesState;
+};
+
+/**
+ * Math-only life timeline from the confirmed session pyramid + expenses,
+ * excluding given-up goals from `goalJourneyJson`.
+ * Persists a versioned payload to `macroResultJson` (replaces legacy stress shape).
+ */
+export async function runLifeTimelineAction(
+  sessionId: string,
+): Promise<RunLifeTimelineActionResult> {
+  const id = sessionId?.trim();
+  if (!id) {
+    throw new Error("Session ID is required to run the life timeline.");
+  }
+
+  const session = await prisma.workshopSession.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      age: true,
+      retirementAge: true,
+      monthlyIncome: true,
+      industry: true,
+      finalPyramidJson: true,
+      expensesJson: true,
+      goalJourneyJson: true,
+    },
+  });
+
+  if (!session) {
+    throw new Error("Workshop session not found. Please restart from intake.");
+  }
+  if (!session.finalPyramidJson) {
+    throw new Error("Confirmed pyramid is missing. Please confirm your pyramid first.");
+  }
+  if (!session.expensesJson) {
+    throw new Error("Confirmed expenses are missing. Please confirm expenses first.");
+  }
+
+  const pyramid = normalizePyramidState(session.finalPyramidJson, session.age);
+  const expenses = parseExpensesState(session.expensesJson);
+  const journey = parseGoalJourneyState(session.goalJourneyJson);
+  const retirementAge = Math.min(
+    80,
+    Math.max(session.age + 1, Math.round(session.retirementAge ?? 65)),
+  );
+
+  const timeline = runLifeTimeline({
+    age: session.age,
+    retirementAge,
+    monthlyIncome: session.monthlyIncome,
+    monthlyExpenses: expenses.totalHKD,
+    monthlyFun: pyramid.investment.monthlyFunHKD,
+    emergencyFundSavedHKD: pyramid.emergencyFund.savedAmountHKD,
+    investment: {
+      lumpSumHKD: pyramid.investment.lumpSumHKD,
+      monthlyInvestmentHKD: pyramid.investment.monthlyInvestmentHKD,
+      allocation: pyramid.investment.riskAllocation,
+    },
+    goals: activeGoalsForJourney(pyramid, journey),
+    industry: session.industry,
+  });
+
+  const legacyStressTest = timelineToLegacyStressTest(timeline, pyramid);
+
+  const macroResultJson = {
+    version: MACRO_RESULT_VERSION_LIFE_TIMELINE,
+    timeline,
+  } as unknown as Prisma.InputJsonValue;
+
+  const updated = await prisma.workshopSession.updateMany({
+    where: { id: session.id },
+    data: { macroResultJson },
+  });
+
+  if (updated.count === 0) {
+    throw new Error("Workshop session not found. Please restart from intake.");
+  }
+
+  return { timeline, legacyStressTest, journey, pyramid, expenses };
+}
+
+/** Read-only: load persisted Step 4 journey for Risk Quiz consistency copy. */
+export async function loadGoalJourneyAction(
+  sessionId: string,
+): Promise<GoalJourneyState> {
+  const id = sessionId?.trim();
+  if (!id) {
+    throw new Error("Session ID is required to load the goal journey.");
+  }
+  const session = await prisma.workshopSession.findUnique({
+    where: { id },
+    select: { id: true, goalJourneyJson: true },
+  });
+  if (!session) {
+    throw new Error("Workshop session not found. Please restart from intake.");
+  }
+  return parseGoalJourneyState(session.goalJourneyJson);
+}
+
+export type ComputeSqueezeRecommendationActionResult = {
+  timeline: TimelineResult;
+  journey: GoalJourneyState;
+  recommendation: SqueezeRecommendation | null;
+  outlook: GoalOutlook;
+};
+
+export type ComputeGoalOutlookActionResult = {
+  outlook: GoalOutlook;
+  timeline: TimelineResult;
+  /** Liquid pool ÷ monthly expenses at attained/target age on the concurrent timeline. */
+  emergencyFundMonths: number;
+};
+
+/**
+ * Math-only outlook for one goal against the concurrent journey timeline.
+ */
+export async function computeGoalOutlookAction(
+  sessionId: string,
+  goalId: string,
+  allowLiquidation: boolean,
+): Promise<ComputeGoalOutlookActionResult> {
+  const id = sessionId?.trim();
+  const targetGoalId = goalId?.trim();
+  if (!id) {
+    throw new Error("Session ID is required to compute goal outlook.");
+  }
+  if (!targetGoalId) {
+    throw new Error("Goal ID is required to compute goal outlook.");
+  }
+
+  const session = await prisma.workshopSession.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      age: true,
+      retirementAge: true,
+      monthlyIncome: true,
+      industry: true,
+      finalPyramidJson: true,
+      expensesJson: true,
+      goalJourneyJson: true,
+    },
+  });
+
+  if (!session) {
+    throw new Error("Workshop session not found. Please restart from intake.");
+  }
+  if (!session.finalPyramidJson) {
+    throw new Error("Confirmed pyramid is missing. Please confirm your pyramid first.");
+  }
+  if (!session.expensesJson) {
+    throw new Error("Confirmed expenses are missing. Please confirm expenses first.");
+  }
+
+  const pyramid = normalizePyramidState(session.finalPyramidJson, session.age);
+  const expenses = parseExpensesState(session.expensesJson);
+  const journey = parseGoalJourneyState(session.goalJourneyJson);
+  const goal = pyramid.goals.goals.find((row) => row.id === targetGoalId);
+  if (!goal) {
+    throw new Error("Goal not found in the confirmed pyramid.");
+  }
+
+  const workingPyramid: PyramidState = {
+    ...pyramid,
+    goals: {
+      goals: pyramid.goals.goals.map((row) =>
+        row.id === targetGoalId ? { ...row, allowLiquidation } : row,
+      ),
+    },
+  };
+
+  const timeline = rerunTimelineForJourney({
+    age: session.age,
+    retirementAge: session.retirementAge,
+    monthlyIncome: session.monthlyIncome,
+    industry: session.industry,
+    pyramid: workingPyramid,
+    expenses,
+    journey,
+  });
+
+  const outlook = computeGoalOutlook(timeline, {
+    ...goal,
+    allowLiquidation,
+  });
+
+  const ageForEf = outlook.attainedAtAge ?? outlook.targetAge;
+  const row =
+    timeline.rows.find((r) => r.age === ageForEf) ??
+    timeline.rows[timeline.rows.length - 1] ??
+    null;
+  const monthlyBurn = Math.max(1, expenses.totalHKD);
+  const emergencyFundMonths = row
+    ? Math.round((Math.max(0, row.liquidPool) / monthlyBurn) * 10) / 10
+    : 0;
+
+  return { outlook, timeline, emergencyFundMonths };
+}
+
+export async function computeSqueezeRecommendationAction(
+  sessionId: string,
+  goalId: string,
+  allowLiquidation: boolean,
+): Promise<ComputeSqueezeRecommendationActionResult> {
+  const id = sessionId?.trim();
+  const targetGoalId = goalId?.trim();
+  if (!id) {
+    throw new Error("Session ID is required to compute a squeeze recommendation.");
+  }
+  if (!targetGoalId) {
+    throw new Error("Goal ID is required to compute a squeeze recommendation.");
+  }
+
+  const session = await prisma.workshopSession.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      age: true,
+      retirementAge: true,
+      monthlyIncome: true,
+      industry: true,
+      finalPyramidJson: true,
+      expensesJson: true,
+      goalJourneyJson: true,
+    },
+  });
+
+  if (!session) {
+    throw new Error("Workshop session not found. Please restart from intake.");
+  }
+  if (!session.finalPyramidJson) {
+    throw new Error("Confirmed pyramid is missing. Please confirm your pyramid first.");
+  }
+  if (!session.expensesJson) {
+    throw new Error("Confirmed expenses are missing. Please confirm expenses first.");
+  }
+
+  const pyramid = normalizePyramidState(session.finalPyramidJson, session.age);
+  const expenses = parseExpensesState(session.expensesJson);
+  const journey = parseGoalJourneyState(session.goalJourneyJson);
+  const goal = pyramid.goals.goals.find((row) => row.id === targetGoalId);
+  if (!goal) {
+    throw new Error("Goal not found in the confirmed pyramid.");
+  }
+
+  const workingPyramid: PyramidState = {
+    ...pyramid,
+    goals: {
+      goals: pyramid.goals.goals.map((row) =>
+        row.id === targetGoalId
+          ? { ...row, allowLiquidation }
+          : row,
+      ),
+    },
+  };
+
+  const timeline = rerunTimelineForJourney({
+    age: session.age,
+    retirementAge: session.retirementAge,
+    monthlyIncome: session.monthlyIncome,
+    industry: session.industry,
+    pyramid: workingPyramid,
+    expenses,
+    journey,
+  });
+
+  const outlook = computeGoalOutlook(
+    timeline,
+    { ...goal, allowLiquidation },
+  );
+  const recommendation = solveSqueeze({
+    requiredExtraMonthlyHKD: outlook.requiredExtraMonthlyHKD,
+    monthsLate: outlook.monthsLate,
+    targetAge: goal.targetAge,
+    monthlyIncomeHKD: session.monthlyIncome,
+    expenses,
+    monthlyFunHKD: workingPyramid.investment.monthlyFunHKD,
+    monthlyInvestmentHKD: workingPyramid.investment.monthlyInvestmentHKD,
+  });
+
+  return { timeline, journey, recommendation, outlook };
+}
+
+const NARRATE_GOAL_SQUEEZE_SYSTEM_PROMPT = `You explain ONE spending-squeeze recommendation for a Hong Kong workshop participant.
+
+You receive ALREADY-COMPUTED numbers only. You narrate — you MUST NOT invent, recalculate, or round differently than the figures provided.
+
+Write 1–2 short bilingual sentences that explain the trade-off (cutting fun and/or discretionary) in the workshop tone.
+
+Rules:
+- Reference the ACTUAL requiredExtraMonthlyHKD and the specific funCutMonthlyHKD / discretionaryCutMonthlyHKD passed in.
+- If partialCapped is true (fun+discretionary could not fully cover the need), you MUST say so honestly and mention achievableAtAge when provided.
+- Do not invent different HKD amounts or ages. Do not give generic tips.
+
+Return ONLY valid JSON:
+{
+  "reasoning": { "en": string, "zhHant": string }
+}`;
+
+function squeezeCutMonthly(recommendation: SqueezeRecommendation): {
+  funCutMonthlyHKD: number;
+  discretionaryCutMonthlyHKD: number;
+  partial: boolean;
+} {
+  const funCurrent =
+    recommendation.currentAllocation.find((s) => s.key === "fun")?.amountHKD ?? 0;
+  const funNext =
+    recommendation.recommendedAllocation.find((s) => s.key === "fun")?.amountHKD ??
+    0;
+  const discCurrent =
+    recommendation.currentAllocation.find((s) => s.key === "discretionary")
+      ?.amountHKD ?? 0;
+  const discNext =
+    recommendation.recommendedAllocation.find((s) => s.key === "discretionary")
+      ?.amountHKD ?? 0;
+  const funCutMonthlyHKD = Math.max(0, funCurrent - funNext);
+  const discretionaryCutMonthlyHKD = Math.max(0, discCurrent - discNext);
+  const achievableExtra = funCutMonthlyHKD + discretionaryCutMonthlyHKD;
+  const partial =
+    recommendation.requiredExtraMonthlyHKD > 0 &&
+    achievableExtra + 1e-9 < recommendation.requiredExtraMonthlyHKD;
+  return { funCutMonthlyHKD, discretionaryCutMonthlyHKD, partial };
+}
+
+/**
+ * DeepSeek narrates an already-computed squeeze recommendation (reasoning only).
+ * On transient AI failure after retries, returns a deterministic bilingual template.
+ */
+export async function narrateGoalSqueezeAction(
+  sessionId: string,
+  goalId: string,
+  recommendation: SqueezeRecommendation,
+  tone: WorkshopTone,
+): Promise<Bilingual> {
+  const id = sessionId?.trim();
+  const targetGoalId = goalId?.trim();
+  if (!id) {
+    throw new Error("Session ID is required to narrate a squeeze recommendation.");
+  }
+  if (!targetGoalId) {
+    throw new Error("Goal ID is required to narrate a squeeze recommendation.");
+  }
+  if (!WORKSHOP_TONES.has(tone)) {
+    throw new Error("A valid workshop tone is required for squeeze narration.");
+  }
+  if (!recommendation || recommendation.requiredExtraMonthlyHKD <= 0) {
+    throw new Error("A non-empty squeeze recommendation is required to narrate.");
+  }
+
+  const session = await prisma.workshopSession.findUnique({
+    where: { id },
+    select: { id: true, age: true, finalPyramidJson: true },
+  });
+  if (!session) {
+    throw new Error("Workshop session not found. Please restart from intake.");
+  }
+  if (!session.finalPyramidJson) {
+    throw new Error("Confirmed pyramid is missing. Please confirm your pyramid first.");
+  }
+
+  const pyramid = normalizePyramidState(session.finalPyramidJson, session.age);
+  const goal = pyramid.goals.goals.find((row) => row.id === targetGoalId);
+  if (!goal) {
+    throw new Error("Goal not found in the confirmed pyramid.");
+  }
+
+  const cuts = squeezeCutMonthly(recommendation);
+  const fallback = buildDeterministicSqueezeReasoning({
+    funCutMonthlyHKD: cuts.funCutMonthlyHKD,
+    discretionaryCutMonthlyHKD: cuts.discretionaryCutMonthlyHKD,
+    achievableAtAge: recommendation.achievableAtAge,
+    partial: cuts.partial,
+  });
+
+  const userPrompt = [
+    `Goal: ${goal.label.en} / ${goal.label.zhHant}`,
+    `Target age: ${goal.targetAge}`,
+    `requiredExtraMonthlyHKD: ${recommendation.requiredExtraMonthlyHKD}`,
+    `funCutMonthlyHKD: ${cuts.funCutMonthlyHKD}`,
+    `discretionaryCutMonthlyHKD: ${cuts.discretionaryCutMonthlyHKD}`,
+    `partialCapped: ${cuts.partial}`,
+    `achievableAtAge: ${recommendation.achievableAtAge ?? "null"}`,
+  ].join("\n");
+
+  try {
+    return await callDeepSeekParsed(
+      {
+        systemPrompt: NARRATE_GOAL_SQUEEZE_SYSTEM_PROMPT,
+        userPrompt,
+        jsonMode: true,
+        tone,
+        bilingualFields: true,
+      },
+      (raw) => {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          throw new Error(
+            "DeepSeek returned invalid JSON for squeeze narration. Please try again.",
+          );
+        }
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error("Invalid squeeze narration: expected a JSON object.");
+        }
+        return assertStrictBilingual(
+          (parsed as Record<string, unknown>).reasoning,
+          "reasoning",
+        );
+      },
+      { maxParseAttempts: 2 },
+    );
+  } catch (error) {
+    if (!isTransientWorkshopAiError(error)) {
+      throw error;
+    }
+    console.warn(
+      "[workshop] narrateGoalSqueezeAction: AI unavailable after retries; using deterministic fallback",
+      error instanceof Error ? error.message : error,
+    );
+    return fallback;
+  }
+}
+
+export type ApplyGoalJourneyDecisionActionResult = {
+  timeline: TimelineResult;
+  legacyStressTest: StressTestResult;
+  journey: GoalJourneyState;
+  pyramid: PyramidState;
+  expenses: ExpensesState;
+  allocation: ReturnType<typeof currentJourneyAllocation>;
+};
+
+export async function applyGoalJourneyDecisionAction(
+  sessionId: string,
+  decision: GoalJourneyDecision,
+): Promise<ApplyGoalJourneyDecisionActionResult> {
+  const id = sessionId?.trim();
+  if (!id) {
+    throw new Error("Session ID is required to apply a goal journey decision.");
+  }
+  if (!decision?.goalId?.trim()) {
+    throw new Error("Goal journey decision is missing a goal ID.");
+  }
+
+  const session = await prisma.workshopSession.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      age: true,
+      retirementAge: true,
+      monthlyIncome: true,
+      industry: true,
+      finalPyramidJson: true,
+      expensesJson: true,
+      goalJourneyJson: true,
+    },
+  });
+
+  if (!session) {
+    throw new Error("Workshop session not found. Please restart from intake.");
+  }
+  if (!session.finalPyramidJson) {
+    throw new Error("Confirmed pyramid is missing. Please confirm your pyramid first.");
+  }
+  if (!session.expensesJson) {
+    throw new Error("Confirmed expenses are missing. Please confirm expenses first.");
+  }
+
+  const pyramid = normalizePyramidState(session.finalPyramidJson, session.age);
+  const expenses = parseExpensesState(session.expensesJson);
+  const baseJourney = session.goalJourneyJson
+    ? parseGoalJourneyState(session.goalJourneyJson)
+    : emptyGoalJourneyState();
+  const goal = pyramid.goals.goals.find((row) => row.id === decision.goalId);
+  if (!goal) {
+    throw new Error("Goal not found in the confirmed pyramid.");
+  }
+
+  let recommendation: SqueezeRecommendation | null = null;
+  if (decision.status === "applied" && decision.acceptedSqueeze) {
+    const workingPyramid: PyramidState = {
+      ...pyramid,
+      goals: {
+        goals: pyramid.goals.goals.map((row) =>
+          row.id === decision.goalId
+            ? { ...row, allowLiquidation: decision.allowLiquidation }
+            : row,
+        ),
+      },
+    };
+    const beforeTimeline = rerunTimelineForJourney({
+      age: session.age,
+      retirementAge: session.retirementAge,
+      monthlyIncome: session.monthlyIncome,
+      industry: session.industry,
+      pyramid: workingPyramid,
+      expenses,
+      journey: baseJourney,
+    });
+    const outlook = computeGoalOutlook(beforeTimeline, {
+      ...goal,
+      allowLiquidation: decision.allowLiquidation,
+    });
+    recommendation = solveSqueeze({
+      requiredExtraMonthlyHKD: outlook.requiredExtraMonthlyHKD,
+      monthsLate: outlook.monthsLate,
+      targetAge: goal.targetAge,
+      monthlyIncomeHKD: session.monthlyIncome,
+      expenses,
+      monthlyFunHKD: workingPyramid.investment.monthlyFunHKD,
+      monthlyInvestmentHKD: workingPyramid.investment.monthlyInvestmentHKD,
+    });
+  }
+
+  const next = applyGoalDecision(
+    {
+      pyramid,
+      expenses,
+      journey: baseJourney,
+      squeezeRecommendation: recommendation,
+    },
+    decision.goalId,
+    {
+      ...decision,
+      squeezeCutsHKD: recommendation
+        ? {
+            fun:
+              recommendation.currentAllocation.find((s) => s.key === "fun")
+                ?.amountHKD != null &&
+              recommendation.recommendedAllocation.find((s) => s.key === "fun")
+                ?.amountHKD != null
+                ? Math.round(
+                    ((recommendation.currentAllocation.find((s) => s.key === "fun")
+                      ?.amountHKD ?? 0) -
+                      (recommendation.recommendedAllocation.find(
+                        (s) => s.key === "fun",
+                      )?.amountHKD ?? 0)) *
+                      12,
+                  )
+                : 0,
+            discretionary:
+              recommendation.currentAllocation.find(
+                (s) => s.key === "discretionary",
+              )?.amountHKD != null &&
+              recommendation.recommendedAllocation.find(
+                (s) => s.key === "discretionary",
+              )?.amountHKD != null
+                ? Math.round(
+                    ((recommendation.currentAllocation.find(
+                      (s) => s.key === "discretionary",
+                    )?.amountHKD ?? 0) -
+                      (recommendation.recommendedAllocation.find(
+                        (s) => s.key === "discretionary",
+                      )?.amountHKD ?? 0)) *
+                      12,
+                  )
+                : 0,
+          }
+        : decision.squeezeCutsHKD,
+    },
+  );
+
+  const timeline = rerunTimelineForJourney({
+    age: session.age,
+    retirementAge: session.retirementAge,
+    monthlyIncome: session.monthlyIncome,
+    industry: session.industry,
+    pyramid: next.pyramid,
+    expenses: next.expenses,
+    journey: next.journey,
+  });
+  const legacyStressTest = timelineToLegacyStressTest(timeline, next.pyramid);
+  const macroResultJson = {
+    version: MACRO_RESULT_VERSION_LIFE_TIMELINE,
+    timeline,
+  } as unknown as Prisma.InputJsonValue;
+
+  await prisma.workshopSession.update({
+    where: { id: session.id },
+    data: {
+      finalPyramidJson: next.pyramid as unknown as Prisma.InputJsonValue,
+      expensesJson: next.expenses as unknown as Prisma.InputJsonValue,
+      goalJourneyJson: next.journey as unknown as Prisma.InputJsonValue,
+      macroResultJson,
+    },
+  });
+
+  return {
+    timeline,
+    legacyStressTest,
+    journey: next.journey,
+    pyramid: next.pyramid,
+    expenses: next.expenses,
+    allocation: currentJourneyAllocation({
+      monthlyIncomeHKD: session.monthlyIncome,
+      expenses: next.expenses,
+      monthlyFunHKD: next.pyramid.investment.monthlyFunHKD,
+      monthlyInvestmentHKD: next.pyramid.investment.monthlyInvestmentHKD,
+    }),
+  };
 }
 
 export type NarrateStressTestResult = {
@@ -899,12 +1745,13 @@ export type NarrateStressTestContext = {
   expenses?: ExpensesState;
 };
 
-const NARRATE_STRESS_SYSTEM_PROMPT = `You explain amber/red stress-test outcomes for a Hong Kong workshop participant.
+const NARRATE_STRESS_SYSTEM_PROMPT = `You explain amber/red (and oversaved emergency-fund) stress-test outcomes for a Hong Kong workshop participant.
 
-You receive deterministic stress-test numbers. For EACH flagged item only (amber or red goals, and emergency fund if amber/red), write ONE short note (1–2 sentences) explaining WHY the projection is behind — tone-flavored.
+You receive deterministic life-timeline numbers. For EACH flagged item only (amber or red goals, and emergency fund if amber/red/oversaved), write ONE short note (1–2 sentences) explaining WHY the projection needs attention — tone-flavored.
 
 Rules:
-- Reference ACTUAL numbers from the payload (target year, projected year or "not reached", months, surplus, rent/housing share of expenses if given, income growth rate, goal label).
+- Reference ACTUAL numbers from the payload (target age, attained age or "not reached", inflated target HKD, EF months/target/excess/opportunity cost, surplus samples).
+- For oversaved emergency fund: explain that excess cash above ~1.5× the target could be invested, citing excessHKD and opportunityCostHKD when provided. Do not invent those figures.
 - Skip every green item entirely — positive-by-omission; do not write praise notes.
 - Do not invent numbers. Do not give generic tips.
 - id must be the goal id, or exactly "emergencyFund" for the emergency-fund card.
@@ -953,23 +1800,23 @@ function parseStressTestNotes(
       );
     }
     const row = item as Record<string, unknown>;
-    const id = assertNonEmptyString(row.id, `notes[${i}].id`);
+    const noteId = assertNonEmptyString(row.id, `notes[${i}].id`);
     const note = assertStrictBilingual(row.note, `notes[${i}].note`);
-    if (!expected.has(id)) {
+    if (!expected.has(noteId)) {
       // Ignore unexpected ids rather than failing the whole step.
       continue;
     }
-    notes.push({ id, note });
+    notes.push({ id: noteId, note });
   }
 
   // Ensure one note per expected id (fallback if model skipped one).
-  return expectedIds.map((id) => {
-    const match = notes.find((n) => n.id === id);
+  return expectedIds.map((expectedId) => {
+    const match = notes.find((n) => n.id === expectedId);
     if (match) {
       return match;
     }
     return {
-      id,
+      id: expectedId,
       note: {
         en: translate("en", "workshop.stressTest.noteFallback"),
         zhHant: translate("zh-Hant", "workshop.stressTest.noteFallback"),
@@ -979,20 +1826,20 @@ function parseStressTestNotes(
 }
 
 /**
- * Narrates amber/red stress-test items only. Persists StressTestResult + notes
- * into WorkshopSession.macroResultJson.
+ * Narrates amber/red/oversaved life-timeline items only.
+ * Persists versioned TimelineResult + notes into WorkshopSession.macroResultJson.
  */
 export async function narrateStressTestAction(
   sessionId: string,
-  result: StressTestResult,
+  timeline: TimelineResult,
   context: NarrateStressTestContext,
 ): Promise<NarrateStressTestResult> {
   const id = sessionId?.trim();
   if (!id) {
     throw new Error("Session ID is required to narrate the stress test.");
   }
-  if (!result || !Array.isArray(result.goalProjections)) {
-    throw new Error("Stress test result is incomplete.");
+  if (!timeline || !Array.isArray(timeline.rows) || !Array.isArray(timeline.goals)) {
+    throw new Error("Life timeline result is incomplete.");
   }
   if (!WORKSHOP_TONES.has(context.tone)) {
     throw new Error("A valid workshop tone is required for narration.");
@@ -1001,31 +1848,30 @@ export async function narrateStressTestAction(
   const flaggedIds: string[] = [];
   const flaggedPayload: Array<Record<string, unknown>> = [];
 
-  if (
-    result.emergencyFundProjection &&
-    result.emergencyFundProjection.status !== "green"
-  ) {
+  const ef = timeline.emergencyFund;
+  if (ef && ef.status !== "green") {
     flaggedIds.push("emergencyFund");
     flaggedPayload.push({
       id: "emergencyFund",
-      status: result.emergencyFundProjection.status,
-      targetMonths: result.emergencyFundProjection.targetMonths,
-      projectedMonths: result.emergencyFundProjection.projectedMonths,
+      status: ef.status,
+      targetMonths: ef.targetMonths,
+      targetHKD: ef.targetHKD,
+      excessHKD: ef.excessHKD ?? null,
+      opportunityCostHKD: ef.opportunityCostHKD ?? null,
     });
   }
 
-  for (const goal of result.goalProjections) {
+  for (const goal of timeline.goals) {
     if (goal.status === "green") {
       continue;
     }
     flaggedIds.push(goal.goalId);
     flaggedPayload.push({
       id: goal.goalId,
-      label: goal.label.en,
       status: goal.status,
-      targetYear: goal.targetYear,
-      projectedYear: goal.projectedYear,
-      targetAmountHKD: goal.targetAmountHKD,
+      targetAge: goal.targetAge,
+      attainedAtAge: goal.attainedAtAge,
+      inflatedTargetHKD: goal.inflatedTargetHKD,
     });
   }
 
@@ -1055,7 +1901,13 @@ export async function narrateStressTestAction(
         ? Math.round((housing.amountHKD / expenseTotal) * 100)
         : null;
 
-    const earlySurplus = result.monthlySurplusByYear.slice(0, 3);
+    const earlySurplus = timeline.rows.slice(0, 3).map((row) => ({
+      age: row.age,
+      year: row.year,
+      surplus: row.surplus,
+      totalIncome: row.totalIncome,
+      expenses: row.expenses,
+    }));
 
     const userPrompt = [
       `Age: ${age}`,
@@ -1065,11 +1917,13 @@ export async function narrateStressTestAction(
       housingSharePercent !== null
         ? `Housing share of monthly expenses: ${housingSharePercent}%`
         : "Housing share: not provided",
+      `Retirement age: ${timeline.retirement.retirementAge}`,
+      `Assets depleted at age: ${timeline.retirement.assetsDepletedAtAge ?? "never"}`,
       "",
-      "Early surplus path (monthly HKD):",
+      "Early surplus path (annual HKD):",
       JSON.stringify(earlySurplus),
       "",
-      "Flagged amber/red items only (write one note each):",
+      "Flagged amber/red/oversaved items only (write one note each):",
       JSON.stringify(flaggedPayload),
     ].join("\n");
 
@@ -1098,7 +1952,8 @@ export async function narrateStressTestAction(
   }
 
   const macroResultJson = {
-    ...result,
+    version: MACRO_RESULT_VERSION_LIFE_TIMELINE,
+    timeline,
     notes,
   } as unknown as Prisma.InputJsonValue;
 
@@ -1287,66 +2142,140 @@ export type CrisisPersona = {
 /** @deprecated Prefer CrisisState — kept for interim goals-step adapters. */
 export type CrisisScenario = CrisisState;
 
-const CRISIS_LAYERS = new Set([
-  "protection",
-  "emergencyFund",
-  "investment",
-  "goals",
-]);
-
 const RISK_PROFILES = new Set<RiskProfile>([
   "conservative",
   "balanced",
   "aggressive",
 ]);
 
-const GENERATE_CRISIS_SYSTEM_PROMPT = `You are a risk actuary designing a single stress-test crisis for a Hong Kong professional in a live workshop.
+const CRISIS_TYPE_SET = new Set<string>(CRISIS_TYPES);
 
-Generate ONE highly specific, realistic financial shock tailored EXACTLY to this person's industry, age, household status, AND risk profile.
+/** Param bounds enforced server-side (AI must stay within; we clamp / reject). */
+const CRISIS_PARAM_BOUNDS: Record<
+  CrisisType,
+  {
+    oneTimeCostHKD: [number, number];
+    incomeHitPct: [number, number];
+    durationMonths: [number, number];
+    marketDropPct: [number, number];
+  }
+> = {
+  medical: {
+    oneTimeCostHKD: [50_000, 800_000],
+    incomeHitPct: [0, 40],
+    durationMonths: [1, 6],
+    marketDropPct: [0, 0],
+  },
+  critical_illness: {
+    oneTimeCostHKD: [200_000, 2_000_000],
+    incomeHitPct: [0, 50],
+    durationMonths: [3, 24],
+    marketDropPct: [0, 0],
+  },
+  job_loss: {
+    oneTimeCostHKD: [0, 100_000],
+    incomeHitPct: [50, 100],
+    durationMonths: [3, 18],
+    marketDropPct: [0, 0],
+  },
+  market_crash: {
+    oneTimeCostHKD: [0, 50_000],
+    incomeHitPct: [0, 20],
+    durationMonths: [1, 12],
+    marketDropPct: [15, 50],
+  },
+  accident: {
+    oneTimeCostHKD: [30_000, 500_000],
+    incomeHitPct: [0, 30],
+    durationMonths: [1, 12],
+    marketDropPct: [0, 0],
+  },
+  family: {
+    oneTimeCostHKD: [50_000, 400_000],
+    incomeHitPct: [0, 40],
+    durationMonths: [3, 18],
+    marketDropPct: [0, 0],
+  },
+};
 
-Risk-profile scenario flavor (mandatory):
-- aggressive → market-crash-triggered liquidation / leveraged-growth unwind scenario (still grounded in THEIR industry/age — e.g. concentrated stock/options hit for a tech seller, property leverage shock for a realtor)
-- conservative → medical / health-gap fear scenario (hospital bill, CI gap, caregiver cost) that exploits thin protection for THEIR life stage
-- balanced → mixed career / income disruption scenario (redeployment, client loss, role obsolescence) specific to THEIR industry
+const GENERATE_CRISIS_SYSTEM_PROMPT = `You design ONE crisis scenario for a Hong Kong workshop participant.
 
-Explicitly FORBIDDEN generic scenarios: car accidents, broken laptops/phones, generic "unexpected expense", lottery-style luck events, or any shock that could apply equally to any profession.
+You pick a crisisType and structured params. A DETERMINISTIC engine will compute all HKD impacts, coverage offsets, and cut-order absorption — you MUST NOT invent impact amounts or layer hit cards with numbers you calculated.
 
-Also return impacts: an array of 2–4 CrisisImpact objects. Each impact tags which pyramid layer is hit and includes a punchy bilingual headline plus either detailHKD or detailMonths (not both required, but at least one should usually be set).
-Examples:
-- { "layer": "protection", "icon": "ShieldOff", "headline": { "en": "No Critical Illness Cover", "zhHant": "沒有危疾保障" }, "detailHKD": 340000 }
-- { "layer": "emergencyFund", "icon": "PiggyBank", "headline": { "en": "Cash runway collapses", "zhHant": "現金緩衝崩潰" }, "detailMonths": 4 }
-- { "layer": "investment", "icon": "TrendingDown", "headline": { "en": "Forced sale at the bottom", "zhHant": "低位被迫斬倉" }, "detailHKD": 180000 }
-- { "layer": "goals", "icon": "Target", "headline": { "en": "Wedding fund delayed", "zhHant": "婚禮儲蓄延期" }, "detailMonths": 24 }
+Allowed crisisType values (exact strings):
+- "medical" — hospital / medical bill shock
+- "critical_illness" — CI diagnosis cost shock
+- "job_loss" — income disruption / redeployment
+- "market_crash" — invested-asset mark-down
+- "accident" — accident with medical cost
+- "family" — family care / support cost shock
 
-Return ONLY valid JSON matching this exact shape:
+Risk-profile guidance (prefer, do not invent unknown types):
+- aggressive → lean "market_crash" (still grounded in their industry/age)
+- conservative → lean "medical" or "critical_illness"
+- balanced → lean "job_loss" or "family" or "accident" suited to their industry
+
+FORBIDDEN: unknown crisisType strings, generic "car accident" filler, lottery luck, or shocks that ignore industry/age/household.
+
+Params (integers; stay within bounds — server clamps/rejects):
+- medical: oneTimeCostHKD 50000–800000, incomeHitPct 0–40, durationMonths 1–6
+- critical_illness: oneTimeCostHKD 200000–2000000, incomeHitPct 0–50, durationMonths 3–24
+- job_loss: oneTimeCostHKD 0–100000, incomeHitPct 50–100, durationMonths 3–18
+- market_crash: marketDropPct 15–50, incomeHitPct 0–20, durationMonths 1–12, oneTimeCostHKD 0–50000
+- accident: oneTimeCostHKD 30000–500000, incomeHitPct 0–30, durationMonths 1–12
+- family: oneTimeCostHKD 50000–400000, incomeHitPct 0–40, durationMonths 3–18
+
+Narrative rules:
+- title + description: bilingual { en, zhHant }, persona-specific, 2–4 sentences in description.
+- Reference the PARAM numbers you chose (cost, %, months, drop) in prose — do NOT invent covered/uncovered HKD or which pool paid.
+- headlines: optional bilingual blurbs keyed by stage id the engine may emit:
+  coverage | fun | discretionary | liquid | invested | market | income | goals
+  Only include keys that plausibly apply to your crisisType (e.g. never "coverage" for job_loss/market_crash/family).
+
+Return ONLY valid JSON:
 {
+  "crisisType": "medical" | "critical_illness" | "job_loss" | "market_crash" | "accident" | "family",
+  "oneTimeCostHKD": number,
+  "incomeHitPct": number,
+  "durationMonths": number,
+  "marketDropPct": number,
   "title": { "en": string, "zhHant": string },
   "description": { "en": string, "zhHant": string },
-  "monthlyIncomeImpactPercent": number,
-  "oneTimeCostHKD": number,
-  "durationMonths": number,
-  "impacts": [
-    {
-      "layer": "protection" | "emergencyFund" | "investment" | "goals",
-      "icon": string,
-      "headline": { "en": string, "zhHant": string },
-      "detailHKD": number,
-      "detailMonths": number
-    }
-  ]
+  "headlines": {
+    "coverage": { "en": string, "zhHant": string },
+    "fun": { "en": string, "zhHant": string },
+    "discretionary": { "en": string, "zhHant": string },
+    "liquid": { "en": string, "zhHant": string },
+    "invested": { "en": string, "zhHant": string },
+    "market": { "en": string, "zhHant": string },
+    "income": { "en": string, "zhHant": string },
+    "goals": { "en": string, "zhHant": string }
+  }
 }
 
-Constraints on numbers:
-- monthlyIncomeImpactPercent: integer 0–100
-- oneTimeCostHKD: non-negative HKD
-- durationMonths: positive integer
-- description: 2–4 sentences, persona-specific — no generic advice language (bilingual object)
-- impacts: 2–4 items; detailHKD and detailMonths are optional but include at least one concrete number across the set`;
+headlines may be {} or omit unused keys. marketDropPct required for market_crash; otherwise 0.`;
 
-function parseCrisisState(
-  raw: string,
-  riskProfile: RiskProfile,
-): CrisisState {
+type ParsedCrisisNarrative = {
+  crisisType: CrisisType;
+  oneTimeCostHKD: number;
+  incomeHitPct: number;
+  durationMonths: number;
+  marketDropPct: number;
+  title: Bilingual;
+  description: Bilingual;
+  headlines: Partial<
+    Record<
+      NonNullable<CrisisImpact["stageId"]>,
+      Bilingual
+    >
+  >;
+};
+
+function clampToBounds(value: number, bounds: [number, number]): number {
+  return Math.min(bounds[1], Math.max(bounds[0], Math.round(value)));
+}
+
+function parseCrisisNarrative(raw: string): ParsedCrisisNarrative {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -1361,105 +2290,93 @@ function parseCrisisState(
   }
 
   const record = parsed as Record<string, unknown>;
+  const crisisTypeRaw = assertNonEmptyString(record.crisisType, "crisisType");
+  if (!CRISIS_TYPE_SET.has(crisisTypeRaw)) {
+    throw new Error(
+      `Invalid crisis scenario: unknown crisisType "${crisisTypeRaw}".`,
+    );
+  }
+  const crisisType = crisisTypeRaw as CrisisType;
+  const bounds = CRISIS_PARAM_BOUNDS[crisisType];
+
   const title = assertStrictBilingual(record.title, "title");
   const description = assertStrictBilingual(record.description, "description");
-  const monthlyIncomeImpactPercent = assertFiniteNumber(
-    record.monthlyIncomeImpactPercent,
-    "monthlyIncomeImpactPercent",
+
+  const oneTimeCostHKD = clampToBounds(
+    assertFiniteNumber(record.oneTimeCostHKD, "oneTimeCostHKD"),
+    bounds.oneTimeCostHKD,
   );
-  const oneTimeCostHKD = assertFiniteNumber(
-    record.oneTimeCostHKD,
-    "oneTimeCostHKD",
+  const incomeHitPct = clampToBounds(
+    assertFiniteNumber(record.incomeHitPct, "incomeHitPct"),
+    bounds.incomeHitPct,
   );
-  const durationMonths = assertFiniteNumber(
-    record.durationMonths,
-    "durationMonths",
+  const durationMonths = clampToBounds(
+    assertFiniteNumber(record.durationMonths, "durationMonths"),
+    bounds.durationMonths,
   );
+  const marketDropRaw =
+    record.marketDropPct === undefined || record.marketDropPct === null
+      ? 0
+      : assertFiniteNumber(record.marketDropPct, "marketDropPct");
+  const marketDropPct =
+    crisisType === "market_crash"
+      ? clampToBounds(marketDropRaw, bounds.marketDropPct)
+      : 0;
 
-  if (monthlyIncomeImpactPercent < 0 || monthlyIncomeImpactPercent > 100) {
-    throw new Error(
-      'Invalid crisis scenario: "monthlyIncomeImpactPercent" must be between 0 and 100.',
-    );
-  }
-  if (oneTimeCostHKD < 0) {
-    throw new Error(
-      'Invalid crisis scenario: "oneTimeCostHKD" cannot be negative.',
-    );
-  }
-  if (!Number.isFinite(durationMonths) || durationMonths < 1) {
-    throw new Error(
-      'Invalid crisis scenario: "durationMonths" must be a positive number.',
-    );
-  }
-
-  const impactsRaw = record.impacts;
-  if (!Array.isArray(impactsRaw) || impactsRaw.length < 2 || impactsRaw.length > 4) {
-    throw new Error(
-      'Invalid crisis scenario: "impacts" must be an array of 2–4 items.',
-    );
-  }
-
-  const impacts: CrisisImpact[] = impactsRaw.map((item, index) => {
-    const row = assertRecord(item, `impacts[${index}]`);
-    const layer = assertNonEmptyString(row.layer, `impacts[${index}].layer`);
-    if (!CRISIS_LAYERS.has(layer)) {
-      throw new Error(
-        `Invalid crisis scenario: impacts[${index}].layer must be protection|emergencyFund|investment|goals.`,
-      );
-    }
-    const icon = assertNonEmptyString(row.icon, `impacts[${index}].icon`);
-    const headline = assertStrictBilingual(
-      row.headline,
-      `impacts[${index}].headline`,
-    );
-
-    const impact: CrisisImpact = {
-      layer: layer as CrisisImpact["layer"],
-      icon,
-      headline,
-    };
-
-    if (row.detailHKD !== undefined && row.detailHKD !== null) {
-      const detailHKD = assertFiniteNumber(
-        row.detailHKD,
-        `impacts[${index}].detailHKD`,
-      );
-      if (detailHKD < 0) {
-        throw new Error(
-          `Invalid crisis scenario: impacts[${index}].detailHKD cannot be negative.`,
-        );
+  const headlines: ParsedCrisisNarrative["headlines"] = {};
+  const headlinesRaw = record.headlines;
+  if (headlinesRaw && typeof headlinesRaw === "object" && !Array.isArray(headlinesRaw)) {
+    const map = headlinesRaw as Record<string, unknown>;
+    const keys = [
+      "coverage",
+      "fun",
+      "discretionary",
+      "liquid",
+      "invested",
+      "market",
+      "income",
+      "goals",
+    ] as const;
+    for (const key of keys) {
+      if (map[key] == null) {
+        continue;
       }
-      impact.detailHKD = Math.round(detailHKD);
-    }
-    if (row.detailMonths !== undefined && row.detailMonths !== null) {
-      const detailMonths = assertFiniteNumber(
-        row.detailMonths,
-        `impacts[${index}].detailMonths`,
-      );
-      if (detailMonths < 0) {
-        throw new Error(
-          `Invalid crisis scenario: impacts[${index}].detailMonths cannot be negative.`,
-        );
+      // Reject coverage headlines for non-protection types (engine will omit the card).
+      if (
+        key === "coverage" &&
+        crisisType !== "medical" &&
+        crisisType !== "critical_illness" &&
+        crisisType !== "accident"
+      ) {
+        continue;
       }
-      impact.detailMonths = Math.round(detailMonths);
+      headlines[key] = assertStrictBilingual(map[key], `headlines.${key}`);
     }
-
-    return impact;
-  });
+  }
 
   return {
+    crisisType,
+    oneTimeCostHKD,
+    incomeHitPct,
+    durationMonths,
+    marketDropPct,
     title,
     description,
-    riskProfile,
-    monthlyIncomeImpactPercent: Math.round(monthlyIncomeImpactPercent),
-    oneTimeCostHKD: Math.round(oneTimeCostHKD),
-    durationMonths: Math.round(durationMonths),
-    impacts,
+    headlines,
   };
 }
 
+function parseExpensesStateLoose(value: unknown): ExpensesState | null {
+  try {
+    return parseExpensesState(value);
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Generates a persona + risk-profile-specific crisis via DeepSeek and saves crisisJson.
+ * Generates a persona + risk-profile crisis via DeepSeek (type + params + narrative),
+ * then runs the deterministic crisis-engine and persists crisisJson.
  */
 export async function generateCrisisAction(
   sessionId: string,
@@ -1498,18 +2415,71 @@ export async function generateCrisisAction(
 
   const session = await prisma.workshopSession.findUnique({
     where: { id },
-    select: { id: true },
+    select: {
+      id: true,
+      age: true,
+      retirementAge: true,
+      monthlyIncome: true,
+      industry: true,
+      finalPyramidJson: true,
+      expensesJson: true,
+      goalJourneyJson: true,
+      macroResultJson: true,
+    },
   });
   if (!session) {
     throw new Error("Workshop session not found. Please restart from intake.");
   }
+  if (!session.finalPyramidJson) {
+    throw new Error("Confirmed pyramid is missing. Please confirm your pyramid first.");
+  }
+
+  const pyramid = normalizePyramidState(session.finalPyramidJson, session.age);
+  const expenses =
+    parseExpensesStateLoose(session.expensesJson) ??
+    ({
+      totalHKD: Math.round(session.monthlyIncome * 0.5),
+      categories: [],
+    } satisfies ExpensesState);
+  const journey = parseGoalJourneyState(session.goalJourneyJson);
+  const activeGoals = activeGoalsForJourney(pyramid, journey);
+
+  const retirementAge = Math.min(
+    80,
+    Math.max(session.age + 1, Math.round(session.retirementAge ?? 65)),
+  );
+
+  let timeline: TimelineResult;
+  const parsedMacro = parseMacroResultJson(session.macroResultJson);
+  if (parsedMacro?.kind === "lifeTimeline") {
+    timeline = parsedMacro.timeline;
+  } else {
+    timeline = runLifeTimeline({
+      age: session.age,
+      retirementAge,
+      monthlyIncome: session.monthlyIncome,
+      monthlyExpenses: expenses.totalHKD,
+      monthlyFun: pyramid.investment.monthlyFunHKD,
+      emergencyFundSavedHKD: pyramid.emergencyFund.savedAmountHKD,
+      investment: {
+        lumpSumHKD: pyramid.investment.lumpSumHKD,
+        monthlyInvestmentHKD: pyramid.investment.monthlyInvestmentHKD,
+        allocation: pyramid.investment.riskAllocation,
+      },
+      goals: activeGoals,
+      industry: session.industry,
+    });
+  }
 
   const flavorHint =
     persona.riskProfile === "aggressive"
-      ? "Flavor: market-crash-triggered liquidation scenario."
+      ? "Prefer crisisType market_crash when it fits their holdings story."
       : persona.riskProfile === "conservative"
-        ? "Flavor: medical / health-gap fear scenario."
-        : "Flavor: mixed career / income disruption scenario.";
+        ? "Prefer crisisType medical or critical_illness."
+        : "Prefer crisisType job_loss, family, or accident suited to their industry.";
+
+  const medicalPct = pyramid.protection.medicalCoveragePercent;
+  const ciAmount = pyramid.protection.criticalIllnessAmountHKD;
 
   const userPrompt = [
     `Age: ${Math.round(persona.age)}`,
@@ -1517,10 +2487,14 @@ export async function generateCrisisAction(
     `Monthly income (HKD): ${persona.monthlyIncome}`,
     `Household status: ${persona.householdStatus?.trim() || "not specified"}`,
     `Risk profile: ${persona.riskProfile}`,
+    `Medical coverage % (engine will use — do not recompute offsets): ${medicalPct}`,
+    `Critical illness cover HKD (engine will use): ${ciAmount}`,
+    `Emergency fund saved HKD: ${pyramid.emergencyFund.savedAmountHKD}`,
+    `Invested lump sum HKD: ${pyramid.investment.lumpSumHKD}`,
     flavorHint,
   ].join("\n");
 
-  const crisis = await callDeepSeekParsed(
+  const narrative = await callDeepSeekParsed(
     {
       systemPrompt: GENERATE_CRISIS_SYSTEM_PROMPT,
       userPrompt,
@@ -1528,9 +2502,51 @@ export async function generateCrisisAction(
       tone: persona.tone,
       bilingualFields: true,
     },
-    (raw) => parseCrisisState(raw, persona.riskProfile),
+    (raw) => parseCrisisNarrative(raw),
     { maxParseAttempts: 2 },
   );
+
+  const impactResult = applyCrisis(
+    timeline,
+    {
+      age: session.age,
+      retirementAge,
+      monthlyIncome: session.monthlyIncome,
+      industry: session.industry,
+      pyramid,
+      expenses,
+    },
+    {
+      crisisType: narrative.crisisType,
+      oneTimeCostHKD: narrative.oneTimeCostHKD,
+      durationMonths: narrative.durationMonths,
+      monthlyIncomeImpactPercent: narrative.incomeHitPct,
+      incomeHitPct: narrative.incomeHitPct,
+      marketDropPct: narrative.marketDropPct,
+    },
+  );
+
+  const impacts = buildCrisisImpactsFromEngine(
+    impactResult,
+    narrative.headlines,
+  );
+
+  const crisis: CrisisState = {
+    crisisType: narrative.crisisType,
+    title: narrative.title,
+    description: narrative.description,
+    riskProfile: persona.riskProfile,
+    monthlyIncomeImpactPercent: narrative.incomeHitPct,
+    oneTimeCostHKD: narrative.oneTimeCostHKD,
+    durationMonths: narrative.durationMonths,
+    incomeHitPct: narrative.incomeHitPct,
+    marketDropPct:
+      narrative.crisisType === "market_crash"
+        ? narrative.marketDropPct
+        : undefined,
+    impacts,
+    impactResult,
+  };
 
   await prisma.workshopSession.update({
     where: { id: session.id },
@@ -1809,19 +2825,22 @@ const ACTION_CATEGORY_META: Array<{
 
 const GENERATE_ACTION_GOALS_SYSTEM_PROMPT = `You write exactly 3 ranked action goals for a Hong Kong workshop participant.
 
-You receive a DETERMINISTIC rating breakdown and a pre-ranked list of 3 seed goals. Each seed already has:
-- rank (1–3)
-- category
-- icon
-- impactPoints (how many overall score points fixing this gap would add)
+You receive:
+1. A DETERMINISTIC rating breakdown and a pre-ranked list of 3 seed goals (rank, category, icon, impactPoints already fixed).
+2. A curated "decisions" block from their goal journey and crisis stress test — this is the only behavioral context you may cite.
 
 Your job is ONLY to write:
 - title — short, specific, action-oriented (not generic), as bilingual { en, zhHant }
-- reasoning — 2–3 sentences that reference the ACTUAL numbers and events provided (rating gaps, crisis title/impacts, stress-test red goals, pyramid figures). No templated advice. As bilingual { en, zhHant }.
+- reasoning — 2–3 sentences explaining WHY the math recommends this action, as bilingual { en, zhHant }
 
 Rules:
-- Keep rank, category, icon, and impactPoints EXACTLY as given in the seeds — do not invent or change impactPoints.
-- Reasoning must cite specific numbers/events from the payload.
+- You are explaining WHY the math recommends each action. Every reasoning paragraph MUST reference at least one specific decision the user made in their goal journey (a goal they protected, gave up, or funded via liquidation; a squeeze they accepted/rejected) OR the crisis stress test outcome. Generic financial advice with no reference to their decisions is a failure.
+- You may NOT invent, round, or modify any number. Use only the numbers provided in the payload, verbatim.
+- Keep rank, category, icon, and impactPoints EXACTLY as given in the seeds — echo impactPoints unchanged.
+- If crisisStressTest.verdict is PENETRATED, the highest-ranked protection-category action goal must explicitly connect the recommendation to the affected goal and delay (e.g., "this is what stops your [goal] from being delayed by [N] years").
+- If profileBehaviorMismatch is true, exactly one action goal's reasoning may reference the gap between their quiz profile and their actual behavior — as an insight, never as criticism.
+- Never shame the user for goals they gave up. Frame given-up goals as deliberate prioritization if referenced.
+- Do not reference step numbers ("Step 4", "Step 6") — refer to experiences ("your goal journey", "the stress test"). Step numbering changed and must not leak into user-facing copy.
 - title and reasoning must NEVER be plain strings — always { "en": "...", "zhHant": "..." }.
 - Do not return markdown.
 
@@ -1849,7 +2868,11 @@ export type GenerateActionGoalsInput = {
     emergencyFundTargetHKD: number;
   };
   stressTest: StressTestResult;
-  crisis: CrisisState;
+  /** Final mutated expenses (post Step 4 squeezes). */
+  expenses: ExpensesState;
+  monthlyIncome: number;
+  /** Optional — old sessions may still have crisisJson; new flows may omit it. */
+  crisis?: CrisisState | null;
   age?: number;
   industry?: string;
 };
@@ -1864,7 +2887,10 @@ type ActionGoalSeed = {
   gap: number;
 };
 
-function buildActionGoalSeeds(rating: SummaryRating): ActionGoalSeed[] {
+function buildActionGoalSeeds(
+  rating: SummaryRating,
+  impactContext?: GoalImpactContext,
+): ActionGoalSeed[] {
   const candidates = ACTION_CATEGORY_META.map((meta) => {
     const currentScore = rating.breakdown[meta.ratingKey];
     const gap = Math.max(0, 100 - currentScore);
@@ -1872,6 +2898,7 @@ function buildActionGoalSeeds(rating: SummaryRating): ActionGoalSeed[] {
       meta.ratingKey,
       gap,
       RATING_WEIGHTS[meta.ratingKey],
+      impactContext,
     );
     return {
       category: meta.actionCategory,
@@ -1950,7 +2977,17 @@ function parseActionGoalsResult(
       `actionGoals[${index}].reasoning`,
     );
 
-    // Force deterministic fields from seeds — AI must not invent impactPoints.
+    const impactPoints = assertFiniteNumber(
+      row.impactPoints,
+      `actionGoals[${index}].impactPoints`,
+    );
+    if (impactPoints !== seed.impactPoints) {
+      throw new Error(
+        `Invalid action goals response: impactPoints mismatch at rank ${rank} (got ${impactPoints}, expected ${seed.impactPoints}).`,
+      );
+    }
+
+    // Deterministic fields from seeds — AI may only supply title/reasoning.
     return {
       rank: seed.rank,
       title,
@@ -1972,8 +3009,27 @@ function parseActionGoalsResult(
 }
 
 /**
+ * Parse risk profile from persisted riskQuizJson (additive / defensive).
+ */
+function parseRiskProfileFromQuiz(value: unknown): RiskProfile | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const profile = (value as Record<string, unknown>).profile;
+  if (
+    profile === "conservative" ||
+    profile === "balanced" ||
+    profile === "aggressive"
+  ) {
+    return profile;
+  }
+  return null;
+}
+
+/**
  * Computes rating + impactPoints deterministically, asks DeepSeek only for
  * titles/reasoning, saves SummaryState into goalsJson.
+ * Also runs the silent Summary Crisis Stress Test (pure TS — no AI).
  */
 export async function generateActionGoalsAction(
   sessionId: string,
@@ -1986,41 +3042,125 @@ export async function generateActionGoalsAction(
   if (!WORKSHOP_TONES.has(input.tone)) {
     throw new Error("A valid workshop tone is required.");
   }
-  if (!input.pyramid || !input.benchmarks || !input.stressTest || !input.crisis) {
+  if (!input.pyramid || !input.benchmarks || !input.stressTest || !input.expenses) {
     throw new Error("Full session context is required for action goals.");
+  }
+  if (
+    typeof input.monthlyIncome !== "number" ||
+    !Number.isFinite(input.monthlyIncome) ||
+    input.monthlyIncome < 0
+  ) {
+    throw new Error("Monthly income is required for action goals.");
   }
 
   const session = await prisma.workshopSession.findUnique({
     where: { id },
-    select: { id: true },
+    select: {
+      id: true,
+      age: true,
+      industry: true,
+      monthlyIncome: true,
+      retirementAge: true,
+      macroResultJson: true,
+      goalJourneyJson: true,
+      crisisJson: true,
+      riskQuizJson: true,
+      expensesJson: true,
+      finalPyramidJson: true,
+    },
   });
   if (!session) {
     throw new Error("Workshop session not found. Please restart from intake.");
   }
 
+  const parsedMacro = parseMacroResultJson(session.macroResultJson);
+  const timeline =
+    parsedMacro?.kind === "lifeTimeline" ? parsedMacro.timeline : null;
+  const journey = parseGoalJourneyState(session.goalJourneyJson);
+  // Prefer caller-supplied crisis; fall back to persisted crisisJson (legacy).
+  const crisis =
+    input.crisis ??
+    (session.crisisJson
+      ? (session.crisisJson as unknown as CrisisState)
+      : null);
+
+  const age = input.age ?? session.age;
+  const industry = (input.industry?.trim() || session.industry || "").trim();
+  const monthlyIncome =
+    input.monthlyIncome > 0 ? input.monthlyIncome : session.monthlyIncome;
+  const riskProfile = parseRiskProfileFromQuiz(session.riskQuizJson) ?? "balanced";
+
+  // Prefer session mutated plan (post goal-journey) over possibly-stale wizard props.
+  const pyramid = session.finalPyramidJson
+    ? normalizePyramidState(session.finalPyramidJson, age)
+    : input.pyramid;
+  let expenses = input.expenses;
+  if (session.expensesJson) {
+    try {
+      expenses = parseExpensesState(session.expensesJson);
+    } catch {
+      expenses = input.expenses;
+    }
+  }
+
+  const stressTestResult = runCrisisStressTest({
+    age,
+    retirementAge: session.retirementAge,
+    monthlyIncome,
+    industry,
+    riskProfile,
+    pyramid,
+    expenses,
+    journey,
+    timeline,
+  });
+  const crisisStressTest = toCrisisStressTestSummary(stressTestResult);
+
   const rating = computeFinancialRating({
-    pyramid: input.pyramid,
+    pyramid,
     benchmarks: input.benchmarks,
     stressTest: input.stressTest,
-    crisis: input.crisis,
+    crisis,
+    crisisStressTest,
+    timeline,
+    journey,
   });
 
-  const seeds = buildActionGoalSeeds(rating);
-  const redGoals = input.stressTest.goalProjections.filter(
-    (g) => g.status === "red",
-  );
-  const amberGoals = input.stressTest.goalProjections.filter(
-    (g) => g.status === "amber",
-  );
+  const coverage =
+    stressTestResult.impactResult.coverage ??
+    crisis?.impactResult?.coverage;
+  const coverageRatio =
+    coverage && coverage.grossCostHKD > 0
+      ? coverage.coveredHKD / coverage.grossCostHKD
+      : undefined;
+
+  const impactContext: GoalImpactContext = {
+    efStatus: timeline?.emergencyFund.status,
+    excessHKD: timeline?.emergencyFund.excessHKD,
+    coverageRatio,
+    assetsDepletedAtAge: timeline?.retirement.assetsDepletedAtAge ?? null,
+  };
+
+  const seeds = buildActionGoalSeeds(rating, impactContext);
+  const decisions = buildActionGoalsDecisionsPayload({
+    pyramid,
+    expenses,
+    monthlyIncome,
+    journey,
+    crisisStressTest,
+    riskProfile,
+    timeline,
+  });
 
   const userPrompt = [
-    `Age: ${input.age ?? "unknown"}`,
-    `Industry: ${input.industry?.trim() || "unknown"}`,
+    `Age: ${age}`,
+    `Industry: ${industry || "unknown"}`,
+    `Planned retirement age: ${session.retirementAge ?? "unknown"}`,
     "",
-    "Rating:",
+    "Rating (deterministic — do not invent scores):",
     JSON.stringify(rating),
     "",
-    "Pre-ranked action seeds (keep rank/category/icon/impactPoints exact):",
+    "Pre-ranked action seeds (keep rank/category/icon/impactPoints exact — echo impactPoints verbatim):",
     JSON.stringify(
       seeds.map((s) => ({
         rank: s.rank,
@@ -2033,61 +3173,38 @@ export async function generateActionGoalsAction(
       })),
     ),
     "",
-    "Pyramid snapshot:",
-    JSON.stringify({
-      protection: input.pyramid.protection,
-      emergencyFund: input.pyramid.emergencyFund,
-      goals: input.pyramid.goals.goals.map((g) => ({
-        label: g.label.en,
-        targetAmountHKD: g.targetAmountHKD,
-        targetYear: g.targetYear,
-      })),
-      investment: {
-        monthlyInvestmentHKD: input.pyramid.investment.monthlyInvestmentHKD,
-        monthlyFunHKD: input.pyramid.investment.monthlyFunHKD,
-      },
-    }),
+    "decisions (curated — cite these facts; do not invent):",
+    JSON.stringify(decisions),
     "",
-    "Benchmarks:",
-    JSON.stringify(input.benchmarks),
-    "",
-    "Crisis:",
-    JSON.stringify({
-      title: input.crisis.title.en,
-      monthlyIncomeImpactPercent: input.crisis.monthlyIncomeImpactPercent,
-      oneTimeCostHKD: input.crisis.oneTimeCostHKD,
-      durationMonths: input.crisis.durationMonths,
-      impacts: input.crisis.impacts.map((impact) => ({
-        layer: impact.layer,
-        icon: impact.icon,
-        headline: impact.headline.en,
-        detailHKD: impact.detailHKD,
-        detailMonths: impact.detailMonths,
-      })),
-    }),
-    "",
-    "Stress-test reds/ambers:",
-    JSON.stringify({
-      redGoals,
-      amberGoals,
-      emergencyFund: input.stressTest.emergencyFundProjection,
-    }),
-    "",
-    "Write title + reasoning for each seed. Cite real numbers above.",
+    "Write title + reasoning for each seed. Every reasoning must reference a goal-journey decision and/or the stress test. Numbers verbatim. No step numbers.",
   ].join("\n");
 
-  const actionGoals = await callDeepSeekParsed(
-    {
-      systemPrompt: GENERATE_ACTION_GOALS_SYSTEM_PROMPT,
-      userPrompt,
-      jsonMode: true,
-      tone: input.tone,
-      bilingualFields: true,
-    },
-    (raw) => parseActionGoalsResult(raw, seeds),
-    { maxParseAttempts: 2 },
-  );
-  const summary: SummaryState = { rating, actionGoals };
+  let actionGoals: ActionGoal[];
+  try {
+    actionGoals = await callDeepSeekParsed(
+      {
+        systemPrompt: GENERATE_ACTION_GOALS_SYSTEM_PROMPT,
+        userPrompt,
+        jsonMode: true,
+        tone: input.tone,
+        bilingualFields: true,
+      },
+      (raw) => parseActionGoalsResult(raw, seeds),
+      { maxParseAttempts: 2 },
+    );
+  } catch (error) {
+    const reason =
+      error instanceof Error ? error.message : "Unknown action-goals failure";
+    logActionGoalsFallback({
+      sessionId: session.id,
+      ranks: seeds.map((s) => s.rank),
+      categories: seeds.map((s) => s.category),
+      reason,
+    });
+    actionGoals = buildDeterministicActionGoalsFallback(seeds, decisions);
+  }
+
+  const summary: SummaryState = { rating, actionGoals, crisisStressTest };
 
   await prisma.workshopSession.update({
     where: { id: session.id },

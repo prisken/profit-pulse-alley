@@ -194,28 +194,27 @@ function selfEmployedWageDelta(year: number, amplitude: number): number {
 }
 
 /**
- * One year of industry wage-curve growth (shared by macro + goal stress test).
+ * One year of real career-curve wage growth (shared by timeline + legacy stress).
+ * +2%/yr until age 40, +1%/yr until 50, flat thereafter (today's purchasing power).
+ * `industry` / `year` remain for call-site compatibility; they do not affect the rate.
  */
 export function advanceMonthlyIncomeForYear(input: {
   monthlyIncome: number;
   industry: string;
   age: number;
-  /** 1-based simulation year (drives self-employed ± pattern). */
+  /** 1-based simulation year (unused in v3.2 real career curve). */
   year: number;
 }): number {
-  const kind = resolveWageCurveKind(input.industry);
-  let wageGrowth: number;
-  if (kind === "selfEmployed") {
-    wageGrowth = selfEmployedWageDelta(input.year, WAGE_CURVES.selfEmployed.early);
-  } else {
-    wageGrowth = wageCagrForAge(kind, input.age);
-  }
-
+  void input.industry;
+  void input.year;
   const monthlyIncome = Math.max(0, input.monthlyIncome);
-  if (monthlyIncome >= TAX_BRACKET_MONTHLY_HKD) {
-    wageGrowth -= TAX_BRACKET_GROWTH_PENALTY;
+  const age = Math.round(input.age);
+  let wageGrowth = 0;
+  if (age < 40) {
+    wageGrowth = 0.02;
+  } else if (age < 50) {
+    wageGrowth = 0.01;
   }
-
   return Math.max(0, monthlyIncome * (1 + wageGrowth));
 }
 
@@ -734,9 +733,9 @@ function waterfallFromSurplusPath(input: {
 }
 
 /**
- * Year-by-year goal achievability stress test.
- * Income follows the industry wage curve; expenses + goal costs inflate at 3%/year.
- * Surplus waterfalls: emergency fund → soonest unmet goals → investment (informational).
+ * Legacy v2 goal stress test (wizard used this before life-timeline v3).
+ * Prefer `runLifeTimeline` / `runLifeTimelineAction` for new wizard sessions.
+ * Kept for crisis overlay fallback, unit tests, and old-session PDF parse (§9).
  */
 export function runGoalStressTest(input: GoalStressTestInput): StressTestResult {
   const horizonYears = Math.max(
@@ -803,8 +802,9 @@ export function runGoalStressTest(input: GoalStressTestInput): StressTestResult 
 }
 
 /**
- * Apply a crisis shock onto an existing stress-test surplus path, then
- * re-run the same waterfall to show goal delays under reduced surplus.
+ * Legacy v2 crisis overlay on StressTestResult surplus paths.
+ * Prefer {@link applyCrisis} from `crisis-engine.ts` for the wizard.
+ * Kept for unit tests and old-session compatibility (§9).
  */
 export function applyCrisisImpactsToStressTest(
   stressTest: StressTestResult,
