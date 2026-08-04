@@ -21,8 +21,8 @@ vi.mock("@/lib/prisma", () => ({
 
 import { callDeepSeekParsed } from "@/lib/workshop/deepseek-client";
 import { prisma } from "@/lib/prisma";
+import { buildDeterministicPyramidGuess } from "@/lib/workshop/ai-fallbacks";
 import {
-  buildDeterministicPyramidGuess,
   generateCrisisAction,
   predictPyramidAction,
 } from "@/lib/workshop/pyramid-actions";
