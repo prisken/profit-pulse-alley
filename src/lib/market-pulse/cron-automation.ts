@@ -677,6 +677,80 @@ export async function automationLaunchCycle(
   };
 }
 
+export async function automationGetCardDetail(
+  cardId: string,
+): Promise<
+  AutomationResult<{
+    id: string;
+    cycleId: string;
+    dayIndex: number;
+    sortOrder: number;
+    cardType: string;
+    status: string;
+    headline: string | null;
+    headlineZhHant: string | null;
+    newsBody: string | null;
+    newsBodyZhHant: string | null;
+    summary: string | null;
+    summaryZhHant: string | null;
+    companyName: string | null;
+    companyNameZh: string | null;
+    ticker: string | null;
+    sourceName: string | null;
+    sourceUrl: string | null;
+    sourceDate: string | null;
+    userPrompt: string | null;
+    userPromptZhHant: string | null;
+    priceLabel: string | null;
+    cardImageUrl: string | null;
+    cardImageAlt: string | null;
+    cardImageAltZhHant: string | null;
+    ppaSignal: string | null;
+    ppaLocked: boolean;
+    publishedAt: string | null;
+  }>
+> {
+  const card = await prisma.marketPulseCard.findUnique({
+    where: { id: cardId },
+  });
+  if (!card) {
+    return automationFail("Card not found.");
+  }
+
+  return {
+    ok: true,
+    data: {
+      id: card.id,
+      cycleId: card.cycleId,
+      dayIndex: card.dayIndex,
+      sortOrder: card.sortOrder,
+      cardType: card.cardType,
+      status: card.status,
+      headline: card.headline,
+      headlineZhHant: card.headlineZhHant,
+      newsBody: card.newsBody,
+      newsBodyZhHant: card.newsBodyZhHant,
+      summary: card.summary,
+      summaryZhHant: card.summaryZhHant,
+      companyName: card.companyName,
+      companyNameZh: card.companyNameZh,
+      ticker: card.ticker,
+      sourceName: card.sourceName,
+      sourceUrl: card.sourceUrl,
+      sourceDate: card.sourceDate ? card.sourceDate.toISOString() : null,
+      userPrompt: card.userPrompt,
+      userPromptZhHant: card.userPromptZhHant,
+      priceLabel: card.priceLabel,
+      cardImageUrl: card.cardImageUrl,
+      cardImageAlt: card.cardImageAlt,
+      cardImageAltZhHant: card.cardImageAltZhHant,
+      ppaSignal: card.ppaSignal,
+      ppaLocked: Boolean(card.ppaSignalLockedAt),
+      publishedAt: card.publishedAt ? card.publishedAt.toISOString() : null,
+    },
+  };
+}
+
 export async function automationGetCycleStatus(
   cycleId: string,
 ): Promise<

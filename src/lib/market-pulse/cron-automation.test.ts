@@ -8,6 +8,7 @@ import type {
 import {
   automationApprovePpa,
   automationCreateGuidedCycle,
+  automationGetCardDetail,
   automationGetCycleStatus,
   automationLaunchCycle,
   automationPublishCard,
@@ -616,6 +617,35 @@ describe("cron automation — publish and launch", () => {
   it("blocks unpublish on a draft card", async () => {
     const card = seedCard(store, { dayIndex: 2, status: "DRAFT" });
     const result = await automationUnpublishCard(card.id);
+    expect(result.ok).toBe(false);
+  });
+
+  it("returns full card detail incl image + PPA fields", async () => {
+    const card = seedCard(store, {
+      dayIndex: 2,
+      status: "PUBLISHED",
+      summary: "Summary",
+      cardImageUrl: "https://example.com/img.jpg",
+      cardImageAlt: "Example tower",
+      cardImageAltZhHant: "範例大樓",
+      ppaSignal: "BULLISH",
+      ppaInsight: "Insight",
+      ppaSignalLockedAt: new Date(),
+    });
+
+    const result = await automationGetCardDetail(card.id);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.cardImageUrl).toBe("https://example.com/img.jpg");
+    expect(result.data.cardImageAltZhHant).toBe("範例大樓");
+    expect(result.data.ppaSignal).toBe("BULLISH");
+    expect(result.data.ppaLocked).toBe(true);
+    expect(result.data.status).toBe("PUBLISHED");
+  });
+
+  it("fails card detail for an unknown card", async () => {
+    const result = await automationGetCardDetail("does-not-exist");
     expect(result.ok).toBe(false);
   });
 });
