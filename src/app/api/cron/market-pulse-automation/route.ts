@@ -5,6 +5,7 @@ import type { AutomationResult } from "@/lib/market-pulse/cron-automation";
 import {
   automationApprovePpa,
   automationCreateGuidedCycle,
+  automationGetCardDetail,
   automationGetCycleStatus,
   automationGetStatus,
   automationLaunchCycle,
@@ -45,6 +46,9 @@ export async function POST(request: Request) {
         break;
       case "cycleStatus":
         result = await automationGetCycleStatus(body.cycleId);
+        break;
+      case "cardDetail":
+        result = await automationGetCardDetail(body.cardId);
         break;
       case "createCycle":
         result = await automationCreateGuidedCycle(body.input);
