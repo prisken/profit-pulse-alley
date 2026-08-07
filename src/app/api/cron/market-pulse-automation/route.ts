@@ -8,7 +8,9 @@ import {
   automationGetCycleStatus,
   automationGetStatus,
   automationLaunchCycle,
+  automationPublishCard,
   automationPublishReadyCards,
+  automationUnpublishCard,
   automationUpdateCard,
 } from "@/lib/market-pulse/cron-automation";
 
@@ -55,6 +57,12 @@ export async function POST(request: Request) {
         break;
       case "publishCards":
         result = await automationPublishReadyCards(body.cycleId);
+        break;
+      case "publishCard":
+        result = await automationPublishCard(body.cardId);
+        break;
+      case "unpublishCard":
+        result = await automationUnpublishCard(body.cardId);
         break;
       case "launchCycle":
         result = await automationLaunchCycle(body.cycleId);
