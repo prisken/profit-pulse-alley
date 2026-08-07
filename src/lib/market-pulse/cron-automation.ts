@@ -576,6 +576,88 @@ export async function automationLaunchCycle(
   };
 }
 
+export async function automationGetCycleStatus(
+  cycleId: string,
+): Promise<
+  AutomationResult<{
+    cycle: {
+      id: string;
+      name: string;
+      startsAt: string;
+      endsAt: string;
+      revealAt: string;
+      status: string;
+      prizeLabel: string | null;
+    };
+    cards: Array<{
+      id: string;
+      dayIndex: number;
+      sortOrder: number;
+      cardType: string;
+      status: string;
+      headline: string | null;
+      companyName: string | null;
+      ticker: string | null;
+      sourceDate: string | null;
+      ppaSignal: string | null;
+      ppaLocked: boolean;
+    }>;
+  }>
+> {
+  const cycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: cycleId },
+  });
+  if (!cycle) {
+    return automationFail("Cycle not found.");
+  }
+
+  const cards = await prisma.marketPulseCard.findMany({
+    where: { cycleId },
+    orderBy: [{ dayIndex: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      dayIndex: true,
+      sortOrder: true,
+      cardType: true,
+      status: true,
+      headline: true,
+      companyName: true,
+      ticker: true,
+      sourceDate: true,
+      ppaSignal: true,
+      ppaSignalLockedAt: true,
+    },
+  });
+
+  return {
+    ok: true,
+    data: {
+      cycle: {
+        id: cycle.id,
+        name: cycle.name,
+        startsAt: cycle.startsAt.toISOString(),
+        endsAt: cycle.endsAt.toISOString(),
+        revealAt: cycle.revealAt.toISOString(),
+        status: cycle.status,
+        prizeLabel: cycle.prizeLabel,
+      },
+      cards: cards.map((card) => ({
+        id: card.id,
+        dayIndex: card.dayIndex,
+        sortOrder: card.sortOrder,
+        cardType: card.cardType,
+        status: card.status,
+        headline: card.headline,
+        companyName: card.companyName,
+        ticker: card.ticker,
+        sourceDate: card.sourceDate ? card.sourceDate.toISOString() : null,
+        ppaSignal: card.ppaSignal,
+        ppaLocked: Boolean(card.ppaSignalLockedAt),
+      })),
+    },
+  };
+}
+
 export async function automationGetStatus(): Promise<
   AutomationResult<{
     runtime: string | null;

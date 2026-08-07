@@ -8,6 +8,7 @@ import type {
 import {
   automationApprovePpa,
   automationCreateGuidedCycle,
+  automationGetCycleStatus,
   automationLaunchCycle,
   automationPublishReadyCards,
   automationUpdateCard,
@@ -507,5 +508,37 @@ describe("cron automation — publish and launch", () => {
 
     expect(result.ok).toBe(false);
     expect(store.cycles.get("cycle-1")!.status).toBe("DRAFT");
+  });
+
+  it("returns a cycle snapshot with card ids for pipeline mapping", async () => {
+    readySignalCard(2);
+    seedCard(store, {
+      dayIndex: 1,
+      cardType: "REST",
+      status: "DRAFT",
+      ppaSignal: null,
+      ppaSignalLockedAt: null,
+    });
+
+    const result = await automationGetCycleStatus("cycle-1");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.cycle.id).toBe("cycle-1");
+    expect(result.data.cycle.status).toBe("DRAFT");
+    expect(result.data.cards).toHaveLength(2);
+    const rest = result.data.cards.find((card) => card.cardType === "REST")!;
+    expect(rest.dayIndex).toBe(1);
+    expect(rest.ppaLocked).toBe(false);
+    const signal = result.data.cards.find((card) => card.cardType === "SIGNAL")!;
+    expect(signal.id).toBeTruthy();
+    expect(signal.dayIndex).toBe(2);
+    expect(signal.sortOrder).toBe(0);
+  });
+
+  it("fails cycle status for an unknown cycle", async () => {
+    const result = await automationGetCycleStatus("does-not-exist");
+    expect(result.ok).toBe(false);
   });
 });
