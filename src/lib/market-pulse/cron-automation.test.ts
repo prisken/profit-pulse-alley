@@ -10,7 +10,9 @@ import {
   automationCreateGuidedCycle,
   automationGetCycleStatus,
   automationLaunchCycle,
+  automationPublishCard,
   automationPublishReadyCards,
+  automationUnpublishCard,
   automationUpdateCard,
 } from "@/lib/market-pulse/cron-automation";
 import { buildMarketPulseTestCard } from "@/lib/market-pulse/market-pulse-test-fixtures";
@@ -227,14 +229,14 @@ function seedCycle(store: Store, overrides: Partial<MarketPulseCycle> = {}): Mar
 }
 
 function seedCard(store: Store, overrides: Partial<StoreCard> & Pick<StoreCard, "dayIndex">): StoreCard {
-  const { id, ...rest } = overrides;
+  const { id, _count, ...rest } = overrides;
   const row = {
     ...buildMarketPulseTestCard({
       id: id ?? `card-${store.nextCardId++}`,
       cycleId: "cycle-1",
       ...rest,
     }),
-    _count: { decisions: 0 },
+    _count: _count ?? { decisions: 0 },
   } as StoreCard;
   store.cards.set(row.id, row);
   return row;
@@ -539,6 +541,81 @@ describe("cron automation — publish and launch", () => {
 
   it("fails cycle status for an unknown cycle", async () => {
     const result = await automationGetCycleStatus("does-not-exist");
+    expect(result.ok).toBe(false);
+  });
+
+  it("publishes a single ready card with schedule-derived publishedAt", async () => {
+    const card = seedCard(store, {
+      dayIndex: 2,
+      status: "DRAFT",
+      summary: "Summary",
+      newsBody: "Body",
+      ppaSignal: "BULLISH",
+      ppaInsight: "Insight",
+      ppaSignalLockedAt: new Date("2026-08-10T00:00:00.000Z"),
+      publishedAt: null,
+    });
+    expect(card.status).toBe("DRAFT");
+
+    const result = await automationPublishCard(card.id);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.publishedAt).toBe("2026-08-17T01:00:00.000Z"); // 09:00 HKT day 2
+
+    const updated = store.cards.get(card.id)!;
+    expect(updated.status).toBe("PUBLISHED");
+    expect(updated.publishedAt).toBeInstanceOf(Date);
+  });
+
+  it("rejects publishing a card missing PPA", async () => {
+    const card = seedCard(store, {
+      dayIndex: 2,
+      status: "DRAFT",
+      summary: "Summary",
+      ppaSignal: null,
+      ppaInsight: null,
+      ppaSignalLockedAt: null,
+    });
+
+    const result = await automationPublishCard(card.id);
+    expect(result.ok).toBe(false);
+    expect(store.cards.get(card.id)!.status).toBe("DRAFT");
+  });
+
+  it("unpublishes a published card with no decisions", async () => {
+    const card = seedCard(store, {
+      dayIndex: 2,
+      status: "PUBLISHED",
+      summary: "Summary",
+      ppaSignal: "BULLISH",
+      ppaInsight: "Insight",
+      ppaSignalLockedAt: new Date(),
+      _count: { decisions: 0 },
+    });
+
+    const result = await automationUnpublishCard(card.id);
+    expect(result.ok).toBe(true);
+    expect(store.cards.get(card.id)!.status).toBe("DRAFT");
+    expect(store.cards.get(card.id)!.publishedAt).toBeNull();
+  });
+
+  it("blocks unpublish when players have decisions", async () => {
+    const card = seedCard(store, {
+      dayIndex: 2,
+      status: "PUBLISHED",
+      summary: "Summary",
+      _count: { decisions: 3 },
+    });
+
+    const result = await automationUnpublishCard(card.id);
+    expect(result.ok).toBe(false);
+    expect(store.cards.get(card.id)!.status).toBe("PUBLISHED");
+  });
+
+  it("blocks unpublish on a draft card", async () => {
+    const card = seedCard(store, { dayIndex: 2, status: "DRAFT" });
+    const result = await automationUnpublishCard(card.id);
     expect(result.ok).toBe(false);
   });
 });

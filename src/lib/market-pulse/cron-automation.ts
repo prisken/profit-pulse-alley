@@ -2,6 +2,12 @@ import type { MarketPulseSignal } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { mapMarketPulseAdminCardRow } from "@/lib/market-pulse/admin-card-row";
+import {
+  deriveCardPublishedAtFromSchedule,
+  getCardSchedulingPublishBlockReason,
+} from "@/lib/market-pulse/admin-card-scheduling";
+import { getCardUnpublishBlockReason } from "@/lib/market-pulse/admin-bulk-card-actions";
+import { validateCardPublishable } from "@/lib/market-pulse/card-validation";
 import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
 import {
   guidedRestSummaryFromBody,
@@ -355,6 +361,99 @@ export async function automationApprovePpa(
   } catch (error) {
     console.error("[cron-automation] approvePpa failed:", error);
     return automationFail("Could not approve PPA.");
+  }
+}
+
+/**
+ * Publish a single card (mirrors `publishMarketPulseCardAction`).
+ * Derives `publishedAt` from the cycle schedule when unset.
+ */
+export async function automationPublishCard(
+  cardId: string,
+): Promise<AutomationResult<{ cardId: string; publishedAt: string }>> {
+  const card = await prisma.marketPulseCard.findUnique({
+    where: { id: cardId },
+  });
+  if (!card) {
+    return automationFail("Card not found.");
+  }
+
+  const publishError = validateCardPublishable(card);
+  if (publishError) {
+    return automationFail(publishError);
+  }
+
+  const cycleCards = await prisma.marketPulseCard.findMany({
+    where: { cycleId: card.cycleId },
+    select: { id: true, dayIndex: true, sourceDate: true, status: true },
+  });
+  const cycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: card.cycleId },
+    select: { startsAt: true, endsAt: true },
+  });
+  if (!cycle) {
+    return automationFail("Cycle not found.");
+  }
+
+  const schedulingError = getCardSchedulingPublishBlockReason(
+    card,
+    cycle,
+    cycleCards,
+  );
+  if (schedulingError) {
+    return automationFail(schedulingError);
+  }
+
+  try {
+    const publishedAt =
+      card.publishedAt ??
+      deriveCardPublishedAtFromSchedule(cycle.startsAt, card.dayIndex);
+    await prisma.marketPulseCard.update({
+      where: { id: cardId },
+      data: { status: "PUBLISHED", publishedAt },
+    });
+    return {
+      ok: true,
+      data: { cardId, publishedAt: publishedAt.toISOString() },
+    };
+  } catch (error) {
+    console.error("[cron-automation] publishCard failed:", error);
+    return automationFail("Could not publish card.");
+  }
+}
+
+/**
+ * Unpublish a single card (mirrors `unpublishMarketPulseCardAction`).
+ * Blocked when players already submitted decisions on the card.
+ */
+export async function automationUnpublishCard(
+  cardId: string,
+): Promise<AutomationResult<{ cardId: string }>> {
+  const card = await prisma.marketPulseCard.findUnique({
+    where: { id: cardId },
+    include: { _count: { select: { decisions: true } } },
+  });
+  if (!card) {
+    return automationFail("Card not found.");
+  }
+
+  const unpublishError = getCardUnpublishBlockReason({
+    status: card.status,
+    decisionCount: card._count.decisions,
+  });
+  if (unpublishError) {
+    return automationFail(unpublishError);
+  }
+
+  try {
+    await prisma.marketPulseCard.update({
+      where: { id: cardId },
+      data: { status: "DRAFT", publishedAt: null },
+    });
+    return { ok: true, data: { cardId } };
+  } catch (error) {
+    console.error("[cron-automation] unpublishCard failed:", error);
+    return automationFail("Could not unpublish card.");
   }
 }
 
