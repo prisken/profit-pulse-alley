@@ -225,6 +225,7 @@ export type AutomationCardSaveInput = GuidedCardSaveInput & {
   userPromptZhHant?: string;
   sourceName?: string;
   sourceUrl?: string;
+  cardImageAltZhHant?: string;
 };
 
 export async function automationUpdateCard(
@@ -291,6 +292,7 @@ export async function automationUpdateCard(
           priceLabel: trimOrNull(input.priceLabel),
           cardImageUrl: trimOrNull(input.cardImageUrl),
           cardImageAlt: trimOrNull(input.cardImageAlt),
+          cardImageAltZhHant: trimOrNull(input.cardImageAltZhHant),
           headlineZhHant: trimOrNull(input.headlineZhHant),
           newsBodyZhHant: trimOrNull(input.newsBodyZhHant),
           summaryZhHant: trimOrNull(input.summaryZhHant),
