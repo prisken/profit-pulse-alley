@@ -36,6 +36,8 @@ describe("buildBuilderCardValidationSummary", () => {
         summary: "Summary",
         ppaSignal: "BULLISH",
         ppaInsight: "Insight",
+        sourceName: "Test Source",
+        sourceUrl: "https://example.com/news/market-article-1",
       },
       existingDayIndexes: [1],
       excludeDayIndex: 1,

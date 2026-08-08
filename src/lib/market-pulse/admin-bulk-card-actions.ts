@@ -62,6 +62,8 @@ export function getCardPublishBlockReason(
     ppaSignal: card.ppaSignal,
     ppaInsight: card.ppaInsight,
     ppaSignalLockedAt: card.ppaSignalLockedAt,
+    sourceName: card.sourceName,
+    sourceUrl: card.sourceUrl,
   });
   if (contentReason) {
     return contentReason;

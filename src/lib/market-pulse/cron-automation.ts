@@ -7,7 +7,10 @@ import {
   getCardSchedulingPublishBlockReason,
 } from "@/lib/market-pulse/admin-card-scheduling";
 import { getCardUnpublishBlockReason } from "@/lib/market-pulse/admin-bulk-card-actions";
-import { validateCardPublishable } from "@/lib/market-pulse/card-validation";
+import {
+  validateCardPublishable,
+  validateCardSource,
+} from "@/lib/market-pulse/card-validation";
 import { isMarketPulseRestCard } from "@/lib/market-pulse/card-type";
 import {
   guidedRestSummaryFromBody,
@@ -244,6 +247,17 @@ export async function automationUpdateCard(
   }
   if (input.cardType !== card.cardType) {
     return automationFail("Card type does not match.");
+  }
+
+  // Due-diligence guard: SIGNAL cards must carry a citable, direct source.
+  if (input.cardType === "SIGNAL") {
+    const sourceError = validateCardSource({
+      sourceName: input.sourceName,
+      sourceUrl: input.sourceUrl,
+    });
+    if (sourceError) {
+      return automationFail(sourceError);
+    }
   }
 
   const validation = validateGuidedCardSave(input);

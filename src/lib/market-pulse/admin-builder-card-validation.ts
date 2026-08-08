@@ -46,6 +46,8 @@ export function buildBuilderCardValidationSummary(input: {
     ppaSignal: input.values.ppaSignal || null,
     ppaInsight: input.values.ppaInsight,
     ppaSignalLockedAt: input.ppaSignalLockedAt,
+    sourceName: input.values.sourceName,
+    sourceUrl: input.values.sourceUrl,
   });
 
   if (publishError && !issues.includes(publishError)) {

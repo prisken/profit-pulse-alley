@@ -129,6 +129,8 @@ describe("market-pulse admin-actions reliability", () => {
       ppaSignal: "BUY",
       ppaInsight: "Strong outlook",
       ppaSignalLockedAt: new Date(),
+      sourceName: "Test Source",
+      sourceUrl: "https://example.com/news/market-article-1",
     });
     prismaMocks.cardFindMany.mockResolvedValue([
       {

@@ -297,6 +297,8 @@ function validateSignalCardPublishable(card: {
   ppaSignalLockedAt: Date | string | null;
   cardImageUrl?: string | null;
   cardImageAlt?: string | null;
+  sourceName?: string | null;
+  sourceUrl?: string | null;
 }): string | null {
   if (!card.headline.trim()) {
     return "Headline is required to publish.";
@@ -321,6 +323,43 @@ function validateSignalCardPublishable(card: {
   }
   if (card.cardImageUrl?.trim() && !card.cardImageAlt?.trim()) {
     return "Card image alt text is required when an image URL is set.";
+  }
+  const sourceError = validateCardSource({
+    sourceName: card.sourceName,
+    sourceUrl: card.sourceUrl,
+  });
+  if (sourceError) {
+    return sourceError;
+  }
+  return null;
+}
+
+/**
+ * Due-diligence guard: every SIGNAL card must carry a citable, direct source.
+ * Rejects missing sources and non-citable aggregator/shim URLs (Google News RSS).
+ */
+export function validateCardSource(input: {
+  sourceName?: string | null;
+  sourceUrl?: string | null;
+}): string | null {
+  const name = input.sourceName?.trim() ?? "";
+  const url = input.sourceUrl?.trim() ?? "";
+  if (!name) {
+    return "Source name is required before publishing.";
+  }
+  if (!url) {
+    return "Source URL is required before publishing.";
+  }
+  if (!isValidOptionalHttpUrl(url)) {
+    return "Source URL must be a valid http(s) link.";
+  }
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host === "news.google.com" || host.endsWith(".news.google.com")) {
+      return "Source URL must be a direct article link (Google News shims are not citable).";
+    }
+  } catch {
+    return "Source URL must be a valid http(s) link.";
   }
   return null;
 }
@@ -407,6 +446,8 @@ export function validateCardPublishable(card: {
   ppaSignalLockedAt: Date | string | null;
   cardImageUrl?: string | null;
   cardImageAlt?: string | null;
+  sourceName?: string | null;
+  sourceUrl?: string | null;
 }): string | null {
   if (isMarketPulseRestCard(card)) {
     return validateRestCardPublishable(card);
