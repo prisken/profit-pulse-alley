@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import type { MarketPulseStatusSnapshot, PlayabilityAlert } from "@/lib/market-pulse/admin-mp-status";
-import { getMarketPulseAdminNavSections } from "@/lib/market-pulse/admin-mp-navigation";
+import { getMarketPulseAdminNavSections, ADMIN_MARKET_PULSE_APPROVALS_PATH } from "@/lib/market-pulse/admin-mp-navigation";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import { translateWith, type MessageKey } from "@/lib/i18n/messages";
 
@@ -312,16 +312,23 @@ export function MarketPulseAdminSectionNav() {
       className="sticky top-[calc(var(--admin-nav-h,0px)+var(--mp-status-offset,0px)+0.5rem)] z-20 -mx-1 overflow-x-auto px-1 py-2"
     >
       <ul className="flex min-w-max gap-1.5">
-        {sections.map((section) => (
-          <li key={section.id}>
-            <a
-              href={`#${section.id}`}
-              className={`inline-flex min-h-9 items-center rounded-lg border border-zinc-700 bg-zinc-900/80 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-100 sm:text-sm ${focusRing}`}
-            >
-              {t(section.labelKey as MessageKey)}
-            </a>
-          </li>
-        ))}
+        {sections.map((section) => {
+          // Approvals lives on its own page — not a dashboard section.
+          const href =
+            section.id === "approvals"
+              ? ADMIN_MARKET_PULSE_APPROVALS_PATH
+              : `#${section.id}`;
+          return (
+            <li key={section.id}>
+              <a
+                href={href}
+                className={`inline-flex min-h-9 items-center rounded-lg border border-zinc-700 bg-zinc-900/80 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-100 sm:text-sm ${focusRing}`}
+              >
+                {t(section.labelKey as MessageKey)}
+              </a>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );
