@@ -12,12 +12,12 @@ Comprehensive reference for developers taking over or contributing to the **Prof
 | **Database** | Vercel Postgres + Prisma 6 |
 | **Auth** | Auth.js v5 (`next-auth@beta`) + Prisma Adapter |
 | **Hosting** | Vercel — project `profit-pulse-alley`, auto-deploy from `main` |
-| **Active branch** | `acquisition-admin-visibility` — Market Pulse guided admin + homepage polish + **Matching Pulse MVP pilot** |
+| **Active branch** | **`main`** — Market Pulse guided admin + approvals queue + due-diligence source guard merged (Aug 2026); older feature work on `acquisition-admin-visibility` |
 | **Production** | **`main` on Vercel**; Market Pulse public launch **1 Jul 2026 00:00 HKT** passed; playable when ops pins a real OPEN cycle |
 
 **Product focus:** **Market Pulse** is the MVP and homepage primary CTA. **Matching Pulse** is a login-required collaboration-request **pilot** (not a marketplace; no credits/tokens; no public request board). Events + Matching Pulse are supporting pillars.
 
-**Latest verification (20 Jul 2026):** `npm run typecheck` · Matching Pulse **request page bilingual** (EN / zh-Hant via `ppa_locale`) · **1039** tests / build green on `main`.
+**Latest verification (9 Aug 2026):** `npm run typecheck` · **1274** tests / build green on `main` (source guard + approvals queue shipped). Prior verified run: **20 Jul 2026** — 1039 tests, Matching Pulse request page bilingual.
 
 ---
 
@@ -97,6 +97,7 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 | **Admin dashboard** | `/admin` | `ADMIN` only | **Command center** — 4 overview cards (users, MP runtime/cycle, player visibility, system notes), quick actions, user management (**Tel**, **Learning**, **Next Step** columns; acquisition filters; CSV export) |
 | **Market Pulse admin** | `/admin/market-pulse` | `ADMIN` only | **Full ops dashboard** — sticky status header, alerts, cycles hub, player-visibility checklist, runtime, advanced cycles, legacy cards, reveal/scoring, prize claims, audit |
 | **Market Pulse cycle builder** | `/admin/market-pulse/cycles/[cycleId]/builder` | `ADMIN` only | **Primary card workflow** — cycle summary, readiness, card list, inline editor, preview, bulk publish |
+| **MP approvals queue** | `/admin/market-pulse/approvals` | `ADMIN` only | **Review/due-diligence workflow** — PENDING/APPROVED/REJECTED filters by cycle→day, researchNotes, PPA form, Approve & Publish / Reject w/ note, inline guided editor (Aug 2026) |
 | Game settings API | `/api/game-settings` | GET public; POST ADMIN | KV theme/event (legacy API-only; no admin UI) |
 | Market Pulse APIs | `/api/market-pulse/*` | Mixed | `today`, `decision`, `leaderboard`, `reveal` |
 | **Contact** | `/contact` | Public | `contact@profitpulseally.com` |
@@ -164,6 +165,20 @@ Google OAuth redirect URIs (must match exactly):
 - `https://profit-pulse-alley.vercel.app/api/auth/callback/google`
 
 **Note:** Prisma uses `POSTGRES_URL` (direct `postgres://` URL). Do **not** point Prisma at `DATABASE_URL` or `PRISMA_DATABASE_URL` alone — those may use non-`postgres://` formats from the Prisma Postgres integration.
+
+### Verification — latest run 9 Aug 2026 (1274 tests)
+
+| Check | Result |
+|-------|--------|
+| **Lint** | `npm run lint` — pass |
+| **Typecheck** | `npm run typecheck` — pass |
+| **Build** | `npm run build` — pass (`prisma db push && next build`) |
+| **Tests** | `npm test` — **186** files / **1274** Vitest tests |
+| **Source guard** | `card-source-validation.test.ts` — missing name/URL, invalid scheme, Google News shims rejected; valid direct URL accepted |
+| **Approvals queue** | `admin-approval-actions.test.ts` — approve+publish (SIGNAL PPA validation) and reject paths; publishability post-approval |
+| **Publish/readiness suites** | All updated fixtures carry sources (`market-pulse-test-fixtures.ts`) — readiness/bulk/launch tests re-verified with the source requirement |
+
+Prior verified run: **20 Jul 2026 (1039 tests)** — see below.
 
 ### Verification — latest run 20 Jul 2026 (1039 tests)
 
@@ -524,11 +539,14 @@ Use this as the **end-to-end ops playbook**. UI labels are English; player card 
 | PPA signal | Required (`BULLISH` / `CAUTIOUS`) | Not used |
 | PPA insight | Required | Not used |
 | PPA locked | `ppaSignalLockedAt` required | Not used |
+| Source (due diligence) | **`sourceName` + `sourceUrl` required** — direct publisher article URL; Google News shims rejected (`validateCardSource`) | Not used (tips) |
 | Card image | If `cardImageUrl` set → `cardImageAlt` required | Same |
 | Scheduling | No conflict (`getCardSchedulingPublishBlockReason`) | Same |
 | Unique slot | `cycleId + dayIndex + sortOrder` | Same |
 
 **Also blocks publish:** card already `PUBLISHED`; invalid URLs on logo/source/card image.
+
+**Source guard (due diligence, live 9 Aug 2026):** every SIGNAL card must carry `sourceName` + `sourceUrl` — a **direct publisher article URL** — at **save AND publish time**. `validateCardSource()` (`card-validation.ts`) rejects missing sources, non-http(s) URLs, and `news.google.com` shims (not citable; they return HTTP 400). Enforced in `automationUpdateCard` (site cron API) and `validateSignalCardPublishable`. The research/automation pipeline resolves Google News links to real articles before drafting (see [Market Pulse automation — approvals queue + source guard](#market-pulse-automation--approvals-queue--source-guard-aug-2026)).
 
 **REST cards:** No PPA; players **Claim participation** (`ACKNOWLEDGED`); +10 participation only; streak-neutral.
 
@@ -1108,6 +1126,39 @@ Key test files for the fast builder journey:
 | Non-admin rejection | `admin-builder-data.test.ts`, `admin-duplicate-card.test.ts`, `admin-quick-create-cycle.test.ts` |
 
 **Latest CI:** see [Verification — latest run](#verification--latest-run-20-jul-2026-1039-tests) (lint / typecheck / **1039** tests / build).
+
+### Market Pulse automation — approvals queue + source guard (Aug 2026)
+
+**Automation model:** the site is the source of truth; an external orchestrator (n8n on the ops iMac, see workspace `market-pulse/n8n-migration-plan.md` + `TOOLS.md` — outside this repo) drives schedules/detection/retries and kicks the OpenClaw agent (research + drafting + WhatsApp relay) via gateway hooks. The site exposes the automation API below; approval happens in the admin panel **or** via WhatsApp replies relayed to the site API.
+
+#### Cron automation endpoint (site-side contract)
+
+`POST /api/cron/market-pulse-automation` — header `x-cron-secret` (env: `MP_CRON_SECRET` in automation envs; do not confuse with the separate reminder `CRON_SECRET`). Source: `src/lib/market-pulse/cron-automation.ts`.
+
+| Action | Payload | Notes |
+|--------|---------|-------|
+| `status` | — | Runtime/cycle overview incl. `reviewStatus` |
+| `cycleStatus` | `{ cycleId }` | Cards per day with status/review |
+| `cardDetail` | `{ cardId }` | Full card incl. `reviewStatus`/`reviewNote`/`researchNotes`/`sourceName`/`sourceUrl` |
+| `createCycle` | `{ input }` | Guided cycle (day plan → DRAFT cards) |
+| `updateCard` | **`{ input }`** (nested!) | Save card content + zh-Hant + `researchNotes` + `sourceName`/`sourceUrl`; accepts `DRAFT`/`PENDING` statuses; auto-resets REJECTED→PENDING on resubmit; **rejects SIGNAL saves without a valid source** |
+| `approvePpa` | `{ cardId, ppaSignal, ppaInsight, ppaInsightZhHant? }` | Lock PPA on a SIGNAL card |
+| `publishCard` / `publishCards` | `{ cardId }` / `{ cycleId }` | Publish single card / ready cards |
+| `unpublishCard` | `{ cardId }` | **Blocked** when players already submitted decisions |
+| `launchCycle` | `{ cycleId }` | Guided launch: publish ready → OPEN → pin active → runtime OPEN |
+
+⚠️ **Payload shape gotcha:** `updateCard`/`createCycle` require the input **nested** under `input` (`{"action":"updateCard","input":{...}}`) — flat payloads throw `Cannot read properties of undefined (reading 'cardId')`.
+
+#### Approvals queue (site UI)
+
+- **Route:** `/admin/market-pulse/approvals` (`MarketPulseApprovalsClient.tsx`) — filters PENDING / APPROVED / REJECTED / All, grouped cycle→day, shows `researchNotes`, inline PPA form, **Approve & Publish** (one click), **Reject w/ note**, inline guided editor.
+- **Schema:** `MarketPulseCardReviewStatus` enum (`PENDING`/`APPROVED`/`REJECTED`) + `researchNotes`/`reviewStatus`/`reviewedAt`/`reviewNote` on `MarketPulseCard`. Repo uses `prisma db push` (no migration files) — deploy auto-applies.
+- **Actions:** `src/lib/market-pulse/admin-approval-actions.ts` — `approveAndPublishMarketPulseCardAction` (validates PPA, locks + APPROVED + PUBLISHED; publishability checked post-approval) and `rejectMarketPulseCardAction`. Audit log + revalidate. Tests: `admin-approval-actions.test.ts`.
+- **Reject → replacement:** automation drafts a replacement on the **same cardId** (different topic; auto-resets REJECTED→PENDING); approval stays manual, no auto-publish.
+
+#### Source guard (due diligence / no-hallucination)
+
+Live **9 Aug 2026** (commit `2894fb6`): SIGNAL cards require `sourceName` + `sourceUrl` (direct publisher article URL) at **save and publish**. `validateCardSource()` rejects missing sources, invalid http(s), and `news.google.com` shims (not citable). Enforced in `automationUpdateCard` + `validateSignalCardPublishable`; builder status/validation paths pass sources through. Research pipeline rules: fetch article (HTTP 200), base every claim on it, resolve Google News links via search, never invent numbers/dates/quotes, self-check before save. Tests: `card-source-validation.test.ts` (fixture defaults in `market-pulse-test-fixtures.ts`).
 
 ### Making Market Pulse visible to players (go-live)
 
