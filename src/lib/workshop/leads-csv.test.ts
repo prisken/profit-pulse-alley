@@ -15,6 +15,7 @@ const sampleLead: WorkshopAdminLeadRow = {
   industry: "Tech",
   age: 34,
   retirementAge: 65,
+  monthlyIncomeHKD: 80000,
   assetsDepletedAtAge: 82,
   weakestLayer: "foundation",
   riskProfile: "balanced",

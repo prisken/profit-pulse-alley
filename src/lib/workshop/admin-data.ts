@@ -17,6 +17,7 @@ export type WorkshopAdminLeadRow = {
   industry: string;
   age: number;
   retirementAge: number | null;
+  monthlyIncomeHKD: number | null;
   assetsDepletedAtAge: number | null;
   weakestLayer: string | null;
   riskProfile: RiskProfile | null;
@@ -120,6 +121,7 @@ export async function getWorkshopAdminLeadsData(): Promise<WorkshopAdminListData
           industry: true,
           age: true,
           retirementAge: true,
+          monthlyIncome: true,
           finalPyramidJson: true,
           aiPyramidJson: true,
           riskQuizJson: true,
@@ -147,6 +149,9 @@ export async function getWorkshopAdminLeadsData(): Promise<WorkshopAdminListData
       industry: lead.session.industry,
       age: lead.session.age,
       retirementAge: lead.session.retirementAge ?? null,
+      monthlyIncomeHKD: Number.isFinite(lead.session.monthlyIncome)
+        ? lead.session.monthlyIncome
+        : null,
       assetsDepletedAtAge: parseAssetsDepletedAtAge(
         lead.session.macroResultJson,
       ),

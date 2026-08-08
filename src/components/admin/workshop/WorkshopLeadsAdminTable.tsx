@@ -6,6 +6,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { downloadCsv } from "@/lib/admin/csv-download";
 import type { WorkshopAdminLeadRow } from "@/lib/workshop/admin-data";
 import { buildWorkshopLeadsCsv } from "@/lib/workshop/leads-csv";
+import WorkshopSessionDetail from "@/components/admin/workshop/WorkshopSessionDetail";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900";
@@ -21,20 +22,6 @@ function formatCreatedDate(iso: string): string {
 type WorkshopLeadsAdminTableProps = Readonly<{
   leads: WorkshopAdminLeadRow[];
 }>;
-
-const SESSION_SECTIONS: {
-  key: keyof NonNullable<WorkshopAdminLeadRow["sessionJson"]>;
-  label: string;
-}[] = [
-  { key: "finalPyramid", label: "Final pyramid (user-confirmed)" },
-  { key: "aiPyramid", label: "AI-predicted pyramid" },
-  { key: "expenses", label: "Expenses breakdown" },
-  { key: "riskQuiz", label: "Risk quiz" },
-  { key: "goals", label: "Goals & rating" },
-  { key: "crisis", label: "Crisis stress test" },
-  { key: "macroResult", label: "Macro / retirement timeline" },
-  { key: "goalJourney", label: "Goal journey decisions" },
-];
 
 export default function WorkshopLeadsAdminTable({
   leads,
@@ -191,39 +178,12 @@ function WorkshopRow({
       </tr>
       {isOpen && lead.sessionJson && (
         <tr className="bg-zinc-900/30">
-          <td colSpan={13} className="px-4 py-4 sm:px-6">
+          <td colSpan={13} className="px-4 py-5 sm:px-6">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
               Session — what the user entered
             </h4>
-            <div className="mt-3 grid gap-3 lg:grid-cols-2">
-              {SESSION_SECTIONS.map((section) => {
-                const value = lead.sessionJson?.[section.key];
-                if (value === null || value === undefined) {
-                  return null;
-                }
-                return (
-                  <details
-                    key={section.key}
-                    className="rounded-lg border border-zinc-800 bg-zinc-950/60"
-                  >
-                    <summary className="cursor-pointer px-4 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 transition hover:text-zinc-300">
-                      {section.label}
-                    </summary>
-                    <pre className="max-h-72 overflow-auto border-t border-zinc-800 px-4 py-3 text-xs leading-relaxed text-zinc-400">
-                      {JSON.stringify(value, null, 2)}
-                    </pre>
-                  </details>
-                );
-              })}
-              {SESSION_SECTIONS.every(
-                (section) =>
-                  lead.sessionJson?.[section.key] === null ||
-                  lead.sessionJson?.[section.key] === undefined,
-              ) && (
-                <p className="text-sm text-zinc-500">
-                  No session JSON stored for this lead.
-                </p>
-              )}
+            <div className="mt-3">
+              <WorkshopSessionDetail lead={lead} />
             </div>
           </td>
         </tr>
