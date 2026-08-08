@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+
 import { downloadCsv } from "@/lib/admin/csv-download";
 import type { WorkshopAdminLeadRow } from "@/lib/workshop/admin-data";
 import { buildWorkshopLeadsCsv } from "@/lib/workshop/leads-csv";
@@ -19,9 +22,37 @@ type WorkshopLeadsAdminTableProps = Readonly<{
   leads: WorkshopAdminLeadRow[];
 }>;
 
+const SESSION_SECTIONS: {
+  key: keyof NonNullable<WorkshopAdminLeadRow["sessionJson"]>;
+  label: string;
+}[] = [
+  { key: "finalPyramid", label: "Final pyramid (user-confirmed)" },
+  { key: "aiPyramid", label: "AI-predicted pyramid" },
+  { key: "expenses", label: "Expenses breakdown" },
+  { key: "riskQuiz", label: "Risk quiz" },
+  { key: "goals", label: "Goals & rating" },
+  { key: "crisis", label: "Crisis stress test" },
+  { key: "macroResult", label: "Macro / retirement timeline" },
+  { key: "goalJourney", label: "Goal journey decisions" },
+];
+
 export default function WorkshopLeadsAdminTable({
   leads,
 }: WorkshopLeadsAdminTableProps) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  function toggleExpanded(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
   function handleExportCsv() {
     if (leads.length === 0) {
       return;
@@ -60,6 +91,7 @@ export default function WorkshopLeadsAdminTable({
         <table className="min-w-full divide-y divide-zinc-800 text-left text-sm">
           <thead className="bg-zinc-900/80 text-xs uppercase tracking-wide text-zinc-500">
             <tr>
+              <th className="w-8 px-2 py-3" aria-label="Expand" />
               <th className="px-3 py-3 font-semibold sm:px-4">Name</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Email</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Phone</th>
@@ -75,49 +107,127 @@ export default function WorkshopLeadsAdminTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800/80 bg-zinc-950/40">
-            {leads.map((lead) => (
-              <tr key={lead.id} className="align-top hover:bg-zinc-900/40">
-                <td className="px-3 py-3 font-medium text-zinc-100 sm:px-4">
-                  {lead.name}
-                </td>
-                <td className="px-3 py-3 text-zinc-300 sm:px-4">{lead.email}</td>
-                <td className="px-3 py-3 text-zinc-400 sm:px-4">
-                  {lead.phone}
-                </td>
-                <td className="px-3 py-3 text-zinc-300 sm:px-4">
-                  {lead.industry}
-                </td>
-                <td className="px-3 py-3 font-mono tabular-nums text-zinc-300 sm:px-4">
-                  {lead.age}
-                </td>
-                <td className="px-3 py-3 font-mono tabular-nums text-zinc-300 sm:px-4">
-                  {lead.retirementAge ?? "—"}
-                </td>
-                <td className="px-3 py-3 font-mono tabular-nums text-zinc-300 sm:px-4">
-                  {lead.assetsDepletedAtAge ?? "—"}
-                </td>
-                <td className="px-3 py-3 capitalize text-zinc-300 sm:px-4">
-                  {lead.weakestLayer ?? "—"}
-                </td>
-                <td className="px-3 py-3 capitalize text-zinc-300 sm:px-4">
-                  {lead.riskProfile ?? "—"}
-                </td>
-                <td className="px-3 py-3 font-mono tabular-nums text-zinc-300 sm:px-4">
-                  {lead.ratingScore == null ? "—" : lead.ratingScore}
-                </td>
-                <td className="max-w-[14rem] px-3 py-3 text-zinc-300 sm:px-4">
-                  <span className="line-clamp-2">
-                    {lead.selectedGoal?.trim() || "—"}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-3 py-3 text-zinc-500 sm:px-4">
-                  {formatCreatedDate(lead.createdAt)}
-                </td>
-              </tr>
-            ))}
+            {leads.map((lead) => {
+              const isOpen = expanded.has(lead.id);
+              return (
+                <WorkshopRow
+                  key={lead.id}
+                  lead={lead}
+                  isOpen={isOpen}
+                  onToggle={() => toggleExpanded(lead.id)}
+                />
+              );
+            })}
           </tbody>
         </table>
       </div>
     </div>
+  );
+}
+
+function WorkshopRow({
+  lead,
+  isOpen,
+  onToggle,
+}: {
+  lead: WorkshopAdminLeadRow;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <>
+      <tr className="align-top hover:bg-zinc-900/40">
+        <td className="px-2 py-3">
+          <button
+            type="button"
+            onClick={onToggle}
+            className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-200 ${focusRing}`}
+            aria-expanded={isOpen}
+            aria-label={isOpen ? "Collapse session details" : "Expand session details"}
+          >
+            {isOpen ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+        </td>
+        <td className="px-3 py-3 font-medium text-zinc-100 sm:px-4">
+          {lead.name}
+        </td>
+        <td className="px-3 py-3 text-zinc-300 sm:px-4">{lead.email}</td>
+        <td className="px-3 py-3 text-zinc-400 sm:px-4">
+          {lead.phone}
+        </td>
+        <td className="px-3 py-3 text-zinc-300 sm:px-4">
+          {lead.industry}
+        </td>
+        <td className="px-3 py-3 font-mono tabular-nums text-zinc-300 sm:px-4">
+          {lead.age}
+        </td>
+        <td className="px-3 py-3 font-mono tabular-nums text-zinc-300 sm:px-4">
+          {lead.retirementAge ?? "—"}
+        </td>
+        <td className="px-3 py-3 font-mono tabular-nums text-zinc-300 sm:px-4">
+          {lead.assetsDepletedAtAge ?? "—"}
+        </td>
+        <td className="px-3 py-3 capitalize text-zinc-300 sm:px-4">
+          {lead.weakestLayer ?? "—"}
+        </td>
+        <td className="px-3 py-3 capitalize text-zinc-300 sm:px-4">
+          {lead.riskProfile ?? "—"}
+        </td>
+        <td className="px-3 py-3 font-mono tabular-nums text-zinc-300 sm:px-4">
+          {lead.ratingScore == null ? "—" : lead.ratingScore}
+        </td>
+        <td className="max-w-[14rem] px-3 py-3 text-zinc-300 sm:px-4">
+          <span className="line-clamp-2">
+            {lead.selectedGoal?.trim() || "—"}
+          </span>
+        </td>
+        <td className="whitespace-nowrap px-3 py-3 text-zinc-500 sm:px-4">
+          {formatCreatedDate(lead.createdAt)}
+        </td>
+      </tr>
+      {isOpen && lead.sessionJson && (
+        <tr className="bg-zinc-900/30">
+          <td colSpan={13} className="px-4 py-4 sm:px-6">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              Session — what the user entered
+            </h4>
+            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+              {SESSION_SECTIONS.map((section) => {
+                const value = lead.sessionJson?.[section.key];
+                if (value === null || value === undefined) {
+                  return null;
+                }
+                return (
+                  <details
+                    key={section.key}
+                    className="rounded-lg border border-zinc-800 bg-zinc-950/60"
+                  >
+                    <summary className="cursor-pointer px-4 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 transition hover:text-zinc-300">
+                      {section.label}
+                    </summary>
+                    <pre className="max-h-72 overflow-auto border-t border-zinc-800 px-4 py-3 text-xs leading-relaxed text-zinc-400">
+                      {JSON.stringify(value, null, 2)}
+                    </pre>
+                  </details>
+                );
+              })}
+              {SESSION_SECTIONS.every(
+                (section) =>
+                  lead.sessionJson?.[section.key] === null ||
+                  lead.sessionJson?.[section.key] === undefined,
+              ) && (
+                <p className="text-sm text-zinc-500">
+                  No session JSON stored for this lead.
+                </p>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

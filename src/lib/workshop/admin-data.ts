@@ -21,6 +21,17 @@ export type WorkshopAdminLeadRow = {
   weakestLayer: string | null;
   riskProfile: RiskProfile | null;
   ratingScore: number | null;
+  /** Raw session JSONs (what the user entered) for the admin detail view. */
+  sessionJson: {
+    finalPyramid: unknown;
+    aiPyramid: unknown;
+    expenses: unknown;
+    riskQuiz: unknown;
+    goals: unknown;
+    crisis: unknown;
+    macroResult: unknown;
+    goalJourney: unknown;
+  } | null;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -114,6 +125,9 @@ export async function getWorkshopAdminLeadsData(): Promise<WorkshopAdminListData
           riskQuizJson: true,
           goalsJson: true,
           macroResultJson: true,
+          expensesJson: true,
+          crisisJson: true,
+          goalJourneyJson: true,
         },
       },
     },
@@ -141,6 +155,16 @@ export async function getWorkshopAdminLeadsData(): Promise<WorkshopAdminListData
         parseWeakestLayer(lead.session.aiPyramidJson),
       riskProfile: parseRiskProfile(lead.session.riskQuizJson),
       ratingScore: parseRatingScore(lead.session.goalsJson),
+      sessionJson: {
+        finalPyramid: lead.session.finalPyramidJson,
+        aiPyramid: lead.session.aiPyramidJson,
+        expenses: lead.session.expensesJson,
+        riskQuiz: lead.session.riskQuizJson,
+        goals: lead.session.goalsJson,
+        crisis: lead.session.crisisJson,
+        macroResult: lead.session.macroResultJson,
+        goalJourney: lead.session.goalJourneyJson,
+      },
     })),
   };
 }

@@ -2,16 +2,16 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import WorkshopLeadsAdminTable from "@/components/admin/workshop/WorkshopLeadsAdminTable";
-import { getWorkshopAdminLeadsData } from "@/lib/workshop/admin-data";
+import PitchLeadsAdminTable from "@/components/admin/pitch/PitchLeadsAdminTable";
+import { getPitchAdminLeadsData } from "@/lib/pitch-game/admin-data";
 
 export const metadata: Metadata = {
-  title: "Workshop Leads Admin | Profit Pulse Ally",
-  description: "Workshop Pyramid Lab lead captures from live sessions.",
+  title: "Pitch Meeting Leads Admin | Profit Pulse Ally",
+  description: "The Pitch Meeting lead captures — contacts and full game journeys.",
 };
 
-export default async function WorkshopAdminPage() {
-  const data = await getWorkshopAdminLeadsData();
+export default async function PitchAdminPage() {
+  const data = await getPitchAdminLeadsData();
 
   if (!data) {
     redirect("/");
@@ -19,7 +19,7 @@ export default async function WorkshopAdminPage() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-50">
-      <div className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-12">
+      <div className="mx-auto w-full max-w-7xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-12">
         <header className="border-b border-zinc-800 pb-6">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
             Admin
@@ -27,24 +27,25 @@ export default async function WorkshopAdminPage() {
           <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
-                Workshop Pyramid Lab leads
+                Pitch Meeting leads
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                Captured blueprints from the hidden workshop tool — profile,
-                risk, rating score, and selected goal.
+                Every lead captured at profitpulseally.com/pitch — contact
+                details, the numbers they entered, Elena&apos;s verdict, the
+                term-sheet condition and the automation gap it exposed.
               </p>
               {data.adminEmail ? (
                 <p className="mt-2 text-sm text-zinc-500">
-                  Signed in as {data.adminEmail}
+                  Signed in as {data.adminEmail} · {data.totalLeads} total
                 </p>
               ) : null}
             </div>
             <div className="flex items-center gap-4">
               <Link
-                href="/admin/pitch"
+                href="/admin/workshop"
                 className="text-sm font-medium text-zinc-400 underline-offset-4 hover:text-zinc-200 hover:underline"
               >
-                Pitch Meeting leads →
+                Workshop leads →
               </Link>
               <Link
                 href="/admin"
@@ -57,7 +58,7 @@ export default async function WorkshopAdminPage() {
         </header>
 
         <div className="mt-6 sm:mt-8">
-          <WorkshopLeadsAdminTable leads={data.leads} />
+          <PitchLeadsAdminTable leads={data.leads} />
         </div>
       </div>
     </main>

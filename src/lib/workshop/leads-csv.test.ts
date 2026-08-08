@@ -19,6 +19,7 @@ const sampleLead: WorkshopAdminLeadRow = {
   weakestLayer: "foundation",
   riskProfile: "balanced",
   ratingScore: 62,
+  sessionJson: null,
 };
 
 describe("buildWorkshopLeadsCsv", () => {
