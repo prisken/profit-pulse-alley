@@ -104,7 +104,7 @@ export function MarketPulseAdminStatusHeader({ snapshot }: Readonly<StatusHeader
   ];
 
   return (
-    <div className="sticky top-0 z-30 -mx-3 border-b border-zinc-800 bg-zinc-950/95 px-3 py-4 backdrop-blur-sm sm:-mx-6 sm:px-6">
+    <div className="sticky top-[var(--admin-nav-h,0px)] z-30 -mx-3 border-b border-zinc-800 bg-zinc-950/95 px-3 py-4 backdrop-blur-sm sm:-mx-6 sm:px-6">
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
           <div
@@ -309,7 +309,7 @@ export function MarketPulseAdminSectionNav() {
   return (
     <nav
       aria-label={t("auth.admin.mp.shell.sectionNav")}
-      className="sticky top-[calc(var(--mp-status-offset,0px)+0.5rem)] z-20 -mx-1 overflow-x-auto px-1 py-2"
+      className="sticky top-[calc(var(--admin-nav-h,0px)+var(--mp-status-offset,0px)+0.5rem)] z-20 -mx-1 overflow-x-auto px-1 py-2"
     >
       <ul className="flex min-w-max gap-1.5">
         {sections.map((section) => (
