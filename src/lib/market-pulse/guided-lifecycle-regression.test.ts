@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   MarketPulseCard,
+  MarketPulseCardReviewStatus,
   MarketPulseCardStatus,
   MarketPulseCardType,
   MarketPulseCycleStatus,
@@ -100,6 +101,10 @@ type StoreCard = {
   userPrompt: string | null;
   userPromptZhHant: string | null;
   status: MarketPulseCardStatus;
+  researchNotes: string | null;
+  reviewStatus: MarketPulseCardReviewStatus;
+  reviewedAt: Date | null;
+  reviewNote: string | null;
   ppaSignal: MarketPulseSignal | null;
   ppaInsight: string | null;
   ppaInsightZhHant: string | null;
@@ -168,6 +173,10 @@ function cardDefaults(overrides: Partial<StoreCard> & Pick<StoreCard, "id" | "cy
     userPrompt: "Prompt",
     userPromptZhHant: null,
     status: "DRAFT",
+    researchNotes: null,
+    reviewStatus: "PENDING",
+    reviewedAt: null,
+    reviewNote: null,
     ppaSignal: null,
     ppaInsight: null,
     ppaInsightZhHant: null,

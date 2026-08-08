@@ -2,6 +2,8 @@ import { shouldShowMarketPulseLaunchSetupUi } from "@/lib/market-pulse/launch-co
 
 export const ADMIN_ROOT_PATH = "/admin";
 export const ADMIN_MARKET_PULSE_PATH = "/admin/market-pulse";
+export const ADMIN_MARKET_PULSE_APPROVALS_PATH =
+  `${ADMIN_MARKET_PULSE_PATH}/approvals`;
 export const ADMIN_MARKET_PULSE_GUIDED_CYCLE_PATH =
   "/admin/market-pulse/guided-cycle/new";
 
@@ -21,6 +23,7 @@ export type MarketPulseAdminNavSection = {
 
 export const MARKET_PULSE_ADMIN_NAV_SECTIONS: MarketPulseAdminNavSection[] = [
   { id: "cycles-hub", labelKey: "auth.admin.mp.nav.cyclesHub" },
+  { id: "approvals", labelKey: "auth.admin.mp.nav.approvals" },
   { id: "overview", labelKey: "auth.admin.mp.overview" },
   { id: "setup", labelKey: "auth.admin.mp.shell.setup" },
   { id: "runtime", labelKey: "auth.admin.mp.runtime" },
@@ -86,6 +89,17 @@ export function buildAdminMpGuidedCardsBreadcrumbs(
     },
     { label: cycleName },
     { labelKey: "auth.admin.mp.guidedCards.breadcrumb" },
+  ];
+}
+
+export function buildAdminMpApprovalsBreadcrumbs(): AdminMpBreadcrumb[] {
+  return [
+    { labelKey: "auth.admin.breadcrumb.admin", href: ADMIN_ROOT_PATH },
+    {
+      labelKey: "auth.admin.breadcrumb.marketPulse",
+      href: ADMIN_MARKET_PULSE_PATH,
+    },
+    { labelKey: "auth.admin.mp.approvals.breadcrumb" },
   ];
 }
 

@@ -45,6 +45,13 @@ enum MarketPulseSignal {
   ACKNOWLEDGED
 }
 
+/// Approval pipeline state for the admin approvals queue (WhatsApp / admin panel).
+enum MarketPulseCardReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum MarketPulseLeaderboardType {
   CURRENT_CYCLE
   MONTHLY
@@ -262,8 +269,15 @@ model MarketPulseCard {
   publishedAt        DateTime?
   /// Legacy per-card reveal override; defaults to cycle.revealAt when null.
   revealAt           DateTime?
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
+  /// Approval pipeline — research pass reasoning + sources, shown in the admin approvals queue.
+  researchNotes      String?                       @db.Text
+  /// Approval pipeline state: PENDING → APPROVED (then published) or REJECTED.
+  reviewStatus       MarketPulseCardReviewStatus   @default(PENDING)
+  reviewedAt         DateTime?
+  /// Optional admin note attached at approve/reject time.
+  reviewNote         String?
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
 
   cycle       MarketPulseCycle        @relation(fields: [cycleId], references: [id], onDelete: Cascade)
   decisions   MarketPulseDecision[]
@@ -273,6 +287,7 @@ model MarketPulseCard {
   @@index([cycleId])
   @@index([cycleId, dayIndex, sortOrder])
   @@index([status])
+  @@index([reviewStatus])
   @@index([publishedAt])
   @@index([revealAt])
 }

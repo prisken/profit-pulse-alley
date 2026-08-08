@@ -11,6 +11,10 @@ export const MARKET_PULSE_ADMIN_CARD_ROW_LOCALIZATION_DEFAULTS = {
   cardImageAltZhHant: null,
   userPromptZhHant: null,
   ppaInsightZhHant: null,
+  researchNotes: null,
+  reviewStatus: "PENDING",
+  reviewedAt: null,
+  reviewNote: null,
 } as const satisfies Pick<
   MarketPulseAdminCardRow,
   | "sortOrder"
@@ -20,6 +24,10 @@ export const MARKET_PULSE_ADMIN_CARD_ROW_LOCALIZATION_DEFAULTS = {
   | "cardImageAltZhHant"
   | "userPromptZhHant"
   | "ppaInsightZhHant"
+  | "researchNotes"
+  | "reviewStatus"
+  | "reviewedAt"
+  | "reviewNote"
 >;
 
 type CardWithDecisionCount = Pick<
@@ -52,6 +60,10 @@ type CardWithDecisionCount = Pick<
   | "userPrompt"
   | "userPromptZhHant"
   | "status"
+  | "researchNotes"
+  | "reviewStatus"
+  | "reviewedAt"
+  | "reviewNote"
   | "ppaSignal"
   | "ppaInsight"
   | "ppaInsightZhHant"
@@ -95,6 +107,10 @@ export function mapMarketPulseAdminCardRow(
     userPrompt: card.userPrompt,
     userPromptZhHant: card.userPromptZhHant,
     status: card.status,
+    researchNotes: card.researchNotes,
+    reviewStatus: card.reviewStatus,
+    reviewedAt: card.reviewedAt?.toISOString() ?? null,
+    reviewNote: card.reviewNote,
     ppaSignal: card.ppaSignal,
     ppaInsight: card.ppaInsight,
     ppaInsightZhHant: card.ppaInsightZhHant,

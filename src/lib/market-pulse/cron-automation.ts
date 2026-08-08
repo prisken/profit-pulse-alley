@@ -226,6 +226,8 @@ export type AutomationCardSaveInput = GuidedCardSaveInput & {
   sourceName?: string;
   sourceUrl?: string;
   cardImageAltZhHant?: string;
+  /** Research pass reasoning + sources, surfaced in the admin approvals queue. */
+  researchNotes?: string;
 };
 
 export async function automationUpdateCard(
@@ -277,6 +279,10 @@ export async function automationUpdateCard(
           cardImageAlt: trimOrNull(input.cardImageAlt),
           headlineZhHant: trimOrNull(input.headlineZhHant),
           newsBodyZhHant: trimOrNull(input.newsBodyZhHant),
+          researchNotes: trimOrNull(input.researchNotes),
+          ...(card.reviewStatus === "REJECTED"
+            ? { reviewStatus: "PENDING" as const, reviewedAt: null }
+            : {}),
         },
       });
     } else {
@@ -301,6 +307,10 @@ export async function automationUpdateCard(
           userPromptZhHant: trimOrNull(input.userPromptZhHant),
           sourceName: trimOrNull(input.sourceName),
           sourceUrl: trimOrNull(input.sourceUrl),
+          researchNotes: trimOrNull(input.researchNotes),
+          ...(card.reviewStatus === "REJECTED"
+            ? { reviewStatus: "PENDING" as const, reviewedAt: null }
+            : {}),
         },
       });
     }

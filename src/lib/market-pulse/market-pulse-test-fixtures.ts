@@ -33,6 +33,10 @@ export const MARKET_PULSE_CARD_TEST_DEFAULTS = {
   cardImageAltZhHant: null,
   userPromptZhHant: null,
   ppaInsightZhHant: null,
+  researchNotes: null,
+  reviewStatus: "PENDING",
+  reviewedAt: null,
+  reviewNote: null,
 } as const satisfies Pick<
   MarketPulseCard,
   | "cardType"
@@ -43,6 +47,10 @@ export const MARKET_PULSE_CARD_TEST_DEFAULTS = {
   | "cardImageAltZhHant"
   | "userPromptZhHant"
   | "ppaInsightZhHant"
+  | "researchNotes"
+  | "reviewStatus"
+  | "reviewedAt"
+  | "reviewNote"
 >;
 
 /** Build a full MarketPulseCard row for unit tests (English-only by default). */

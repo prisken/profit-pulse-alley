@@ -1,6 +1,7 @@
 import "server-only";
 
 import type {
+  MarketPulseCardReviewStatus,
   MarketPulseCardStatus,
   MarketPulseCardType,
   MarketPulseCycleStatus,
@@ -54,6 +55,10 @@ export type MarketPulseAdminCardRow = {
   userPrompt: string | null;
   userPromptZhHant: string | null;
   status: MarketPulseCardStatus;
+  researchNotes: string | null;
+  reviewStatus: MarketPulseCardReviewStatus;
+  reviewedAt: string | null;
+  reviewNote: string | null;
   ppaSignal: MarketPulseSignal | null;
   ppaInsight: string | null;
   ppaInsightZhHant: string | null;
