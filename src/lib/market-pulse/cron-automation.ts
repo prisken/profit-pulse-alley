@@ -718,6 +718,9 @@ export async function automationGetCardDetail(
     ppaSignal: string | null;
     ppaLocked: boolean;
     publishedAt: string | null;
+    reviewStatus: string;
+    reviewNote: string | null;
+    researchNotes: string | null;
   }>
 > {
   const card = await prisma.marketPulseCard.findUnique({
@@ -757,6 +760,9 @@ export async function automationGetCardDetail(
       ppaSignal: card.ppaSignal,
       ppaLocked: Boolean(card.ppaSignalLockedAt),
       publishedAt: card.publishedAt ? card.publishedAt.toISOString() : null,
+      reviewStatus: card.reviewStatus,
+      reviewNote: card.reviewNote,
+      researchNotes: card.researchNotes,
     },
   };
 }
@@ -786,6 +792,8 @@ export async function automationGetCycleStatus(
       sourceDate: string | null;
       ppaSignal: string | null;
       ppaLocked: boolean;
+      reviewStatus: string;
+      reviewNote: string | null;
     }>;
   }>
 > {
@@ -811,6 +819,8 @@ export async function automationGetCycleStatus(
       sourceDate: true,
       ppaSignal: true,
       ppaSignalLockedAt: true,
+      reviewStatus: true,
+      reviewNote: true,
     },
   });
 
@@ -838,6 +848,8 @@ export async function automationGetCycleStatus(
         sourceDate: card.sourceDate ? card.sourceDate.toISOString() : null,
         ppaSignal: card.ppaSignal,
         ppaLocked: Boolean(card.ppaSignalLockedAt),
+        reviewStatus: card.reviewStatus,
+        reviewNote: card.reviewNote,
       })),
     },
   };
@@ -866,6 +878,8 @@ export async function automationGetStatus(): Promise<
       sourceDate: string | null;
       ppaSignal: string | null;
       ppaLocked: boolean;
+      reviewStatus: string;
+      reviewNote: string | null;
     }>;
   }>
 > {
@@ -896,6 +910,8 @@ export async function automationGetStatus(): Promise<
     sourceDate: Date | null;
     ppaSignal: string | null;
     ppaSignalLockedAt: Date | null;
+    reviewStatus: string;
+    reviewNote: string | null;
   }> = [];
 
   if (settings?.activeCycleId) {
@@ -929,6 +945,8 @@ export async function automationGetStatus(): Promise<
         sourceDate: true,
         ppaSignal: true,
         ppaSignalLockedAt: true,
+        reviewStatus: true,
+        reviewNote: true,
       },
     });
   }
@@ -959,6 +977,8 @@ export async function automationGetStatus(): Promise<
         sourceDate: card.sourceDate ? card.sourceDate.toISOString() : null,
         ppaSignal: card.ppaSignal,
         ppaLocked: Boolean(card.ppaSignalLockedAt),
+        reviewStatus: card.reviewStatus,
+        reviewNote: card.reviewNote,
       })),
     },
   };
