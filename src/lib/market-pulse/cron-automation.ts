@@ -730,6 +730,8 @@ export async function automationGetCardDetail(
     cardImageAlt: string | null;
     cardImageAltZhHant: string | null;
     ppaSignal: string | null;
+    ppaInsight: string | null;
+    ppaInsightZhHant: string | null;
     ppaLocked: boolean;
     publishedAt: string | null;
     reviewStatus: string;
@@ -772,6 +774,8 @@ export async function automationGetCardDetail(
       cardImageAlt: card.cardImageAlt,
       cardImageAltZhHant: card.cardImageAltZhHant,
       ppaSignal: card.ppaSignal,
+      ppaInsight: card.ppaInsight,
+      ppaInsightZhHant: card.ppaInsightZhHant,
       ppaLocked: Boolean(card.ppaSignalLockedAt),
       publishedAt: card.publishedAt ? card.publishedAt.toISOString() : null,
       reviewStatus: card.reviewStatus,
