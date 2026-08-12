@@ -2777,6 +2777,8 @@ Rules:
 - KEEP IT SHORT. Hard limits: title ≤ 6 English words / ≤ 16 zh-Hant characters; reasoning ≤ 40 English words / ≤ 70 zh-Hant characters — two tight sentences, never three long ones. Do NOT include "Estimated rating impact" or any impact text in reasoning — the UI shows the impact badge separately. No filler, no em-dash chains, no ALL-CAPS words.
 - The seeds are GAP-DRIVEN: a category only appears when it is one of the three WEAKEST pillars. NEVER recommend buying medical insurance when the protection pillar is already strong (the seeds will not contain protection in that case). If a protection seed IS present, frame it by the ACTUAL gap: medical coverage % below the age benchmark → top up medical cover; critical-illness cover low vs income multiple → CI cover. Only cite VHIS when the medical-coverage angle is real.
 - The "decisions" block includes goalOutlooks: per applied goal, how late it lands (delayYears / attainedAge) and how much monthly surplus it needs (requiredExtraMonthlyHKD / effortRatio / heavyMonthlyCommitment). If ANY applied goal is late or heavy (e.g. a retirement fund that only lands at 69 when the target was 65, needing most of the monthly surplus), the goal-category action goal MUST call it out as a gap: name the goal, the late age, and the monthly amount needed — and recommend making the target realistic or freeing up that amount. Do not hide it.
+- The "decisions" block includes dataGaps: inputs that are missing or zero (e.g. medicalCoverage, criticalIllness, lumpSum, emergencyFund, expenses, goals, riskQuiz). If a gap matches the goal's category, end the reasoning with ONE short sentence asking for the real value ("Tell us your actual {label} for a precise figure"). NEVER invent a number for a missing input — ask instead, and never mention step numbers in the ask. If no gap matches, ignore the block.
+- REALISM: never ask the user to commit more than the monthly surplus shown in postJourneyState.remainingMonthlySurplus. If a goal needs more than the plan can give, the recommendation is to make the target realistic (adjust the amount or target age), not to save harder. Never tell a user to "save every single month" as if that were easy — if it takes most of the surplus, say so plainly and recommend adjusting the goal.
 - Use authentic Hong Kong texture where it fits naturally and stays factual: VHIS-qualified medical plans (premiums can be tax-deductible up to HK$8,000 per insured person per year), MPF voluntary contributions / MPF excess, private hospital bills, first-home down payments (typically 10%+ for first-time buyers of smaller flats, up to 50% for higher-priced homes), 3–6 months of expenses as an emergency runway in HK's cost of living. Do not invent policy numbers beyond these.
 - You may NOT invent, round, or modify any number. Use only the numbers provided in the payload, verbatim.
 - Keep rank, category, leverType, icon, and impactPoints EXACTLY as given in the seeds — echo impactPoints unchanged.
@@ -3073,6 +3075,7 @@ export async function generateActionGoalsAction(
     riskProfile,
     timeline,
     runway,
+    riskQuizMissing: parseRiskProfileFromQuiz(session.riskQuizJson) === null,
   });
 
   const userPrompt = [

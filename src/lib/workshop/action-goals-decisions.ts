@@ -23,6 +23,12 @@ import type { TimelineResult } from "@/lib/workshop/timeline-engine";
 
 export type ActionGoalsLiquidationSource = "investments" | "emergencyFund" | null;
 
+export type ActionGoalsDataGap = {
+  key: string;
+  label: Bilingual;
+  severity: "high" | "medium";
+};
+
 export type ActionGoalsDecisionsPayload = {
   goalsApplied: Array<{
     name: string;
@@ -77,6 +83,11 @@ export type ActionGoalsDecisionsPayload = {
     beforeAge: number | null;
     afterAge: number | null;
   };
+  /**
+   * Inputs that are missing or zero (v5.4). The AI may ask the user for the
+   * real value in a goal whose category matches — never invent one.
+   */
+  dataGaps: ActionGoalsDataGap[];
 };
 
 function roundMoney(value: number): number {
@@ -153,6 +164,70 @@ function aggregateSqueezeCuts(
   return out;
 }
 
+function buildDataGaps(input: {
+  pyramid: PyramidState;
+  expenses: ExpensesState;
+  riskQuizMissing: boolean;
+}): ActionGoalsDataGap[] {
+  const gaps: ActionGoalsDataGap[] = [];
+  const add = (
+    key: string,
+    label: Bilingual,
+    severity: ActionGoalsDataGap["severity"],
+  ) => gaps.push({ key, label, severity });
+
+  if (Math.max(0, input.pyramid.protection.medicalCoveragePercent) === 0) {
+    add(
+      "medicalCoverage",
+      { en: "medical coverage", zhHant: "醫療保障" },
+      "high",
+    );
+  }
+  if (Math.max(0, input.pyramid.protection.criticalIllnessAmountHKD) === 0) {
+    add(
+      "criticalIllness",
+      { en: "critical illness cover", zhHant: "危疾保障" },
+      "high",
+    );
+  }
+  if (Math.max(0, input.pyramid.investment.lumpSumHKD) === 0) {
+    add(
+      "lumpSum",
+      { en: "invested capital", zhHant: "已投資本金" },
+      "medium",
+    );
+  }
+  if (Math.max(0, input.pyramid.emergencyFund.savedAmountHKD) === 0) {
+    add(
+      "emergencyFund",
+      { en: "emergency fund", zhHant: "應急儲備" },
+      "high",
+    );
+  }
+  if (Math.max(0, input.expenses.totalHKD) === 0) {
+    add(
+      "expenses",
+      { en: "monthly expenses", zhHant: "每月開支" },
+      "high",
+    );
+  }
+  if ((input.pyramid.goals.goals ?? []).length === 0) {
+    add(
+      "goals",
+      { en: "your goals", zhHant: "你的目標" },
+      "high",
+    );
+  }
+  if (input.riskQuizMissing) {
+    add(
+      "riskQuiz",
+      { en: "your risk profile", zhHant: "你的風險取向" },
+      "medium",
+    );
+  }
+  return gaps;
+}
+
 function emergencyFundMonthsRemaining(
   pyramid: PyramidState,
   expenses: ExpensesState,
@@ -180,6 +255,7 @@ export function buildActionGoalsDecisionsPayload(input: {
   riskProfile: RiskProfile;
   timeline?: TimelineResult | null;
   runway?: { beforeAge: number | null; afterAge: number | null } | null;
+  riskQuizMissing?: boolean;
 }): ActionGoalsDecisionsPayload {
   const { pyramid, expenses, journey, crisisStressTest, riskProfile } = input;
   const goalsById = new Map(pyramid.goals.goals.map((g) => [g.id, g]));
@@ -287,6 +363,11 @@ export function buildActionGoalsDecisionsPayload(input: {
         beforeAge: null,
         afterAge: input.timeline?.retirement.assetsDepletedAtAge ?? null,
       } satisfies ActionGoalsDecisionsPayload["runway"]),
+    dataGaps: buildDataGaps({
+      pyramid,
+      expenses,
+      riskQuizMissing: input.riskQuizMissing === true,
+    }),
   };
 }
 

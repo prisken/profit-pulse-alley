@@ -429,3 +429,54 @@ describe("goal stress signal (v5.3)", () => {
     }
   });
 });
+
+describe("data gaps / refine note (v5.4)", () => {
+  it("appends a refine ask when a matching input is missing", () => {
+    const decisions = baseDecisions({
+      dataGaps: [
+        {
+          key: "medicalCoverage",
+          label: { en: "medical coverage", zhHant: "醫療保障" },
+          severity: "high",
+        },
+      ],
+    });
+    const result = buildFallbackReasoning(
+      intervention({
+        category: "protection",
+        leverType: "structural",
+        impactPoints: 12,
+        gap: 40,
+      }),
+      decisions,
+    );
+    expect(result.en).toMatch(/Tell us your actual medical coverage/);
+    expect(result.zhHant).toMatch(/醫療保障/);
+    // Still within word limits with the refine sentence.
+    expect(result.en.trim().split(/\s+/).length).toBeLessThanOrEqual(50);
+    // Refine must never mention step numbers.
+    expect(result.en).not.toMatch(/Step\s*\d+/i);
+  });
+
+  it("does not append a refine ask when no matching gap exists", () => {
+    const decisions = baseDecisions({
+      dataGaps: [
+        {
+          key: "lumpSum",
+          label: { en: "invested capital", zhHant: "已投資本金" },
+          severity: "medium",
+        },
+      ],
+    });
+    const result = buildFallbackReasoning(
+      intervention({
+        category: "protection",
+        leverType: "structural",
+        impactPoints: 12,
+        gap: 40,
+      }),
+      decisions,
+    );
+    expect(result.en).not.toMatch(/Tell us your actual/);
+  });
+});

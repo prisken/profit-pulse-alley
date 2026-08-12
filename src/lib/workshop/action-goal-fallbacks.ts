@@ -36,6 +36,7 @@ export type DecisionsPayload = {
   goalOutlooks?: ActionGoalsDecisionsPayload["goalOutlooks"];
   squeezesAccepted: ActionGoalsDecisionsPayload["squeezesAccepted"];
   squeezesRejected: ActionGoalsDecisionsPayload["squeezesRejected"];
+  dataGaps?: ActionGoalsDecisionsPayload["dataGaps"];
   postJourneyState: {
     remainingMonthlySurplus: number | null;
     emergencyFundMonthsRemaining: number | null;
@@ -145,6 +146,43 @@ function goalStressCallout(decisions: DecisionsPayload): Bilingual | null {
     };
   }
   return null;
+}
+
+/** Age label for the runway hero (null = sustained past 90). */
+function runwayLabel(age: number | null): Bilingual {
+  if (age == null) {
+    return { en: "past 90", zhHant: "90 歲之後" };
+  }
+  return { en: `age ${age}`, zhHant: `${age} 歲` };
+}
+
+/**
+ * v5.4: if a relevant input is missing/zero, append a short "tell us the real
+ * value" sentence (deterministic fallback for the AI refine note).
+ */
+function refineNote(
+  category: ActionGoal["category"],
+  decisions: DecisionsPayload,
+): Bilingual | null {
+  const gaps = decisions.dataGaps ?? [];
+  const keyByCategory: Record<ActionGoal["category"], string[]> = {
+    protection: ["medicalCoverage", "criticalIllness"],
+    savings: ["emergencyFund", "expenses"],
+    investment: ["lumpSum", "riskQuiz"],
+    goal: ["goals"],
+  };
+  const gap = gaps.find((row) =>
+    keyByCategory[category].includes(row.key),
+  );
+  if (!gap) {
+    return null;
+  }
+  const labelEn = gap.label.en.trim();
+  const labelZh = gap.label.zhHant.trim();
+  return {
+    en: `Tell us your actual ${labelEn} for a precise figure.`,
+    zhHant: `請告訴我們你實際的${labelZh}，才能給你準確數字。`,
+  };
 }
 
 function withPts(template: Bilingual, impactPoints: number): Bilingual {
@@ -387,18 +425,29 @@ function leverReasoning(
 
 /**
  * Build bilingual fallback reasoning for one ranked intervention.
- * Picks the lever-type template; falls back to a category generic.
+ * Picks the lever-type template; appends a refine note when a relevant input
+ * is missing; falls back to a category generic.
  */
 export function buildFallbackReasoning(
   goal: RankedIntervention,
   decisions: DecisionsPayload,
 ): Bilingual {
   const primary = leverReasoning(goal, decisions, goal.leverType);
-
-  if (primary) {
-    return primary;
+  const base =
+    primary ?? withPts(genericReasoning(goal.category), goal.impactPoints);
+  const refine = refineNote(goal.category, decisions);
+  if (!refine) {
+    return base;
   }
+  return {
+    en: `${base.en} ${refine.en}`,
+    zhHant: `${base.zhHant} ${refine.zhHant}`,
+  };
+}
 
+function genericReasoning(
+  category: ActionGoal["category"],
+): Bilingual {
   const generic: Record<ActionGoal["category"], Bilingual> = {
     protection: {
       en: "Strengthening your protection layer is the clearest next improvement on this plan.",
@@ -417,7 +466,7 @@ export function buildFallbackReasoning(
       zhHant: "讓優先目標保持進度，是目前計劃最明確的下一步改善。",
     },
   };
-  return withPts(generic[goal.category], goal.impactPoints);
+  return generic[category];
 }
 
 export type ActionGoalsFallbackLogEvent = {

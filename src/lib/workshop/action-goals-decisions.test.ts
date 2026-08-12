@@ -423,6 +423,7 @@ describe("action-goals decisions payload + fallback", () => {
     expect(Object.keys(decisions).sort()).toEqual(
       [
         "crisisStressTest",
+        "dataGaps",
         "goalOutlooks",
         "goalsApplied",
         "goalsGivenUp",
