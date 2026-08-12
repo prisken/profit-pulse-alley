@@ -486,6 +486,22 @@ model WorkshopLead {
   @@index([email])
 }
 
+model PitchMeetingLead {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  name      String
+  email     String
+  phone     String
+  company   String
+  /** Optional freeform: "what's actually keeping you up at night" */
+  concern   String?
+  /** Full deterministic journey: archetype, metric, round, inputs, band, posture, condition. */
+  journeyJson Json
+
+  @@index([createdAt])
+  @@index([email])
+}
+
 // --- Auth.js Prisma Adapter models ---
 
 model Account {
