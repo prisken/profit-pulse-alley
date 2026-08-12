@@ -8,6 +8,7 @@ import {
   type DecisionsPayload,
 } from "@/lib/workshop/action-goal-fallbacks";
 import { deriveRiskQuizJourneyConsistency } from "@/lib/workshop/risk-quiz-consistency";
+import { computeGoalOutlook } from "@/lib/workshop/goal-journey";
 import type {
   ActionGoal,
   Bilingual,
@@ -32,6 +33,22 @@ export type ActionGoalsDecisionsPayload = {
   goalsGivenUp: Array<{
     name: string;
     targetAge: number;
+  }>;
+  /**
+   * Per applied goal: how late it lands and how much of the monthly surplus
+   * it would need to hit on time — the "retirement goal needs saving every
+   * single month" stress signal (v5.3).
+   */
+  goalOutlooks: Array<{
+    name: string;
+    targetAge: number;
+    attainedAge: number | null;
+    delayYears: number | null;
+    requiredExtraMonthlyHKD: number;
+    monthlySurplus: number;
+    effortRatio: number | null;
+    late: boolean;
+    heavyMonthlyCommitment: boolean;
   }>;
   squeezesAccepted: Array<{
     category: "fun" | "discretionary";
@@ -192,6 +209,45 @@ export function buildActionGoalsDecisionsPayload(input: {
     Math.max(0, input.monthlyIncome) - Math.max(0, expenses.totalHKD),
   );
 
+  const goalOutlooks: ActionGoalsDecisionsPayload["goalOutlooks"] = [];
+  if (input.timeline && input.timeline.rows.length > 0) {
+    for (const decision of journey.decisions) {
+      if (decision.status !== "applied") {
+        continue;
+      }
+      const goal = goalsById.get(decision.goalId);
+      if (!goal) {
+        continue;
+      }
+      const outlook = computeGoalOutlook(input.timeline, goal);
+      const monthlySurplus = Math.max(0, remainingMonthlySurplus);
+      const requiredExtra = Math.max(0, outlook.requiredExtraMonthlyHKD);
+      const delayYears =
+        outlook.attainedAtAge == null
+          ? null
+          : Math.max(0, outlook.attainedAtAge - outlook.targetAge);
+      const effortRatio =
+        requiredExtra > 0 && monthlySurplus > 0
+          ? roundMoney(requiredExtra / monthlySurplus)
+          : null;
+      goalOutlooks.push({
+        name: goalName(goal, decision.goalId),
+        targetAge: Math.round(goal.targetAge),
+        attainedAge: outlook.attainedAtAge,
+        delayYears,
+        requiredExtraMonthlyHKD: roundMoney(requiredExtra),
+        monthlySurplus,
+        effortRatio,
+        // Never reached by 90 counts as the worst kind of "late".
+        late:
+          outlook.attainedAtAge == null || (delayYears != null && delayYears >= 1),
+        heavyMonthlyCommitment:
+          requiredExtra > 0 &&
+          (monthlySurplus <= 0 || effortRatio == null || effortRatio >= 0.3),
+      });
+    }
+  }
+
   const affectedGoal =
     crisisStressTest.affectedGoalLabel != null
       ? crisisStressTest.affectedGoalLabel.en.trim() ||
@@ -202,6 +258,7 @@ export function buildActionGoalsDecisionsPayload(input: {
   return {
     goalsApplied,
     goalsGivenUp,
+    goalOutlooks,
     squeezesAccepted: aggregateSqueezeCuts(journey.decisions, true),
     squeezesRejected: aggregateSqueezeCuts(journey.decisions, false),
     postJourneyState: {

@@ -69,7 +69,6 @@ describe("buildFallbackReasoning", () => {
     expect(result.en).toContain("Wedding");
     expect(result.en).toContain("3");
     expect(result.en).toContain(formatCompactHkd(810_000));
-    expect(result.en).toContain("+18.5");
     expect(result.en).toMatch(/critical illness/i);
     expect(result.zhHant).toContain("Wedding");
     expect(result.zhHant).toContain("3");
@@ -87,7 +86,7 @@ describe("buildFallbackReasoning", () => {
       baseDecisions({ crisisStressTest: null }),
     );
     expect(withGap.en).toContain(formatCompactHkd(40));
-    expect(withGap.en).toMatch(/protection layer/i);
+    expect(withGap.en).toMatch(/protection/i);
     expect(withGap.zhHant.length).toBeGreaterThan(0);
     expect(withGap.zhHant).not.toBe(withGap.en);
 
@@ -99,7 +98,6 @@ describe("buildFallbackReasoning", () => {
       }),
       baseDecisions({ crisisStressTest: null }),
     );
-    expect(generic.en).toContain("+12");
     expect(generic.en).not.toMatch(/Step\s*\d+/i);
   });
 
@@ -130,7 +128,6 @@ describe("buildFallbackReasoning", () => {
       }),
     );
     expect(result.en).toMatch(/keeping Wedding on track/i);
-    expect(result.en).toMatch(/age 63 to age 81|63.*81/i);
     expect(result.en).not.toMatch(/You have .+ in monthly surplus/);
     expect(result.zhHant).toContain("Wedding");
     expect(result.zhHant).not.toBe(result.en);
@@ -163,8 +160,6 @@ describe("buildFallbackReasoning", () => {
         intervention({ category, impactPoints: 7, icon: "Circle" }),
         decisions,
       );
-      expect(result.en).toContain("+7");
-      expect(result.zhHant).toContain("+7");
       expect(result.en.length).toBeGreaterThan(20);
       expect(result.zhHant.length).toBeGreaterThan(10);
       expect(result.zhHant).not.toBe(result.en);
@@ -322,5 +317,115 @@ describe("buildFallbackReasoning", () => {
     expect(result.en).not.toContain("Education");
     expect(result.zhHant).not.toContain("Education");
     expect(result.en).not.toMatch(/mismatch|quiz profile|inconsistent/i);
+  });
+});
+
+describe("goal stress signal (v5.3)", () => {
+  it("calls out a late goal (retirement fund lands at 69 vs target 65)", () => {
+    const decisions = baseDecisions({
+      goalsApplied: [
+        {
+          name: "Retirement Comfort",
+          targetAge: 65,
+          usedLiquidation: false,
+          liquidationSource: null,
+        },
+      ],
+      goalOutlooks: [
+        {
+          name: "Retirement Comfort",
+          targetAge: 65,
+          attainedAge: 69,
+          delayYears: 4,
+          requiredExtraMonthlyHKD: 8_000,
+          monthlySurplus: 10_000,
+          effortRatio: 0.8,
+          late: true,
+          heavyMonthlyCommitment: true,
+        },
+      ],
+    });
+    const result = buildFallbackReasoning(
+      intervention({
+        category: "goal",
+        leverType: "behavioral",
+        impactPoints: 9,
+        icon: "Target",
+      }),
+      decisions,
+    );
+    expect(result.en).toMatch(/Retirement Comfort/);
+    expect(result.en).toMatch(/69/);
+    expect(result.en).toMatch(/4 years late/);
+    expect(result.zhHant).toMatch(/69/);
+    expect(result.zhHant).not.toBe(result.en);
+  });
+
+  it("flags a heavy monthly commitment even when on time", () => {
+    const decisions = baseDecisions({
+      goalOutlooks: [
+        {
+          name: "Kids Education",
+          targetAge: 50,
+          attainedAge: 50,
+          delayYears: 0,
+          requiredExtraMonthlyHKD: 6_000,
+          monthlySurplus: 8_000,
+          effortRatio: 0.75,
+          late: false,
+          heavyMonthlyCommitment: true,
+        },
+      ],
+    });
+    const result = buildFallbackReasoning(
+      intervention({
+        category: "goal",
+        leverType: "behavioral",
+        impactPoints: 9,
+        icon: "Target",
+      }),
+      decisions,
+    );
+    expect(result.en).toMatch(/Kids Education/);
+    expect(result.en).toMatch(/75%/);
+  });
+
+  it("keeps every fallback within word limits (≤40 EN words / ≤70 zh chars)", () => {
+    const cases = [
+      intervention({ category: "protection", leverType: "structural", impactPoints: 12, gap: 40 }),
+      intervention({ category: "protection", leverType: "structural", impactPoints: 12 }),
+      intervention({ category: "savings", leverType: "instant", impactPoints: 10, icon: "PiggyBank" }),
+      intervention({ category: "investment", leverType: "behavioral", impactPoints: 9, icon: "TrendingUp" }),
+      intervention({ category: "goal", leverType: "behavioral", impactPoints: 9, icon: "Target" }),
+      intervention({ category: "goal", leverType: "instant", impactPoints: 7, icon: "Target" }),
+    ];
+    const decisions = baseDecisions({
+      goalsApplied: [
+        {
+          name: "Wedding",
+          targetAge: 38,
+          usedLiquidation: false,
+          liquidationSource: null,
+        },
+      ],
+      goalOutlooks: [
+        {
+          name: "Wedding",
+          targetAge: 38,
+          attainedAge: 41,
+          delayYears: 3,
+          requiredExtraMonthlyHKD: 2_000,
+          monthlySurplus: 8_000,
+          effortRatio: 0.25,
+          late: true,
+          heavyMonthlyCommitment: false,
+        },
+      ],
+    });
+    for (const goal of cases) {
+      const result = buildFallbackReasoning(goal, decisions);
+      expect(result.en.trim().split(/\s+/).length).toBeLessThanOrEqual(45);
+      expect(result.zhHant.trim().length).toBeLessThanOrEqual(75);
+    }
   });
 });

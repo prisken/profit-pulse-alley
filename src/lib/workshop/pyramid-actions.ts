@@ -2774,7 +2774,9 @@ Your job is ONLY to write:
 
 Rules:
 - You are explaining WHY the math recommends each action. Every reasoning paragraph MUST reference at least one specific decision the user made in their goal journey (a goal they protected, gave up, or funded via liquidation; a squeeze they accepted/rejected) OR the crisis stress test outcome OR the runway change. Generic financial advice with no reference to their decisions is a failure.
+- KEEP IT SHORT. Hard limits: title ≤ 6 English words / ≤ 16 zh-Hant characters; reasoning ≤ 40 English words / ≤ 70 zh-Hant characters — two tight sentences, never three long ones. Do NOT include "Estimated rating impact" or any impact text in reasoning — the UI shows the impact badge separately. No filler, no em-dash chains, no ALL-CAPS words.
 - The seeds are GAP-DRIVEN: a category only appears when it is one of the three WEAKEST pillars. NEVER recommend buying medical insurance when the protection pillar is already strong (the seeds will not contain protection in that case). If a protection seed IS present, frame it by the ACTUAL gap: medical coverage % below the age benchmark → top up medical cover; critical-illness cover low vs income multiple → CI cover. Only cite VHIS when the medical-coverage angle is real.
+- The "decisions" block includes goalOutlooks: per applied goal, how late it lands (delayYears / attainedAge) and how much monthly surplus it needs (requiredExtraMonthlyHKD / effortRatio / heavyMonthlyCommitment). If ANY applied goal is late or heavy (e.g. a retirement fund that only lands at 69 when the target was 65, needing most of the monthly surplus), the goal-category action goal MUST call it out as a gap: name the goal, the late age, and the monthly amount needed — and recommend making the target realistic or freeing up that amount. Do not hide it.
 - Use authentic Hong Kong texture where it fits naturally and stays factual: VHIS-qualified medical plans (premiums can be tax-deductible up to HK$8,000 per insured person per year), MPF voluntary contributions / MPF excess, private hospital bills, first-home down payments (typically 10%+ for first-time buyers of smaller flats, up to 50% for higher-priced homes), 3–6 months of expenses as an emergency runway in HK's cost of living. Do not invent policy numbers beyond these.
 - You may NOT invent, round, or modify any number. Use only the numbers provided in the payload, verbatim.
 - Keep rank, category, leverType, icon, and impactPoints EXACTLY as given in the seeds — echo impactPoints unchanged.
@@ -2858,6 +2860,11 @@ function parseActionGoalsResult(
     }
 
     const title = assertStrictBilingual(row.title, `actionGoals[${index}].title`);
+    if (title.en.trim().split(/\s+/).length > 6 || title.zhHant.trim().length > 16) {
+      throw new Error(
+        `Invalid action goals response: title too long at rank ${rank} (max 6 EN words / 16 zh-Hant chars).`,
+      );
+    }
     const categoryRaw = assertNonEmptyString(
       row.category,
       `actionGoals[${index}].category`,
@@ -2871,6 +2878,14 @@ function parseActionGoalsResult(
       row.reasoning,
       `actionGoals[${index}].reasoning`,
     );
+    if (
+      reasoning.en.trim().split(/\s+/).length > 40 ||
+      reasoning.zhHant.trim().length > 70
+    ) {
+      throw new Error(
+        `Invalid action goals response: reasoning too long at rank ${rank} (max 40 EN words / 70 zh-Hant chars).`,
+      );
+    }
 
     const impactPoints = assertFiniteNumber(
       row.impactPoints,
