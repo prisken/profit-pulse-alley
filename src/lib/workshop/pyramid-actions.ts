@@ -52,6 +52,7 @@ import {
 } from "@/lib/workshop/goal-journey";
 import { solveSqueeze } from "@/lib/workshop/squeeze-solver";
 import { computeRunwayBeforeAfter } from "@/lib/workshop/runway";
+import { buildActionGoalSeeds, ACTION_GOAL_CATEGORIES, type ActionGoalSeed } from "@/lib/workshop/action-goal-seeds";
 import {
   runLifeTimeline,
   type TimelineResult,
@@ -2755,50 +2756,6 @@ export async function generateGoalsAction(
   return result;
 }
 
-const ACTION_GOAL_CATEGORIES = new Set([
-  "protection",
-  "savings",
-  "investment",
-  "goal",
-]);
-
-const ACTION_CATEGORY_META: Array<{
-  actionCategory: ActionGoal["category"];
-  ratingKey: RatingCategory;
-  icon: string;
-}> = [
-  { actionCategory: "protection", ratingKey: "protection", icon: "Shield" },
-  { actionCategory: "savings", ratingKey: "emergencyFund", icon: "PiggyBank" },
-  { actionCategory: "goal", ratingKey: "goalsOnTrack", icon: "Target" },
-  {
-    actionCategory: "investment",
-    ratingKey: "crisisResilience",
-    icon: "TrendingUp",
-  },
-];
-
-/**
- * v5: one seed per lever type so the three goals feel different:
- * 1 = instant (this week), 2 = structural (set up once), 3 = behavioral (monthly habit).
- */
-const LEVER_SEED_META: Array<{
-  leverType: ActionGoal["leverType"];
-  candidates: ActionGoal["category"][];
-}> = [
-  {
-    leverType: "instant",
-    candidates: ["savings"],
-  },
-  {
-    leverType: "structural",
-    candidates: ["protection"],
-  },
-  {
-    leverType: "behavioral",
-    candidates: ["goal", "investment"],
-  },
-];
-
 const GENERATE_ACTION_GOALS_SYSTEM_PROMPT = `You write exactly 3 ranked action goals for a Hong Kong workshop participant.
 
 You receive:
@@ -2808,7 +2765,7 @@ You receive:
 
 The three seeds are intentionally DIFFERENT levers — write them so they feel different:
 - leverType "instant" (rank 1): a this-week action (e.g. move money into the emergency fund). Concrete and immediate.
-- leverType "structural" (rank 2): a set-it-up-once action (e.g. protection / insurance cover). Once-and-done framing.
+- leverType "structural" (rank 2): a set-it-up-once action (e.g. protection / insurance cover, or a standing investment rule). Once-and-done framing.
 - leverType "behavioral" (rank 3): the monthly habit that moves the plan (e.g. keeping discretionary spending at the squeezed level, or a standing investment rule). Habit framing.
 
 Your job is ONLY to write:
@@ -2817,10 +2774,11 @@ Your job is ONLY to write:
 
 Rules:
 - You are explaining WHY the math recommends each action. Every reasoning paragraph MUST reference at least one specific decision the user made in their goal journey (a goal they protected, gave up, or funded via liquidation; a squeeze they accepted/rejected) OR the crisis stress test outcome OR the runway change. Generic financial advice with no reference to their decisions is a failure.
+- The seeds are GAP-DRIVEN: a category only appears when it is one of the three WEAKEST pillars. NEVER recommend buying medical insurance when the protection pillar is already strong (the seeds will not contain protection in that case). If a protection seed IS present, frame it by the ACTUAL gap: medical coverage % below the age benchmark → top up medical cover; critical-illness cover low vs income multiple → CI cover. Only cite VHIS when the medical-coverage angle is real.
 - Use authentic Hong Kong texture where it fits naturally and stays factual: VHIS-qualified medical plans (premiums can be tax-deductible up to HK$8,000 per insured person per year), MPF voluntary contributions / MPF excess, private hospital bills, first-home down payments (typically 10%+ for first-time buyers of smaller flats, up to 50% for higher-priced homes), 3–6 months of expenses as an emergency runway in HK's cost of living. Do not invent policy numbers beyond these.
 - You may NOT invent, round, or modify any number. Use only the numbers provided in the payload, verbatim.
 - Keep rank, category, leverType, icon, and impactPoints EXACTLY as given in the seeds — echo impactPoints unchanged.
-- If crisisStressTest.verdict is PENETRATED, the structural (protection) action goal must explicitly connect the recommendation to the affected goal and delay (e.g., "this is what stops your [goal] from being delayed by [N] years").
+- If crisisStressTest.verdict is PENETRATED and a protection seed is present, that goal must explicitly connect the recommendation to the affected goal and delay (e.g., "this is what stops your [goal] from being delayed by [N] years").
 - If profileBehaviorMismatch is true, exactly one action goal's reasoning may reference the gap between their quiz profile and their actual behavior — as an insight, never as criticism.
 - Never shame the user for goals they gave up. Frame given-up goals as deliberate prioritization if referenced.
 - Do not reference step numbers ("Step 4", "Step 6") — refer to experiences ("your goal journey", "the stress test"). Step numbering changed and must not leak into user-facing copy.
@@ -2860,69 +2818,6 @@ export type GenerateActionGoalsInput = {
   age?: number;
   industry?: string;
 };
-
-type ActionGoalSeed = {
-  rank: number;
-  category: ActionGoal["category"];
-  leverType: ActionGoal["leverType"];
-  icon: string;
-  impactPoints: number;
-  ratingKey: RatingCategory;
-  currentScore: number;
-  gap: number;
-};
-
-/**
- * v5: exactly one seed per lever type (instant / structural / behavioral).
- * For each lever we pick the candidate category with the largest rating gap
- * (behavioral chooses between goals-on-track and crisis-resilience/investment).
- * Ranks are fixed 1=instant, 2=structural, 3=behavioral for the narrative arc.
- */
-function buildActionGoalSeeds(
-  rating: SummaryRating,
-  impactContext?: GoalImpactContext,
-): ActionGoalSeed[] {
-  const byCategory = new Map(
-    ACTION_CATEGORY_META.map((meta) => {
-      const currentScore = rating.breakdown[meta.ratingKey];
-      const gap = Math.max(0, 100 - currentScore);
-      const impactPoints = computeGoalImpactPoints(
-        meta.ratingKey,
-        gap,
-        RATING_WEIGHTS[meta.ratingKey],
-        impactContext,
-      );
-      return [
-        meta.actionCategory,
-        {
-          category: meta.actionCategory,
-          icon: meta.icon,
-          impactPoints,
-          ratingKey: meta.ratingKey,
-          currentScore,
-          gap,
-        },
-      ] as const;
-    }),
-  );
-
-  return LEVER_SEED_META.map((lever, index) => {
-    const candidates = lever.candidates
-      .map((category) => byCategory.get(category)!)
-      .sort((a, b) => b.gap - a.gap);
-    const best = candidates[0]!;
-    return {
-      rank: index + 1,
-      category: best.category,
-      leverType: lever.leverType,
-      icon: best.icon,
-      impactPoints: best.impactPoints,
-      ratingKey: best.ratingKey,
-      currentScore: best.currentScore,
-      gap: best.gap,
-    };
-  });
-}
 
 function parseActionGoalsResult(
   raw: string,

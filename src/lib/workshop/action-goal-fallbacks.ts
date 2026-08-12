@@ -2,9 +2,10 @@
  * Deterministic Action Goal reasoning when DeepSeek fails validation.
  * Pure TypeScript — no AI, no randomness, tone-neutral.
  *
- * v5: templates are lever-type aware (instant / structural / behavioral),
- * grounded in the user's actual journey decisions, and use authentic
- * Hong Kong financial texture (VHIS, MPF, first-home down payments).
+ * v5.2: templates are (leverType × category) aware — the seed category is
+ * gap-driven, so any lever may land on any category. Content stays grounded in
+ * the user's actual journey decisions and uses authentic Hong Kong texture
+ * (VHIS, MPF, first-home down payments).
  */
 
 import type { ActionGoalsDecisionsPayload } from "@/lib/workshop/action-goals-decisions";
@@ -120,165 +121,286 @@ function withPts(template: Bilingual, impactPoints: number): Bilingual {
   };
 }
 
-/**
- * INSTANT lever — do this week. Primary candidate: savings / emergency fund.
- * Cites the accepted squeeze (money the user already freed) + HK 3–6 month runway.
- */
-function instantReasoning(
+function stressGap(
+  decisions: DecisionsPayload,
+): {
+  scenario: Bilingual;
+  amount: string;
+  affectedGoal: string | null;
+  delayYears: number | null;
+} | null {
+  const stress = decisions.crisisStressTest;
+  if (
+    stress?.verdict === "PENETRATED" &&
+    isPresentNumber(stress.penetrationAmount)
+  ) {
+    return {
+      scenario: scenarioLabel(stress.scenario),
+      amount: formatCompactHkd(stress.penetrationAmount),
+      affectedGoal: isPresentString(stress.affectedGoal)
+        ? stress.affectedGoal.trim()
+        : null,
+      delayYears: isPresentNumber(stress.delayYears) ? stress.delayYears : null,
+    };
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Content builders (category-specific)                                */
+/* ------------------------------------------------------------------ */
+
+function protectionContent(
   goal: RankedIntervention,
   decisions: DecisionsPayload,
+  framing: "instant" | "structural" | "behavioral",
+): Bilingual | null {
+  const pts = formatPts(goal.impactPoints);
+  const gapInfo = stressGap(decisions);
+  const framingLine: Record<typeof framing, Bilingual> = {
+    instant: { en: "Set the policy up this week —", zhHant: "本週投保——" },
+    structural: { en: "Set it up once —", zhHant: "一次過設定——" },
+    behavioral: { en: "Review and keep your cover current —", zhHant: "定期檢視並維持保障——" },
+  };
+
+  if (gapInfo) {
+    const delayLine =
+      gapInfo.affectedGoal && gapInfo.delayYears != null
+        ? {
+            en: ` This is what stops your ${gapInfo.affectedGoal} goal from being delayed by ${formatPts(gapInfo.delayYears)} years.`,
+            zhHant: ` 這正是避免你的「${gapInfo.affectedGoal}」目標延遲 ${formatPts(gapInfo.delayYears)} 年的關鍵。`,
+          }
+        : { en: "", zhHant: "" };
+    return {
+      en: `${framingLine[framing].en} our stress test simulated a ${gapInfo.scenario.en} and found a ${gapInfo.amount} gap. A VHIS-qualified plan (premiums can be tax-deductible up to HK$8,000 per person per year) closes the worst of it.${delayLine.en} Estimated rating impact: +${pts} pts.`,
+      zhHant: `${framingLine[framing].zhHant}壓力測試模擬了${gapInfo.scenario.zhHant}，發現 ${gapInfo.amount} 的缺口。合資格自願醫保計劃（保費每年每人最多可扣稅 HK$8,000）可補上最大部分。${delayLine.zhHant}估計評分影響：+${pts} 分。`,
+    };
+  }
+
+  const gapAmount = isPresentNumber(goal.gap) ? goal.gap : null;
+  if (gapAmount == null) {
+    return null;
+  }
+  const amount = formatCompactHkd(gapAmount);
+  return {
+    en: `${framingLine[framing].en} your protection layer has a measurable gap of ${amount}. In HK, critical-illness cover of a few times annual income is the standard layer to set once and keep. Estimated rating impact: +${pts} pts.`,
+    zhHant: `${framingLine[framing].zhHant}你的保障層有可量度的缺口 ${amount}。在香港，危疾保障一般以年收入的數倍為基準，設定一次即可長期有效。估計評分影響：+${pts} 分。`,
+  };
+}
+
+function savingsContent(
+  goal: RankedIntervention,
+  decisions: DecisionsPayload,
+  framing: "instant" | "structural" | "behavioral",
 ): Bilingual | null {
   const months = decisions.postJourneyState.emergencyFundMonthsRemaining;
   const cutMonthly = acceptedSqueezeMonthly(decisions);
   const pts = formatPts(goal.impactPoints);
   const surplus = decisions.postJourneyState.remainingMonthlySurplus;
 
-  if (isPresentNumber(months) && months < 3) {
-    const monthsLabel = formatMonths(months);
-    const cutLine = cutMonthly > 0
-      ? {
-          en: ` You already freed ${formatCompactHkd(cutMonthly)}/mo by cutting discretionary — move that into emergency cash this week.`,
-          zhHant: ` 你已透過削減可選開支每月騰出 ${formatCompactHkd(cutMonthly)}——本週把它撥入應急現金。`,
-        }
-      : { en: "", zhHant: "" };
-    return {
-      en: `Your emergency runway is about ${monthsLabel} months — thin for Hong Kong living costs.${cutLine.en} Target 3–6 months of expenses as your shock absorber. Estimated rating impact: +${pts} pts.`,
-      zhHant: `你的應急跑道只剩約 ${monthsLabel} 個月——以香港的生活開支來說偏薄。${cutLine.zhHant}目標是儲備 3–6 個月開支作為緩衝。估計評分影響：+${pts} 分。`,
-    };
-  }
-
-  if (isPresentNumber(months) && cutMonthly > 0) {
-    const monthsLabel = formatMonths(months);
-    return {
-      en: `You freed ${formatCompactHkd(cutMonthly)}/mo by cutting discretionary — routing it into emergency cash this week extends your runway from ${monthsLabel} months toward the 3–6 month HK benchmark. Estimated rating impact: +${pts} pts.`,
-      zhHant: `你削減可選開支後每月騰出 ${formatCompactHkd(cutMonthly)}——本週將它撥入應急現金，可把跑道由 ${monthsLabel} 個月推近香港常見的 3–6 個月基準。估計評分影響：+${pts} 分。`,
-    };
-  }
+  const framingLine: Record<typeof framing, Bilingual> = {
+    instant: { en: "Do this this week —", zhHant: "請本週完成——" },
+    structural: { en: "Set it up once —", zhHant: "一次過設定——" },
+    behavioral: { en: "Make it a monthly habit —", zhHant: "把它變成每月習慣——" },
+  };
 
   if (isPresentNumber(months)) {
     const monthsLabel = formatMonths(months);
+    if (months < 3) {
+      const cutLine =
+        cutMonthly > 0
+          ? {
+              en: ` You already freed ${formatCompactHkd(cutMonthly)}/mo by cutting discretionary — move that into emergency cash.`,
+              zhHant: ` 你已透過削減可選開支每月騰出 ${formatCompactHkd(cutMonthly)}——把它撥入應急現金。`,
+            }
+          : { en: "", zhHant: "" };
+      return {
+        en: `${framingLine[framing].en} your emergency runway is about ${monthsLabel} months — thin for Hong Kong living costs.${cutLine.en} Target 3–6 months of expenses as your shock absorber. Estimated rating impact: +${pts} pts.`,
+        zhHant: `${framingLine[framing].zhHant}你的應急跑道只剩約 ${monthsLabel} 個月——以香港的生活開支來說偏薄。${cutLine.zhHant}目標是儲備 3–6 個月開支作為緩衝。估計評分影響：+${pts} 分。`,
+      };
+    }
     return {
-      en: `Extending your emergency runway from ${monthsLabel} months toward 3–6 months of expenses protects every other decision in your plan — do it this week, not next month. Estimated rating impact: +${pts} pts.`,
-      zhHant: `把應急跑道由 ${monthsLabel} 個月延伸至 3–6 個月開支，能保護計劃中的每一項決定——請本週完成，別拖到下個月。估計評分影響：+${pts} 分。`,
+      en: `${framingLine[framing].en} extend your emergency runway from ${monthsLabel} months toward the 3–6 month HK benchmark — it protects every other decision in your plan. Estimated rating impact: +${pts} pts.`,
+      zhHant: `${framingLine[framing].zhHant}把應急跑道由 ${monthsLabel} 個月延伸至香港常見的 3–6 個月基準——這能保護計劃中的每一項決定。估計評分影響：+${pts} 分。`,
     };
   }
 
   if (isPresentNumber(surplus) && surplus > 0) {
     return {
-      en: `Move ${formatCompactHkd(surplus)} of your monthly surplus into emergency cash this week — a 3–6 month buffer is the cheapest insurance against an income gap in HK. Estimated rating impact: +${pts} pts.`,
-      zhHant: `本週把每月盈餘中的 ${formatCompactHkd(surplus)} 撥入應急現金——3–6 個月的緩衝，是應對收入空窗最便宜的保險。估計評分影響：+${pts} 分。`,
+      en: `${framingLine[framing].en} route ${formatCompactHkd(surplus)} of your monthly surplus into emergency cash — a 3–6 month buffer is the cheapest insurance against an income gap in HK. Estimated rating impact: +${pts} pts.`,
+      zhHant: `${framingLine[framing].zhHant}把每月盈餘中的 ${formatCompactHkd(surplus)} 撥入應急現金——3–6 個月的緩衝，是應對收入空窗最便宜的保險。估計評分影響：+${pts} 分。`,
     };
   }
 
   return null;
 }
 
-/**
- * STRUCTURAL lever — set it up once. Primary candidate: protection.
- * Cites the crisis stress test outcome + HK health-cost reality (VHIS, private hospitals).
- */
-function structuralReasoning(
+function investmentContent(
   goal: RankedIntervention,
   decisions: DecisionsPayload,
+  framing: "instant" | "structural" | "behavioral",
 ): Bilingual | null {
-  const stress = decisions.crisisStressTest;
-  const pts = formatPts(goal.impactPoints);
-
-  if (
-    stress?.verdict === "PENETRATED" &&
-    isPresentString(stress.affectedGoal) &&
-    isPresentNumber(stress.delayYears) &&
-    isPresentNumber(stress.penetrationAmount) &&
-    isPresentString(stress.scenario)
-  ) {
-    const scenario = scenarioLabel(stress.scenario);
-    const amount = formatCompactHkd(stress.penetrationAmount);
-    const years = formatPts(stress.delayYears);
-    const name = stress.affectedGoal.trim();
-    return {
-      en: `Our stress test simulated a ${scenario.en} and found a ${amount} gap — enough to delay your ${name} goal by ${years} years. A VHIS-qualified plan (premiums can be tax-deductible up to HK$8,000 per person per year) set up once closes the worst of it. Estimated rating impact: +${pts} pts.`,
-      zhHant: `壓力測試模擬了${scenario.zhHant}，發現 ${amount} 的缺口——足以令你的「${name}」目標延遲 ${years} 年。一次過投保合資格自願醫保計劃（保費每年每人最多可扣稅 HK$8,000），即可補上最大部分。估計評分影響：+${pts} 分。`,
-    };
-  }
-
-  if (
-    stress?.verdict === "PENETRATED" &&
-    isPresentNumber(stress.penetrationAmount)
-  ) {
-    const amount = formatCompactHkd(stress.penetrationAmount);
-    return {
-      en: `The stress test found a ${amount} protection gap — a private hospital stay in HK can reach six figures quickly. Sort your medical cover once (VHIS-qualified plans offer up to HK$8,000/yr tax deduction per person) and stop relying on luck. Estimated rating impact: +${pts} pts.`,
-      zhHant: `壓力測試發現 ${amount} 的保障缺口——香港私營醫院一次住院可輕易達六位數字。一次過處理醫療保障（合資格自願醫保每年每人最多扣稅 HK$8,000），別再靠運氣。估計評分影響：+${pts} 分。`,
-    };
-  }
-
-  const gapAmount = isPresentNumber(stress?.penetrationAmount)
-    ? stress!.penetrationAmount
-    : isPresentNumber(goal.gap)
-      ? goal.gap
-      : null;
-  if (gapAmount == null) {
-    return null;
-  }
-
-  const amount = formatCompactHkd(gapAmount);
-  return {
-    en: `Your protection layer has a measurable gap of ${amount}. In HK, critical-illness cover of a few times annual income is the standard set-it-and-forget-it layer — review it once and you are done. Estimated rating impact: +${pts} pts.`,
-    zhHant: `你的保障層有可量度的缺口 ${amount}。在香港，危疾保障一般以年收入的數倍為基準——這是「設定一次、長年有效」的層級，檢視一次即可。估計評分影響：+${pts} 分。`,
-  };
-}
-
-/**
- * BEHAVIORAL lever — the monthly habit. Primary candidates: goal / investment.
- * Cites the runway before→after (the user's own decisions moved it) and the
- * squeezed discretionary level as the habit to keep.
- */
-function behavioralReasoning(
-  goal: RankedIntervention,
-  decisions: DecisionsPayload,
-): Bilingual | null {
-  const pts = formatPts(goal.impactPoints);
-  const cutMonthly = acceptedSqueezeMonthly(decisions);
-  const runway = decisions.runway;
-  const applied = decisions.goalsApplied[0];
   const surplus = decisions.postJourneyState.remainingMonthlySurplus;
   const profile = decisions.riskQuizProfile;
+  const pts = formatPts(goal.impactPoints);
 
+  const framingLine: Record<typeof framing, Bilingual> = {
+    instant: { en: "Move it this week —", zhHant: "本週行動——" },
+    structural: { en: "Set up a standing rule once —", zhHant: "一次過設定恆常規則——" },
+    behavioral: { en: "Make it automatic every month —", zhHant: "每月自動執行——" },
+  };
+
+  if (isPresentNumber(surplus) && surplus > 0) {
+    return {
+      en: `${framingLine[framing].en} you have ${formatCompactHkd(surplus)} of monthly surplus not yet working for you. A standing rule — for example a voluntary MPF contribution or an auto-transfer on payday — sized to your ${profile} profile keeps long-term targets on track. Estimated rating impact: +${pts} pts.`,
+      zhHant: `${framingLine[framing].zhHant}你每月尚有 ${formatCompactHkd(surplus)} 盈餘未投入運用。設立一條恆常規則——例如自願性強積金供款或出糧日的自動轉賬——按你的「${profile}」取向設定，有助長期目標保持進度。估計評分影響：+${pts} 分。`,
+    };
+  }
+
+  return null;
+}
+
+function goalContent(
+  goal: RankedIntervention,
+  decisions: DecisionsPayload,
+  framing: "instant" | "structural" | "behavioral",
+): Bilingual | null {
+  const applied = decisions.goalsApplied[0];
+  const pts = formatPts(goal.impactPoints);
+
+  const framingLine: Record<typeof framing, Bilingual> = {
+    instant: { en: "Fund it this week —", zhHant: "本週注資——" },
+    structural: { en: "Lock the plan in once —", zhHant: "一次過鎖定計劃——" },
+    behavioral: { en: "Keep it on track every month —", zhHant: "每月保持進度——" },
+  };
+
+  const runway = decisions.runway;
   const runwayLine =
     runway &&
     isPresentNumber(runway.beforeAge) &&
     isPresentNumber(runway.afterAge) &&
     runway.afterAge !== runway.beforeAge
       ? {
-          en: ` Your decisions stretched your money from ${runwayLabel(runway.beforeAge).en} to ${runwayLabel(runway.afterAge).en} — this habit is what keeps that.`,
+          en: ` Your decisions stretched your money from ${runwayLabel(runway.beforeAge).en} to ${runwayLabel(runway.afterAge).en} — this habit keeps that.`,
           zhHant: ` 你的決定已把資金可維持年期由${runwayLabel(runway.beforeAge).zhHant}延長至${runwayLabel(runway.afterAge).zhHant}——這個習慣正是維持成果的關鍵。`,
         }
       : { en: "", zhHant: "" };
 
-  if (cutMonthly > 0) {
-    return {
-      en: `Keep the discretionary cap you accepted in your goal journey (about ${formatCompactHkd(cutMonthly)}/mo trimmed) as a standing monthly habit — not a one-off.${runwayLine.en} Estimated rating impact: +${pts} pts.`,
-      zhHant: `把目標旅程中你接納的可選開支上限（每月約削減 ${formatCompactHkd(cutMonthly)}）變成恆常習慣，而非一次性。${runwayLine.zhHant}估計評分影響：+${pts} 分。`,
-    };
-  }
-
-  if (isPresentString(profile) && isPresentNumber(surplus) && surplus > 0) {
-    const surplusLabel = formatCompactHkd(surplus);
-    return {
-      en: `You have ${surplusLabel} of monthly surplus not yet working for you. Set a standing rule — for example a voluntary MPF contribution or an auto-transfer on payday — sized to your ${profile} profile, so the habit runs without willpower.${runwayLine.en} Estimated rating impact: +${pts} pts.`,
-      zhHant: `你每月尚有 ${surplusLabel} 盈餘未投入運用。設立一條恆常規則——例如自願性強積金供款或出糧日的自動轉賬——按你的「${profile}」取向設定，讓習慣不靠意志力也能持續。${runwayLine.zhHant}估計評分影響：+${pts} 分。`,
-    };
-  }
-
   if (isPresentString(applied?.name)) {
     const name = applied!.name.trim();
     return {
-      en: `After your goal journey, keeping ${name} on track is the monthly habit that compounds every other choice you made.${runwayLine.en} Estimated rating impact: +${pts} pts.`,
-      zhHant: `在目標旅程之後，讓「${name}」保持進度，是把其餘決定持續放大的每月習慣。${runwayLine.zhHant}估計評分影響：+${pts} 分。`,
+      en: `${framingLine[framing].en} after your goal journey, keeping ${name} on track is the lever that compounds every other choice you made.${runwayLine.en} Estimated rating impact: +${pts} pts.`,
+      zhHant: `${framingLine[framing].zhHant}在目標旅程之後，讓「${name}」保持進度，是把其餘決定持續放大的槓桿。${runwayLine.zhHant}估計評分影響：+${pts} 分。`,
+    };
+  }
+
+  const cutMonthly = acceptedSqueezeMonthly(decisions);
+  if (cutMonthly > 0) {
+    return {
+      en: `${framingLine[framing].en} you accepted cutting discretionary by about ${formatCompactHkd(cutMonthly)}/mo to secure a goal — keep that room pointed at your next target.${runwayLine.en} Estimated rating impact: +${pts} pts.`,
+      zhHant: `${framingLine[framing].zhHant}你為鎖定目標而接納每月約削減 ${formatCompactHkd(cutMonthly)} 的可選開支——把這空間繼續投向你的下一個目標。${runwayLine.zhHant}估計評分影響：+${pts} 分。`,
     };
   }
 
   return null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Lever dispatch                                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Try the lever's own category content first; if data is missing, fall back
+ * to the most grounded builder available (goal → investment → savings →
+ * protection) so the reasoning still cites real journey facts.
+ */
+function firstGrounded(
+  goal: RankedIntervention,
+  decisions: DecisionsPayload,
+  framing: "instant" | "structural" | "behavioral",
+): Bilingual | null {
+  const builders = [
+    () => goalContent(goal, decisions, framing),
+    () => investmentContent(goal, decisions, framing),
+    () => savingsContent(goal, decisions, framing),
+    () => protectionContent(goal, decisions, framing),
+  ];
+  for (const build of builders) {
+    const result = build();
+    if (result) {
+      return result;
+    }
+  }
+  return null;
+}
+
+function instantReasoning(
+  goal: RankedIntervention,
+  decisions: DecisionsPayload,
+): Bilingual | null {
+  const own = (() => {
+    switch (goal.category) {
+      case "protection":
+        return protectionContent(goal, decisions, "instant");
+      case "savings":
+        return savingsContent(goal, decisions, "instant");
+      case "investment":
+        return investmentContent(goal, decisions, "instant");
+      case "goal":
+        return goalContent(goal, decisions, "instant");
+      default: {
+        const _exhaustive: never = goal.category;
+        return _exhaustive;
+      }
+    }
+  })();
+  return own ?? firstGrounded(goal, decisions, "instant");
+}
+
+function structuralReasoning(
+  goal: RankedIntervention,
+  decisions: DecisionsPayload,
+): Bilingual | null {
+  const own = (() => {
+    switch (goal.category) {
+      case "protection":
+        return protectionContent(goal, decisions, "structural");
+      case "savings":
+        return savingsContent(goal, decisions, "structural");
+      case "investment":
+        return investmentContent(goal, decisions, "structural");
+      case "goal":
+        return goalContent(goal, decisions, "structural");
+      default: {
+        const _exhaustive: never = goal.category;
+        return _exhaustive;
+      }
+    }
+  })();
+  return own ?? firstGrounded(goal, decisions, "structural");
+}
+
+function behavioralReasoning(
+  goal: RankedIntervention,
+  decisions: DecisionsPayload,
+): Bilingual | null {
+  const own = (() => {
+    switch (goal.category) {
+      case "protection":
+        return protectionContent(goal, decisions, "behavioral");
+      case "savings":
+        return savingsContent(goal, decisions, "behavioral");
+      case "investment":
+        return investmentContent(goal, decisions, "behavioral");
+      case "goal":
+        return goalContent(goal, decisions, "behavioral");
+      default: {
+        const _exhaustive: never = goal.category;
+        return _exhaustive;
+      }
+    }
+  })();
+  return own ?? firstGrounded(goal, decisions, "behavioral");
 }
 
 /**
