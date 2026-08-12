@@ -506,6 +506,9 @@ export const workshopEnMessages = {
   "workshop.capture.intro":
     "Enter your details to unlock Your AI Financial Blueprint PDF — pyramid, crisis summary, goals, and monthly savings target.",
   "workshop.capture.selectedGoal": "Selected goal:",
+  "workshop.capture.optionalLabel": "Optional",
+  "workshop.capture.optionalHint":
+    "All fields are optional — you can skip straight to your blueprint if you prefer.",
   "workshop.capture.requiredMark": "*",
   "workshop.capture.saveError":
     "Could not save your details. Please try again.",

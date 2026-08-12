@@ -195,16 +195,19 @@ export async function savePitchLead(payload: LeadPayload): Promise<LeadResult> {
   const company = payload.company.trim();
   const concern = payload.concern?.trim() || null;
 
-  if (name.length < 2) {
+  // Contact is OPTIONAL: players who skip it still land as a lead with their
+  // full journey data (admin shows "Anonymous player" / "—" proxies).
+  // When a field IS provided it is still validated.
+  if (name && name.length < 2) {
     return { ok: false, error: "Please tell us your name." };
   }
-  if (!isValidEmail(email)) {
+  if (email && !isValidEmail(email)) {
     return { ok: false, error: "That work email doesn't look right." };
   }
-  if (phone.length < 6) {
+  if (phone && phone.length < 6) {
     return { ok: false, error: "We need a phone number to reach you." };
   }
-  if (company.length < 2) {
+  if (company && company.length < 2) {
     return { ok: false, error: "What's your company called?" };
   }
 

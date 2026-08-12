@@ -17,6 +17,7 @@ vi.mock("@/components/providers/LocaleProvider", () => ({
         "workshop.capture.nameLabel": "Name",
         "workshop.capture.emailLabel": "Email",
         "workshop.capture.phoneLabel": "Phone",
+        "workshop.capture.optionalLabel": "Optional",
         "workshop.capture.requiredMark": "*",
         "workshop.capture.namePlaceholder": "Your name",
         "workshop.capture.emailPlaceholder": "you@example.com",

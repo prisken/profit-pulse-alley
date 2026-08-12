@@ -63,7 +63,10 @@ function parseStressTestVerdict(goalsJson: unknown): string | null {
 
 /**
  * Validates and saves a WorkshopLead for the given session.
- * Phone is required (+852xxxxxxxx or international 8–15 digits).
+ * Contact fields are OPTIONAL: a player can finish the game without entering
+ * name/email/phone and the lead is still captured with their full session
+ * data. When a field IS provided it is validated; empty values are stored as
+ * "" and shown as proxy labels ("Anonymous player") in the admin console.
  * Additive: stressTestVerdict + profileBehaviorMismatch from session JSON.
  */
 export async function captureWorkshopLeadAction(
@@ -76,12 +79,12 @@ export async function captureWorkshopLeadAction(
     }
 
     const name = input.name?.trim();
-    if (!name || name.length < 2) {
+    if (name && name.length < 2) {
       return { ok: false, error: "Please enter your name.", field: "name" };
     }
 
     const email = normalizeEmail(input.email ?? "");
-    if (!email || !EMAIL_RE.test(email)) {
+    if (email && !EMAIL_RE.test(email)) {
       return {
         ok: false,
         error: "Please enter a valid email address.",
@@ -98,9 +101,14 @@ export async function captureWorkshopLeadAction(
       };
     }
 
-    const phoneResult = validateWorkshopPhone(input.phone ?? "");
-    if (!phoneResult.ok) {
-      return { ok: false, error: phoneResult.errorKey, field: "phone" };
+    const rawPhone = input.phone?.trim() ?? "";
+    let phone = "";
+    if (rawPhone) {
+      const phoneResult = validateWorkshopPhone(rawPhone);
+      if (!phoneResult.ok) {
+        return { ok: false, error: phoneResult.errorKey, field: "phone" };
+      }
+      phone = phoneResult.phone;
     }
 
     const session = await prisma.workshopSession.findUnique({
@@ -137,16 +145,16 @@ export async function captureWorkshopLeadAction(
       where: { sessionId },
       create: {
         sessionId,
-        name,
+        name: name ?? "",
         email,
-        phone: phoneResult.phone,
+        phone,
         selectedGoal,
         ...additiveLeadFields,
       },
       update: {
-        name,
+        name: name ?? "",
         email,
-        phone: phoneResult.phone,
+        phone,
         selectedGoal,
         ...additiveLeadFields,
       },

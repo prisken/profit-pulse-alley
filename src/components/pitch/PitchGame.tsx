@@ -397,10 +397,6 @@ export default function PitchGame() {
 
   const submitLead = useCallback(async () => {
     if (!mod || !band || !posture || !condition || !roundKey) return;
-    if (!lead.name.trim() || !lead.email.trim() || !lead.phone.trim() || !lead.company.trim()) {
-      setLeadError(pick(GAME_UI.errRequired, locale));
-      return;
-    }
     setSaving(true);
     setLeadError(null);
     const journey: JourneySnapshot = {
@@ -961,7 +957,8 @@ export default function PitchGame() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <label className="block">
                       <span className="text-xs font-medium text-foreground/60">
-                        {pick(GAME_UI.name, locale)} {pick(GAME_UI.requiredMark, locale)}
+                        {pick(GAME_UI.name, locale)}{" "}
+                        <span className="text-foreground/35">({pick(GAME_UI.optionalLabel, locale)})</span>
                       </span>
                       <input
                         className={`${inputClass} mt-1`}
@@ -973,7 +970,8 @@ export default function PitchGame() {
                     </label>
                     <label className="block">
                       <span className="text-xs font-medium text-foreground/60">
-                        {pick(GAME_UI.workEmail, locale)} {pick(GAME_UI.requiredMark, locale)}
+                        {pick(GAME_UI.workEmail, locale)}{" "}
+                        <span className="text-foreground/35">({pick(GAME_UI.optionalLabel, locale)})</span>
                       </span>
                       <input
                         type="email"
@@ -986,7 +984,8 @@ export default function PitchGame() {
                     </label>
                     <label className="block">
                       <span className="text-xs font-medium text-foreground/60">
-                        {pick(GAME_UI.phone, locale)} {pick(GAME_UI.requiredMark, locale)}
+                        {pick(GAME_UI.phone, locale)}{" "}
+                        <span className="text-foreground/35">({pick(GAME_UI.optionalLabel, locale)})</span>
                       </span>
                       <input
                         type="tel"
@@ -999,7 +998,8 @@ export default function PitchGame() {
                     </label>
                     <label className="block">
                       <span className="text-xs font-medium text-foreground/60">
-                        {pick(GAME_UI.company, locale)} {pick(GAME_UI.requiredMark, locale)}
+                        {pick(GAME_UI.company, locale)}{" "}
+                        <span className="text-foreground/35">({pick(GAME_UI.optionalLabel, locale)})</span>
                       </span>
                       <input
                         className={`${inputClass} mt-1`}

@@ -462,6 +462,9 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.capture.intro":
     "填寫資料以解鎖「你的 AI 財務藍圖」PDF——涵蓋金字塔、危機摘要、目標與每月儲蓄目標。",
   "workshop.capture.selectedGoal": "已選目標：",
+  "workshop.capture.optionalLabel": "選填",
+  "workshop.capture.optionalHint":
+    "所有欄位均為選填——如不想填寫，可直接跳至下載你的藍圖。",
   "workshop.capture.requiredMark": "*",
   "workshop.capture.saveError": "未能儲存你的資料，請再試一次。",
   "workshop.capture.needSummary": "請先在總結頁選擇首要焦點，才可收取藍圖。",

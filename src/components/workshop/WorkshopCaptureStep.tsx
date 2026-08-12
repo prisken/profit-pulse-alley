@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import WorkshopStickyFooter from "@/components/workshop/WorkshopStickyFooter";
 import { useTranslations } from "@/components/providers/LocaleProvider";
@@ -69,13 +69,11 @@ export default function WorkshopCaptureStep({
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
 
-  const phoneValidation = useMemo(
-    () => validateWorkshopPhone(phone),
-    [phone],
-  );
-  const phoneIsValid = phoneValidation.ok;
-
   function syncPhoneError(nextPhone: string, force = false) {
+    if (!nextPhone.trim()) {
+      setPhoneError(null);
+      return true;
+    }
     const result = validateWorkshopPhone(nextPhone);
     if (!result.ok && (force || phoneTouched || nextPhone.trim().length > 0)) {
       setPhoneError(t(result.errorKey));
@@ -126,7 +124,7 @@ export default function WorkshopCaptureStep({
     }
   }
 
-  const requiredMark = t("workshop.capture.requiredMark");
+  const optionalLabel = t("workshop.capture.optionalLabel");
 
   if (completed) {
     return (
@@ -168,6 +166,10 @@ export default function WorkshopCaptureStep({
         {t("workshop.capture.intro")}
       </p>
 
+      <p className="text-xs leading-relaxed text-slate-400">
+        {t("workshop.capture.optionalHint")}
+      </p>
+
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm leading-relaxed text-emerald-900">
         {t("workshop.capture.selectedGoal")}{" "}
         <span className="font-semibold break-words">{goalTitle}</span>
@@ -176,15 +178,14 @@ export default function WorkshopCaptureStep({
       <div>
         <label htmlFor="workshop-lead-name" className={labelClass}>
           {t("workshop.capture.nameLabel")}{" "}
-          <span className="text-rose-600" aria-hidden="true">
-            {requiredMark}
+          <span className="text-xs font-normal text-slate-400">
+            ({optionalLabel})
           </span>
         </label>
         <input
           id="workshop-lead-name"
           type="text"
           name="name"
-          required
           autoFocus={false}
           autoComplete="name"
           enterKeyHint="next"
@@ -199,15 +200,14 @@ export default function WorkshopCaptureStep({
       <div>
         <label htmlFor="workshop-lead-email" className={labelClass}>
           {t("workshop.capture.emailLabel")}{" "}
-          <span className="text-rose-600" aria-hidden="true">
-            {requiredMark}
+          <span className="text-xs font-normal text-slate-400">
+            ({optionalLabel})
           </span>
         </label>
         <input
           id="workshop-lead-email"
           type="email"
           name="email"
-          required
           autoFocus={false}
           inputMode="email"
           autoComplete="email"
@@ -223,20 +223,18 @@ export default function WorkshopCaptureStep({
       <div>
         <label htmlFor="workshop-lead-phone" className={labelClass}>
           {t("workshop.capture.phoneLabel")}{" "}
-          <span className="text-rose-600" aria-hidden="true">
-            {requiredMark}
+          <span className="text-xs font-normal text-slate-400">
+            ({optionalLabel})
           </span>
         </label>
         <input
           id="workshop-lead-phone"
           type="tel"
           name="tel"
-          required
           autoFocus={false}
           inputMode="tel"
           autoComplete="tel"
           enterKeyHint="done"
-          aria-required="true"
           aria-invalid={phoneError ? true : undefined}
           aria-describedby={phoneError ? "workshop-lead-phone-error" : undefined}
           disabled={submitting}
@@ -284,7 +282,7 @@ export default function WorkshopCaptureStep({
         }
         primaryType="submit"
         primaryForm="workshop-capture-form"
-        primaryDisabled={submitting || !phoneIsValid}
+        primaryDisabled={submitting}
         secondaryLabel={t("workshop.errors.backButton")}
         secondaryDisabled={submitting}
         onSecondaryClick={onBack}

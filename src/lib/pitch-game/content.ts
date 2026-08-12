@@ -525,6 +525,7 @@ export const GAME_UI = {
     zhHant: "姓名、公司電郵、電話和公司名稱均為必填。",
   } satisfies Bi,
   requiredMark: { en: "*", zhHant: "*" } satisfies Bi,
+  optionalLabel: { en: "Optional", zhHant: "選填" } satisfies Bi,
   enterNumber: { en: "Enter a number", zhHant: "請輸入數字" } satisfies Bi,
 };
 export const MODULES: PitchModule[] = [

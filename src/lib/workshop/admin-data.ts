@@ -17,6 +17,7 @@ export type WorkshopAdminLeadRow = {
   industry: string;
   age: number;
   retirementAge: number | null;
+  monthlyIncomeHKD: number | null;
   assetsDepletedAtAge: number | null;
   /** v5 hero runway (goalsJson.runway): null age = sustained past 90. */
   runwayBeforeAge: number | null;
@@ -26,6 +27,17 @@ export type WorkshopAdminLeadRow = {
   weakestLayer: string | null;
   riskProfile: RiskProfile | null;
   ratingScore: number | null;
+  /** Raw session JSONs (what the user entered) for the admin detail view. */
+  sessionJson: {
+    finalPyramid: unknown;
+    aiPyramid: unknown;
+    expenses: unknown;
+    riskQuiz: unknown;
+    goals: unknown;
+    crisis: unknown;
+    macroResult: unknown;
+    goalJourney: unknown;
+  } | null;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -161,11 +173,15 @@ export async function getWorkshopAdminLeadsData(): Promise<WorkshopAdminListData
           industry: true,
           age: true,
           retirementAge: true,
+          monthlyIncome: true,
           finalPyramidJson: true,
           aiPyramidJson: true,
           riskQuizJson: true,
           goalsJson: true,
           macroResultJson: true,
+          expensesJson: true,
+          goalJourneyJson: true,
+          crisisJson: true,
         },
       },
     },
@@ -193,12 +209,23 @@ export async function getWorkshopAdminLeadsData(): Promise<WorkshopAdminListData
         ),
         runwayBeforeAge: runway?.beforeAge ?? null,
         runwayAfterAge: runway?.afterAge ?? null,
+        monthlyIncomeHKD: lead.session.monthlyIncome ?? null,
         actionGoalLevers: parseActionGoalLevers(goalsJson),
         weakestLayer:
           parseWeakestLayer(lead.session.finalPyramidJson) ??
           parseWeakestLayer(lead.session.aiPyramidJson),
         riskProfile: parseRiskProfile(lead.session.riskQuizJson),
         ratingScore: parseRatingScore(goalsJson),
+        sessionJson: {
+          finalPyramid: lead.session.finalPyramidJson,
+          aiPyramid: lead.session.aiPyramidJson,
+          expenses: lead.session.expensesJson,
+          riskQuiz: lead.session.riskQuizJson,
+          goals: lead.session.goalsJson,
+          crisis: lead.session.crisisJson,
+          macroResult: lead.session.macroResultJson,
+          goalJourney: lead.session.goalJourneyJson,
+        },
       };
     }),
   };

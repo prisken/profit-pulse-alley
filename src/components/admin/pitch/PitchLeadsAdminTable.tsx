@@ -6,6 +6,7 @@ import { ChevronDown, ChevronRight, Download, Search } from "lucide-react";
 import { downloadCsv } from "@/lib/admin/csv-download";
 import type { PitchAdminLeadRow } from "@/lib/pitch-game/admin-data";
 import { buildPitchLeadsCsv } from "@/lib/pitch-game/leads-csv";
+import { ANONYMOUS_PLAYER_LABEL } from "@/components/admin/workshop/WorkshopLeadsAdminTable";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900";
@@ -195,9 +196,17 @@ function LeadRow({
   isOpen: boolean;
   onToggle: () => void;
 }) {
+  const hasName = Boolean(lead.name.trim());
+  const hasEmail = Boolean(lead.email.trim());
+  const hasPhone = Boolean(lead.phone.trim());
+  const hasCompany = Boolean(lead.company.trim());
+
   return (
     <>
-      <tr className="align-top hover:bg-zinc-900/40">
+      <tr
+        className="cursor-pointer align-top hover:bg-zinc-900/40"
+        onClick={onToggle}
+      >
         <td className="px-2 py-3">
           <button
             type="button"
@@ -214,10 +223,28 @@ function LeadRow({
           </button>
         </td>
         <td className="px-3 py-3 sm:px-4">
-          <div className="font-medium text-zinc-100">{lead.name}</div>
-          <div className="text-zinc-400">{lead.email}</div>
-          <div className="text-zinc-500">{lead.phone}</div>
-          <div className="text-xs text-zinc-500">{lead.company}</div>
+          {hasName ? (
+            <div className="font-medium text-zinc-100">{lead.name}</div>
+          ) : (
+            <div className="font-medium italic text-zinc-500">
+              {ANONYMOUS_PLAYER_LABEL}
+            </div>
+          )}
+          {hasEmail ? (
+            <div className="text-zinc-400">{lead.email}</div>
+          ) : (
+            <div className="text-zinc-600">—</div>
+          )}
+          {hasPhone ? (
+            <div className="text-zinc-500">{lead.phone}</div>
+          ) : (
+            <div className="text-zinc-600">—</div>
+          )}
+          {hasCompany ? (
+            <div className="text-xs text-zinc-500">{lead.company}</div>
+          ) : (
+            <div className="text-xs text-zinc-600">—</div>
+          )}
         </td>
         <td className="px-3 py-3 sm:px-4">
           <div className="whitespace-nowrap text-zinc-200">
