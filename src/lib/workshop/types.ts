@@ -19,8 +19,6 @@ export type EmergencyFundLayer = {
   savedAmountHKD: number;
 };
 
-export type GoalType = "spend" | "retirementTarget";
-
 export type GoalItem = {
   id: string;
   icon: string;
@@ -34,11 +32,9 @@ export type GoalItem = {
    */
   targetYear: number;
   /**
-   * spend = cash outflow at target age; retirementTarget = nest-egg line (never deducted).
-   * Legacy sessions default to "spend".
+   * Every goal is a spend goal (cash outflow at target age) — no nest-egg type.
+   * Spend goals must explicitly opt in before invested assets may be liquidated.
    */
-  goalType: GoalType;
-  /** Spend goals must explicitly opt in before invested assets may be liquidated. */
   allowLiquidation?: boolean;
 };
 
@@ -50,9 +46,6 @@ export type InvestmentLayer = {
   riskAllocation: { low: number; mid: number; high: number };
   /** Current total invested capital (HKD). */
   lumpSumHKD: number;
-  /** Monthly contribution to invested pool during working years (HKD). */
-  monthlyInvestmentHKD: number;
-  monthlyFunHKD: number;
 };
 
 export type PyramidState = {
@@ -267,10 +260,19 @@ export type SummaryRating = {
   };
 };
 
+export type ActionGoalLeverType = "instant" | "structural" | "behavioral";
+
 export type ActionGoal = {
   rank: number;
   title: Bilingual;
   category: "protection" | "savings" | "investment" | "goal";
+  /**
+   * Lever type differentiates the three goals:
+   * instant = do this week (e.g. move cash into the emergency fund),
+   * structural = set it up once (e.g. protection cover),
+   * behavioral = the monthly habit that moves the plan.
+   */
+  leverType: ActionGoalLeverType;
   icon: string;
   impactPoints: number;
   reasoning: Bilingual;
@@ -307,4 +309,13 @@ export type SummaryState = {
   actionGoals: ActionGoal[];
   /** Silent Summary stress test — additive; older sessions may omit. */
   crisisStressTest?: CrisisStressTestSummary;
+  /**
+   * Hero "money runway" moment (v5): how long assets last without the user's
+   * goal-journey decisions (beforeAge) vs with them (afterAge).
+   * `null` age = sustained past 90. Older sessions may omit.
+   */
+  runway?: {
+    beforeAge: number | null;
+    afterAge: number | null;
+  };
 };

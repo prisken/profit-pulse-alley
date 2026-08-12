@@ -5,7 +5,7 @@ import {
   normalizeGoalItem,
   normalizeInvestmentLayer,
 } from "@/lib/workshop/pyramid-normalize";
-import type { GoalItem, InvestmentLayer } from "@/lib/workshop/types";
+import type { GoalItem } from "@/lib/workshop/types";
 
 /**
  * Mirrors parse rules in pyramid-actions (kept here so compat stays testable
@@ -14,8 +14,8 @@ import type { GoalItem, InvestmentLayer } from "@/lib/workshop/types";
 function normalizeGoalFromLegacy(
   raw: { targetYear?: number; targetAge?: number } & Omit<
     GoalItem,
-    "targetAge" | "targetYear" | "goalType"
-  > & { goalType?: GoalItem["goalType"] },
+    "targetAge" | "targetYear"
+  > & { goalType?: string },
   userAge: number,
 ): GoalItem {
   if (typeof raw.targetAge === "number") {
@@ -23,7 +23,6 @@ function normalizeGoalFromLegacy(
       ...raw,
       targetAge: Math.round(raw.targetAge),
       targetYear: deriveGoalYear(raw.targetAge, userAge),
-      goalType: raw.goalType ?? "spend",
     };
   }
   if (typeof raw.targetYear === "number") {
@@ -31,25 +30,12 @@ function normalizeGoalFromLegacy(
       ...raw,
       targetYear: Math.round(raw.targetYear),
       targetAge: deriveGoalAge(raw.targetYear, userAge),
-      goalType: raw.goalType ?? "spend",
     };
   }
   throw new Error("missing timing");
 }
 
-function normalizeInvestmentFromLegacy(raw: {
-  riskAllocation: InvestmentLayer["riskAllocation"];
-  monthlyFunHKD: number;
-  lumpSumHKD?: number;
-  monthlyInvestmentHKD?: number;
-}): InvestmentLayer {
-  return {
-    riskAllocation: raw.riskAllocation,
-    lumpSumHKD: raw.lumpSumHKD ?? 0,
-    monthlyInvestmentHKD: raw.monthlyInvestmentHKD ?? 0,
-    monthlyFunHKD: raw.monthlyFunHKD,
-  };
-}
+
 
 describe("v3 pyramid JSON compat", () => {
   it("derives targetAge from v2 targetYear-only goals", () => {
@@ -65,28 +51,21 @@ describe("v3 pyramid JSON compat", () => {
     );
     expect(goal.targetAge).toBe(deriveGoalAge(2036, 32));
     expect(goal.targetYear).toBe(2036);
-    expect(goal.goalType).toBe("spend");
   });
 
-  it("defaults omitted monthlyInvestmentHKD to 0 on parse", () => {
-    const investment = normalizeInvestmentFromLegacy({
-      riskAllocation: { low: 40, mid: 40, high: 20 },
-      monthlyFunHKD: 2_000,
-      monthlyInvestmentHKD: 8_000,
-    });
-    expect(investment.lumpSumHKD).toBe(0);
-    expect(investment.monthlyInvestmentHKD).toBe(8_000);
-    expect(investment.monthlyFunHKD).toBe(2_000);
-
-    const omitted = normalizeInvestmentLayer({
+  it("drops legacy monthly investing / fun fields on parse (v4)", () => {
+    const investment = normalizeInvestmentLayer({
       riskAllocation: { low: 40, mid: 40, high: 20 },
       lumpSumHKD: 100_000,
+      monthlyInvestmentHKD: 8_000,
       monthlyFunHKD: 2_000,
     });
-    expect(omitted.monthlyInvestmentHKD).toBe(0);
+    expect(investment.lumpSumHKD).toBe(100_000);
+    expect("monthlyInvestmentHKD" in investment).toBe(false);
+    expect("monthlyFunHKD" in investment).toBe(false);
   });
 
-  it("defaults legacy goals without goalType to spend", () => {
+  it("normalizes legacy goals without goalType as plain spend goals", () => {
     const goal = normalizeGoalItem(
       {
         id: "home",
@@ -97,6 +76,6 @@ describe("v3 pyramid JSON compat", () => {
       },
       32,
     );
-    expect(goal.goalType).toBe("spend");
+    expect(goal.targetAge).toBe(40);
   });
 });

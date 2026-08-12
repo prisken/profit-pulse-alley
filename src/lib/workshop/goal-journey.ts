@@ -137,48 +137,45 @@ export function isGoalJourneyResolved(
   return decision?.status === "applied" || decision?.status === "given_up";
 }
 
-export const RETIREMENT_RAIL_ID = "__retirement_rail__";
-
-export function isRetirementRailGoal(goal: Pick<GoalItem, "goalType">): boolean {
-  return goal.goalType === "retirementTarget";
-}
-
 /**
- * Spend goals by targetAge, then a retirement rail item (existing retirementTarget
- * or a synthetic placeholder) always last.
+ * All goals are spend goals — sorted by targetAge (then id).
  */
 export function buildGoalJourneyRailItems(input: {
   goals: GoalItem[];
-  retirementAge: number;
-  userAge: number;
 }): GoalItem[] {
-  const spend = [...input.goals]
-    .filter((goal) => goal.goalType !== "retirementTarget")
-    .sort(
-      (a, b) =>
-        a.targetAge - b.targetAge || a.id.localeCompare(b.id),
-    );
-
-  const existingRetirement = input.goals.find(
-    (goal) => goal.goalType === "retirementTarget",
+  return [...input.goals].sort(
+    (a, b) =>
+      a.targetAge - b.targetAge || a.id.localeCompare(b.id),
   );
-  const retirementAge = Math.round(input.retirementAge);
-  const retirement: GoalItem = existingRetirement
-    ? {
-        ...existingRetirement,
-        targetAge: Math.round(existingRetirement.targetAge) || retirementAge,
-      }
-    : {
-        id: RETIREMENT_RAIL_ID,
-        icon: "Landmark",
-        label: { en: "Retirement", zhHant: "退休" },
-        targetAmountHKD: 0,
-        targetAge: retirementAge,
-        targetYear: deriveGoalYear(retirementAge, input.userAge),
-        goalType: "retirementTarget",
-      };
+}
 
-  return [...spend, retirement];
+/**
+ * Normalize pyramid goals for Steps 2↔4 sync:
+ * - every goal is a spend goal (goalType removed in v4; legacy JSON is demoted)
+ * - sorted by targetAge
+ */
+export function normalizeGoalsLayerForPyramid(
+  goals: GoalItem[],
+  input: { userAge: number; retirementAge: number },
+): GoalItem[] {
+  void input.retirementAge;
+  const userAge = Math.round(input.userAge);
+
+  const normalized: GoalItem[] = goals.map((raw) => ({
+    id: raw.id,
+    icon: raw.icon,
+    label: raw.label,
+    targetAmountHKD: raw.targetAmountHKD,
+    targetAge: Math.round(raw.targetAge),
+    targetYear: deriveGoalYear(Math.round(raw.targetAge), userAge),
+    allowLiquidation: raw.allowLiquidation === true,
+  }));
+
+  normalized.sort(
+    (a, b) => a.targetAge - b.targetAge || a.id.localeCompare(b.id),
+  );
+
+  return normalized;
 }
 
 export function isRailGoalLocked(
@@ -207,27 +204,24 @@ export function firstPendingRailGoalId(
     if (isRailGoalLocked(railItems, journey, i)) {
       continue;
     }
-    // Retirement is never Apply/Give-up resolved — once unlocked it is the finale.
-    if (
-      isRetirementRailGoal(goal) ||
-      !isGoalJourneyResolved(journeyDecisionForGoal(journey, goal.id))
-    ) {
+    if (!isGoalJourneyResolved(journeyDecisionForGoal(journey, goal.id))) {
       return goal.id;
     }
   }
   return null;
 }
 
-/** True when every spend (non-retirement) rail item has Apply or Give up. */
+/** True when every spend rail item has Apply or Give up. */
 export function areSpendGoalsResolved(
   railItems: GoalItem[],
   journey: GoalJourneyState,
 ): boolean {
-  return railItems
-    .filter((goal) => !isRetirementRailGoal(goal))
-    .every((goal) =>
-      isGoalJourneyResolved(journeyDecisionForGoal(journey, goal.id)),
-    );
+  if (railItems.length === 0) {
+    return true;
+  }
+  return railItems.every((goal) =>
+    isGoalJourneyResolved(journeyDecisionForGoal(journey, goal.id)),
+  );
 }
 
 export type GoalJourneyRailChip = "on_track" | "delayed" | "given_up";
@@ -243,7 +237,7 @@ export type GoalJourneyDecisionRecap = {
   delayedCount: number;
   givenUpCount: number;
   chips: GoalJourneyDecisionRecapChip[];
-  /** Lifestyle monthly total (expenses + fun) before/after accepted squeezes. */
+  /** Lifestyle monthly total (expenses) before/after accepted squeezes. */
   monthlyPlan: {
     beforeTotalHKD: number;
     afterTotalHKD: number;
@@ -251,7 +245,7 @@ export type GoalJourneyDecisionRecap = {
 };
 
 /**
- * Pure summary for the retirement finale card — counts + chips from journey
+ * Pure summary for the decision recap — counts + chips from journey
  * decisions + timeline flags; optional monthly plan line when squeezes landed.
  */
 export function deriveGoalJourneyDecisionRecap(input: {
@@ -259,7 +253,6 @@ export function deriveGoalJourneyDecisionRecap(input: {
   journey: GoalJourneyState;
   timeline: TimelineResult | null;
   expenses: ExpensesState;
-  monthlyFunHKD: number;
 }): GoalJourneyDecisionRecap {
   let onTimeCount = 0;
   let delayedCount = 0;
@@ -267,9 +260,6 @@ export function deriveGoalJourneyDecisionRecap(input: {
   const chips: GoalJourneyDecisionRecapChip[] = [];
 
   for (const goal of input.railItems) {
-    if (isRetirementRailGoal(goal)) {
-      continue;
-    }
     const decision = journeyDecisionForGoal(input.journey, goal.id);
     const timelineGoal = input.timeline?.goals.find(
       (row) => row.goalId === goal.id,
@@ -297,13 +287,10 @@ export function deriveGoalJourneyDecisionRecap(input: {
   let monthlyPlan: GoalJourneyDecisionRecap["monthlyPlan"] = null;
   if (acceptedSqueezes.length > 0) {
     const cutMonthly = acceptedSqueezes.reduce((sum, row) => {
-      const funAnnual = Math.max(0, row.squeezeCutsHKD?.fun ?? 0);
       const discAnnual = Math.max(0, row.squeezeCutsHKD?.discretionary ?? 0);
-      return sum + funAnnual / 12 + discAnnual / 12;
+      return sum + discAnnual / 12;
     }, 0);
-    const afterTotalHKD = roundMoney(
-      Math.max(0, input.expenses.totalHKD) + Math.max(0, input.monthlyFunHKD),
-    );
+    const afterTotalHKD = roundMoney(Math.max(0, input.expenses.totalHKD));
     const beforeTotalHKD = roundMoney(afterTotalHKD + cutMonthly);
     monthlyPlan = { beforeTotalHKD, afterTotalHKD };
   }
@@ -364,23 +351,9 @@ export function applyGoalDecision(
       throw new Error("Squeeze recommendation is required before accepting a squeeze.");
     }
 
-    const recommendedFun = recommendation.recommendedAllocation.find(
-      (slice) => slice.key === "fun",
-    )?.amountHKD;
     const recommendedExpenseByKey = new Map(
       recommendation.recommendedAllocation.map((slice) => [slice.key, slice.amountHKD]),
     );
-
-    pyramid = {
-      ...pyramid,
-      investment: {
-        ...pyramid.investment,
-        monthlyFunHKD:
-          recommendedFun == null
-            ? pyramid.investment.monthlyFunHKD
-            : Math.max(0, roundMoney(recommendedFun)),
-      },
-    };
 
     const categories = expenses.categories.map((row) => ({
       ...row,
@@ -424,11 +397,9 @@ export function rerunTimelineForJourney(
     retirementAge,
     monthlyIncome: session.monthlyIncome,
     monthlyExpenses: session.expenses.totalHKD,
-    monthlyFun: session.pyramid.investment.monthlyFunHKD,
     emergencyFundSavedHKD: session.pyramid.emergencyFund.savedAmountHKD,
     investment: {
       lumpSumHKD: session.pyramid.investment.lumpSumHKD,
-      monthlyInvestmentHKD: session.pyramid.investment.monthlyInvestmentHKD,
       allocation: session.pyramid.investment.riskAllocation,
     },
     goals: activeGoalsForJourney(session.pyramid, session.journey),
@@ -465,38 +436,6 @@ export function computeGoalOutlook(
   goal: GoalItem,
 ): GoalOutlook {
   const currentAge = timeline.rows[0]?.age ?? 0;
-
-  if (goal.goalType === "retirementTarget") {
-    const rt = timeline.retirementTargets.find((row) => row.goalId === goal.id);
-    const attainedAtAge = rt?.met ? timeline.retirement.retirementAge : null;
-    const status: GoalScrubStatus =
-      rt == null
-        ? "never"
-        : rt.met
-          ? "on_track"
-          : rt.gapHKD / Math.max(1, rt.targetHKD) <= 0.2
-            ? "late"
-            : "never";
-    const monthsLate =
-      attainedAtAge == null
-        ? Math.max(12, (timeline.retirement.retirementAge - goal.targetAge) * 12)
-        : Math.max(0, (attainedAtAge - goal.targetAge) * 12);
-    const requiredExtraMonthlyHKD =
-      rt == null
-        ? 0
-        : roundMoney(
-            Math.max(0, rt.gapHKD) /
-              Math.max(1, (goal.targetAge - currentAge) * 12),
-          );
-    return {
-      goalId: goal.id,
-      targetAge: goal.targetAge,
-      attainedAtAge,
-      status,
-      monthsLate,
-      requiredExtraMonthlyHKD,
-    };
-  }
 
   const projection = timeline.goals.find((row) => row.goalId === goal.id);
   if (!projection) {
@@ -537,13 +476,9 @@ export function computeGoalOutlook(
 export function currentJourneyAllocation(input: {
   monthlyIncomeHKD: number;
   expenses: ExpensesState;
-  monthlyFunHKD: number;
-  monthlyInvestmentHKD: number;
 }) {
   return buildAllocationSlices({
     monthlyIncomeHKD: input.monthlyIncomeHKD,
     expenses: input.expenses,
-    monthlyFunHKD: input.monthlyFunHKD,
-    monthlyInvestmentHKD: input.monthlyInvestmentHKD,
   });
 }

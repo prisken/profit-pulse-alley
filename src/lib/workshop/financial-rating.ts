@@ -2,13 +2,11 @@
  * Deterministic workshop financial rating (0–100).
  * Pure math — no AI.
  *
- * v3.1 sources:
- * - goalsOnTrack: TimelineResult goal statuses (85%) + retirement readiness (15%).
- *   Spend goals use green/amber/red; given-up journey decisions score
+ * v4 sources:
+ * - goalsOnTrack: 100% TimelineResult goal statuses (retirement-readiness blend
+ *   removed with the retirement nest-egg feature). Spend goals use
+ *   green/amber/red; given-up journey decisions score
  *   {@link GIVEN_UP_GOAL_CREDIT} (conscious trade-off, not a red failure).
- *   retirementTarget goals score via met/gap (met=1, gap ≤20% = 0.5, else 0)
- *   — already mapped onto LayerFlag on the timeline. Retirement readiness uses
- *   assetsDepletedAtAge (null = past 90).
  * - emergencyFund: timeline EF status; "oversaved" is a mild deduction.
  * - crisisResilience: prefers Summary crisis stress-test resilienceScore (SSOT
  *   with the Crisis Stress Test badge). Falls back to crisis-engine impactResult
@@ -83,10 +81,10 @@ export const OVERSAVED_EF_SCORE = 88;
  */
 export const GIVEN_UP_GOAL_CREDIT = 0.6;
 
-/** Goals pillar blend: goal flags vs retirement readiness. */
+/** Goals pillar is 100% goal flags (retirement readiness removed in v4). */
 export const GOALS_RETIREMENT_BLEND = {
-  goals: 0.85,
-  retirement: 0.15,
+  goals: 1,
+  retirement: 0,
 } as const;
 
 const PENALTY_PER_IMPACT_LAYER = 15;
@@ -166,7 +164,7 @@ function scoreEmergencyFund(
 
 /**
  * Retirement readiness from assetsDepletedAtAge.
- * null → sustained past age 90 (full marks).
+ * Retained for legacy sessions / PDF compat — not part of the v4 rating.
  */
 export function scoreRetirementReadiness(
   timeline?: TimelineResult | null,
@@ -213,20 +211,6 @@ function scoreGoalFlags(
         continue;
       }
       count += 1;
-      if (goal.goalType === "retirementTarget") {
-        const rt = (timeline.retirementTargets ?? []).find(
-          (r) => r.goalId === goal.goalId,
-        );
-        if (!rt) {
-          continue;
-        }
-        if (rt.met) {
-          credit += 1;
-        } else if (rt.gapHKD / Math.max(1, rt.targetHKD) <= 0.2) {
-          credit += 0.5;
-        }
-        continue;
-      }
       if (goal.status === "green") {
         credit += 1;
       } else if (goal.status === "amber") {
@@ -280,8 +264,8 @@ function scoreGoalFlags(
 }
 
 /**
- * Goals pillar: goal attainment flags blended with retirement readiness.
- * Retirement signal is folded here (not into crisisResilience) — see module doc.
+ * Goals pillar: goal attainment flags. Retirement readiness was folded out
+ * of the v4 rating together with the retirement nest-egg feature.
  */
 function scoreGoalsOnTrack(
   stressTest: StressTestResult,

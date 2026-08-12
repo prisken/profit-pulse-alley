@@ -35,15 +35,12 @@ const strongPyramid: PyramidState = {
         targetAmountHKD: 200_000,
         targetAge: 40,
         targetYear: nowYear + 3,
-        goalType: "spend",
       },
     ],
   },
   investment: {
     riskAllocation: { low: 40, mid: 40, high: 20 },
     lumpSumHKD: 8_000,
-    monthlyInvestmentHKD: 5_000,
-    monthlyFunHKD: 2_000,
   },
 };
 
@@ -62,7 +59,6 @@ const weakPyramid: PyramidState = {
         targetAmountHKD: 2_000_000,
         targetAge: 40,
         targetYear: nowYear + 5,
-        goalType: "spend",
       },
       {
         id: "edu",
@@ -71,15 +67,12 @@ const weakPyramid: PyramidState = {
         targetAmountHKD: 800_000,
         targetAge: 40,
         targetYear: nowYear + 8,
-        goalType: "spend",
       },
     ],
   },
   investment: {
     riskAllocation: { low: 80, mid: 15, high: 5 },
     lumpSumHKD: 0,
-    monthlyInvestmentHKD: 0,
-    monthlyFunHKD: 0,
   },
 };
 
@@ -274,14 +267,12 @@ function makeTimeline(partial?: Partial<TimelineResult>): TimelineResult {
     goals: [
       {
         goalId: "wedding",
-        goalType: "spend",
         targetAge: 40,
         inflatedTargetHKD: 220_000,
         attainedAtAge: 38,
         status: "green",
       },
     ],
-    retirementTargets: [],
     emergencyFund: {
       status: "green",
       targetHKD: 180_000,
@@ -379,7 +370,6 @@ describe("computeFinancialRating", () => {
         goals: [
           {
             goalId: "home",
-            goalType: "spend",
             targetAge: 40,
             inflatedTargetHKD: 2_000_000,
             attainedAtAge: null,
@@ -438,7 +428,6 @@ describe("computeFinancialRating", () => {
           goals: [
             {
               goalId: "home",
-              goalType: "spend",
               targetAge: 40,
               inflatedTargetHKD: 2_000_000,
               attainedAtAge: null,
@@ -461,7 +450,6 @@ describe("computeFinancialRating", () => {
         goals: [
           {
             goalId: "home",
-            goalType: "spend",
             targetAge: 40,
             inflatedTargetHKD: 2_000_000,
             attainedAtAge: null,
@@ -469,7 +457,6 @@ describe("computeFinancialRating", () => {
           },
           {
             goalId: "edu",
-            goalType: "spend",
             targetAge: 45,
             inflatedTargetHKD: 800_000,
             attainedAtAge: null,
@@ -494,7 +481,7 @@ describe("computeFinancialRating", () => {
     expect(rating.labelKey).toBe("needsAttention");
   });
 
-  it("folds retirement readiness into goalsOnTrack (85/15 blend)", () => {
+  it("goal flags drive goalsOnTrack independent of retirement runway (v4)", () => {
     const sustained = computeFinancialRating({
       pyramid: strongPyramid,
       benchmarks: strongBenchmarks,
@@ -504,7 +491,6 @@ describe("computeFinancialRating", () => {
         goals: [
           {
             goalId: "wedding",
-            goalType: "spend",
             targetAge: 40,
             inflatedTargetHKD: 220_000,
             attainedAtAge: 42,
@@ -519,7 +505,7 @@ describe("computeFinancialRating", () => {
         },
       }),
     });
-    // amber goals = 50; retirement = 100 → 50*0.85 + 100*0.15 = 57.5 → 58
+    // amber goals = 50; retirement readiness no longer blends in (v4)
     expect(sustained.breakdown.goalsOnTrack).toBe(
       Math.round(
         50 * GOALS_RETIREMENT_BLEND.goals +
@@ -536,7 +522,6 @@ describe("computeFinancialRating", () => {
         goals: [
           {
             goalId: "wedding",
-            goalType: "spend",
             targetAge: 40,
             inflatedTargetHKD: 220_000,
             attainedAtAge: 42,
@@ -551,7 +536,8 @@ describe("computeFinancialRating", () => {
         },
       }),
     });
-    expect(earlyDeplete.breakdown.goalsOnTrack).toBeLessThan(
+    // Same goal flags → identical goalsOnTrack even with early depletion.
+    expect(earlyDeplete.breakdown.goalsOnTrack).toBe(
       sustained.breakdown.goalsOnTrack,
     );
   });
@@ -584,7 +570,6 @@ describe("computeFinancialRating", () => {
         goals: [
           {
             goalId: "wedding",
-            goalType: "spend",
             targetAge: 40,
             inflatedTargetHKD: 220_000,
             attainedAtAge: 42,
@@ -592,7 +577,6 @@ describe("computeFinancialRating", () => {
           },
           {
             goalId: "other",
-            goalType: "spend",
             targetAge: 45,
             inflatedTargetHKD: 100_000,
             attainedAtAge: 45,
@@ -621,7 +605,6 @@ describe("computeFinancialRating", () => {
         goals: [
           {
             goalId: "wedding",
-            goalType: "spend",
             targetAge: 40,
             inflatedTargetHKD: 220_000,
             attainedAtAge: 40,
@@ -651,7 +634,6 @@ describe("computeFinancialRating", () => {
         goals: [
           {
             goalId: "wedding",
-            goalType: "spend",
             targetAge: 40,
             inflatedTargetHKD: 220_000,
             attainedAtAge: 40,
@@ -659,7 +641,6 @@ describe("computeFinancialRating", () => {
           },
           {
             goalId: "yacht",
-            goalType: "spend",
             targetAge: 50,
             inflatedTargetHKD: 2_000_000,
             attainedAtAge: null,
@@ -669,7 +650,7 @@ describe("computeFinancialRating", () => {
       }),
     });
 
-    // (1 + 0.6) / 2 = 80 flags; retirement 100 → 80*0.85 + 100*0.15 = 83
+    // (1 + 0.6) / 2 = 80 flags; retirement blend is gone in v4 → 80
     expect(withGivenUp.breakdown.goalsOnTrack).toBe(
       Math.round(
         ((1 + GIVEN_UP_GOAL_CREDIT) / 2) * 100 * GOALS_RETIREMENT_BLEND.goals +
@@ -681,8 +662,8 @@ describe("computeFinancialRating", () => {
     );
   });
 
-  it("scores retirementTarget goals via met / gap ≤20%", () => {
-    const met = computeFinancialRating({
+  it("scores every goal as a spend goal (no retirementTarget type in v4)", () => {
+    const allGreen = computeFinancialRating({
       pyramid: strongPyramid,
       benchmarks: strongBenchmarks,
       stressTest: strongStress,
@@ -691,26 +672,16 @@ describe("computeFinancialRating", () => {
         goals: [
           {
             goalId: "nest",
-            goalType: "retirementTarget",
             targetAge: 65,
             inflatedTargetHKD: 2_000_000,
             attainedAtAge: 65,
             status: "green",
           },
         ],
-        retirementTargets: [
-          {
-            goalId: "nest",
-            targetHKD: 2_000_000,
-            projectedAssetsHKD: 2_500_000,
-            gapHKD: 0,
-            met: true,
-          },
-        ],
       }),
     });
 
-    const nearMiss = computeFinancialRating({
+    const allRed = computeFinancialRating({
       pyramid: strongPyramid,
       benchmarks: strongBenchmarks,
       stressTest: strongStress,
@@ -719,59 +690,19 @@ describe("computeFinancialRating", () => {
         goals: [
           {
             goalId: "nest",
-            goalType: "retirementTarget",
-            targetAge: 65,
-            inflatedTargetHKD: 2_000_000,
-            attainedAtAge: null,
-            status: "amber",
-          },
-        ],
-        retirementTargets: [
-          {
-            goalId: "nest",
-            targetHKD: 2_000_000,
-            projectedAssetsHKD: 1_700_000,
-            gapHKD: 300_000,
-            met: false,
-          },
-        ],
-      }),
-    });
-
-    const miss = computeFinancialRating({
-      pyramid: strongPyramid,
-      benchmarks: strongBenchmarks,
-      stressTest: strongStress,
-      crisis: mildCrisis,
-      timeline: makeTimeline({
-        goals: [
-          {
-            goalId: "nest",
-            goalType: "retirementTarget",
             targetAge: 65,
             inflatedTargetHKD: 2_000_000,
             attainedAtAge: null,
             status: "red",
           },
         ],
-        retirementTargets: [
-          {
-            goalId: "nest",
-            targetHKD: 2_000_000,
-            projectedAssetsHKD: 500_000,
-            gapHKD: 1_500_000,
-            met: false,
-          },
-        ],
       }),
     });
 
-    // met → 100 goals pillar blend; nearMiss 0.5 → 50; miss 0 → 0 (before retirement blend)
-    expect(met.breakdown.goalsOnTrack).toBeGreaterThan(
-      nearMiss.breakdown.goalsOnTrack,
-    );
-    expect(nearMiss.breakdown.goalsOnTrack).toBeGreaterThan(
-      miss.breakdown.goalsOnTrack,
+    expect(allGreen.breakdown.goalsOnTrack).toBe(100);
+    expect(allRed.breakdown.goalsOnTrack).toBe(0);
+    expect(allGreen.breakdown.goalsOnTrack).toBeGreaterThan(
+      allRed.breakdown.goalsOnTrack,
     );
   });
 });

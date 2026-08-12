@@ -13,10 +13,10 @@ import WorkshopStickyFooter from "@/components/workshop/WorkshopStickyFooter";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { pickBilingual } from "@/lib/workshop/bilingual";
-import {
-  computePassiveCoverageRatio,
-} from "@/lib/workshop/coverage-ratio";
 import { formatCompactHkd } from "@/lib/workshop/format-compact-hkd";
+import {
+  emptyGoalJourneyState,
+} from "@/lib/workshop/goal-journey";
 import {
   narrateStressTestAction,
   runLifeTimelineAction,
@@ -35,7 +35,6 @@ import type {
   StressTestResult,
   WorkshopTone,
 } from "@/lib/workshop/types";
-import { emptyGoalJourneyState } from "@/lib/workshop/goal-journey";
 
 const NARRATIVE_FADE_DELAY_MS = 800;
 
@@ -69,7 +68,10 @@ type WorkshopStressTestStepProps = Readonly<{
   pyramid: PyramidState;
   tone: WorkshopTone;
   onBack: () => void;
-  onContinue: (result: StressTestResult) => void;
+  onContinue: (
+    result: StressTestResult,
+    plan: { pyramid: PyramidState; expenses: ExpensesState },
+  ) => void;
 }>;
 
 export default function WorkshopStressTestStep({
@@ -101,7 +103,7 @@ export default function WorkshopStressTestStep({
   const [journey, setJourney] = useState<GoalJourneyState>(() =>
     emptyGoalJourneyState(),
   );
-  const [finaleReached, setFinaleReached] = useState(false);
+  const [goalsResolved, setGoalsResolved] = useState(false);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -155,7 +157,7 @@ export default function WorkshopStressTestStep({
           age,
           industry,
           monthlyIncome,
-          expenses,
+          expenses: sessionExpenses,
         });
         if (cancelled) {
           return;
@@ -205,20 +207,6 @@ export default function WorkshopStressTestStep({
 
   const notesById = useMemo(() => noteMap(notes), [notes]);
 
-  const retirementCoverage = useMemo(() => {
-    if (!result) {
-      return null;
-    }
-    const row = result.rows.find((r) => r.age === result.retirement.retirementAge);
-    if (!row) {
-      return null;
-    }
-    return computePassiveCoverageRatio(
-      result.retirement.passiveIncomeAtRetirement,
-      row.expenses,
-    );
-  }, [result]);
-
   if (error) {
     return (
       <WorkshopRetryPanel
@@ -267,12 +255,6 @@ export default function WorkshopStressTestStep({
         .replace("{months}", String(ef.targetMonths))
         .replace("{amount}", formatCompactHkd(ef.targetHKD));
 
-  const depletedAge = result.retirement.assetsDepletedAtAge;
-  const coverageHeadlinePct =
-    retirementCoverage?.percent != null
-      ? Math.round(retirementCoverage.percent)
-      : null;
-
   return (
     <div className="min-w-0 touch-pan-y space-y-6 overflow-x-hidden sm:space-y-7">
       <WorkshopGoalJourneyOverview
@@ -281,48 +263,7 @@ export default function WorkshopStressTestStep({
         pyramid={livePyramid}
       />
 
-      <div
-        className={[
-          "grid min-w-0 gap-3",
-          efIsOversaved ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2",
-        ].join(" ")}
-      >
-        {coverageHeadlinePct != null ? (
-          <WorkshopStatCard
-            icon="Percent"
-            status={
-              retirementCoverage!.band === "emerald"
-                ? "green"
-                : retirementCoverage!.band === "amber"
-                  ? "amber"
-                  : "red"
-            }
-            label={t("workshop.stressTest.headlineCoverageLabel")}
-            value={t("workshop.stressTest.headlineCoverageValue").replace(
-              "{percent}",
-              String(coverageHeadlinePct),
-            )}
-            subtext={t("workshop.stressTest.headlineCoverageDetail")}
-          />
-        ) : null}
-        <WorkshopStatCard
-          icon={depletedAge != null ? "AlertTriangle" : "Landmark"}
-          status={depletedAge != null ? "red" : "green"}
-          label={t("workshop.stressTest.headlineAssetsLabel")}
-          value={
-            depletedAge != null
-              ? t("workshop.stressTest.headlineAssetsToAge").replace(
-                  "{age}",
-                  String(depletedAge),
-                )
-              : t("workshop.stressTest.headlineAssetsSustained")
-          }
-          subtext={
-            depletedAge != null
-              ? t("workshop.stressTest.headlineAssetsToAgeDetail")
-              : t("workshop.stressTest.headlineAssetsSustainedDetail")
-          }
-        />
+      <div className="min-w-0 space-y-3">
         {efIsOversaved ? (
           <WorkshopStatCard
             icon="PiggyBank"
@@ -427,11 +368,9 @@ export default function WorkshopStressTestStep({
           tone={tone}
           pyramid={livePyramid}
           expenses={liveExpenses}
-          retirementAge={result.retirement.retirementAge}
-          userAge={age}
           journey={journey}
           timeline={result}
-          onFinaleReachedChange={setFinaleReached}
+          onGoalsResolvedChange={setGoalsResolved}
           onPlanChange={(update) => {
             setResult(update.timeline);
             setLegacyStress(update.legacyStressTest);
@@ -444,10 +383,13 @@ export default function WorkshopStressTestStep({
 
       <WorkshopStickyFooter
         primaryLabel={t("workshop.stressTest.continueButton")}
-        primaryDisabled={isNarrating || !legacyStress || !finaleReached}
+        primaryDisabled={isNarrating || !legacyStress || !goalsResolved}
         onPrimaryClick={() => {
-          if (legacyStress && finaleReached) {
-            onContinue(legacyStress);
+          if (legacyStress && goalsResolved) {
+            onContinue(legacyStress, {
+              pyramid: livePyramid,
+              expenses: liveExpenses,
+            });
           }
         }}
         secondaryLabel={t("workshop.errors.backButton")}

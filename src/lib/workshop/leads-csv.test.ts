@@ -16,6 +16,9 @@ const sampleLead: WorkshopAdminLeadRow = {
   age: 34,
   retirementAge: 65,
   assetsDepletedAtAge: 82,
+  runwayBeforeAge: 63,
+  runwayAfterAge: 81,
+  actionGoalLevers: "instant,structural,behavioral",
   weakestLayer: "foundation",
   riskProfile: "balanced",
   ratingScore: 62,
@@ -26,7 +29,7 @@ describe("buildWorkshopLeadsCsv", () => {
     const csv = buildWorkshopLeadsCsv([sampleLead]);
     expect(
       csv.startsWith(
-        "createdAt,name,email,phone,industry,age,retirementAge,assetsDepletedAtAge,weakestLayer,riskProfile,ratingScore,selectedGoal,stressTestVerdict,profileBehaviorMismatch",
+        "createdAt,name,email,phone,industry,age,retirementAge,assetsDepletedAtAge,runwayBeforeAge,runwayAfterAge,actionGoalLevers,weakestLayer,riskProfile,ratingScore,selectedGoal,stressTestVerdict,profileBehaviorMismatch",
       ),
     ).toBe(true);
     expect(csv).toContain("Alex Chan");
@@ -45,6 +48,9 @@ describe("buildWorkshopLeadsCsv", () => {
         ...sampleLead,
         retirementAge: null,
         assetsDepletedAtAge: null,
+        runwayBeforeAge: null,
+        runwayAfterAge: null,
+        actionGoalLevers: null,
         riskProfile: null,
         ratingScore: null,
         selectedGoal: "Top up CI",
@@ -52,6 +58,6 @@ describe("buildWorkshopLeadsCsv", () => {
         profileBehaviorMismatch: null,
       },
     ]);
-    expect(csv).toContain(",34,,,foundation,,,Top up CI,,");
+    expect(csv).toContain(",34,,,,,,foundation,,,Top up CI,,");
   });
 });

@@ -14,7 +14,6 @@ import {
 } from "@react-pdf/renderer";
 
 import { pickBilingual } from "@/lib/workshop/bilingual";
-import { computePassiveCoverageRatio } from "@/lib/workshop/coverage-ratio";
 import type { SiteLocale } from "@/lib/i18n/locales";
 import {
   translate,
@@ -203,6 +202,15 @@ const ACTION_GOAL_CATEGORY_KEYS: Record<
   savings: "workshop.summary.categories.savings",
   investment: "workshop.summary.categories.investment",
   goal: "workshop.summary.categories.goal",
+};
+
+const ACTION_GOAL_LEVER_KEYS: Record<
+  ActionGoal["leverType"],
+  MessageKey
+> = {
+  instant: "workshop.pdf.lever.instant",
+  structural: "workshop.pdf.lever.structural",
+  behavioral: "workshop.pdf.lever.behavioral",
 };
 
 export type BlueprintPdfInput = {
@@ -527,11 +535,7 @@ function PyramidGraphic({
       topW: 70,
       bottomW: 110,
       detail: translateWith(locale, "workshop.pdf.investPerMonth", {
-        amount: formatHkd(
-          pyramid.investment.lumpSumHKD ??
-            pyramid.investment.monthlyInvestmentHKD ??
-            0,
-        ),
+        amount: formatHkd(pyramid.investment.lumpSumHKD ?? 0),
       }),
     },
     {
@@ -757,6 +761,16 @@ function RiskAllocationBar({
   );
 }
 
+function runwayAgeLabel(
+  age: number | null,
+  locale: SiteLocale,
+  tWith: (key: MessageKey, vars: Record<string, string | number>) => string,
+): string {
+  return age == null
+    ? translate(locale, "workshop.pdf.runwayPast90")
+    : tWith("workshop.pdf.runwayAge", { age });
+}
+
 function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
   const { locale } = data;
   const rating = data.summary?.rating ?? null;
@@ -790,8 +804,6 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
     );
   }
 
-  const retirementAge =
-    timeline?.retirement.retirementAge ?? data.retirementAge ?? null;
   const efOversaved = timeline?.emergencyFund.status === "oversaved";
 
   const tradeOffs: TradeOffDecisionsSummary | null = deriveTradeOffDecisions({
@@ -855,6 +867,22 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
                     );
                   })}
                 </View>
+                {data.summary?.runway ? (
+                  <Text style={[styles.small, { marginTop: 6 }]}>
+                    {tWith("workshop.pdf.runwayLine", {
+                      before: runwayAgeLabel(
+                        data.summary.runway.beforeAge,
+                        locale,
+                        tWith,
+                      ),
+                      after: runwayAgeLabel(
+                        data.summary.runway.afterAge,
+                        locale,
+                        tWith,
+                      ),
+                    })}
+                  </Text>
+                ) : null}
               </>
             ) : (
               <Text style={styles.small}>
@@ -863,84 +891,6 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
             )}
           </View>
         </View>
-
-        {timeline || retirementAge != null ? (
-          <View style={[styles.section, styles.card]} wrap={false}>
-            <Text style={sectionTitleStyle(data.tone)}>
-              {t("workshop.pdf.retirementSectionTitle")}
-            </Text>
-            <Text style={[styles.small, { marginBottom: 4 }]}>
-              {t("workshop.pdf.realTermsCaption")}
-            </Text>
-            <Text style={styles.small}>
-              {tWith("workshop.pdf.retirementAgeLine", {
-                age: retirementAge ?? "—",
-              })}
-            </Text>
-            {timeline ? (
-              <>
-                <Text style={[styles.small, { marginTop: 2 }]}>
-                  {tWith("workshop.pdf.retirementPassiveLine", {
-                    amount: formatHkd(
-                      timeline.retirement.passiveIncomeAtRetirement,
-                    ),
-                  })}
-                </Text>
-                <Text style={[styles.small, { marginTop: 2 }]}>
-                  {tWith("workshop.pdf.retirementAssetsLine", {
-                    amount: formatHkd(timeline.retirement.assetsAtRetirement),
-                  })}
-                </Text>
-                {(() => {
-                  const retRow = timeline.rows.find(
-                    (r) => r.age === timeline.retirement.retirementAge,
-                  );
-                  if (!retRow || retRow.expenses <= 0) {
-                    return null;
-                  }
-                  const coverage = computePassiveCoverageRatio(
-                    timeline.retirement.passiveIncomeAtRetirement,
-                    retRow.expenses,
-                  );
-                  if (coverage.percent == null) {
-                    return null;
-                  }
-                  return (
-                    <Text style={[styles.small, { marginTop: 2 }]}>
-                      {tWith("workshop.pdf.retirementCoverageLine", {
-                        percent: Math.round(coverage.percent),
-                      })}
-                    </Text>
-                  );
-                })()}
-                {(timeline.retirementTargets ?? []).map((rt) => (
-                  <Text
-                    key={rt.goalId}
-                    style={[styles.small, { marginTop: 2 }]}
-                  >
-                    {rt.met
-                      ? tWith("workshop.pdf.retirementNestEggMet", {
-                          target: formatHkd(rt.targetHKD),
-                          projected: formatHkd(rt.projectedAssetsHKD),
-                        })
-                      : tWith("workshop.pdf.retirementNestEggGap", {
-                          target: formatHkd(rt.targetHKD),
-                          projected: formatHkd(rt.projectedAssetsHKD),
-                          gap: formatHkd(rt.gapHKD),
-                        })}
-                  </Text>
-                ))}
-                <Text style={[styles.small, { marginTop: 2 }]}>
-                  {timeline.retirement.assetsDepletedAtAge != null
-                    ? tWith("workshop.pdf.retirementDepletedLine", {
-                        age: timeline.retirement.assetsDepletedAtAge,
-                      })
-                    : t("workshop.pdf.retirementSustainedLine")}
-                </Text>
-              </>
-            ) : null}
-          </View>
-        ) : null}
 
         {showTradeOffs && tradeOffs ? (
           <View style={[styles.section, styles.card]} wrap={false}>
@@ -1101,37 +1051,10 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
               const label = fromPyramid
                 ? pickBilingual(fromPyramid.label, locale)
                 : goal.goalId;
-              const isRetirementTarget =
-                goal.goalType === "retirementTarget" ||
-                fromPyramid?.goalType === "retirementTarget";
-              if (isRetirementTarget) {
-                const rt = (timeline.retirementTargets ?? []).find(
-                  (r) => r.goalId === goal.goalId,
-                );
-                const targetAmt = formatHkd(
-                  rt?.targetHKD ?? goal.inflatedTargetHKD,
-                );
-                const projectedAmt = formatHkd(
-                  rt?.projectedAssetsHKD ??
-                    timeline.retirement.assetsAtRetirement,
-                );
-                return (
-                  <View key={goal.goalId} style={{ marginBottom: 6 }}>
-                    <View style={styles.barLabelRow}>
-                      <Text style={styles.value}>{label}</Text>
-                      <Text style={styles.small}>
-                        {tWith("workshop.pdf.retirementTargetLine", {
-                          target: targetAmt,
-                          projected: projectedAmt,
-                        })}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              }
-              const attained =
+              const attainedLine =
                 goal.attainedAtAge != null
-                  ? tWith("workshop.pdf.goalAttainedAge", {
+                  ? tWith("workshop.pdf.goalProgressLine", {
+                      amount: formatHkd(goal.inflatedTargetHKD),
                       age: goal.attainedAtAge,
                     })
                   : t("workshop.pdf.notReached");
@@ -1147,12 +1070,7 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
                 <View key={goal.goalId} style={{ marginBottom: 6 }}>
                   <View style={styles.barLabelRow}>
                     <Text style={styles.value}>{label}</Text>
-                    <Text style={styles.small}>
-                      {tWith("workshop.pdf.goalInflatedAttained", {
-                        amount: formatHkd(goal.inflatedTargetHKD),
-                        attained,
-                      })}
-                    </Text>
+                    <Text style={styles.small}>{attainedLine}</Text>
                   </View>
                   <ProgressBar percent={pct} color={FLAG_FILL[goal.status]} />
                 </View>
@@ -1222,8 +1140,9 @@ function BlueprintDocument({ data }: { data: BlueprintPdfInput }) {
                     {isSelected ? `  ${t("workshop.pdf.myFocus")}` : ""}
                   </Text>
                   <Text style={styles.impact}>
-                    {tWith("workshop.pdf.impactLine", {
+                    {tWith("workshop.pdf.impactLineWithLever", {
                       n: goal.impactPoints,
+                      lever: t(ACTION_GOAL_LEVER_KEYS[goal.leverType]),
                       category: t(ACTION_GOAL_CATEGORY_KEYS[goal.category]),
                     })}
                   </Text>

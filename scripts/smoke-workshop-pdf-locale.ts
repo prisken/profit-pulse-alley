@@ -41,15 +41,12 @@ function baseInput(locale: SiteLocale): BlueprintPdfInput {
             targetAmountHKD: 2_000_000,
             targetAge: 40,
             targetYear: 2030,
-            goalType: "spend",
           },
         ],
       },
       investment: {
         riskAllocation: { low: 30, mid: 50, high: 20 },
         lumpSumHKD: 200_000,
-        monthlyInvestmentHKD: 5_000,
-        monthlyFunHKD: 2_000,
       },
     },
     layerFlags: {
@@ -119,6 +116,7 @@ function baseInput(locale: SiteLocale): BlueprintPdfInput {
           rank: 1,
           title: bilingual("Top up emergency fund", "先補足緊急儲備"),
           category: "savings",
+          leverType: "instant",
           icon: "PiggyBank",
           impactPoints: 12,
           reasoning: bilingual(

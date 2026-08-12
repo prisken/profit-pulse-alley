@@ -66,7 +66,8 @@ export default function WorkshopLeadsAdminTable({
               <th className="px-3 py-3 font-semibold sm:px-4">Industry</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Age</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Ret. age</th>
-              <th className="px-3 py-3 font-semibold sm:px-4">Depleted</th>
+              <th className="px-3 py-3 font-semibold sm:px-4">Runway Δ</th>
+              <th className="px-3 py-3 font-semibold sm:px-4">Levers</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Weakest</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Risk profile</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Rating score</th>
@@ -94,7 +95,16 @@ export default function WorkshopLeadsAdminTable({
                   {lead.retirementAge ?? "—"}
                 </td>
                 <td className="px-3 py-3 font-mono tabular-nums text-zinc-300 sm:px-4">
-                  {lead.assetsDepletedAtAge ?? "—"}
+                  {lead.runwayBeforeAge == null && lead.runwayAfterAge == null
+                    ? "—"
+                    : lead.runwayBeforeAge == null
+                      ? `${lead.runwayAfterAge} (90+)`
+                      : lead.runwayAfterAge == null
+                        ? `90+ (was ${lead.runwayBeforeAge})`
+                        : `${lead.runwayAfterAge} (was ${lead.runwayBeforeAge})`}
+                </td>
+                <td className="px-3 py-3 font-mono text-[11px] tabular-nums text-zinc-400 sm:px-4">
+                  {lead.actionGoalLevers ?? "—"}
                 </td>
                 <td className="px-3 py-3 capitalize text-zinc-300 sm:px-4">
                   {lead.weakestLayer ?? "—"}

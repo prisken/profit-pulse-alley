@@ -18,10 +18,10 @@ import {
   pickBilingual,
 } from "@/lib/workshop/bilingual";
 import { deriveGoalYear } from "@/lib/workshop/goal-year";
+import { normalizeGoalsLayerForPyramid } from "@/lib/workshop/goal-journey";
 import type {
   Bilingual,
   GoalItem,
-  GoalType,
   GoalsLayer,
   LayerFlag,
 } from "@/lib/workshop/types";
@@ -200,13 +200,27 @@ export default function GoalsLayerEditor({
   /** Per-goal: true once the user manually edits the label field. */
   const [labelTouched, setLabelTouched] = useState<Record<string, boolean>>({});
 
-  const goals = value.goals;
-  const total = goals.reduce((sum, goal) => sum + goal.targetAmountHKD, 0);
   const minTargetAge = Math.max(1, Math.round(userAge) + 1);
 
-  function updateGoal(id: string, patch: Partial<GoalItem>) {
+  // Age-ordered preview — matches Step 4 rail.
+  const goals = normalizeGoalsLayerForPyramid(value.goals, {
+    userAge,
+    retirementAge: 65,
+  });
+  const total = goals.reduce((sum, goal) => sum + goal.targetAmountHKD, 0);
+
+  function emitGoals(nextGoals: GoalItem[]) {
     onChange({
-      goals: goals.map((goal) => {
+      goals: normalizeGoalsLayerForPyramid(nextGoals, {
+        userAge,
+        retirementAge: 65,
+      }),
+    });
+  }
+
+  function updateGoal(id: string, patch: Partial<GoalItem>) {
+    emitGoals(
+      goals.map((goal) => {
         if (goal.id !== id) {
           return goal;
         }
@@ -220,7 +234,7 @@ export default function GoalsLayerEditor({
         }
         return next;
       }),
-    });
+    );
   }
 
   function changeGoalIcon(id: string, icon: string) {
@@ -233,7 +247,7 @@ export default function GoalsLayerEditor({
   }
 
   function removeGoal(id: string) {
-    onChange({ goals: goals.filter((goal) => goal.id !== id) });
+    emitGoals(goals.filter((goal) => goal.id !== id));
     setLabelTouched((prev) => {
       const next = { ...prev };
       delete next[id];
@@ -246,20 +260,17 @@ export default function GoalsLayerEditor({
     const label = defaultLabelForIcon(icon);
     const id = uniqueGoalId(label.en, goals);
     const targetAge = Math.min(90, Math.max(minTargetAge, Math.round(userAge) + 5));
-    onChange({
-      goals: [
-        ...goals,
-        {
-          id,
-          icon,
-          label,
-          targetAmountHKD: 100_000,
-          targetAge,
-          targetYear: deriveGoalYear(targetAge, userAge),
-          goalType: "spend",
-        },
-      ],
-    });
+    emitGoals([
+      ...goals,
+      {
+        id,
+        icon,
+        label,
+        targetAmountHKD: 100_000,
+        targetAge,
+        targetYear: deriveGoalYear(targetAge, userAge),
+      },
+    ]);
     setLabelTouched((prev) => ({ ...prev, [id]: false }));
   }
 
@@ -319,7 +330,8 @@ export default function GoalsLayerEditor({
         <div className="space-y-3" id={listId}>
           {goals.map((goal) => {
             const localizedLabel = pickBilingual(goal.label, locale);
-            const derivedYear = deriveGoalYear(goal.targetAge, userAge);
+            const displayAge = goal.targetAge;
+            const derivedYear = deriveGoalYear(displayAge, userAge);
             return (
               <div
                 key={goal.id}
@@ -332,7 +344,7 @@ export default function GoalsLayerEditor({
                   }
                   value={formatHkd(goal.targetAmountHKD)}
                   subtext={t("workshop.pyramid.goals.targetAgeSubtext")
-                    .replace("{age}", String(goal.targetAge))
+                    .replace("{age}", String(displayAge))
                     .replace("{year}", String(derivedYear))}
                 />
 
@@ -400,7 +412,7 @@ export default function GoalsLayerEditor({
                         min={minTargetAge}
                         max={90}
                         disabled={disabled}
-                        value={goal.targetAge}
+                        value={displayAge}
                         enterKeyHint="done"
                         onChange={(targetAge) =>
                           updateGoal(goal.id, { targetAge })
@@ -413,51 +425,6 @@ export default function GoalsLayerEditor({
                         )}
                       </p>
                     </div>
-                  </div>
-
-                  <div
-                    className="flex flex-wrap gap-2"
-                    role="radiogroup"
-                    aria-label={t("workshop.pyramid.goals.goalType.aria")}
-                  >
-                    {(
-                      [
-                        {
-                          id: "spend" as GoalType,
-                          labelKey:
-                            "workshop.pyramid.goals.goalType.spend" as const,
-                        },
-                        {
-                          id: "retirementTarget" as GoalType,
-                          labelKey:
-                            "workshop.pyramid.goals.goalType.retirementTarget" as const,
-                        },
-                      ] as const
-                    ).map((option) => {
-                      const selected =
-                        (goal.goalType ?? "spend") === option.id;
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          role="radio"
-                          aria-checked={selected}
-                          disabled={disabled}
-                          onClick={() =>
-                            updateGoal(goal.id, { goalType: option.id })
-                          }
-                          className={[
-                            "inline-flex min-h-11 flex-1 touch-manipulation items-center justify-center rounded-xl border px-3 py-2 text-xs font-medium transition-colors sm:text-sm",
-                            focusRing,
-                            selected
-                              ? "border-emerald-500 bg-emerald-50 text-emerald-800"
-                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
-                          ].join(" ")}
-                        >
-                          {t(option.labelKey)}
-                        </button>
-                      );
-                    })}
                   </div>
 
                   <button

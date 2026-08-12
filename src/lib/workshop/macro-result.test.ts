@@ -23,15 +23,12 @@ const pyramid: PyramidState = {
         targetAmountHKD: 150_000,
         targetAge: 40,
         targetYear: NOW_YEAR + 5,
-        goalType: "spend",
       },
     ],
   },
   investment: {
     riskAllocation: { low: 40, mid: 40, high: 20 },
     lumpSumHKD: 200_000,
-    monthlyInvestmentHKD: 5_000,
-    monthlyFunHKD: 2_000,
   },
 };
 
@@ -42,11 +39,9 @@ describe("macro-result versioning", () => {
       retirementAge: 65,
       monthlyIncome: 50_000,
       monthlyExpenses: 20_000,
-      monthlyFun: 2_000,
       emergencyFundSavedHKD: 120_000,
       investment: {
         lumpSumHKD: 200_000,
-        monthlyInvestmentHKD: 5_000,
         allocation: { low: 40, mid: 40, high: 20 },
       },
       goals: pyramid.goals.goals,
@@ -116,11 +111,9 @@ describe("macro-result versioning", () => {
       retirementAge: 65,
       monthlyIncome: 50_000,
       monthlyExpenses: 20_000,
-      monthlyFun: 0,
       emergencyFundSavedHKD: 300_000,
       investment: {
         lumpSumHKD: 0,
-        monthlyInvestmentHKD: 0,
         allocation: { low: 100, mid: 0, high: 0 },
       },
       goals: [],

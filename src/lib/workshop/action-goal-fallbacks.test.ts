@@ -29,6 +29,7 @@ function baseDecisions(
     },
     riskQuizProfile: "Balanced",
     profileBehaviorMismatch: false,
+    runway: { beforeAge: 63, afterAge: 81 },
     ...overrides,
   };
 }
@@ -39,13 +40,14 @@ function intervention(
 ): RankedIntervention {
   return {
     rank: 1,
+    leverType: "instant",
     icon: "Shield",
     ...partial,
   };
 }
 
 describe("buildFallbackReasoning", () => {
-  it("(a) PENETRATED payload → protection template includes affectedGoal and delayYears", () => {
+  it("(a) structural + PENETRATED payload → protection template includes affectedGoal and delayYears", () => {
     const decisions = baseDecisions({
       crisisStressTest: {
         scenario: "critical_illness",
@@ -56,7 +58,11 @@ describe("buildFallbackReasoning", () => {
       },
     });
     const result = buildFallbackReasoning(
-      intervention({ category: "protection", impactPoints: 18.5 }),
+      intervention({
+        category: "protection",
+        leverType: "structural",
+        impactPoints: 18.5,
+      }),
       decisions,
     );
 
@@ -70,9 +76,14 @@ describe("buildFallbackReasoning", () => {
     expect(result.zhHant).not.toBe(result.en);
   });
 
-  it("(b) missing crisisStressTest → else-branch / generic, no crash", () => {
+  it("(b) structural + missing crisisStressTest → gap else-branch / generic, no crash", () => {
     const withGap = buildFallbackReasoning(
-      intervention({ category: "protection", impactPoints: 12, gap: 40 }),
+      intervention({
+        category: "protection",
+        leverType: "structural",
+        impactPoints: 12,
+        gap: 40,
+      }),
       baseDecisions({ crisisStressTest: null }),
     );
     expect(withGap.en).toContain(formatCompactHkd(40));
@@ -81,17 +92,22 @@ describe("buildFallbackReasoning", () => {
     expect(withGap.zhHant).not.toBe(withGap.en);
 
     const generic = buildFallbackReasoning(
-      intervention({ category: "protection", impactPoints: 12 }),
+      intervention({
+        category: "protection",
+        leverType: "structural",
+        impactPoints: 12,
+      }),
       baseDecisions({ crisisStressTest: null }),
     );
     expect(generic.en).toContain("+12");
     expect(generic.en).not.toMatch(/Step\s*\d+/i);
   });
 
-  it("(c) zero surplus → investment else-branch", () => {
+  it("(c) behavioral + zero surplus but an applied goal → cites the protected goal and runway", () => {
     const result = buildFallbackReasoning(
       intervention({
         category: "investment",
+        leverType: "behavioral",
         impactPoints: 9,
         icon: "TrendingUp",
       }),
@@ -102,12 +118,21 @@ describe("buildFallbackReasoning", () => {
           investmentBalanceRemaining: 100_000,
         },
         riskQuizProfile: "Conservative",
+        goalsApplied: [
+          {
+            name: "Wedding",
+            targetAge: 38,
+            usedLiquidation: false,
+            liquidationSource: null,
+          },
+        ],
+        runway: { beforeAge: 63, afterAge: 81 },
       }),
     );
-    expect(result.en).toMatch(/accepted budget adjustments/i);
-    expect(result.en).toContain("Conservative");
+    expect(result.en).toMatch(/keeping Wedding on track/i);
+    expect(result.en).toMatch(/age 63 to age 81|63.*81/i);
     expect(result.en).not.toMatch(/You have .+ in monthly surplus/);
-    expect(result.zhHant).toContain("Conservative");
+    expect(result.zhHant).toContain("Wedding");
     expect(result.zhHant).not.toBe(result.en);
   });
 
@@ -125,6 +150,7 @@ describe("buildFallbackReasoning", () => {
       crisisStressTest: null,
       riskQuizProfile: null,
       profileBehaviorMismatch: false,
+      runway: null,
     };
 
     for (const category of [
@@ -154,7 +180,11 @@ describe("buildFallbackReasoning", () => {
       decisions: DecisionsPayload;
     }> = [
       {
-        goal: intervention({ category: "protection", impactPoints: 15 }),
+        goal: intervention({
+          category: "protection",
+          leverType: "structural",
+          impactPoints: 15,
+        }),
         decisions: baseDecisions({
           crisisStressTest: {
             scenario: "medical",
@@ -166,7 +196,12 @@ describe("buildFallbackReasoning", () => {
         }),
       },
       {
-        goal: intervention({ category: "protection", impactPoints: 11, gap: 55 }),
+        goal: intervention({
+          category: "protection",
+          leverType: "structural",
+          impactPoints: 11,
+          gap: 55,
+        }),
         decisions: baseDecisions({
           crisisStressTest: {
             scenario: "medical",
@@ -180,6 +215,7 @@ describe("buildFallbackReasoning", () => {
       {
         goal: intervention({
           category: "savings",
+          leverType: "instant",
           impactPoints: 14,
           icon: "PiggyBank",
         }),
@@ -194,6 +230,7 @@ describe("buildFallbackReasoning", () => {
       {
         goal: intervention({
           category: "savings",
+          leverType: "instant",
           impactPoints: 8,
           icon: "PiggyBank",
         }),
@@ -208,6 +245,7 @@ describe("buildFallbackReasoning", () => {
       {
         goal: intervention({
           category: "investment",
+          leverType: "behavioral",
           impactPoints: 10,
           icon: "TrendingUp",
         }),
@@ -223,6 +261,7 @@ describe("buildFallbackReasoning", () => {
       {
         goal: intervention({
           category: "investment",
+          leverType: "behavioral",
           impactPoints: 6,
           icon: "TrendingUp",
         }),
@@ -236,7 +275,12 @@ describe("buildFallbackReasoning", () => {
         }),
       },
       {
-        goal: intervention({ category: "goal", impactPoints: 9, icon: "Target" }),
+        goal: intervention({
+          category: "goal",
+          leverType: "behavioral",
+          impactPoints: 9,
+          icon: "Target",
+        }),
         decisions: baseDecisions({
           goalsApplied: [
             {
@@ -259,7 +303,12 @@ describe("buildFallbackReasoning", () => {
 
   it("never references goalsGivenUp or profileBehaviorMismatch", () => {
     const result = buildFallbackReasoning(
-      intervention({ category: "savings", impactPoints: 10, icon: "PiggyBank" }),
+      intervention({
+        category: "savings",
+        leverType: "instant",
+        impactPoints: 10,
+        icon: "PiggyBank",
+      }),
       baseDecisions({
         goalsGivenUp: [{ name: "Education", targetAge: 45 }],
         profileBehaviorMismatch: true,

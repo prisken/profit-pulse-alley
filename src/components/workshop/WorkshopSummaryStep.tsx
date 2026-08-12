@@ -41,6 +41,12 @@ const ACTION_GOAL_CATEGORY_KEYS: Record<ActionGoal["category"], MessageKey> = {
   goal: "workshop.summary.categories.goal",
 };
 
+const ACTION_GOAL_LEVER_KEYS: Record<ActionGoal["leverType"], MessageKey> = {
+  instant: "workshop.summary.levers.instant",
+  structural: "workshop.summary.levers.structural",
+  behavioral: "workshop.summary.levers.behavioral",
+};
+
 const BREAKDOWN_ROWS: Array<{
   key: keyof SummaryState["rating"]["breakdown"];
   labelKey: MessageKey;
@@ -82,6 +88,65 @@ const BAND_STROKE = {
 function resolveIcon(name: string): LucideIcon {
   const Icon = icons[name as keyof typeof icons];
   return Icon ?? icons.Circle;
+}
+
+function RunwayHero({
+  runway,
+  t,
+}: {
+  runway: NonNullable<SummaryState["runway"]>;
+  t: (key: MessageKey) => string;
+}) {
+  const { beforeAge, afterAge } = runway;
+  const beforeLabel =
+    beforeAge == null
+      ? t("workshop.summary.runway.past90")
+      : t("workshop.summary.runway.age").replace("{age}", String(beforeAge));
+  const afterLabel =
+    afterAge == null
+      ? t("workshop.summary.runway.past90")
+      : t("workshop.summary.runway.age").replace("{age}", String(afterAge));
+
+  const improved = afterAge == null || (beforeAge != null && afterAge > beforeAge);
+  const same = beforeAge === afterAge;
+
+  let headline: string;
+  if (same) {
+    headline = t("workshop.summary.runway.same").replace(
+      "{after}",
+      afterLabel,
+    );
+  } else if (improved) {
+    headline = t("workshop.summary.runway.improved")
+      .replace("{after}", afterLabel)
+      .replace("{before}", beforeLabel);
+  } else {
+    headline = t("workshop.summary.runway.shorter")
+      .replace("{after}", afterLabel)
+      .replace("{before}", beforeLabel);
+  }
+
+  return (
+    <div
+      className={[
+        "mt-5 rounded-xl border px-4 py-3.5 text-left",
+        improved
+          ? "border-emerald-200 bg-emerald-50"
+          : "border-amber-200 bg-amber-50",
+      ].join(" ")}
+      data-testid="workshop-summary-runway"
+    >
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        {t("workshop.summary.runway.heading")}
+      </p>
+      <p className="mt-1.5 text-lg font-semibold leading-snug text-slate-900">
+        {headline}
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-slate-600">
+        {t("workshop.summary.runway.detail")}
+      </p>
+    </div>
+  );
 }
 
 function RatingGauge({ score, label }: { score: number; label: string }) {
@@ -419,7 +484,7 @@ export default function WorkshopSummaryStep({
     );
   }
 
-  const { rating, actionGoals, crisisStressTest } = summary;
+  const { rating, actionGoals, crisisStressTest, runway } = summary;
   const ratingLabel = t(RATING_LABEL_KEYS[rating.labelKey]);
 
   return (
@@ -431,6 +496,7 @@ export default function WorkshopSummaryStep({
         <div className="mt-4">
           <RatingGauge score={rating.score} label={ratingLabel} />
         </div>
+        {runway ? <RunwayHero runway={runway} t={t} /> : null}
         {crisisStressTest ? (
           <CrisisStressTestBadge
             stress={crisisStressTest}
@@ -522,12 +588,17 @@ export default function WorkshopSummaryStep({
                     </span>
                   }
                   badge={
-                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
-                      {t("workshop.summary.impactPointsLabel").replace(
-                        "{n}",
-                        String(goal.impactPoints),
-                      )}
-                    </span>
+                    <div className="flex max-w-[12rem] flex-col items-end gap-1 sm:max-w-none sm:flex-row sm:items-center">
+                      <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-semibold text-indigo-700">
+                        {t(ACTION_GOAL_LEVER_KEYS[goal.leverType])}
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                        {t("workshop.summary.impactPointsLabel").replace(
+                          "{n}",
+                          String(goal.impactPoints),
+                        )}
+                      </span>
+                    </div>
                   }
                 >
                   <div className="space-y-2">

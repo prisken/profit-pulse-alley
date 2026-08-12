@@ -10,6 +10,9 @@ export const WORKSHOP_LEADS_CSV_HEADERS = [
   "age",
   "retirementAge",
   "assetsDepletedAtAge",
+  "runwayBeforeAge",
+  "runwayAfterAge",
+  "actionGoalLevers",
   "weakestLayer",
   "riskProfile",
   "ratingScore",
@@ -36,6 +39,9 @@ export function buildWorkshopLeadsCsv(leads: WorkshopAdminLeadRow[]): string {
       lead.assetsDepletedAtAge == null
         ? ""
         : String(lead.assetsDepletedAtAge),
+      lead.runwayBeforeAge == null ? "" : String(lead.runwayBeforeAge),
+      lead.runwayAfterAge == null ? "" : String(lead.runwayAfterAge),
+      lead.actionGoalLevers ?? "",
       lead.weakestLayer ?? "",
       lead.riskProfile ?? "",
       lead.ratingScore == null ? "" : String(lead.ratingScore),

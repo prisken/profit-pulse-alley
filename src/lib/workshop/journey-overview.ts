@@ -19,7 +19,8 @@ function roundMoney(value: number): number {
 
 /**
  * Pure overview slices from confirmed expenses + pyramid.
- * Cash-flow donut: 5 expense categories + fun + monthly investing + surplus.
+ * Cash-flow donut: 5 expense categories + surplus (fun & monthly investing
+ * removed in v4).
  * Assets donut: liquid (EF) + invested (lump sum) as of today.
  */
 export function deriveJourneyOverview(input: {
@@ -30,8 +31,6 @@ export function deriveJourneyOverview(input: {
   const cashFlowSlices = buildAllocationSlices({
     monthlyIncomeHKD: input.monthlyIncomeHKD,
     expenses: input.expenses,
-    monthlyFunHKD: input.pyramid.investment.monthlyFunHKD,
-    monthlyInvestmentHKD: input.pyramid.investment.monthlyInvestmentHKD,
   });
 
   const monthlySurplusHKD = roundMoney(

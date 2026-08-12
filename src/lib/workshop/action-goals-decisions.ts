@@ -55,6 +55,11 @@ export type ActionGoalsDecisionsPayload = {
   };
   riskQuizProfile: "Conservative" | "Balanced" | "Aggressive";
   profileBehaviorMismatch: boolean;
+  /** Hero runway: assets-last-until age before/after the journey (null = past 90). */
+  runway: {
+    beforeAge: number | null;
+    afterAge: number | null;
+  };
 };
 
 function roundMoney(value: number): number {
@@ -157,6 +162,7 @@ export function buildActionGoalsDecisionsPayload(input: {
   crisisStressTest: CrisisStressTestSummary;
   riskProfile: RiskProfile;
   timeline?: TimelineResult | null;
+  runway?: { beforeAge: number | null; afterAge: number | null } | null;
 }): ActionGoalsDecisionsPayload {
   const { pyramid, expenses, journey, crisisStressTest, riskProfile } = input;
   const goalsById = new Map(pyramid.goals.goals.map((g) => [g.id, g]));
@@ -183,10 +189,7 @@ export function buildActionGoalsDecisionsPayload(input: {
   }
 
   const remainingMonthlySurplus = roundMoney(
-    Math.max(0, input.monthlyIncome) -
-      Math.max(0, expenses.totalHKD) -
-      Math.max(0, pyramid.investment.monthlyFunHKD) -
-      Math.max(0, pyramid.investment.monthlyInvestmentHKD),
+    Math.max(0, input.monthlyIncome) - Math.max(0, expenses.totalHKD),
   );
 
   const affectedGoal =
@@ -221,34 +224,82 @@ export function buildActionGoalsDecisionsPayload(input: {
     },
     riskQuizProfile: riskQuizProfileLabel(riskProfile),
     profileBehaviorMismatch: isProfileBehaviorMismatch(riskProfile, journey),
+    runway:
+      input.runway ??
+      ({
+        beforeAge: null,
+        afterAge: input.timeline?.retirement.assetsDepletedAtAge ?? null,
+      } satisfies ActionGoalsDecisionsPayload["runway"]),
   };
 }
 
 type ActionGoalSeedLike = {
   rank: number;
   category: ActionGoal["category"];
+  leverType: ActionGoal["leverType"];
   icon: string;
   impactPoints: number;
   gap?: number;
   currentScore?: number;
 };
 
-const FALLBACK_TITLE: Record<ActionGoal["category"], Bilingual> = {
-  protection: {
-    en: "Strengthen your protection layer",
-    zhHant: "加強你的保障層",
+const FALLBACK_TITLE: Record<
+  ActionGoal["leverType"],
+  Record<ActionGoal["category"], Bilingual>
+> = {
+  instant: {
+    protection: {
+      en: "Close your protection gap this week",
+      zhHant: "本週補上保障缺口",
+    },
+    savings: {
+      en: "Rebuild emergency cash this week",
+      zhHant: "本週重建應急現金",
+    },
+    investment: {
+      en: "Move idle cash into growth this week",
+      zhHant: "本週把閒置資金投入增長",
+    },
+    goal: {
+      en: "Fund your next goal this week",
+      zhHant: "本週為下一個目標注資",
+    },
   },
-  savings: {
-    en: "Rebuild emergency cash buffer",
-    zhHant: "重建應急現金緩衝",
+  structural: {
+    protection: {
+      en: "Set up your protection cover once",
+      zhHant: "一次過設定你的保障",
+    },
+    savings: {
+      en: "Set up an emergency cash floor",
+      zhHant: "設定應急現金下限",
+    },
+    investment: {
+      en: "Set up a long-term investment rule",
+      zhHant: "設定長期投資規則",
+    },
+    goal: {
+      en: "Lock in your goal plan",
+      zhHant: "鎖定你的目標計劃",
+    },
   },
-  investment: {
-    en: "Grow long-term investments",
-    zhHant: "壯大長期投資",
-  },
-  goal: {
-    en: "Keep priority goals on track",
-    zhHant: "讓優先目標保持進度",
+  behavioral: {
+    protection: {
+      en: "Keep your protection review habit",
+      zhHant: "保持定期檢視保障的習慣",
+    },
+    savings: {
+      en: "Make saving automatic every month",
+      zhHant: "每月自動儲蓄",
+    },
+    investment: {
+      en: "Make your surplus work every month",
+      zhHant: "每月讓盈餘自動增值",
+    },
+    goal: {
+      en: "Keep your priority goals on track",
+      zhHant: "讓優先目標保持進度",
+    },
   },
 };
 
@@ -264,14 +315,19 @@ export function buildDeterministicActionGoalsFallback(
     .sort((a, b) => a.rank - b.rank)
     .map((seed) => ({
       rank: seed.rank,
-      title: FALLBACK_TITLE[seed.category],
+      title: FALLBACK_TITLE[seed.leverType]?.[seed.category] ?? {
+        en: "Keep your plan on track",
+        zhHant: "讓計劃保持進度",
+      },
       category: seed.category,
+      leverType: seed.leverType,
       icon: seed.icon,
       impactPoints: seed.impactPoints,
       reasoning: buildFallbackReasoning(
         {
           rank: seed.rank,
           category: seed.category,
+          leverType: seed.leverType,
           icon: seed.icon,
           impactPoints: seed.impactPoints,
           gap: seed.gap,

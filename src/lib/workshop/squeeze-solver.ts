@@ -13,8 +13,6 @@ export type SolveSqueezeInput = {
   requiredExtraMonthlyHKD: number;
   monthlyIncomeHKD: number;
   expenses: ExpensesState;
-  monthlyFunHKD: number;
-  monthlyInvestmentHKD: number;
   /**
    * Optional lateness signal from the concurrently computed timeline.
    * When present with `targetAge`, partial cuts map to a later achievable age.
@@ -50,13 +48,8 @@ function clampSurplus(
 export function buildAllocationSlices(input: {
   monthlyIncomeHKD: number;
   expenses: ExpensesState;
-  monthlyFunHKD: number;
-  monthlyInvestmentHKD: number;
-  recommendedFunHKD?: number;
   recommendedDiscretionaryHKD?: number;
 }): AllocationSlice[] {
-  const recommendedFunHKD =
-    input.recommendedFunHKD ?? Math.max(0, roundMoney(input.monthlyFunHKD));
   const recommendedDiscretionaryHKD =
     input.recommendedDiscretionaryHKD ??
     Math.max(
@@ -85,28 +78,12 @@ export function buildAllocationSlices(input: {
       : slice,
   );
 
-  const preSurplus = [
-    ...baseExpenses,
-    {
-      key: "fun",
-      label: ALLOCATION_SLICE_LABELS.fun,
-      amountHKD: recommendedFunHKD,
-      changed: recommendedFunHKD !== Math.max(0, roundMoney(input.monthlyFunHKD)),
-    },
-    {
-      key: "investment",
-      label: ALLOCATION_SLICE_LABELS.investment,
-      amountHKD: Math.max(0, roundMoney(input.monthlyInvestmentHKD)),
-      changed: false,
-    },
-  ] satisfies AllocationSlice[];
-
   return [
-    ...preSurplus,
+    ...baseExpenses,
     {
       key: "surplus",
       label: ALLOCATION_SLICE_LABELS.surplus,
-      amountHKD: clampSurplus(input.monthlyIncomeHKD, preSurplus),
+      amountHKD: clampSurplus(input.monthlyIncomeHKD, baseExpenses),
       changed: false,
     },
   ];
@@ -156,7 +133,7 @@ export function solveSqueeze(
   }
 
   const annualNeedHKD = roundMoney(requiredExtraMonthlyHKD * 12);
-  const cuts = cutAvailable(input.expenses, input.monthlyFunHKD, annualNeedHKD);
+  const cuts = cutAvailable(input.expenses, annualNeedHKD);
   const achievableExtraMonthlyHKD = roundMoney(cuts.trimmedHKD / 12);
 
   return {
@@ -164,15 +141,10 @@ export function solveSqueeze(
     currentAllocation: buildAllocationSlices({
       monthlyIncomeHKD: input.monthlyIncomeHKD,
       expenses: input.expenses,
-      monthlyFunHKD: input.monthlyFunHKD,
-      monthlyInvestmentHKD: input.monthlyInvestmentHKD,
     }),
     recommendedAllocation: buildAllocationSlices({
       monthlyIncomeHKD: input.monthlyIncomeHKD,
       expenses: input.expenses,
-      monthlyFunHKD: input.monthlyFunHKD,
-      monthlyInvestmentHKD: input.monthlyInvestmentHKD,
-      recommendedFunHKD: cuts.monthlyFunRemainingHKD,
       recommendedDiscretionaryHKD: cuts.monthlyDiscretionaryRemainingHKD,
     }),
     achievableAtAge: achievableAtAge({

@@ -19,7 +19,6 @@ import {
   computeSqueezeRecommendationAction,
   narrateGoalSqueezeAction,
 } from "@/lib/workshop/pyramid-actions";
-import { isRetirementRailGoal } from "@/lib/workshop/goal-journey";
 import type {
   GoalItem,
   SqueezeRecommendation,
@@ -48,6 +47,8 @@ type WorkshopGoalJourneyCardProps = Readonly<{
   goal: GoalItem;
   tone: WorkshopTone;
   active: boolean;
+  /** Bumped after each journey decision — forces a fresh outlook recompute. */
+  planRevision: number;
   onDecisionComplete: (result: ApplyGoalJourneyDecisionActionResult) => void;
 }>;
 
@@ -60,11 +61,11 @@ export default function WorkshopGoalJourneyCard({
   goal,
   tone,
   active,
+  planRevision,
   onDecisionComplete,
 }: WorkshopGoalJourneyCardProps) {
   const { t, locale } = useTranslations();
   const switchId = useId();
-  const isSyntheticRetirement = isRetirementRailGoal(goal);
 
   const [outlook, setOutlook] = useState<GoalOutlook | null>(null);
   const [efMonths, setEfMonths] = useState<number | null>(null);
@@ -99,7 +100,7 @@ export default function WorkshopGoalJourneyCard({
     : null;
 
   useEffect(() => {
-    if (!active || isSyntheticRetirement) {
+    if (!active) {
       return;
     }
 
@@ -146,8 +147,8 @@ export default function WorkshopGoalJourneyCard({
     active,
     allowLiquidation,
     goal.id,
-    isSyntheticRetirement,
     loadRetry,
+    planRevision,
     sessionId,
     t,
   ]);
@@ -199,9 +200,6 @@ export default function WorkshopGoalJourneyCard({
   }
 
   function submitDecision(status: "applied" | "given_up") {
-    if (isSyntheticRetirement) {
-      return;
-    }
     setDecisionError(null);
     startDecideTransition(async () => {
       try {
@@ -220,14 +218,6 @@ export default function WorkshopGoalJourneyCard({
         );
       }
     });
-  }
-
-  if (isSyntheticRetirement) {
-    return (
-      <p className="text-sm text-slate-500" data-testid="workshop-journey-card-body">
-        {t("workshop.journey.retirementReadOnly")}
-      </p>
-    );
   }
 
   if (loadError) {

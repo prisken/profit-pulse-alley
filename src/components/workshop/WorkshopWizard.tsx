@@ -588,8 +588,11 @@ export default function WorkshopWizard() {
                   pyramid={pyramid}
                   tone={tone}
                   onBack={() => goToStep("expenses")}
-                  onContinue={(result) => {
+                  onContinue={(result, plan) => {
                     setStressTest(result);
+                    // Keep wizard in sync with journey squeezes / give-ups.
+                    setPyramid(plan.pyramid);
+                    setExpenses(plan.expenses);
                     // Invalidate Summary so Step 6 re-runs stress test + action goals.
                     setSummary(null);
                     setSelectedActionGoal(null);

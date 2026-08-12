@@ -35,15 +35,12 @@ function basePyramid(overrides?: {
           targetAmountHKD: 200_000,
           targetAge: 40,
           targetYear: NOW_YEAR + 5,
-          goalType: "spend",
         },
       ],
     },
     investment: {
       riskAllocation: { low: 40, mid: 40, high: 20 },
       lumpSumHKD: 500_000,
-      monthlyInvestmentHKD: 8_000,
-      monthlyFunHKD: 4_000,
       ...overrides?.investment,
     },
   };
@@ -149,8 +146,6 @@ describe("runCrisisStressTest", () => {
         investment: {
           riskAllocation: { low: 50, mid: 40, high: 10 },
           lumpSumHKD: 300_000,
-          monthlyInvestmentHKD: 5_000,
-          monthlyFunHKD: 3_000,
         },
       }),
       expenses,
@@ -178,8 +173,6 @@ describe("runCrisisStressTest", () => {
         investment: {
           riskAllocation: { low: 80, mid: 15, high: 5 },
           lumpSumHKD: 20_000,
-          monthlyInvestmentHKD: 0,
-          monthlyFunHKD: 0,
         },
       }),
       expenses: {

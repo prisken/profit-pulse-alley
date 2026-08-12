@@ -18,7 +18,6 @@ const pyramid: PyramidState = {
         targetAmountHKD: 200_000,
         targetAge: 38,
         targetYear: 2029,
-        goalType: "spend",
       },
       {
         id: "home",
@@ -27,15 +26,12 @@ const pyramid: PyramidState = {
         targetAmountHKD: 1_000_000,
         targetAge: 42,
         targetYear: 2033,
-        goalType: "spend",
       },
     ],
   },
   investment: {
     riskAllocation: { low: 40, mid: 40, high: 20 },
     lumpSumHKD: 200_000,
-    monthlyInvestmentHKD: 5_000,
-    monthlyFunHKD: 2_000,
   },
 };
 

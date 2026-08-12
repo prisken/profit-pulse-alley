@@ -24,8 +24,6 @@ const pyramid: PyramidState = {
   investment: {
     riskAllocation: { low: 40, mid: 40, high: 20 },
     lumpSumHKD: 320_000,
-    monthlyInvestmentHKD: 8_000,
-    monthlyFunHKD: 5_000,
   },
 };
 
@@ -43,15 +41,13 @@ describe("deriveJourneyOverview", () => {
       "transport",
       "insurance",
       "discretionary",
-      "fun",
-      "investment",
       "surplus",
     ]);
-    // 50k − 25k expenses − 5k fun − 8k investing = 12k surplus
-    expect(overview.monthlySurplusHKD).toBe(12_000);
+    // 50k − 25k expenses = 25k surplus (fun & monthly investing removed in v4)
+    expect(overview.monthlySurplusHKD).toBe(25_000);
     expect(
       overview.cashFlowSlices.find((s) => s.key === "surplus")?.amountHKD,
-    ).toBe(12_000);
+    ).toBe(25_000);
 
     expect(overview.assetsSlices).toEqual([
       expect.objectContaining({ key: "liquid", amountHKD: 180_000 }),

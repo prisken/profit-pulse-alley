@@ -33,7 +33,6 @@ export default function WorkshopTouchFixture() {
         targetAmountHKD: 120_000,
         targetAge: 40,
         targetYear: nowYear + 3,
-        goalType: "spend",
       },
       {
         id: "g2",
@@ -42,14 +41,11 @@ export default function WorkshopTouchFixture() {
         targetAmountHKD: 800_000,
         targetAge: 40,
         targetYear: nowYear + 8,
-        goalType: "spend",
       },
     ],
   });
   const [investment, setInvestment] = useState<InvestmentLayer>({
     lumpSumHKD: 5000,
-    monthlyInvestmentHKD: 0,
-    monthlyFunHKD: 1000,
     riskAllocation: { low: 40, mid: 40, high: 20 },
   });
   const [scrubYear, setScrubYear] = useState(nowYear);

@@ -353,11 +353,9 @@ function resolveBaselineTimeline(
     retirementAge: Math.min(80, Math.max(ctx.age + 1, Math.round(ctx.retirementAge))),
     monthlyIncome: ctx.monthlyIncome,
     monthlyExpenses: ctx.expenses.totalHKD,
-    monthlyFun: ctx.pyramid.investment.monthlyFunHKD,
     emergencyFundSavedHKD: ctx.pyramid.emergencyFund.savedAmountHKD,
     investment: {
       lumpSumHKD: ctx.pyramid.investment.lumpSumHKD,
-      monthlyInvestmentHKD: ctx.pyramid.investment.monthlyInvestmentHKD,
       allocation: ctx.pyramid.investment.riskAllocation,
     },
     goals: activeGoalsForJourney(ctx.pyramid, ctx.journey),

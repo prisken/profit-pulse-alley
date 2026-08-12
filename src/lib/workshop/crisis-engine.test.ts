@@ -37,15 +37,12 @@ function pyramid(overrides?: {
           targetAmountHKD: 150_000,
           targetAge: 40,
           targetYear: NOW_YEAR + 5,
-          goalType: "spend",
         },
       ],
     },
     investment: {
       riskAllocation: { low: 40, mid: 40, high: 20 },
       lumpSumHKD: 400_000,
-      monthlyInvestmentHKD: 8_000,
-      monthlyFunHKD: 5_000,
       ...overrides?.investment,
     },
   };
@@ -68,11 +65,9 @@ function baseline(pyr: PyramidState = pyramid()) {
     retirementAge: 65,
     monthlyIncome: 50_000,
     monthlyExpenses: expenses.totalHKD,
-    monthlyFun: pyr.investment.monthlyFunHKD,
     emergencyFundSavedHKD: pyr.emergencyFund.savedAmountHKD,
     investment: {
       lumpSumHKD: pyr.investment.lumpSumHKD,
-      monthlyInvestmentHKD: pyr.investment.monthlyInvestmentHKD,
       allocation: pyr.investment.riskAllocation,
     },
     goals: pyr.goals.goals,
@@ -152,37 +147,35 @@ describe("computeCoverageOffset", () => {
 });
 
 describe("applyCutOrder", () => {
-  it("absorbs fun → discretionary → liquid → invested in order", () => {
-    // fun annual 60k, disc annual 48k, liquid 100k, invested 200k
+  it("absorbs discretionary → liquid → invested in order (fun removed in v4)", () => {
+    // disc annual 48k, liquid 100k, invested 200k
     const cut = applyCutOrder({
       toAbsorbHKD: 250_000,
-      monthlyFunHKD: 5_000,
       monthlyDiscretionaryHKD: 4_000,
       liquidPoolHKD: 100_000,
       investedPoolHKD: 200_000,
     });
-    expect(cut.funAbsorbedHKD).toBe(60_000);
+    expect(cut.funAbsorbedHKD).toBe(0);
     expect(cut.discretionaryAbsorbedHKD).toBe(48_000);
     expect(cut.liquidAbsorbedHKD).toBe(100_000);
-    // 250k - 60k - 48k - 100k = 42k from invested
-    expect(cut.investedAbsorbedHKD).toBe(42_000);
+    // 250k - 48k - 100k = 102k from invested
+    expect(cut.investedAbsorbedHKD).toBe(102_000);
     expect(cut.remainingUncoveredHKD).toBe(0);
-    expect(cut.investedRemainingHKD).toBe(158_000);
+    expect(cut.investedRemainingHKD).toBe(98_000);
   });
 
   it("records remaining when pools are insufficient", () => {
     const cut = applyCutOrder({
       toAbsorbHKD: 500_000,
-      monthlyFunHKD: 1_000,
       monthlyDiscretionaryHKD: 1_000,
       liquidPoolHKD: 10_000,
       investedPoolHKD: 10_000,
     });
-    expect(cut.funAbsorbedHKD).toBe(12_000);
+    expect(cut.funAbsorbedHKD).toBe(0);
     expect(cut.discretionaryAbsorbedHKD).toBe(12_000);
     expect(cut.liquidAbsorbedHKD).toBe(10_000);
     expect(cut.investedAbsorbedHKD).toBe(10_000);
-    expect(cut.remainingUncoveredHKD).toBe(456_000);
+    expect(cut.remainingUncoveredHKD).toBe(468_000);
   });
 });
 
@@ -243,8 +236,9 @@ describe("applyCrisis", () => {
     expect(result.coverage).not.toBeNull();
     expect(result.coverage!.coveredHKD).toBe(80_000);
     expect(result.coverage!.uncoveredHKD).toBe(20_000);
-    // Only 20k flows through cut order (fun first)
-    expect(result.cutOrder.funAbsorbedHKD).toBe(20_000);
+    // Only 20k flows through cut order (discretionary first in v4)
+    expect(result.cutOrder.funAbsorbedHKD).toBe(0);
+    expect(result.cutOrder.discretionaryAbsorbedHKD).toBe(20_000);
     expect(result.cutOrder.liquidAbsorbedHKD).toBe(0);
 
     const impacts = buildCrisisImpactsFromEngine(result);
@@ -260,8 +254,6 @@ describe("applyCrisis", () => {
       investment: {
         riskAllocation: { low: 100, mid: 0, high: 0 },
         lumpSumHKD: 50_000,
-        monthlyInvestmentHKD: 0,
-        monthlyFunHKD: 1_000, // 12k/yr
       },
       emergencyFund: { savedAmountHKD: 80_000 },
     });
@@ -287,11 +279,12 @@ describe("applyCrisis", () => {
 
     expect(result.coverage!.coveredHKD).toBe(0);
     expect(result.coverage!.uncoveredHKD).toBe(200_000);
-    expect(result.cutOrder.funAbsorbedHKD).toBe(12_000);
+    // Fun is gone (v4): discretionary 48k → liquid 80k → invested 50k.
+    expect(result.cutOrder.funAbsorbedHKD).toBe(0);
     expect(result.cutOrder.discretionaryAbsorbedHKD).toBe(48_000);
     expect(result.cutOrder.liquidAbsorbedHKD).toBe(80_000);
     expect(result.cutOrder.investedAbsorbedHKD).toBe(50_000);
-    expect(result.cutOrder.remainingUncoveredHKD).toBe(10_000);
+    expect(result.cutOrder.remainingUncoveredHKD).toBe(22_000);
   });
 
   it("market_crash hits investedPool only (no protection, drop = pct × invested)", () => {
@@ -299,8 +292,6 @@ describe("applyCrisis", () => {
       investment: {
         riskAllocation: { low: 20, mid: 40, high: 40 },
         lumpSumHKD: 500_000,
-        monthlyInvestmentHKD: 0,
-        monthlyFunHKD: 2_000,
       },
     });
     const result = applyCrisis(
@@ -339,8 +330,6 @@ describe("applyCrisis", () => {
       investment: {
         riskAllocation: { low: 0, mid: 100, high: 0 },
         lumpSumHKD: 10_000,
-        monthlyInvestmentHKD: 0,
-        monthlyFunHKD: 0,
       },
       goals: {
         goals: [
@@ -351,7 +340,6 @@ describe("applyCrisis", () => {
             targetAmountHKD: 400_000,
             targetAge: 38,
             targetYear: NOW_YEAR + 3,
-            goalType: "spend",
           },
         ],
       },
@@ -384,53 +372,24 @@ describe("applyCrisis", () => {
     ).toBe(true);
   });
 
-  it("shocked timeline caps invested contributions by reduced surplus", () => {
+  it("shocked timeline reduces working-year surplus flowing to liquid", () => {
     const pyr = pyramid({
       investment: {
         riskAllocation: { low: 100, mid: 0, high: 0 },
         lumpSumHKD: 100_000,
-        monthlyInvestmentHKD: 20_000,
-        monthlyFunHKD: 0,
       },
     });
     const before = baseline(pyr);
-    const firstYearContribution = before.rows[0]!.investedContributionHKD;
-    expect(firstYearContribution).toBeGreaterThan(0);
+    const firstYearLiquid = before.rows[0]!.liquidPool;
 
-    const result = applyCrisis(
-      before,
-      {
-        age: 35,
-        retirementAge: 65,
-        monthlyIncome: 50_000,
-        industry: "Tech",
-        pyramid: pyr,
-        expenses,
-        nowYear: NOW_YEAR,
-      },
-      {
-        crisisType: "job_loss",
-        oneTimeCostHKD: 0,
-        durationMonths: 12,
-        monthlyIncomeImpactPercent: 80,
-        incomeHitPct: 80,
-      },
-    );
-
-    // Engine re-run uses min(monthlyInvest×12, surplus); income shock shrinks surplus.
-    expect(result.incomeHitPct).toBe(80);
-    // Contribution cannot exceed shocked surplus — baseline had room to invest;
-    // after an 80% income hit with ~25k expenses, surplus is tight or negative.
     const shocked = runLifeTimeline({
       age: 35,
       retirementAge: 65,
       monthlyIncome: 50_000,
       monthlyExpenses: expenses.totalHKD,
-      monthlyFun: 0,
       emergencyFundSavedHKD: pyr.emergencyFund.savedAmountHKD,
       investment: {
         lumpSumHKD: pyr.investment.lumpSumHKD,
-        monthlyInvestmentHKD: 20_000,
         allocation: { low: 100, mid: 0, high: 0 },
       },
       goals: pyr.goals.goals,
@@ -438,9 +397,7 @@ describe("applyCrisis", () => {
       nowYear: NOW_YEAR,
       incomeShock: { hitPct: 80, durationMonths: 12 },
     });
-    expect(shocked.rows[0]!.investedContributionHKD).toBeLessThan(
-      firstYearContribution,
-    );
+    expect(shocked.rows[0]!.liquidPool).toBeLessThan(firstYearLiquid);
   });
 });
 
@@ -456,7 +413,6 @@ describe("journey-aware crisis plan", () => {
             targetAmountHKD: 150_000,
             targetAge: 40,
             targetYear: NOW_YEAR + 5,
-            goalType: "spend",
           },
           {
             id: "yacht",
@@ -465,7 +421,6 @@ describe("journey-aware crisis plan", () => {
             targetAmountHKD: 2_000_000,
             targetAge: 50,
             targetYear: NOW_YEAR + 15,
-            goalType: "spend",
           },
         ],
       },
@@ -476,11 +431,9 @@ describe("journey-aware crisis plan", () => {
       retirementAge: 65,
       monthlyIncome: 50_000,
       monthlyExpenses: expenses.totalHKD,
-      monthlyFun: pyr.investment.monthlyFunHKD,
       emergencyFundSavedHKD: pyr.emergencyFund.savedAmountHKD,
       investment: {
         lumpSumHKD: pyr.investment.lumpSumHKD,
-        monthlyInvestmentHKD: pyr.investment.monthlyInvestmentHKD,
         allocation: pyr.investment.riskAllocation,
       },
       goals: pyr.goals.goals.filter((g) => g.id !== "yacht"),
@@ -512,13 +465,7 @@ describe("journey-aware crisis plan", () => {
     expect(result.goalDelays.some((g) => g.goalId === "yacht")).toBe(false);
   });
 
-  it("uses post-squeeze expense and fun numbers in the cut order", () => {
-    const fullFun = pyramid({
-      investment: { monthlyFunHKD: 5_000 },
-    });
-    const squeezedFun = pyramid({
-      investment: { monthlyFunHKD: 1_000 },
-    });
+  it("uses post-squeeze expense numbers in the cut order (discretionary first)", () => {
     const fullExpenses: ExpensesState = {
       ...expenses,
       totalHKD: 25_000,
@@ -533,20 +480,19 @@ describe("journey-aware crisis plan", () => {
       ),
     };
 
-    const beforeTimeline = baseline(fullFun);
+    const basePyr = pyramid();
+    const beforeTimeline = baseline(basePyr);
     const afterTimeline = runLifeTimeline({
       age: 35,
       retirementAge: 65,
       monthlyIncome: 50_000,
       monthlyExpenses: squeezedExpenses.totalHKD,
-      monthlyFun: squeezedFun.investment.monthlyFunHKD,
-      emergencyFundSavedHKD: squeezedFun.emergencyFund.savedAmountHKD,
+      emergencyFundSavedHKD: basePyr.emergencyFund.savedAmountHKD,
       investment: {
-        lumpSumHKD: squeezedFun.investment.lumpSumHKD,
-        monthlyInvestmentHKD: squeezedFun.investment.monthlyInvestmentHKD,
-        allocation: squeezedFun.investment.riskAllocation,
+        lumpSumHKD: basePyr.investment.lumpSumHKD,
+        allocation: basePyr.investment.riskAllocation,
       },
-      goals: squeezedFun.goals.goals,
+      goals: basePyr.goals.goals,
       industry: "Tech",
       nowYear: NOW_YEAR,
     });
@@ -566,7 +512,7 @@ describe("journey-aware crisis plan", () => {
         retirementAge: 65,
         monthlyIncome: 50_000,
         industry: "Tech",
-        pyramid: fullFun,
+        pyramid: basePyr,
         expenses: fullExpenses,
         nowYear: NOW_YEAR,
       },
@@ -579,27 +525,26 @@ describe("journey-aware crisis plan", () => {
         retirementAge: 65,
         monthlyIncome: 50_000,
         industry: "Tech",
-        pyramid: squeezedFun,
+        pyramid: basePyr,
         expenses: squeezedExpenses,
         nowYear: NOW_YEAR,
       },
       shock,
     );
 
-    // Post-squeeze plan has less fun cushion → fun absorbs less of the same bill,
-    // so discretionary and/or liquid take more of the hit.
-    expect(afterCrisis.cutOrder.funAbsorbedHKD).toBeLessThan(
-      beforeCrisis.cutOrder.funAbsorbedHKD,
-    );
+    // Fun is gone (v4): the cut order starts at discretionary, so a post-squeeze
+    // plan with less discretionary cushion absorbs less before hitting liquid.
+    expect(beforeCrisis.cutOrder.funAbsorbedHKD).toBe(0);
+    expect(afterCrisis.cutOrder.funAbsorbedHKD).toBe(0);
     expect(
-      afterCrisis.cutOrder.discretionaryAbsorbedHKD +
-        afterCrisis.cutOrder.liquidAbsorbedHKD,
-    ).toBeGreaterThan(
-      beforeCrisis.cutOrder.discretionaryAbsorbedHKD +
-        beforeCrisis.cutOrder.liquidAbsorbedHKD,
+      afterCrisis.cutOrder.discretionaryAbsorbedHKD,
+    ).toBeLessThanOrEqual(beforeCrisis.cutOrder.discretionaryAbsorbedHKD);
+    expect(
+      afterCrisis.cutOrder.liquidAbsorbedHKD +
+        afterCrisis.cutOrder.investedAbsorbedHKD,
+    ).toBeGreaterThanOrEqual(
+      beforeCrisis.cutOrder.liquidAbsorbedHKD +
+        beforeCrisis.cutOrder.investedAbsorbedHKD,
     );
-    // Engine inputs are the mutated monthly fun / discretionary amounts.
-    expect(afterCrisis.cutOrder.funAbsorbedHKD).toBeLessThanOrEqual(12_000);
-    expect(beforeCrisis.cutOrder.funAbsorbedHKD).toBeGreaterThan(12_000);
   });
 });
