@@ -73,6 +73,12 @@ export default async function AdminPage() {
             >
               {t("auth.admin.matchingPulseLink")}
             </Link>
+            <Link
+              href="/admin/workshop"
+              className="font-medium text-emerald-400 underline-offset-4 hover:text-emerald-300 hover:underline"
+            >
+              {t("auth.admin.quickActions.workshopLeads")}
+            </Link>
           </p>
         </header>
 

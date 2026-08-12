@@ -240,7 +240,7 @@ export const authAppEnMessages = {
   "auth.admin.quickActions.hub": "View Market Pulse Hub",
   "auth.admin.quickActions.play": "View Play Page",
   "auth.admin.quickActions.leaderboard": "View Leaderboard",
-  "auth.admin.quickActions.workshopLeads": "Workshop leads →",
+  "auth.admin.quickActions.workshopLeads": "Workshop leads",
 
   "auth.admin.matchingPulse.heading": "Matching Pulse",
   "auth.admin.matchingPulse.awaitingOne":
@@ -1398,7 +1398,7 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.admin.quickActions.hub": "查看 Market Pulse 主頁",
   "auth.admin.quickActions.play": "查看遊玩頁",
   "auth.admin.quickActions.leaderboard": "查看排行榜",
-  "auth.admin.quickActions.workshopLeads": "Workshop 名單 →",
+  "auth.admin.quickActions.workshopLeads": "Workshop 名單",
 
   "auth.admin.matchingPulse.heading": "Matching Pulse",
   "auth.admin.matchingPulse.awaitingOne": "有 {count} 則請求待審核",
