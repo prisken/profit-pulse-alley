@@ -23,10 +23,23 @@ export const runtime = "nodejs";
 const MAX_ATTEMPTS = 5;
 const PAGE_SIZE = 25;
 
+/**
+ * Minimal pyramid JSON so the PDF route can render a (sparse) blueprint for
+ * smoke-test sessions. A real player session carries full state.
+ */
+const TEST_PYRAMID = {
+  protection: { medicalCoveragePercent: 0, criticalIllnessAmountHKD: 0 },
+  emergencyFund: { savedAmountHKD: 0, targetMonths: 6 },
+  goals: { enabled: [], monthlyContributionHKD: 0 },
+  investment: { monthlyContributionHKD: 0, riskProfile: "balanced" },
+};
+
 type QueueMarkBody = {
   leadId?: unknown;
   ok?: unknown;
   error?: unknown;
+  action?: unknown;
+  phone?: unknown;
 };
 
 export async function GET(request: Request) {
@@ -67,6 +80,49 @@ export async function POST(request: Request) {
     body = (await request.json()) as QueueMarkBody;
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  // Smoke-test helper: fabricate a minimal session + lead queued for WhatsApp
+  // delivery. Lets the delivery worker (and Prisken) verify the full chain
+  // (queue -> PDF -> bridge -> WhatsApp) without completing a whole game.
+  if (body.action === "test") {
+    const phone =
+      typeof body.phone === "string" ? body.phone.trim().replace(/\s+/g, "") : "";
+    if (!/^\+\d{8,15}$/.test(phone)) {
+      return NextResponse.json(
+        { ok: false, error: "phone must be E.164 like +85260147819" },
+        { status: 400 },
+      );
+    }
+    const session = await prisma.workshopSession.create({
+      data: {
+        age: 35,
+        retirementAge: 65,
+        monthlyIncome: 50_000,
+        industry: "Test",
+        tone: "professional",
+        aiPyramidJson: TEST_PYRAMID,
+        finalPyramidJson: TEST_PYRAMID,
+      },
+      select: { id: true },
+    });
+    const lead = await prisma.workshopLead.create({
+      data: {
+        sessionId: session.id,
+        name: "Test Lead",
+        email: "",
+        phone,
+        selectedGoal: "Smoke test",
+        whatsappPdfRequestedAt: new Date(),
+      },
+      select: { id: true },
+    });
+    return NextResponse.json({
+      ok: true,
+      leadId: lead.id,
+      sessionId: session.id,
+      pdfUrl: `/api/workshop/pdf/${encodeURIComponent(session.id)}`,
+    });
   }
 
   const leadId = typeof body.leadId === "string" ? body.leadId : "";
