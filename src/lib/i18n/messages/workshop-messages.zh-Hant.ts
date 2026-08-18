@@ -444,7 +444,11 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
 
   "workshop.capture.nameLabel": "姓名",
   "workshop.capture.emailLabel": "電郵",
-  "workshop.capture.phoneLabel": "電話",
+  "workshop.capture.phoneLabel": "電話 / WhatsApp",
+  "workshop.capture.whatsappHint":
+    "填寫 WhatsApp 號碼，我們亦會將藍圖發送至你的 WhatsApp。",
+  "workshop.capture.whatsappSentNote":
+    "我們亦會將副本發送至你的 WhatsApp——通常幾分鐘內送達。",
   "workshop.capture.phoneRequired": "必須填寫電話號碼。",
   "workshop.capture.phoneInvalid":
     "請輸入有效電話號碼（例如 +85212345678，或其他 +國家碼）。",

@@ -140,6 +140,11 @@ export default function WorkshopCaptureStep({
             {t("workshop.capture.thankYouBody")}{" "}
             <span className="font-medium text-emerald-800">{goalTitle}</span>
           </p>
+          {phone.trim() ? (
+            <p className="mx-auto mt-3 max-w-md rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-2.5 text-pretty text-xs leading-relaxed text-sky-900">
+              {t("workshop.capture.whatsappSentNote")}
+            </p>
+          ) : null}
         </div>
 
         <WorkshopStickyFooter
@@ -168,6 +173,10 @@ export default function WorkshopCaptureStep({
 
       <p className="text-xs leading-relaxed text-slate-400">
         {t("workshop.capture.optionalHint")}
+      </p>
+
+      <p className="rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-2.5 text-xs leading-relaxed text-sky-900">
+        {t("workshop.capture.whatsappHint")}
       </p>
 
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm leading-relaxed text-emerald-900">

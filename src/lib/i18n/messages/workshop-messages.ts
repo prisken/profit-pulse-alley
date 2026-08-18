@@ -487,7 +487,11 @@ export const workshopEnMessages = {
 
   "workshop.capture.nameLabel": "Name",
   "workshop.capture.emailLabel": "Email",
-  "workshop.capture.phoneLabel": "Phone",
+  "workshop.capture.phoneLabel": "Phone / WhatsApp",
+  "workshop.capture.whatsappHint":
+    "Enter your WhatsApp number and we'll send your blueprint there too.",
+  "workshop.capture.whatsappSentNote":
+    "We're sending a copy to your WhatsApp as well — it usually lands within a few minutes.",
   "workshop.capture.phoneRequired": "Phone number is required.",
   "workshop.capture.phoneInvalid":
     "Enter a valid phone number (e.g. +85212345678 or another +country code).",

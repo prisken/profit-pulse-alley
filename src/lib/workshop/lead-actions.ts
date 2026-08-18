@@ -150,6 +150,9 @@ export async function captureWorkshopLeadAction(
         phone,
         selectedGoal,
         ...additiveLeadFields,
+        // Queue a WhatsApp delivery when a phone was provided. The delivery
+        // worker only picks up leads with requestedAt set and sentAt unset.
+        whatsappPdfRequestedAt: phone ? new Date() : null,
       },
       update: {
         name: name ?? "",
@@ -157,6 +160,9 @@ export async function captureWorkshopLeadAction(
         phone,
         selectedGoal,
         ...additiveLeadFields,
+        // Re-queue only if the player re-submits WITH a phone. If the PDF was
+        // already delivered (sentAt set), the worker ignores this lead anyway.
+        ...(phone ? { whatsappPdfRequestedAt: new Date() } : {}),
       },
       select: { id: true },
     });
