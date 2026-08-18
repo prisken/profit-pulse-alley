@@ -570,6 +570,8 @@ model Booking {
   whatsappQueuedAt DateTime?
   whatsappSentAt   DateTime?
   whatsappError    String?
+  adminAlertSentAt DateTime?
+  reminderSentAt   DateTime?
   whatsappQueue    BookingWhatsAppQueue?
   createdAt        DateTime  @default(now())
 

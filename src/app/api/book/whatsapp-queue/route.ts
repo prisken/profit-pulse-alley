@@ -19,6 +19,8 @@ export const runtime = "nodejs";
  */
 const MAX_ATTEMPTS = 5;
 const PAGE_SIZE = 25;
+/** Reminder window: send when the session starts in 23–25 hours. */
+const REMINDER_WINDOW_HOURS = [23, 25] as const;
 
 export async function GET(request: Request) {
   if (!isAuthorizedCronRequest(request)) {
@@ -30,6 +32,30 @@ export async function GET(request: Request) {
     take: PAGE_SIZE,
     include: { booking: { select: { id: true, name: true, slotStart: true } } },
   });
+  const now = Date.now();
+  const [adminAlerts, reminders] = await Promise.all([
+    // New bookings Prisken hasn't been pinged about yet (last 72h).
+    prisma.booking.findMany({
+      where: { status: "CONFIRMED", adminAlertSentAt: null, createdAt: { gte: new Date(now - 72 * 3600 * 1000) } },
+      orderBy: { createdAt: "asc" },
+      take: 5,
+      select: { id: true, name: true, email: true, whatsapp: true, slotStart: true, createdAt: true },
+    }),
+    // Client reminders: session starts in ~24h, not yet reminded.
+    prisma.booking.findMany({
+      where: {
+        status: "CONFIRMED",
+        reminderSentAt: null,
+        slotStart: {
+          gte: new Date(now + REMINDER_WINDOW_HOURS[0] * 3600 * 1000),
+          lte: new Date(now + REMINDER_WINDOW_HOURS[1] * 3600 * 1000),
+        },
+      },
+      orderBy: { slotStart: "asc" },
+      take: PAGE_SIZE,
+      select: { id: true, name: true, whatsapp: true, slotStart: true },
+    }),
+  ]);
   return NextResponse.json({
     ok: true,
     items: pending.map((q) => ({
@@ -39,6 +65,20 @@ export async function GET(request: Request) {
       name: q.booking.name,
       slotStart: q.booking.slotStart.toISOString(),
     })),
+    adminAlerts: adminAlerts.map((b) => ({
+      bookingId: b.id,
+      name: b.name,
+      email: b.email,
+      whatsapp: b.whatsapp,
+      slotStart: b.slotStart.toISOString(),
+      createdAt: b.createdAt.toISOString(),
+    })),
+    reminders: reminders.map((b) => ({
+      bookingId: b.id,
+      name: b.name,
+      whatsapp: b.whatsapp,
+      slotStart: b.slotStart.toISOString(),
+    })),
   });
 }
 
@@ -46,7 +86,13 @@ export async function POST(request: Request) {
   if (!isAuthorizedCronRequest(request)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
-  let body: { bookingId?: unknown; ok?: unknown; error?: unknown };
+  let body: {
+    bookingId?: unknown;
+    ok?: unknown;
+    error?: unknown;
+    adminOk?: unknown;
+    reminderOk?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -78,6 +124,30 @@ export async function POST(request: Request) {
       }),
     ]);
     return NextResponse.json({ ok: true });
+  }
+
+  // Admin ping delivered — mark so it isn't re-sent.
+  if (body.adminOk === true) {
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { adminAlertSentAt: new Date() },
+    });
+    return NextResponse.json({ ok: true });
+  }
+  if (body.adminOk === false) {
+    return NextResponse.json({ ok: true, retry: true }); // not marked -> next poll retries
+  }
+
+  // 24h reminder delivered — mark so it isn't re-sent.
+  if (body.reminderOk === true) {
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { reminderSentAt: new Date() },
+    });
+    return NextResponse.json({ ok: true });
+  }
+  if (body.reminderOk === false) {
+    return NextResponse.json({ ok: true, retry: true });
   }
 
   // Failed attempt — retry until MAX_ATTEMPTS, then give up.

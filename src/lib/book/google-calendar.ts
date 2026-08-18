@@ -23,6 +23,7 @@ function requireEnv(): {
   clientSecret: string;
   refreshToken: string;
   calendarId: string;
+  busyCalendarIds: string[];
 } {
   const clientId = process.env.GOG_CLIENT_ID?.trim();
   const clientSecret = process.env.GOG_CLIENT_SECRET?.trim();
@@ -32,12 +33,12 @@ function requireEnv(): {
       "Booking calendar is not configured (GOG_CLIENT_ID / GOG_CLIENT_SECRET / GOG_CALENDAR_REFRESH_TOKEN).",
     );
   }
-  return {
-    clientId,
-    clientSecret,
-    refreshToken,
-    calendarId: process.env.GOG_CALENDAR_ID?.trim() || "priskenlo@gmail.com",
-  };
+  const calendarId = process.env.GOG_CALENDAR_ID?.trim() || "priskenlo@gmail.com";
+  const busyIds = (process.env.GOG_CALENDAR_BUSY_IDS?.trim() || `${calendarId},priskenlo@gmail.com`)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return { clientId, clientSecret, refreshToken, calendarId, busyCalendarIds: busyIds };
 }
 
 async function fetchAccessToken(): Promise<{ access_token: string; expires_in?: number }> {
@@ -70,9 +71,9 @@ export async function getGoogleAccessToken(): Promise<string> {
   return tokens.access_token;
 }
 
-/** Busy intervals for the calendar between `from` and `to` (HKT instant range). */
+/** Busy intervals across the busy calendars (PPA 1-on-1 + Prisken's main). */
 export async function getBusyIntervals(from: Date, to: Date): Promise<BusyInterval[]> {
-  const { calendarId } = requireEnv();
+  const { busyCalendarIds } = requireEnv();
   const token = await getGoogleAccessToken();
   const res = await fetch(FREE_BUSY_URL, {
     method: "POST",
@@ -84,7 +85,7 @@ export async function getBusyIntervals(from: Date, to: Date): Promise<BusyInterv
       timeMin: from.toISOString(),
       timeMax: to.toISOString(),
       timeZone: "Asia/Hong_Kong",
-      items: [{ id: calendarId }],
+      items: busyCalendarIds.map((id) => ({ id })),
     }),
   });
   if (!res.ok) {
@@ -94,8 +95,13 @@ export async function getBusyIntervals(from: Date, to: Date): Promise<BusyInterv
   const data = (await res.json()) as {
     calendars?: Record<string, { busy?: { start: string; end: string }[] }>;
   };
-  const busy = data.calendars?.[calendarId]?.busy ?? [];
-  return busy.map((b) => ({ start: new Date(b.start), end: new Date(b.end) }));
+  const busy: BusyInterval[] = [];
+  for (const id of busyCalendarIds) {
+    for (const b of data.calendars?.[id]?.busy ?? []) {
+      busy.push({ start: new Date(b.start), end: new Date(b.end) });
+    }
+  }
+  return busy;
 }
 
 export type BookingEventInput = {
