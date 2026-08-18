@@ -14,17 +14,25 @@ export type SendProductEmailResult =
   | { ok: true; providerMessageId?: string }
   | { ok: false; skipped?: boolean; error: string };
 
+function stripOuterQuotes(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
 function resolveSmtpConfig():
   | { server: string; from: string; replyTo?: string }
   | null {
   const server = process.env.EMAIL_SERVER?.trim();
-  const from = process.env.EMAIL_FROM?.trim();
+  const from = stripOuterQuotes(process.env.EMAIL_FROM ?? "");
 
   if (!server || !from) {
     return null;
   }
 
-  const replyTo = process.env.EMAIL_REPLY_TO?.trim();
+  const replyTo = stripOuterQuotes(process.env.EMAIL_REPLY_TO ?? "");
   return {
     server,
     from,
