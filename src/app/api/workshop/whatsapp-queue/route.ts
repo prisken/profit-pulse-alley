@@ -25,13 +25,20 @@ const PAGE_SIZE = 25;
 
 /**
  * Minimal pyramid JSON so the PDF route can render a (sparse) blueprint for
- * smoke-test sessions. A real player session carries full state.
+ * smoke-test sessions. A real player session carries full state. Shape = v4
+ * (see normalizePyramidState: nested under "pyramid", goals.goals[],
+ * investment.riskAllocation).
  */
 const TEST_PYRAMID = {
-  protection: { medicalCoveragePercent: 0, criticalIllnessAmountHKD: 0 },
-  emergencyFund: { savedAmountHKD: 0, targetMonths: 6 },
-  goals: { enabled: [], monthlyContributionHKD: 0 },
-  investment: { monthlyContributionHKD: 0, riskProfile: "balanced" },
+  pyramid: {
+    protection: { medicalCoveragePercent: 0, criticalIllnessAmountHKD: 0 },
+    emergencyFund: { savedAmountHKD: 0 },
+    goals: { goals: [] },
+    investment: {
+      riskAllocation: { low: 33, mid: 34, high: 33 },
+      lumpSumHKD: 0,
+    },
+  },
 };
 
 type QueueMarkBody = {
