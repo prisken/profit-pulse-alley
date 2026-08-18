@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import BookingFlow from "@/components/book/BookingFlow";
+import { getWeekOptions } from "@/lib/book/availability";
 import { getServerSiteLocale } from "@/lib/i18n/server";
 import type { SiteLocale } from "@/lib/i18n/locales";
 
@@ -209,14 +211,17 @@ export default async function BookPage() {
         </div>
         <div className="mt-8">
           <a
-            href={waLink(BOOK_MESSAGE)}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#book-flow"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-mp-pulse px-7 py-3.5 text-sm font-bold text-black transition hover:brightness-110 mp-focus-pulse"
           >
-            {pick(HERO.cta, locale)} ↗
+            {pick(HERO.cta, locale)} ↓
           </a>
         </div>
+      </section>
+
+      {/* ── Booking flow ──────────────────────────────────── */}
+      <section id="book-flow" className="scroll-mt-20">
+        <BookingFlow initialWeeks={getWeekOptions(new Date())} />
       </section>
 
       {/* ── What you get ─────────────────────────────────────── */}
@@ -274,12 +279,10 @@ export default async function BookPage() {
         </p>
         <div className="mt-6 flex flex-col items-center gap-3">
           <a
-            href={waLink(BOOK_MESSAGE)}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#book-flow"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-mp-pulse px-7 py-3.5 text-sm font-bold text-black transition hover:brightness-110 mp-focus-pulse"
           >
-            {pick(BOTTOM.cta, locale)} ↗
+            {pick(BOTTOM.cta, locale)} ↓
           </a>
           <a
             href={waLink(QUESTION_MESSAGE)}

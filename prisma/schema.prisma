@@ -549,3 +549,44 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+// --- 1-on-1 booking (page /book) ---
+
+model Booking {
+  id               String    @id @default(cuid())
+  name             String
+  email            String
+  whatsapp         String
+  weekKey          String // Monday date "2026-08-24"
+  dayPref          String // weekday | weekend
+  timePref         String // office | after_office
+  slotStart        DateTime // HKT instant (stored as UTC)
+  slotEnd          DateTime
+  status           String    @default("CONFIRMED")
+  calendarEventId  String?
+  calendarLink     String?
+  emailSentAt      DateTime?
+  emailError       String?
+  whatsappQueuedAt DateTime?
+  whatsappSentAt   DateTime?
+  whatsappError    String?
+  whatsappQueue    BookingWhatsAppQueue?
+  createdAt        DateTime  @default(now())
+
+  @@index([slotStart])
+  @@index([email])
+}
+
+model BookingWhatsAppQueue {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  to        String // E.164
+  status    String   @default("PENDING") // PENDING | SENT | FAILED
+  attempts  Int      @default(0)
+  error     String?
+  createdAt DateTime @default(now())
+  sentAt    DateTime?
+
+  @@index([status])
+}

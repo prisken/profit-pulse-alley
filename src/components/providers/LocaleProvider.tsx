@@ -11,12 +11,12 @@ import { useRouter } from "next/navigation";
 
 import { setSiteLocaleAction } from "@/lib/i18n/actions";
 import type { SiteLocale } from "@/lib/i18n/locales";
-import { translate, type MessageKey } from "@/lib/i18n/messages";
+import { translate, translateWith, type MessageKey } from "@/lib/i18n/messages";
 
 type LocaleContextValue = {
   locale: SiteLocale;
   setLocale: (locale: SiteLocale) => Promise<void>;
-  t: (key: MessageKey) => string;
+  t: (key: MessageKey, vars?: Record<string, string | number>) => string;
 };
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -48,7 +48,8 @@ export function LocaleProvider({
     () => ({
       locale: initialLocale,
       setLocale,
-      t: (key) => translate(initialLocale, key),
+      t: (key, vars) =>
+        vars ? translateWith(initialLocale, key, vars) : translate(initialLocale, key),
     }),
     [initialLocale, setLocale],
   );

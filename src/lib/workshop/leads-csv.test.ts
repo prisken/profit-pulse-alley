@@ -19,7 +19,6 @@ const sampleLead: WorkshopAdminLeadRow = {
   assetsDepletedAtAge: 82,
   runwayBeforeAge: 63,
   runwayAfterAge: 81,
-  monthlyIncomeHKD: 80000,
   actionGoalLevers: "instant,structural,behavioral",
   weakestLayer: "foundation",
   riskProfile: "balanced",
