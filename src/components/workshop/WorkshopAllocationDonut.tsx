@@ -1,5 +1,6 @@
 "use client";
 
+import { icons, type LucideIcon } from "lucide-react";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
 import { useTranslations } from "@/components/providers/LocaleProvider";
@@ -40,17 +41,37 @@ const SIZE_CONFIG = {
     centerValueClass: "text-sm font-semibold tabular-nums text-slate-900",
   },
   compact: {
-    height: 132,
-    outer: 52,
-    inner: 32,
-    chartClass: "mx-auto h-[132px] w-full max-w-[148px]",
-    rootClass: "w-full min-w-0 max-w-[168px] overflow-x-hidden",
+    height: 150,
+    outer: 58,
+    inner: 36,
+    // Full-bleed: the donut uses the whole card width (no max-w cap) so
+    // narrow mobile columns don't waste horizontal space.
+    chartClass: "h-[150px] w-full",
+    rootClass: "w-full min-w-0",
     legendClass:
-      "mt-2 flex w-full min-w-0 flex-col gap-1 sm:gap-1.5",
+      "mt-2 grid w-full min-w-0 grid-cols-2 gap-x-3 gap-y-1.5 sm:flex sm:flex-col sm:gap-1.5",
     centerLabelClass: "text-[9px] font-medium uppercase tracking-wide text-slate-500",
     centerValueClass: "text-xs font-semibold tabular-nums text-slate-900",
   },
 } as const;
+
+/** Slice key → lucide icon (legend uses icons instead of text on compact donuts). */
+const SLICE_ICONS: Record<string, string> = {
+  housing: "House",
+  food_living: "Utensils",
+  transport: "Bus",
+  insurance: "Shield",
+  discretionary: "ShoppingBag",
+  fun: "Gamepad2",
+  surplus: "Coins",
+  liquid: "Wallet",
+  invested: "TrendingUp",
+};
+
+function sliceIcon(key: string): LucideIcon {
+  const Icon = icons[SLICE_ICONS[key] as keyof typeof icons];
+  return Icon ?? icons.Circle;
+}
 
 function buildChartData(
   slices: AllocationSlice[],
@@ -140,25 +161,38 @@ export default function WorkshopAllocationDonut({
       >
         {data.map((entry) => {
           const showChanged = highlightChanged && entry.changed;
+          const Icon = sliceIcon(entry.key);
           return (
             <li
               key={entry.key}
               className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-[11px] text-slate-600"
               data-slice-key={entry.key}
               data-changed={showChanged ? "true" : "false"}
+              title={entry.name}
+              aria-label={entry.name}
             >
-              <span
-                className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                style={{
-                  backgroundColor: entry.fill,
-                  outline: showChanged
-                    ? `1.5px dashed ${WORKSHOP_CHART.ink}`
-                    : undefined,
-                  outlineOffset: showChanged ? 1 : undefined,
-                }}
-                aria-hidden
-              />
-              <span className="min-w-0 truncate">{entry.name}</span>
+              {size === "compact" ? (
+                <Icon
+                  className="h-3.5 w-3.5 shrink-0"
+                  style={{ color: entry.fill }}
+                  aria-hidden
+                />
+              ) : (
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                  style={{
+                    backgroundColor: entry.fill,
+                    outline: showChanged
+                      ? `1.5px dashed ${WORKSHOP_CHART.ink}`
+                      : undefined,
+                    outlineOffset: showChanged ? 1 : undefined,
+                  }}
+                  aria-hidden
+                />
+              )}
+              {size !== "compact" ? (
+                <span className="min-w-0 truncate">{entry.name}</span>
+              ) : null}
               <span className="shrink-0 font-mono tabular-nums text-slate-500">
                 {formatCompactHkd(entry.value)}
               </span>

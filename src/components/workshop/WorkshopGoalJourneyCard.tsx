@@ -355,7 +355,7 @@ export default function WorkshopGoalJourneyCard({
         <section className="min-w-0 space-y-3">          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
             {t("workshop.journey.squeezeHeading")}
           </p>
-          <div className="grid min-w-0 grid-cols-1 gap-3 min-[360px]:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="min-w-0 overflow-x-hidden rounded-xl border border-slate-200 bg-white p-2.5">
               <p className="mb-1 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                 {t("workshop.journey.donutCurrent")}
