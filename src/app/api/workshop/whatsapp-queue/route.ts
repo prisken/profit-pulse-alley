@@ -41,6 +41,7 @@ const TEST_PYRAMID = {
 
 type QueueMarkBody = {
   leadId?: unknown;
+  sessionId?: unknown;
   ok?: unknown;
   error?: unknown;
   action?: unknown;
@@ -148,13 +149,18 @@ export async function POST(request: Request) {
   // Re-queue a lead that was already marked sent (or errored) so the delivery
   // worker retries it — used when a delivery went to a malformed number or
   // needs a manual re-push. Resets attempts so it gets a fresh budget.
+  // Accepts either `leadId` or `sessionId` (session id is what ops usually has).
   if (body.action === "requeue") {
     const leadId = typeof body.leadId === "string" ? body.leadId : "";
-    if (!leadId) {
-      return NextResponse.json({ ok: false, error: "leadId is required" }, { status: 400 });
+    const sessionId = typeof body.sessionId === "string" ? body.sessionId : "";
+    if (!leadId && !sessionId) {
+      return NextResponse.json(
+        { ok: false, error: "leadId or sessionId is required" },
+        { status: 400 },
+      );
     }
     const existing = await prisma.workshopLead.findUnique({
-      where: { id: leadId },
+      where: leadId ? { id: leadId } : { sessionId },
       select: { id: true, phone: true },
     });
     if (!existing) {
@@ -167,7 +173,7 @@ export async function POST(request: Request) {
       );
     }
     await prisma.workshopLead.update({
-      where: { id: leadId },
+      where: { id: existing.id },
       data: {
         whatsappPdfSentAt: null,
         whatsappPdfAttempts: 0,
@@ -175,7 +181,7 @@ export async function POST(request: Request) {
         whatsappPdfRequestedAt: new Date(),
       },
     });
-    return NextResponse.json({ ok: true, leadId });
+    return NextResponse.json({ ok: true, leadId: existing.id });
   }
 
   const leadId = typeof body.leadId === "string" ? body.leadId : "";
