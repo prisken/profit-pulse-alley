@@ -329,15 +329,17 @@ export default function WorkshopGoalJourneyCard({
           role="switch"
           aria-checked={allowLiquidation}
           className={[
-            "relative mt-0.5 h-7 w-12 shrink-0 touch-manipulation rounded-full transition-colors",
+            "relative mt-0.5 h-7 w-12 shrink-0 touch-manipulation rounded-full p-0 transition-colors",
             allowLiquidation ? "bg-emerald-500" : "bg-slate-300",
           ].join(" ")}
           onClick={() => handleLiquidationToggle(!allowLiquidation)}
         >
           <span
             className={[
-              "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform",
-              allowLiquidation ? "translate-x-[22px]" : "translate-x-0.5",
+              "absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform",
+              allowLiquidation
+                ? "translate-x-[calc(100%_-_0.25rem)]"
+                : "translate-x-0",
             ].join(" ")}
           />
         </button>
