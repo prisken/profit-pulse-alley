@@ -23,13 +23,13 @@ function mockSession() {
     goalsJson: null,
     riskQuizJson: null,
     goalJourneyJson: null,
-  });
+  } as never);
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockSession();
-  mockedUpsert.mockResolvedValue({ id: "lead-1" });
+  mockedUpsert.mockResolvedValue({ id: "lead-1" } as never);
 });
 
 describe("captureWorkshopLeadAction — WhatsApp PDF queue flag", () => {
