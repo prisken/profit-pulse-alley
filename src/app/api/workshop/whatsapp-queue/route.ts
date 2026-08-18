@@ -47,6 +47,16 @@ type QueueMarkBody = {
   phone?: unknown;
 };
 
+/**
+ * Old leads may hold a bare 8-digit HK number ("60713746") from before
+ * phone normalization. The WhatsApp bridge needs E.164, so expand those
+ * at read time — belt and braces next to validateWorkshopPhone.
+ */
+function toE164(phone: string): string {
+  const p = phone.replace(/[\s\-()]/g, "");
+  return /^\d{8}$/.test(p) ? `+852${p}` : p;
+}
+
 export async function GET(request: Request) {
   if (!isAuthorizedCronRequest(request)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -72,7 +82,12 @@ export async function GET(request: Request) {
     },
   });
 
-  return NextResponse.json({ ok: true, leads });
+  const normalized = leads.map((lead) => ({
+    ...lead,
+    phone: toE164(lead.phone),
+  }));
+
+  return NextResponse.json({ ok: true, leads: normalized });
 }
 
 export async function POST(request: Request) {
@@ -128,6 +143,39 @@ export async function POST(request: Request) {
       sessionId: session.id,
       pdfUrl: `/api/workshop/pdf/${encodeURIComponent(session.id)}`,
     });
+  }
+
+  // Re-queue a lead that was already marked sent (or errored) so the delivery
+  // worker retries it — used when a delivery went to a malformed number or
+  // needs a manual re-push. Resets attempts so it gets a fresh budget.
+  if (body.action === "requeue") {
+    const leadId = typeof body.leadId === "string" ? body.leadId : "";
+    if (!leadId) {
+      return NextResponse.json({ ok: false, error: "leadId is required" }, { status: 400 });
+    }
+    const existing = await prisma.workshopLead.findUnique({
+      where: { id: leadId },
+      select: { id: true, phone: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ ok: false, error: "Lead not found" }, { status: 404 });
+    }
+    if (!existing.phone) {
+      return NextResponse.json(
+        { ok: false, error: "Lead has no phone; nothing to re-queue" },
+        { status: 400 },
+      );
+    }
+    await prisma.workshopLead.update({
+      where: { id: leadId },
+      data: {
+        whatsappPdfSentAt: null,
+        whatsappPdfAttempts: 0,
+        whatsappPdfError: null,
+        whatsappPdfRequestedAt: new Date(),
+      },
+    });
+    return NextResponse.json({ ok: true, leadId });
   }
 
   const leadId = typeof body.leadId === "string" ? body.leadId : "";
