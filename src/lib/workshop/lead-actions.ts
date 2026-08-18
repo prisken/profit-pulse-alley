@@ -63,7 +63,10 @@ function parseStressTestVerdict(goalsJson: unknown): string | null {
 
 /**
  * Validates and saves a WorkshopLead for the given session.
- * Phone is required (+852xxxxxxxx or international 8–15 digits).
+ * Name and email are REQUIRED; phone is optional (used to send the blueprint
+ * PDF over WhatsApp when provided). When the phone IS provided it is
+ * validated; empty values are stored as "" and shown as proxy labels in the
+ * admin console.
  * Additive: stressTestVerdict + profileBehaviorMismatch from session JSON.
  */
 export async function captureWorkshopLeadAction(
@@ -77,14 +80,14 @@ export async function captureWorkshopLeadAction(
 
     const name = input.name?.trim();
     if (!name || name.length < 2) {
-      return { ok: false, error: "Please enter your name.", field: "name" };
+      return { ok: false, error: "workshop.capture.nameRequired", field: "name" };
     }
 
     const email = normalizeEmail(input.email ?? "");
     if (!email || !EMAIL_RE.test(email)) {
       return {
         ok: false,
-        error: "Please enter a valid email address.",
+        error: "workshop.capture.emailRequired",
         field: "email",
       };
     }
@@ -98,9 +101,14 @@ export async function captureWorkshopLeadAction(
       };
     }
 
-    const phoneResult = validateWorkshopPhone(input.phone ?? "");
-    if (!phoneResult.ok) {
-      return { ok: false, error: phoneResult.errorKey, field: "phone" };
+    const rawPhone = input.phone?.trim() ?? "";
+    let phone = "";
+    if (rawPhone) {
+      const phoneResult = validateWorkshopPhone(rawPhone);
+      if (!phoneResult.ok) {
+        return { ok: false, error: phoneResult.errorKey, field: "phone" };
+      }
+      phone = phoneResult.phone;
     }
 
     const session = await prisma.workshopSession.findUnique({
@@ -137,18 +145,24 @@ export async function captureWorkshopLeadAction(
       where: { sessionId },
       create: {
         sessionId,
-        name,
+        name: name ?? "",
         email,
-        phone: phoneResult.phone,
+        phone,
         selectedGoal,
         ...additiveLeadFields,
+        // Queue a WhatsApp delivery when a phone was provided. The delivery
+        // worker only picks up leads with requestedAt set and sentAt unset.
+        whatsappPdfRequestedAt: phone ? new Date() : null,
       },
       update: {
-        name,
+        name: name ?? "",
         email,
-        phone: phoneResult.phone,
+        phone,
         selectedGoal,
         ...additiveLeadFields,
+        // Re-queue only if the player re-submits WITH a phone. If the PDF was
+        // already delivered (sentAt set), the worker ignores this lead anyway.
+        ...(phone ? { whatsappPdfRequestedAt: new Date() } : {}),
       },
       select: { id: true },
     });

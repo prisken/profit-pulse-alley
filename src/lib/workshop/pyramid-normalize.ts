@@ -6,7 +6,6 @@
 import { deriveGoalAge, deriveGoalYear } from "@/lib/workshop/goal-year";
 import type {
   GoalItem,
-  GoalType,
   InvestmentLayer,
   PyramidState,
 } from "@/lib/workshop/types";
@@ -26,13 +25,9 @@ function asFiniteNumber(value: unknown, field: string): number {
   return value;
 }
 
-function parseGoalType(value: unknown): GoalType {
-  return value === "retirementTarget" ? "retirementTarget" : "spend";
-}
-
 /**
  * Normalize one goal from stored JSON (targetAge preferred; targetYear-only ok).
- * Legacy sessions without goalType default to "spend".
+ * Every goal is a spend goal in v4 — legacy goalType is dropped.
  */
 export function normalizeGoalItem(
   value: unknown,
@@ -83,12 +78,11 @@ export function normalizeGoalItem(
     targetAmountHKD,
     targetAge,
     targetYear,
-    goalType: parseGoalType(record.goalType),
     allowLiquidation: record.allowLiquidation === true,
   };
 }
 
-/** Canonical investment shape — monthlyInvestmentHKD defaults to 0 when omitted. */
+/** Canonical investment shape — risk allocation + lump sum only (v4). */
 export function normalizeInvestmentLayer(value: unknown): InvestmentLayer {
   const record = asRecord(value, "investment");
   const riskRaw = asRecord(record.riskAllocation, "investment.riskAllocation");
@@ -99,25 +93,13 @@ export function normalizeInvestmentLayer(value: unknown): InvestmentLayer {
       asFiniteNumber(riskRaw.high, "investment.riskAllocation.high"),
     ),
   };
-  const monthlyFunHKD = Math.max(
-    0,
-    Math.round(asFiniteNumber(record.monthlyFunHKD, "investment.monthlyFunHKD")),
-  );
 
   let lumpSumHKD = 0;
   if (typeof record.lumpSumHKD === "number" && Number.isFinite(record.lumpSumHKD)) {
     lumpSumHKD = Math.max(0, Math.round(record.lumpSumHKD));
   }
 
-  let monthlyInvestmentHKD = 0;
-  if (
-    typeof record.monthlyInvestmentHKD === "number" &&
-    Number.isFinite(record.monthlyInvestmentHKD)
-  ) {
-    monthlyInvestmentHKD = Math.max(0, Math.round(record.monthlyInvestmentHKD));
-  }
-
-  return { riskAllocation, lumpSumHKD, monthlyInvestmentHKD, monthlyFunHKD };
+  return { riskAllocation, lumpSumHKD };
 }
 
 /**

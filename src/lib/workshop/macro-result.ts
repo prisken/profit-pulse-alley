@@ -128,7 +128,6 @@ export function timelineToLegacyStressTest(
         icon: fromPyramid?.icon ?? "Target",
         targetAmountHKD: Math.round(g.inflatedTargetHKD),
         targetYear: startYear + (g.targetAge - startAge),
-        goalType: "spend",
         projectedYear:
           g.attainedAtAge == null
             ? null
@@ -195,7 +194,6 @@ export function parseMacroResultJson(value: unknown): ParsedMacroResult | null {
         icon: typeof row.icon === "string" ? row.icon : "Target",
         targetAmountHKD: asFiniteNumber(row.targetAmountHKD),
         targetYear: Math.round(asFiniteNumber(row.targetYear)),
-        goalType: "spend",
         projectedYear:
           row.projectedYear === null || row.projectedYear === undefined
             ? null
@@ -253,8 +251,6 @@ export function stressTestFromMacroResult(
       investment: {
         riskAllocation: { low: 100, mid: 0, high: 0 },
         lumpSumHKD: 0,
-        monthlyInvestmentHKD: 0,
-        monthlyFunHKD: 0,
       },
     });
   }

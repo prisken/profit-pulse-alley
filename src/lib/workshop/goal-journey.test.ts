@@ -7,6 +7,7 @@ import {
   deriveGoalJourneyDecisionRecap,
   emptyGoalJourneyState,
   isRailGoalLocked,
+  normalizeGoalsLayerForPyramid,
   rerunTimelineForJourney,
 } from "@/lib/workshop/goal-journey";
 import { solveSqueeze } from "@/lib/workshop/squeeze-solver";
@@ -25,7 +26,6 @@ function goal(
     icon: "Target",
     label: { en: partial.id, zhHant: partial.id },
     targetYear: NOW_YEAR + (partial.targetAge - 35),
-    goalType: "spend",
     ...partial,
   };
 }
@@ -41,8 +41,6 @@ function pyramid(overrides?: Partial<PyramidState>): PyramidState {
     investment: {
       riskAllocation: { low: 0, mid: 100, high: 0 },
       lumpSumHKD: 0,
-      monthlyInvestmentHKD: 0,
-      monthlyFunHKD: 0,
     },
   };
   return {
@@ -72,7 +70,7 @@ function expenses(overrides?: Partial<ExpensesState>): ExpensesState {
 }
 
 describe("goal journey", () => {
-  it("builds rail items with spend goals by age and retirement always last", () => {
+  it("builds rail items sorted by target age (all goals are spend goals)", () => {
     const items = buildGoalJourneyRailItems({
       goals: [
         goal({ id: "home", targetAge: 40, targetAmountHKD: 100_000 }),
@@ -80,14 +78,37 @@ describe("goal journey", () => {
           id: "nest",
           targetAge: 65,
           targetAmountHKD: 5_000_000,
-          goalType: "retirementTarget",
         }),
         goal({ id: "trip", targetAge: 36, targetAmountHKD: 30_000 }),
       ],
-      retirementAge: 65,
-      userAge: 35,
     });
     expect(items.map((row) => row.id)).toEqual(["trip", "home", "nest"]);
+  });
+
+  it("normalizes pyramid goals: every goal kept as spend, sorted by age", () => {
+    const normalized = normalizeGoalsLayerForPyramid(
+      [
+        goal({
+          id: "nest-b",
+          targetAge: 70,
+          targetAmountHKD: 3_000_000,
+        }),
+        goal({ id: "home", targetAge: 40, targetAmountHKD: 100_000 }),
+        goal({
+          id: "nest-a",
+          targetAge: 60,
+          targetAmountHKD: 5_000_000,
+        }),
+        goal({ id: "trip", targetAge: 36, targetAmountHKD: 30_000 }),
+      ],
+      { userAge: 35, retirementAge: 65 },
+    );
+    expect(normalized.map((row) => row.id)).toEqual([
+      "trip",
+      "home",
+      "nest-a",
+      "nest-b",
+    ]);
   });
 
   it("locks later rail goals until earlier decisions are applied or given up", () => {
@@ -96,8 +117,6 @@ describe("goal journey", () => {
         goal({ id: "trip", targetAge: 36, targetAmountHKD: 30_000 }),
         goal({ id: "home", targetAge: 40, targetAmountHKD: 100_000 }),
       ],
-      retirementAge: 65,
-      userAge: 35,
     });
     expect(isRailGoalLocked(items, emptyGoalJourneyState(), 0)).toBe(false);
     expect(isRailGoalLocked(items, emptyGoalJourneyState(), 1)).toBe(true);
@@ -168,8 +187,6 @@ describe("goal journey", () => {
       investment: {
         riskAllocation: { low: 0, mid: 100, high: 0 },
         lumpSumHKD: 200_000,
-        monthlyInvestmentHKD: 0,
-        monthlyFunHKD: 0,
       },
       emergencyFund: { savedAmountHKD: 20_000 },
       goals: {
@@ -221,16 +238,14 @@ describe("goal journey", () => {
     expect(after.rows.find((row) => row.age === 36)?.investedLiquidatedHKD).toBeGreaterThan(0);
   });
 
-  it("accepting a squeeze mutates canonical fun and expenses, then improves the rerun outlook", () => {
+  it("accepting a squeeze mutates canonical expenses, then improves the rerun outlook", () => {
     const state = pyramid({
       investment: {
         riskAllocation: { low: 0, mid: 100, high: 0 },
         lumpSumHKD: 0,
-        monthlyInvestmentHKD: 0,
-        monthlyFunHKD: 2_000,
       },
       goals: {
-        goals: [goal({ id: "home", targetAge: 36, targetAmountHKD: 120_000 })],
+        goals: [goal({ id: "home", targetAge: 36, targetAmountHKD: 150_000 })],
       },
     });
     const monthlyExpenses = expenses();
@@ -256,8 +271,6 @@ describe("goal journey", () => {
       targetAge: 36,
       monthlyIncomeHKD: 20_000,
       expenses: monthlyExpenses,
-      monthlyFunHKD: state.investment.monthlyFunHKD,
-      monthlyInvestmentHKD: state.investment.monthlyInvestmentHKD,
     });
 
     expect(recommendation).not.toBeNull();
@@ -289,15 +302,14 @@ describe("goal journey", () => {
       nowYear: NOW_YEAR,
     });
 
-    expect(beforeTimeline.goals.find((row) => row.goalId === "home")?.attainedAtAge).toBe(38);
-    expect(applied.pyramid.investment.monthlyFunHKD).toBe(0);
+    expect(beforeTimeline.goals.find((row) => row.goalId === "home")?.attainedAtAge).toBe(37);
     expect(
       applied.expenses.categories.find((row) => row.key === "discretionary")?.amountHKD,
-    ).toBe(1310);
+    ).toBe(750);
     expect(afterTimeline.goals.find((row) => row.goalId === "home")?.attainedAtAge).toBe(36);
   });
 
-  it("excluded goals never appear in spend projections or retirement targets", () => {
+  it("excluded goals never appear in spend projections", () => {
     const state = pyramid({
       goals: {
         goals: [
@@ -306,7 +318,6 @@ describe("goal journey", () => {
             id: "nest",
             targetAge: 65,
             targetAmountHKD: 5_000_000,
-            goalType: "retirementTarget",
           }),
         ],
       },
@@ -341,7 +352,6 @@ describe("goal journey", () => {
 
     expect(timeline.goals.find((row) => row.goalId === "trip")).toBeUndefined();
     expect(timeline.goals.find((row) => row.goalId === "nest")).toBeUndefined();
-    expect(timeline.retirementTargets.find((row) => row.goalId === "nest")).toBeUndefined();
   });
 
   it("derives decision recap counts, chips, and monthly plan from squeezes", () => {
@@ -350,8 +360,6 @@ describe("goal journey", () => {
         goal({ id: "trip", targetAge: 40, targetAmountHKD: 50_000 }),
         goal({ id: "home", targetAge: 45, targetAmountHKD: 800_000 }),
       ],
-      retirementAge: 65,
-      userAge: 35,
     });
     const exp = expenses({
       categories: [
@@ -371,7 +379,7 @@ describe("goal journey", () => {
             status: "applied",
             allowLiquidation: false,
             acceptedSqueeze: true,
-            squeezeCutsHKD: { fun: 24_000, discretionary: 12_000 },
+            squeezeCutsHKD: { fun: 0, discretionary: 12_000 },
           },
           {
             goalId: "home",
@@ -386,7 +394,6 @@ describe("goal journey", () => {
         goals: [
           {
             goalId: "trip",
-            goalType: "spend",
             targetAge: 40,
             inflatedTargetHKD: 50_000,
             attainedAtAge: 40,
@@ -394,7 +401,6 @@ describe("goal journey", () => {
           },
         ],
         rows: [],
-        retirementTargets: [],
         emergencyFund: { status: "green", targetHKD: 1, targetMonths: 6 },
         retirement: {
           retirementAge: 65,
@@ -403,10 +409,9 @@ describe("goal journey", () => {
           assetsDepletedAtAge: null,
         },
         blendedRate: 0.03,
-        engineRevision: 3,
+        engineRevision: 4,
       },
       expenses: exp,
-      monthlyFunHKD: 1_000,
     });
 
     expect(recap.onTimeCount).toBe(1);
@@ -414,9 +419,9 @@ describe("goal journey", () => {
     expect(recap.givenUpCount).toBe(1);
     expect(recap.chips).toHaveLength(2);
     expect(recap.monthlyPlan).toEqual({
-      // after = 14_000 expenses + 1_000 fun; cuts = (24k+12k)/12 = 3_000
-      beforeTotalHKD: 18_000,
-      afterTotalHKD: 15_000,
+      // after = 14_000 expenses; cut = 12k/12 = 1_000/mo
+      beforeTotalHKD: 15_000,
+      afterTotalHKD: 14_000,
     });
   });
 });

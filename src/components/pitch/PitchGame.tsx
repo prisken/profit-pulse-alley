@@ -278,7 +278,7 @@ export default function PitchGame() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const module: PitchModule | null = useMemo(
+  const mod: PitchModule | null = useMemo(
     () => (archetype && metric ? moduleFor(archetype, metric) : null),
     [archetype, metric],
   );
@@ -341,10 +341,10 @@ export default function PitchGame() {
   }, []);
 
   const submitData = useCallback(async () => {
-    if (!module) return;
+    if (!mod) return;
     const parsed: Record<string, number> = {};
     const errors: Record<string, string> = {};
-    for (const field of module.fields) {
+    for (const field of mod.fields) {
       const value = parseNumericInput(inputs[field.key] ?? "");
       if (value === null || value < 0) {
         errors[field.key] = pick(GAME_UI.enterNumber, locale);
@@ -355,7 +355,7 @@ export default function PitchGame() {
     setInputErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    const computedBand = computeBand(module, parsed);
+    const computedBand = computeBand(mod, parsed);
     setNumericInputs(parsed);
     setBand(computedBand);
     setReactionState("loading");
@@ -363,11 +363,11 @@ export default function PitchGame() {
     setReaction(null);
 
     const started = Date.now();
-    let text = buildFallbackReaction(module, computedBand, parsed, locale);
+    let text = buildFallbackReaction(mod, computedBand, parsed, locale);
     let ai = false;
     try {
       const result = await predictPitchReaction({
-        moduleId: module.id,
+        moduleId: mod.id,
         inputs: parsed,
         roundKey: roundKey ?? "curious",
         locale,
@@ -383,37 +383,33 @@ export default function PitchGame() {
     setReaction(text);
     setFromAi(ai);
     setReactionState("done");
-  }, [module, inputs, roundKey, locale]);
+  }, [mod, inputs, roundKey, locale]);
 
   const selectPosture = useCallback(
     (key: PostureKey) => {
       setPosture(key);
-      if (module && band) {
-        setCondition(resolveCondition(module, band, key, numericInputs, locale));
+      if (mod && band) {
+        setCondition(resolveCondition(mod, band, key, numericInputs, locale));
       }
     },
-    [module, band, numericInputs, locale],
+    [mod, band, numericInputs, locale],
   );
 
   const submitLead = useCallback(async () => {
-    if (!module || !band || !posture || !condition || !roundKey) return;
-    if (!lead.name.trim() || !lead.email.trim() || !lead.phone.trim() || !lead.company.trim()) {
-      setLeadError(pick(GAME_UI.errRequired, locale));
-      return;
-    }
+    if (!mod || !band || !posture || !condition || !roundKey) return;
     setSaving(true);
     setLeadError(null);
     const journey: JourneySnapshot = {
-      moduleId: module.id,
-      archetype: module.archetype,
-      metric: module.metric,
+      moduleId: mod.id,
+      archetype: mod.archetype,
+      metric: mod.metric,
       roundKey,
       inputs: numericInputs,
       band,
       posture,
       reaction: reaction ?? "",
       condition,
-      automationFix: pick(module.automationFix, locale),
+      automationFix: pick(mod.automationFix, locale),
     };
     const result = await savePitchLead({
       name: lead.name,
@@ -430,7 +426,7 @@ export default function PitchGame() {
     } else {
       setLeadError(result.error);
     }
-  }, [module, band, posture, condition, roundKey, lead, numericInputs, reaction, locale]);
+  }, [mod, band, posture, condition, roundKey, lead, numericInputs, reaction, locale]);
 
   const beat = beatIndex(phase);
   const inMeeting = phase !== "setup" && phase !== "done";
@@ -660,7 +656,7 @@ export default function PitchGame() {
               </div>
             )}
 
-            {phase === "question" && module && roundKey && (
+            {phase === "question" && mod && roundKey && (
               <div>
                 <StepLabel index="04" label={pick(GAME_UI.openStep, locale)} />
                 <div className="mt-4 flex items-start gap-3">
@@ -675,9 +671,9 @@ export default function PitchGame() {
                   </div>
                   <div className="rounded-2xl rounded-tl-sm border border-white/10 bg-white/[0.03] p-4 text-sm leading-relaxed text-foreground/85 sm:text-base">
                     <p>{pick(ROUNDS[roundKey].leadIn, locale)}</p>
-                    <p className="mt-2">{pick(module.opening, locale)}</p>
+                    <p className="mt-2">{pick(mod.opening, locale)}</p>
                     <p className="mt-3 font-semibold text-foreground">
-                      <Rich text={`“${pick(module.question, locale)}”`} />
+                      <Rich text={`“${pick(mod.question, locale)}”`} />
                     </p>
                   </div>
                 </div>
@@ -690,7 +686,7 @@ export default function PitchGame() {
               </div>
             )}
 
-            {phase === "data" && module && (
+            {phase === "data" && mod && (
               <div>
                 <StepLabel index="05" label={pick(GAME_UI.stepNumbers, locale)} />
                 <h2 className="mt-1 text-xl font-bold sm:text-2xl">
@@ -701,14 +697,14 @@ export default function PitchGame() {
                     text={pick(GAME_UI.dataSub, locale).replace(
                       "{metric}",
                       `**${pick(
-                        METRICS[module.archetype].find((m) => m.key === module.metric)?.title ?? ({} as Bi),
+                        METRICS[mod.archetype].find((m) => m.key === mod.metric)?.title ?? ({} as Bi),
                         locale,
                       )}**`,
                     )}
                   />
                 </p>
                 <div className="mt-5 grid gap-4">
-                  {module.fields.map((field) => {
+                  {mod.fields.map((field) => {
                     const adorn = fieldAdornment(field.kind);
                     return (
                       <label key={field.key} className="block">
@@ -759,7 +755,7 @@ export default function PitchGame() {
               </div>
             )}
 
-            {phase === "reaction" && module && band && (
+            {phase === "reaction" && mod && band && (
               <div>
                 <StepLabel index="06" label={pick(GAME_UI.stepReaction, locale)} />
                 <div className="mt-4 flex items-start gap-3">
@@ -823,7 +819,7 @@ export default function PitchGame() {
               </div>
             )}
 
-            {phase === "posture" && module && (
+            {phase === "posture" && mod && (
               <div>
                 <StepLabel index="07" label={pick(GAME_UI.stepDefense, locale)} />
                 <h2 className="mt-1 text-xl font-bold sm:text-2xl">
@@ -833,7 +829,7 @@ export default function PitchGame() {
                 <div className="mt-5 grid gap-3">
                   {(Object.keys(POSTURES) as PostureKey[]).map((key) => {
                     const p = POSTURES[key];
-                    const pair = module.postures[key];
+                    const pair = mod.postures[key];
                     const selected = posture === key;
                     return (
                       <button
@@ -891,7 +887,7 @@ export default function PitchGame() {
               </div>
             )}
 
-            {phase === "termsheet" && module && band && condition && (
+            {phase === "termsheet" && mod && band && condition && (
               <div>
                 <StepLabel index="08" label={pick(GAME_UI.verdictStep, locale)} />
                 <div className="mt-4 overflow-hidden rounded-2xl border border-yellow-400/25 bg-gradient-to-b from-[#14171c] to-[#111318]">
@@ -931,7 +927,7 @@ export default function PitchGame() {
               </div>
             )}
 
-            {phase === "handoff" && module && (
+            {phase === "handoff" && mod && (
               <div>
                 <StepLabel index="09" label={pick(GAME_UI.handoffStep, locale)} />
                 <h2 className="mt-1 text-xl font-bold sm:text-2xl">
@@ -961,7 +957,8 @@ export default function PitchGame() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <label className="block">
                       <span className="text-xs font-medium text-foreground/60">
-                        {pick(GAME_UI.name, locale)} {pick(GAME_UI.requiredMark, locale)}
+                        {pick(GAME_UI.name, locale)}{" "}
+                        <span className="text-foreground/35">({pick(GAME_UI.optionalLabel, locale)})</span>
                       </span>
                       <input
                         className={`${inputClass} mt-1`}
@@ -973,7 +970,8 @@ export default function PitchGame() {
                     </label>
                     <label className="block">
                       <span className="text-xs font-medium text-foreground/60">
-                        {pick(GAME_UI.workEmail, locale)} {pick(GAME_UI.requiredMark, locale)}
+                        {pick(GAME_UI.workEmail, locale)}{" "}
+                        <span className="text-foreground/35">({pick(GAME_UI.optionalLabel, locale)})</span>
                       </span>
                       <input
                         type="email"
@@ -986,7 +984,8 @@ export default function PitchGame() {
                     </label>
                     <label className="block">
                       <span className="text-xs font-medium text-foreground/60">
-                        {pick(GAME_UI.phone, locale)} {pick(GAME_UI.requiredMark, locale)}
+                        {pick(GAME_UI.phone, locale)}{" "}
+                        <span className="text-foreground/35">({pick(GAME_UI.optionalLabel, locale)})</span>
                       </span>
                       <input
                         type="tel"
@@ -999,7 +998,8 @@ export default function PitchGame() {
                     </label>
                     <label className="block">
                       <span className="text-xs font-medium text-foreground/60">
-                        {pick(GAME_UI.company, locale)} {pick(GAME_UI.requiredMark, locale)}
+                        {pick(GAME_UI.company, locale)}{" "}
+                        <span className="text-foreground/35">({pick(GAME_UI.optionalLabel, locale)})</span>
                       </span>
                       <input
                         className={`${inputClass} mt-1`}
@@ -1045,7 +1045,7 @@ export default function PitchGame() {
               </div>
             )}
 
-            {phase === "done" && module && band && condition && (
+            {phase === "done" && mod && band && condition && (
               <div className="relative py-2 text-center sm:py-4">
                 <ConfettiBurst />
                 <motion.div
@@ -1069,16 +1069,16 @@ export default function PitchGame() {
                       {pick(GAME_UI.yourReadout, locale)}
                     </span>
                     <span className={`mp-text-ticker ${accent?.text ?? "text-foreground/40"}`}>
-                      {ARCHETYPES[module.archetype].emoji}
+                      {ARCHETYPES[mod.archetype].emoji}
                     </span>
                   </div>
                   <dl className="divide-y divide-white/[0.06] px-5 text-sm">
                     <div className="flex items-start justify-between gap-4 py-3.5">
                       <dt className="shrink-0 text-foreground/50">{pick(GAME_UI.readoutPitch, locale)}</dt>
                       <dd className="text-right font-medium">
-                        {pick(ARCHETYPES[module.archetype].title, locale)} ·{" "}
+                        {pick(ARCHETYPES[mod.archetype].title, locale)} ·{" "}
                         {pick(
-                          METRICS[module.archetype].find((m) => m.key === module.metric)?.title ??
+                          METRICS[mod.archetype].find((m) => m.key === mod.metric)?.title ??
                             ({} as Bi),
                           locale,
                         )}
@@ -1106,7 +1106,7 @@ export default function PitchGame() {
                         <Target className="h-3.5 w-3.5" /> {pick(GAME_UI.readoutGap, locale)}
                       </dt>
                       <dd className="mt-1.5 leading-relaxed text-foreground/85">
-                        <Rich text={pick(module.automationFix, locale)} />
+                        <Rich text={pick(mod.automationFix, locale)} />
                       </dd>
                     </div>
                   </dl>

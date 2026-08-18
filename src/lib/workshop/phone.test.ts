@@ -30,6 +30,17 @@ describe("validateWorkshopPhone", () => {
     expect(validateWorkshopPhone("14155552671").ok).toBe(true);
   });
 
+  it("normalizes bare 8-digit HK numbers to +852 E.164", () => {
+    expect(validateWorkshopPhone("60713746")).toEqual({
+      ok: true,
+      phone: "+85260713746",
+    });
+    expect(validateWorkshopPhone("9123 4567")).toEqual({
+      ok: true,
+      phone: "+85291234567",
+    });
+  });
+
   it("rejects too-short or malformed numbers", () => {
     expect(validateWorkshopPhone("+852123").ok).toBe(false);
     expect(validateWorkshopPhone("abc").ok).toBe(false);

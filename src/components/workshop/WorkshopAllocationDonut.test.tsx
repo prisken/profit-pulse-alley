@@ -128,15 +128,36 @@ describe("WorkshopAllocationDonut", () => {
     expect(screen.getAllByText("Changed")).toHaveLength(2);
   });
 
+  it("compact legend uses icons (full label kept as title) instead of clipped text", () => {
+    render(<WorkshopAllocationDonut slices={slices} size="compact" />);
+
+    const legend = screen.getByTestId("workshop-allocation-donut-legend");
+    const housingRow = legend.querySelector('[data-slice-key="housing"]');
+    const funRow = legend.querySelector('[data-slice-key="fun"]');
+    const surplusRow = legend.querySelector('[data-slice-key="surplus"]');
+
+    // No text labels in the compact legend (they were clipping on narrow columns).
+    expect(within(legend).queryByText("Housing")).not.toBeInTheDocument();
+    expect(within(legend).queryByText("Fun")).not.toBeInTheDocument();
+    // Full names preserved for accessibility / long-press tooltips.
+    expect(housingRow).toHaveAttribute("title", "Housing");
+    expect(funRow).toHaveAttribute("title", "Fun");
+    expect(surplusRow).toHaveAttribute("title", "Remaining surplus");
+    // Each row carries an icon + amount.
+    expect(housingRow?.querySelector("svg")).toBeTruthy();
+    expect(within(legend).getByText("HK$12K")).toBeInTheDocument();
+  });
+
   it("mounts compact and large variants without overflow-prone roots", () => {
     const { rerender } = render(
       <WorkshopAllocationDonut slices={slices} size="compact" />,
     );
     let root = screen.getByTestId("workshop-allocation-donut");
     expect(root).toHaveAttribute("data-size", "compact");
-    expect(root.className).toMatch(/overflow-x-hidden/);
+    // Compact is full-bleed: no width cap, so narrow columns use the whole width.
     expect(root.className).toMatch(/min-w-0/);
-    expect(root.className).toMatch(/max-w-\[168px\]/);
+    expect(root.className).toMatch(/w-full/);
+    expect(root.className).not.toMatch(/max-w-\[168px\]/);
 
     rerender(<WorkshopAllocationDonut slices={slices} size="large" />);
     root = screen.getByTestId("workshop-allocation-donut");

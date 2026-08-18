@@ -29,37 +29,30 @@ describe("solveSqueeze", () => {
         requiredExtraMonthlyHKD: 0,
         monthlyIncomeHKD: 50_000,
         expenses,
-        monthlyFunHKD: 5_000,
-        monthlyInvestmentHKD: 8_000,
       }),
     ).toBeNull();
   });
 
-  it("builds a full achievable squeeze by cutting fun then discretionary", () => {
+  it("builds a full achievable squeeze by cutting discretionary", () => {
     const result = solveSqueeze({
-      requiredExtraMonthlyHKD: 6_000,
+      requiredExtraMonthlyHKD: 3_000,
       monthlyIncomeHKD: 50_000,
       expenses,
-      monthlyFunHKD: 5_000,
-      monthlyInvestmentHKD: 8_000,
       monthsLate: 24,
       targetAge: 40,
     });
 
     expect(result).not.toBeNull();
-    expect(result!.requiredExtraMonthlyHKD).toBe(6_000);
+    expect(result!.requiredExtraMonthlyHKD).toBe(3_000);
     expect(result!.achievableAtAge).toBeNull();
 
-    const funCurrent = result!.currentAllocation.find((s) => s.key === "fun");
-    const funNext = result!.recommendedAllocation.find((s) => s.key === "fun");
     const discNext = result!.recommendedAllocation.find(
       (s) => s.key === "discretionary",
     );
 
-    expect(funCurrent?.amountHKD).toBe(5_000);
-    expect(funNext?.amountHKD).toBe(0);
-    expect(funNext?.changed).toBe(true);
-    expect(discNext?.amountHKD).toBe(3_000);
+    // Fun is gone (v4); discretionary starts at 4k/mo and covers the full need.
+    expect(result!.currentAllocation.find((s) => s.key === "fun")).toBeUndefined();
+    expect(discNext?.amountHKD).toBe(1_000);
     expect(discNext?.changed).toBe(true);
   });
 
@@ -68,18 +61,13 @@ describe("solveSqueeze", () => {
       requiredExtraMonthlyHKD: 8_000,
       monthlyIncomeHKD: 40_000,
       expenses,
-      monthlyFunHKD: 1_000,
-      monthlyInvestmentHKD: 2_000,
       monthsLate: 24,
       targetAge: 40,
     });
 
     expect(result).not.toBeNull();
-    // Max cut = 1k fun + 4k discretionary = 5k/month, so only partial relief.
+    // Max cut = 4k discretionary/month, so only partial relief (8k need).
     expect(result!.achievableAtAge).toBe(41);
-    expect(
-      result!.recommendedAllocation.find((s) => s.key === "fun")?.amountHKD,
-    ).toBe(0);
     expect(
       result!.recommendedAllocation.find((s) => s.key === "discretionary")
         ?.amountHKD,
@@ -92,8 +80,6 @@ describe("solveSqueeze", () => {
       requiredExtraMonthlyHKD: 3_000,
       monthlyIncomeHKD,
       expenses,
-      monthlyFunHKD: 5_000,
-      monthlyInvestmentHKD: 8_000,
       monthsLate: 12,
       targetAge: 40,
     });

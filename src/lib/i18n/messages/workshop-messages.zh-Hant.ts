@@ -73,14 +73,13 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.intake.household.marriedWithKids": "已婚有子女",
   "workshop.intake.household.singleParent": "單親",
 
-  "workshop.pyramid.intro":
-    "按你的實際情況調整每一層。狀態顏色會對照基準計算結果——確認後會儲存並繼續。",
+  "workshop.pyramid.intro": "調整每一層，確認並儲存",
   "workshop.pyramid.graphicTitle": "你的金字塔",
   "workshop.pyramid.statusPrefix": "狀態 · {status}",
   "workshop.pyramid.layers.protection.title": "保障",
   "workshop.pyramid.layers.emergencyFund.title": "應急儲備",
   "workshop.pyramid.layers.goals.title": "目標",
-  "workshop.pyramid.layers.investment.title": "投資與享樂",
+  "workshop.pyramid.layers.investment.title": "投資",
   "workshop.pyramid.band.protection": "保障",
   "workshop.pyramid.band.emergencyFund": "應急",
   "workshop.pyramid.band.goals": "目標",
@@ -125,16 +124,13 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.pyramid.goals.targetAgeSubtext": "目標年齡 {age}（{year}）",
   "workshop.pyramid.goals.ageField": "目標年齡",
   "workshop.pyramid.goals.derivedYearHint": "≈ {year}",
-  "workshop.pyramid.goals.goalType.aria": "目標類型",
-  "workshop.pyramid.goals.goalType.spend": "目標年齡時支出",
-  "workshop.pyramid.goals.goalType.retirementTarget": "退休儲備目標",
   "workshop.pyramid.goals.iconPicker.heart": "婚禮／愛情",
   "workshop.pyramid.goals.iconPicker.graduationCap": "教育",
   "workshop.pyramid.goals.iconPicker.home": "置業",
   "workshop.pyramid.goals.iconPicker.plane": "旅行",
   "workshop.pyramid.goals.iconPicker.car": "汽車",
   "workshop.pyramid.goals.iconPicker.briefcase": "創業",
-  "workshop.pyramid.goals.iconPicker.piggyBank": "退休",
+  "workshop.pyramid.goals.iconPicker.piggyBank": "儲蓄",
   "workshop.pyramid.goals.iconPicker.other": "其他",
   "workshop.pyramid.goals.iconPicker.baby": "家庭",
 
@@ -144,7 +140,7 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.goals.defaults.travel": "旅行基金",
   "workshop.goals.defaults.wedding": "婚禮基金",
   "workshop.goals.defaults.business": "創業資金",
-  "workshop.goals.defaults.retirementNestEgg": "退休儲備",
+  "workshop.goals.defaults.retirementNestEgg": "大型儲蓄目標",
   "workshop.goals.defaults.other": "其他目標",
 
   "workshop.pyramid.investment.lowLabel": "低風險",
@@ -156,18 +152,9 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
     "每年 20–40% — 投機、波動高",
   "workshop.pyramid.investment.returnBandsDisclaimer":
     "本工具的推算使用保守混合假設（2%／6%／10%），並非這些區間的上限。",
-  "workshop.pyramid.investment.monthlyInvestmentLabel": "每月投資（港元）",
-  "workshop.pyramid.investment.monthlyInvesting.label": "每月投資額（港元）",
-  "workshop.pyramid.investment.monthlyInvesting.helper":
-    "每月可用盈餘 ≈ {amount}",
-  "workshop.pyramid.investment.monthlyInvesting.amberWarning":
-    "每月投資額高於可用盈餘（收入 − 開支 − 娛樂）。",
   "workshop.pyramid.investment.lumpSumLabel": "目前已投資金額（一次性本金）",
   "workshop.pyramid.investment.lumpSumSummary": "已投資 {amount}",
-  "workshop.pyramid.investment.monthlyFunLabel": "每月享樂預算（港元）",
-  "workshop.pyramid.investment.funCrisisHint":
-    "危機時會最先削減享樂預算。",
-  "workshop.pyramid.investment.cardLabel": "投資與享樂",
+  "workshop.pyramid.investment.cardLabel": "投資",
   "workshop.pyramid.investment.riskHeading": "風險配置",
   "workshop.pyramid.investment.riskHint":
     "可按 − / + 以 {step}% 調整，或拖動較大的滑桿。三項合計必須為 100%。建議：{low}% / {mid}% / {high}%（低／中／高）",
@@ -177,11 +164,8 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.pyramid.investment.increaseAria": "將{label}增加 {step}%",
   "workshop.pyramid.investment.investCardLabel": "已投資本金",
   "workshop.pyramid.investment.investSubtext": "目前投資總額",
-  "workshop.pyramid.investment.funCardLabel": "每月享樂",
-  "workshop.pyramid.investment.funSubtext": "無負擔的消費緩衝",
-  "workshop.pyramid.investment.perMonth": "{amount}／月",
-  "workshop.pyramid.investment.funBudgetLine":
-    "享樂預算 {fun}／月 · 風險 低／中／高 {low}/{mid}/{high}",
+  "workshop.pyramid.investment.riskSummaryLine":
+    "風險 低／中／高 {low}/{mid}/{high}",
 
   "workshop.pyramid.confirmButton": "確認我的金字塔",
   "workshop.pyramid.saving": "儲存中…",
@@ -216,10 +200,7 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.expenses.snagTitle": "開支步驟出現問題",
   "workshop.expenses.snagDescription": "未能完成開支估算，請重試以繼續。",
 
-  "workshop.stressTest.scrubberLabel": "年齡滑桿",
   "workshop.stressTest.emergencyFundCardTitle": "應急儲備",
-  "workshop.stressTest.targetVsProjected": "目標：{target} · 推算：{projected}",
-  "workshop.stressTest.notReachedLabel": "未能達標",
   "workshop.stressTest.continueButton": "繼續至風險測驗",
   "workshop.stressTest.intro":
     "拖動人生時間軸——現金流、資產與目標會一併更新。達標（綠色）不另加說明；黃、紅與「過度儲蓄」會附上簡短原因。",
@@ -227,44 +208,6 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
     "你每月盈餘 {surplus}，是下方目標的燃料。",
   "workshop.stressTest.overviewCashFlow": "本月配置",
   "workshop.stressTest.overviewAssets": "今日資產",
-  "workshop.stressTest.todayBaseline": "今日 · 基準",
-  "workshop.stressTest.income": "收入",
-  "workshop.stressTest.salaryIncome": "薪金（每年）",
-  "workshop.stressTest.passiveIncome": "被動收入（每年）",
-  "workshop.stressTest.expenses": "開支（每年）",
-  "workshop.stressTest.surplus": "盈餘",
-  "workshop.stressTest.liquidPool": "流動資金",
-  "workshop.stressTest.investedPool": "投資資產",
-  "workshop.stressTest.chartCashFlow": "每年現金流",
-  "workshop.stressTest.chartAssets": "資產隨時間變化",
-  "workshop.stressTest.realTermsCaption": "以今日購買力計算",
-  "workshop.stressTest.retirementMarker": "退休",
-  "workshop.stressTest.depletedMarker": "資產耗盡",
-  "workshop.stressTest.depletedYearsAfter": "退休後 {n} 年",
-  "workshop.stressTest.goalMilestone": "目標",
-  "workshop.stressTest.ageStat": "{age} 歲",
-  "workshop.stressTest.scrubAge": "{age} 歲",
-  "workshop.stressTest.scrubBubble": "{year} · {age}歲",
-  "workshop.stressTest.horizonHint": "{minAge} 歲 → {maxAge} 歲",
-  "workshop.stressTest.phaseWorking": "工作期",
-  "workshop.stressTest.phaseRetirement": "退休期",
-  "workshop.stressTest.legendLiquid": "流動資金",
-  "workshop.stressTest.legendInvested": "投資資產",
-  "workshop.stressTest.legendIncome": "收入",
-  "workshop.stressTest.legendExpenses": "開支",
-  "workshop.stressTest.coverageRatio": "被動收入覆蓋率",
-  "workshop.stressTest.annualSuffix": "每年",
-  "workshop.stressTest.nestEggTarget": "目標 {amount}",
-  "workshop.stressTest.liquidationNote": "變賣投資支付目標",
-  "workshop.stressTest.headlineCoverageLabel": "被動收入覆蓋率",
-  "workshop.stressTest.headlineCoverageValue": "{percent}%",
-  "workshop.stressTest.headlineCoverageDetail": "退休時被動收入可覆蓋該年開支",
-  "workshop.stressTest.headlineAssetsLabel": "資產跑道",
-  "workshop.stressTest.headlineAssetsToAge": "{age} 歲",
-  "workshop.stressTest.headlineAssetsToAgeDetail": "資產於此年齡耗盡",
-  "workshop.stressTest.headlineAssetsSustained": "90 歲之後 ✓",
-  "workshop.stressTest.headlineAssetsSustainedDetail":
-    "此模型下資產可維持至 90 歲",
   "workshop.stressTest.headlineOversavedLabel": "閒置現金",
   "workshop.stressTest.headlineOversaved": "{excess}",
   "workshop.stressTest.headlineOversavedDetail":
@@ -274,11 +217,8 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.stressTest.runningSubtext": "先做確定性計算——AI 說明稍後淡入。",
   "workshop.stressTest.sectionEmergency": "應急儲備",
   "workshop.stressTest.sectionGoals": "目標",
-  "workshop.stressTest.sectionRetirement": "退休跑道",
   "workshop.journey.railTitle": "目標旅程",
   "workshop.journey.ageMarker": "{age} 歲",
-  "workshop.journey.retirementLabel": "退休",
-  "workshop.journey.retirementSubtitle": "於 {age} 歲檢視退休儲備",
   "workshop.journey.statusOnTrack": "✓ 達成",
   "workshop.journey.statusDelayed": "⏱ 延遲",
   "workshop.journey.statusGivenUp": "✕ 放棄",
@@ -304,6 +244,10 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.journey.donutOutflow": "流出",
   "workshop.journey.acceptSqueeze": "接受 AI 建議",
   "workshop.journey.squeezeAccepted": "已接受建議",
+  "workshop.journey.undoSqueeze": "撤銷建議",
+  "workshop.journey.noSqueezeLiquidation":
+    "無需縮減開支——容許動用應急基金／投資已可達成此目標。",
+  "workshop.journey.noSqueezeOnTrack": "進度理想——無需縮減開支。",
   "workshop.journey.applyGoal": "套用目標",
   "workshop.journey.giveUpGoal": "放棄目標",
   "workshop.journey.loadingOutlook": "正在以你的計劃檢視此目標…",
@@ -316,13 +260,6 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.journey.decisionError": "無法儲存此決定，請重試。",
   "workshop.journey.retirementReadOnly":
     "退休是旅程終點——在完成消費目標後會顯示儲備細節。",
-  "workshop.journey.finaleRecapHeading": "決定摘要",
-  "workshop.journey.finaleRecapSummary":
-    "{onTime} 個目標準時達成，{delayed} 個延遲，{givenUp} 個放棄",
-  "workshop.journey.finaleMonthlyPlan":
-    "接受壓縮後的每月計劃：{before}/月 → {after}/月",
-  "workshop.journey.finaleTimelineMissing":
-    "時間軸資料仍在載入——請稍後再開啟此卡片。",
   "workshop.stressTest.efTarget": "目標：{months} 個月 · {amount}",
   "workshop.stressTest.efAlreadyFunded": "已達標",
   "workshop.stressTest.efOversavedLabel": "過度儲蓄",
@@ -331,7 +268,7 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.stressTest.assetsDepletedStat": "資產於 {age} 歲耗盡",
   "workshop.stressTest.assetsNeverDepleted": "此模型下資產可維持至 90 歲",
   "workshop.stressTest.passiveAtRetirement": "退休時被動收入：每年 {amount}",
-  "workshop.stressTest.goalInflatedTarget": "通脹後目標：{amount}",
+  "workshop.stressTest.goalTargetAmount": "目標：{amount}",
   "workshop.stressTest.goalReachedAtAge": "於 {age} 歲達成",
   "workshop.stressTest.goalNotReached": "至 90 歲仍未達成",
   "workshop.stressTest.goalTargetAge": "目標年齡 {age}",
@@ -488,6 +425,19 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.summary.categories.savings": "儲蓄",
   "workshop.summary.categories.investment": "投資",
   "workshop.summary.categories.goal": "目標",
+  "workshop.summary.levers.instant": "⚡ 本週行動",
+  "workshop.summary.levers.structural": "🏗 一次過設定",
+  "workshop.summary.levers.behavioral": "🔁 每月習慣",
+  "workshop.summary.runway.heading": "資金跑道",
+  "workshop.summary.runway.age": "{age} 歲",
+  "workshop.summary.runway.past90": "90 歲之後",
+  "workshop.summary.runway.improved":
+    "你的決定讓資金可維持年期由{before}延長至{after}",
+  "workshop.summary.runway.shorter":
+    "你的資金目前可維持至{after}（原本是{before}）",
+  "workshop.summary.runway.same": "你的資金可維持至{after}",
+  "workshop.summary.runway.detail":
+    "比較你在目標旅程作決定前後的數字——你的選擇改變了它。",
   "workshop.summary.scoring": "正在為金字塔評分並草擬行動目標…",
   "workshop.summary.errorTitle": "總結出現問題",
   "workshop.summary.errorFallback": "未能產生評分與行動目標，請再試一次。",
@@ -498,8 +448,14 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
 
   "workshop.capture.nameLabel": "姓名",
   "workshop.capture.emailLabel": "電郵",
-  "workshop.capture.phoneLabel": "電話",
+  "workshop.capture.phoneLabel": "電話 / WhatsApp",
+  "workshop.capture.whatsappHint":
+    "填寫 WhatsApp 號碼，我們亦會將藍圖發送至你的 WhatsApp。",
+  "workshop.capture.whatsappSentNote":
+    "我們亦會將副本發送至你的 WhatsApp——通常幾分鐘內送達。",
   "workshop.capture.phoneRequired": "必須填寫電話號碼。",
+  "workshop.capture.nameRequired": "請輸入你的姓名。",
+  "workshop.capture.emailRequired": "請輸入有效的電郵地址。",
   "workshop.capture.phoneInvalid":
     "請輸入有效電話號碼（例如 +85212345678，或其他 +國家碼）。",
   "workshop.capture.phoneInvalidHk": "香港號碼應為 +852 再加 8 位數字。",
@@ -509,6 +465,7 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.capture.downloadButton": "儲存並下載藍圖",
   "workshop.capture.submitting": "儲存中…",
   "workshop.capture.downloadAgainButton": "再次下載",
+  "workshop.capture.playAgainButton": "再玩一次",
   "workshop.capture.thankYouMessage": "謝謝——你的藍圖已準備好",
   "workshop.capture.thankYouBody":
     "我們已儲存你的資料並開始下載 PDF。你的首要目標：",
@@ -516,6 +473,9 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.capture.intro":
     "填寫資料以解鎖「你的 AI 財務藍圖」PDF——涵蓋金字塔、危機摘要、目標與每月儲蓄目標。",
   "workshop.capture.selectedGoal": "已選目標：",
+  "workshop.capture.optionalLabel": "選填",
+  "workshop.capture.optionalHint":
+    "你的姓名和電郵有助我們為你度身訂造計劃。填寫 WhatsApp 號碼，我們亦會把藍圖發送到你的 WhatsApp。",
   "workshop.capture.requiredMark": "*",
   "workshop.capture.saveError": "未能儲存你的資料，請再試一次。",
   "workshop.capture.needSummary": "請先在總結頁選擇首要焦點，才可收取藍圖。",
@@ -596,6 +556,13 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.pdf.targetProjected": "目標 {target} · 推算 {projected}",
   "workshop.pdf.myFocus": "（我的首要焦點）",
   "workshop.pdf.impactLine": "影響：+{n} 分 · {category}",
+  "workshop.pdf.impactLineWithLever": "影響：+{n} 分 · {lever} · {category}",
+  "workshop.pdf.lever.instant": "本週行動",
+  "workshop.pdf.lever.structural": "一次過設定",
+  "workshop.pdf.lever.behavioral": "每月習慣",
+  "workshop.pdf.runwayLine": "資金跑道：{before} → {after}",
+  "workshop.pdf.runwayAge": "{age} 歲",
+  "workshop.pdf.runwayPast90": "90 歲之後",
   "workshop.pdf.lowMidHigh": "低 {low}%",
   "workshop.pdf.midPct": "中 {mid}%",
   "workshop.pdf.highPct": "高 {high}%",
@@ -606,19 +573,6 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
     "收入影響 −{percent}% · 一次性 {amount} · {months} 個月 · 取向 {profile}",
   "workshop.pdf.crisisCoverageLine":
     "保障抵銷 {covered}／帳單 {gross}（未獲保障 {uncovered}）",
-  "workshop.pdf.retirementSectionTitle": "退休快照",
-  "workshop.pdf.realTermsCaption": "以今日購買力計算",
-  "workshop.pdf.retirementAgeLine": "退休年齡：{age}",
-  "workshop.pdf.retirementPassiveLine": "退休時被動收入：每年 {amount}",
-  "workshop.pdf.retirementAssetsLine": "退休時資產：{amount}",
-  "workshop.pdf.retirementDepletedLine": "資產於 {age} 歲耗盡",
-  "workshop.pdf.retirementSustainedLine": "此模型下資產可維持至 90 歲之後",
-  "workshop.pdf.retirementCoverageLine":
-    "退休時被動收入覆蓋率：該年開支的 {percent}%",
-  "workshop.pdf.retirementNestEggMet":
-    "退休儲備目標 {target} — 推算 {projected}（達標）",
-  "workshop.pdf.retirementNestEggGap":
-    "退休儲備目標 {target} — 推算 {projected}（差距 {gap}）",
   "workshop.pdf.lumpSumLine": "已投資本金（整筆）：{amount}",
   "workshop.pdf.returnBandsDisplay":
     "展示區間（教育用途）：低約 1–3% · 中約 8–12% · 高約 20–40%",
@@ -626,9 +580,8 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
     "推算使用保守混合假設（2%／6%／10%），並非上述區間的上限。",
   "workshop.pdf.efOversavedNote":
     "應急金過度儲蓄：多餘 {excess} 若投資，至退休約可成長至 ≈ {opportunity}。",
-  "workshop.pdf.goalInflatedAttained": "通脹後目標 {amount} · {attained}",
   "workshop.pdf.goalAttainedAge": "於 {age} 歲達成",
-  "workshop.pdf.retirementTargetLine": "目標：{target} — 推算 {projected}",
+  "workshop.pdf.goalProgressLine": "目標 {amount} · 於 {age} 歲達成",
   "workshop.pdf.investPerMonth": "已投資 {amount}",
   "workshop.pdf.protectionDetail": "{percent}% · 危疾 {amount}",
   "workshop.pdf.impactMonths": "{n} 個月",

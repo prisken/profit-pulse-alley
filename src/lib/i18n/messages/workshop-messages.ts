@@ -75,14 +75,13 @@ export const workshopEnMessages = {
   "workshop.intake.household.marriedWithKids": "Married with kids",
   "workshop.intake.household.singleParent": "Single parent",
 
-  "workshop.pyramid.intro":
-    "Tune each layer to match your reality. Status colors compare your current numbers to deterministic benchmarks — Confirm saves and continues.",
+  "workshop.pyramid.intro": "Tune each layer, Confirm and save",
   "workshop.pyramid.graphicTitle": "Your pyramid",
   "workshop.pyramid.statusPrefix": "Status · {status}",
   "workshop.pyramid.layers.protection.title": "Protection",
   "workshop.pyramid.layers.emergencyFund.title": "Emergency Fund",
   "workshop.pyramid.layers.goals.title": "Goals",
-  "workshop.pyramid.layers.investment.title": "Investment & Fun",
+  "workshop.pyramid.layers.investment.title": "Investment",
   "workshop.pyramid.band.protection": "Protection",
   "workshop.pyramid.band.emergencyFund": "Emergency",
   "workshop.pyramid.band.goals": "Goals",
@@ -128,17 +127,13 @@ export const workshopEnMessages = {
   "workshop.pyramid.goals.targetAgeSubtext": "By age {age} ({year})",
   "workshop.pyramid.goals.ageField": "Target age",
   "workshop.pyramid.goals.derivedYearHint": "≈ {year}",
-  "workshop.pyramid.goals.goalType.aria": "Goal type",
-  "workshop.pyramid.goals.goalType.spend": "Spend at target age",
-  "workshop.pyramid.goals.goalType.retirementTarget":
-    "Retirement nest-egg target",
   "workshop.pyramid.goals.iconPicker.heart": "Wedding / love",
   "workshop.pyramid.goals.iconPicker.graduationCap": "Education",
   "workshop.pyramid.goals.iconPicker.home": "Home",
   "workshop.pyramid.goals.iconPicker.plane": "Travel",
   "workshop.pyramid.goals.iconPicker.car": "Car",
   "workshop.pyramid.goals.iconPicker.briefcase": "Business",
-  "workshop.pyramid.goals.iconPicker.piggyBank": "Retirement",
+  "workshop.pyramid.goals.iconPicker.piggyBank": "Savings",
   "workshop.pyramid.goals.iconPicker.other": "Other",
   "workshop.pyramid.goals.iconPicker.baby": "Family",
 
@@ -148,7 +143,7 @@ export const workshopEnMessages = {
   "workshop.goals.defaults.travel": "Travel fund",
   "workshop.goals.defaults.wedding": "Wedding fund",
   "workshop.goals.defaults.business": "Start a business",
-  "workshop.goals.defaults.retirementNestEgg": "Retirement nest egg",
+  "workshop.goals.defaults.retirementNestEgg": "Big savings goal",
   "workshop.goals.defaults.other": "Other goal",
 
   "workshop.pyramid.investment.lowLabel": "Low risk",
@@ -161,20 +156,10 @@ export const workshopEnMessages = {
     "20–40% /yr — speculative, high volatility",
   "workshop.pyramid.investment.returnBandsDisclaimer":
     "Projections in this tool use conservative blended assumptions (2% / 6% / 10%), not the top of these ranges.",
-  "workshop.pyramid.investment.monthlyInvestmentLabel":
-    "Monthly investment (HKD)",
-  "workshop.pyramid.investment.monthlyInvesting.label": "Monthly investing (HKD)",
-  "workshop.pyramid.investment.monthlyInvesting.helper":
-    "Monthly surplus available ≈ {amount}",
-  "workshop.pyramid.investment.monthlyInvesting.amberWarning":
-    "Monthly investing exceeds available surplus (income − expenses − fun).",
   "workshop.pyramid.investment.lumpSumLabel":
     "Current invested amount (lump sum)",
   "workshop.pyramid.investment.lumpSumSummary": "{amount} invested",
-  "workshop.pyramid.investment.monthlyFunLabel": "Monthly fun budget (HKD)",
-  "workshop.pyramid.investment.funCrisisHint":
-    "Fun budget is the first thing cut in a crisis.",
-  "workshop.pyramid.investment.cardLabel": "Investment & fun",
+  "workshop.pyramid.investment.cardLabel": "Investment",
   "workshop.pyramid.investment.riskHeading": "Risk allocation",
   "workshop.pyramid.investment.riskHint":
     "Tap − / + in {step}% steps, or drag the large thumbs. Mix always totals 100%. Rec: {low}% / {mid}% / {high}% (L/M/H)",
@@ -184,11 +169,8 @@ export const workshopEnMessages = {
   "workshop.pyramid.investment.increaseAria": "Increase {label} by {step}%",
   "workshop.pyramid.investment.investCardLabel": "Invested capital",
   "workshop.pyramid.investment.investSubtext": "Current total invested",
-  "workshop.pyramid.investment.funCardLabel": "Monthly fun",
-  "workshop.pyramid.investment.funSubtext": "Guilt-free spending buffer",
-  "workshop.pyramid.investment.perMonth": "{amount} / mo",
-  "workshop.pyramid.investment.funBudgetLine":
-    "Fun budget {fun} / mo · Risk L/M/H {low}/{mid}/{high}",
+  "workshop.pyramid.investment.riskSummaryLine":
+    "Risk L/M/H {low}/{mid}/{high}",
 
   "workshop.pyramid.confirmButton": "Confirm My Pyramid",
   "workshop.pyramid.saving": "Saving…",
@@ -231,10 +213,7 @@ export const workshopEnMessages = {
   "workshop.expenses.snagDescription":
     "We couldn’t finish estimating your expenses. Retry to continue.",
 
-  "workshop.stressTest.scrubberLabel": "Age scrubber",
   "workshop.stressTest.emergencyFundCardTitle": "Emergency fund",
-  "workshop.stressTest.targetVsProjected": "Target: {target} · Projected: {projected}",
-  "workshop.stressTest.notReachedLabel": "Not reached",
   "workshop.stressTest.continueButton": "Continue to Risk Quiz",
   "workshop.stressTest.intro":
     "Scrub your life timeline — cash flow, assets, and goals update together. Green stays quiet; amber, red, and oversaved get a short why.",
@@ -242,46 +221,6 @@ export const workshopEnMessages = {
     "Your monthly surplus of {surplus} is the fuel for the goals below.",
   "workshop.stressTest.overviewCashFlow": "This month",
   "workshop.stressTest.overviewAssets": "Assets today",
-  "workshop.stressTest.todayBaseline": "Today · baseline",
-  "workshop.stressTest.income": "Income",
-  "workshop.stressTest.salaryIncome": "Salary (annual)",
-  "workshop.stressTest.passiveIncome": "Passive income (annual)",
-  "workshop.stressTest.expenses": "Expenses (annual)",
-  "workshop.stressTest.surplus": "Surplus",
-  "workshop.stressTest.liquidPool": "Liquid",
-  "workshop.stressTest.investedPool": "Invested",
-  "workshop.stressTest.chartCashFlow": "Annual cash flow",
-  "workshop.stressTest.chartAssets": "Assets over time",
-  "workshop.stressTest.realTermsCaption":
-    "All figures in today's purchasing power",
-  "workshop.stressTest.retirementMarker": "Retirement",
-  "workshop.stressTest.depletedMarker": "Assets run out",
-  "workshop.stressTest.depletedYearsAfter": "{n} years after retirement",
-  "workshop.stressTest.goalMilestone": "Goal",
-  "workshop.stressTest.ageStat": "Age {age}",
-  "workshop.stressTest.scrubAge": "Age {age}",
-  "workshop.stressTest.scrubBubble": "{year} · Age {age}",
-  "workshop.stressTest.horizonHint": "Age {minAge} → {maxAge}",
-  "workshop.stressTest.phaseWorking": "Working",
-  "workshop.stressTest.phaseRetirement": "Retirement",
-  "workshop.stressTest.legendLiquid": "Liquid",
-  "workshop.stressTest.legendInvested": "Invested",
-  "workshop.stressTest.legendIncome": "Income",
-  "workshop.stressTest.legendExpenses": "Expenses",
-  "workshop.stressTest.coverageRatio": "Passive coverage",
-  "workshop.stressTest.annualSuffix": "annual",
-  "workshop.stressTest.nestEggTarget": "Target {amount}",
-  "workshop.stressTest.liquidationNote": "Sold investments to fund goal",
-  "workshop.stressTest.headlineCoverageLabel": "Passive coverage",
-  "workshop.stressTest.headlineCoverageValue": "{percent}%",
-  "workshop.stressTest.headlineCoverageDetail":
-    "At retirement, passive income covers that year’s expenses",
-  "workshop.stressTest.headlineAssetsLabel": "Asset runway",
-  "workshop.stressTest.headlineAssetsToAge": "Age {age}",
-  "workshop.stressTest.headlineAssetsToAgeDetail": "Assets run out at this age",
-  "workshop.stressTest.headlineAssetsSustained": "Past 90 ✓",
-  "workshop.stressTest.headlineAssetsSustainedDetail":
-    "Assets last through age 90 in this model",
   "workshop.stressTest.headlineOversavedLabel": "Idle cash",
   "workshop.stressTest.headlineOversaved": "{excess}",
   "workshop.stressTest.headlineOversavedDetail":
@@ -292,11 +231,8 @@ export const workshopEnMessages = {
     "Deterministic math first — AI notes fade in after.",
   "workshop.stressTest.sectionEmergency": "Emergency fund",
   "workshop.stressTest.sectionGoals": "Goals",
-  "workshop.stressTest.sectionRetirement": "Retirement runway",
   "workshop.journey.railTitle": "Goal journey",
   "workshop.journey.ageMarker": "Age {age}",
-  "workshop.journey.retirementLabel": "Retirement",
-  "workshop.journey.retirementSubtitle": "Nest-egg check at age {age}",
   "workshop.journey.statusOnTrack": "✓ On track",
   "workshop.journey.statusDelayed": "⏱ Delayed",
   "workshop.journey.statusGivenUp": "✕ Given up",
@@ -323,6 +259,10 @@ export const workshopEnMessages = {
   "workshop.journey.donutOutflow": "Outflow",
   "workshop.journey.acceptSqueeze": "Accept AI recommendation",
   "workshop.journey.squeezeAccepted": "Recommendation accepted",
+  "workshop.journey.undoSqueeze": "Undo recommendation",
+  "workshop.journey.noSqueezeLiquidation":
+    "No spending squeeze needed — allowing your emergency fund / investments covers this goal.",
+  "workshop.journey.noSqueezeOnTrack": "On track — no spending squeeze needed.",
   "workshop.journey.applyGoal": "Apply goal",
   "workshop.journey.giveUpGoal": "Give up goal",
   "workshop.journey.loadingOutlook": "Checking this goal on your plan…",
@@ -335,13 +275,6 @@ export const workshopEnMessages = {
   "workshop.journey.decisionError": "Could not save this decision. Please retry.",
   "workshop.journey.retirementReadOnly":
     "Retirement is the finale of this journey — nest-egg details appear after your spend goals.",
-  "workshop.journey.finaleRecapHeading": "Decision recap",
-  "workshop.journey.finaleRecapSummary":
-    "{onTime} goals achieved on time, {delayed} delayed, {givenUp} given up",
-  "workshop.journey.finaleMonthlyPlan":
-    "Monthly plan after squeezes: {before}/mo → {after}/mo",
-  "workshop.journey.finaleTimelineMissing":
-    "Timeline data is still loading — open this card again in a moment.",
   "workshop.stressTest.efTarget": "Target: {months} mo · {amount}",
   "workshop.stressTest.efAlreadyFunded": "On target",
   "workshop.stressTest.efOversavedLabel": "Oversaved",
@@ -351,7 +284,7 @@ export const workshopEnMessages = {
   "workshop.stressTest.assetsNeverDepleted": "Assets last through age 90 in this model",
   "workshop.stressTest.passiveAtRetirement":
     "Passive income at retirement: {amount}/yr",
-  "workshop.stressTest.goalInflatedTarget": "Inflated target: {amount}",
+  "workshop.stressTest.goalTargetAmount": "Target: {amount}",
   "workshop.stressTest.goalReachedAtAge": "Reached at age {age}",
   "workshop.stressTest.goalNotReached": "Not reached by age 90",
   "workshop.stressTest.goalTargetAge": "Target age {age}",
@@ -531,6 +464,19 @@ export const workshopEnMessages = {
   "workshop.summary.categories.savings": "Savings",
   "workshop.summary.categories.investment": "Investment",
   "workshop.summary.categories.goal": "Goal",
+  "workshop.summary.levers.instant": "⚡ This week",
+  "workshop.summary.levers.structural": "🏗 Set it up once",
+  "workshop.summary.levers.behavioral": "🔁 Monthly habit",
+  "workshop.summary.runway.heading": "Money runway",
+  "workshop.summary.runway.age": "age {age}",
+  "workshop.summary.runway.past90": "past 90",
+  "workshop.summary.runway.improved":
+    "Your choices stretched your money from {before} to {after}",
+  "workshop.summary.runway.shorter":
+    "Your money now lasts until {after} (was {before})",
+  "workshop.summary.runway.same": "Your money lasts until {after}",
+  "workshop.summary.runway.detail":
+    "Before your goal-journey decisions vs after — the choices you made moved this number.",
   "workshop.summary.scoring":
     "Scoring your pyramid and drafting action goals…",
   "workshop.summary.errorTitle": "Summary hit a snag",
@@ -545,8 +491,14 @@ export const workshopEnMessages = {
 
   "workshop.capture.nameLabel": "Name",
   "workshop.capture.emailLabel": "Email",
-  "workshop.capture.phoneLabel": "Phone",
+  "workshop.capture.phoneLabel": "Phone / WhatsApp",
+  "workshop.capture.whatsappHint":
+    "Enter your WhatsApp number and we'll send your blueprint there too.",
+  "workshop.capture.whatsappSentNote":
+    "We're sending a copy to your WhatsApp as well — it usually lands within a few minutes.",
   "workshop.capture.phoneRequired": "Phone number is required.",
+  "workshop.capture.nameRequired": "Please enter your name.",
+  "workshop.capture.emailRequired": "Please enter a valid email address.",
   "workshop.capture.phoneInvalid":
     "Enter a valid phone number (e.g. +85212345678 or another +country code).",
   "workshop.capture.phoneInvalidHk":
@@ -557,6 +509,7 @@ export const workshopEnMessages = {
   "workshop.capture.downloadButton": "Save & download blueprint",
   "workshop.capture.submitting": "Saving…",
   "workshop.capture.downloadAgainButton": "Download again",
+  "workshop.capture.playAgainButton": "Play again",
   "workshop.capture.thankYouMessage": "Thank you — your blueprint is ready",
   "workshop.capture.thankYouBody":
     "We saved your details and started your PDF download. Your #1 goal:",
@@ -564,6 +517,9 @@ export const workshopEnMessages = {
   "workshop.capture.intro":
     "Enter your details to unlock Your AI Financial Blueprint PDF — pyramid, crisis summary, goals, and monthly savings target.",
   "workshop.capture.selectedGoal": "Selected goal:",
+  "workshop.capture.optionalLabel": "Optional",
+  "workshop.capture.optionalHint":
+    "Your name and email help us personalise your plan. Add your WhatsApp number and we'll send your blueprint there too.",
   "workshop.capture.requiredMark": "*",
   "workshop.capture.saveError":
     "Could not save your details. Please try again.",
@@ -647,6 +603,13 @@ export const workshopEnMessages = {
   "workshop.pdf.targetProjected": "Target {target} · Projected {projected}",
   "workshop.pdf.myFocus": "(My #1 focus)",
   "workshop.pdf.impactLine": "Impact: +{n} pts · {category}",
+  "workshop.pdf.impactLineWithLever": "Impact: +{n} pts · {lever} · {category}",
+  "workshop.pdf.lever.instant": "This week",
+  "workshop.pdf.lever.structural": "Set it up once",
+  "workshop.pdf.lever.behavioral": "Monthly habit",
+  "workshop.pdf.runwayLine": "Money runway: {before} → {after}",
+  "workshop.pdf.runwayAge": "age {age}",
+  "workshop.pdf.runwayPast90": "past 90",
   "workshop.pdf.lowMidHigh": "Low {low}%",
   "workshop.pdf.midPct": "Mid {mid}%",
   "workshop.pdf.highPct": "High {high}%",
@@ -658,22 +621,6 @@ export const workshopEnMessages = {
     "Income hit −{percent}% · One-time {amount} · {months} months · Profile {profile}",
   "workshop.pdf.crisisCoverageLine":
     "Protection covered {covered} of {gross} (uncovered {uncovered})",
-  "workshop.pdf.retirementSectionTitle": "Retirement snapshot",
-  "workshop.pdf.realTermsCaption":
-    "All figures in today's purchasing power",
-  "workshop.pdf.retirementAgeLine": "Retirement age: {age}",
-  "workshop.pdf.retirementPassiveLine":
-    "Passive income at retirement: {amount}/yr",
-  "workshop.pdf.retirementAssetsLine": "Assets at retirement: {amount}",
-  "workshop.pdf.retirementDepletedLine": "Assets run out at age {age}",
-  "workshop.pdf.retirementSustainedLine":
-    "Assets sustained past age 90 in this model",
-  "workshop.pdf.retirementCoverageLine":
-    "Passive coverage at retirement: {percent}% of that year’s expenses",
-  "workshop.pdf.retirementNestEggMet":
-    "Nest-egg target {target} — projected {projected} (met)",
-  "workshop.pdf.retirementNestEggGap":
-    "Nest-egg target {target} — projected {projected} (gap {gap})",
   "workshop.pdf.lumpSumLine": "Invested capital (lump sum): {amount}",
   "workshop.pdf.returnBandsDisplay":
     "Display bands (educational): Low ~1–3% · Mid ~8–12% · High ~20–40%",
@@ -681,10 +628,8 @@ export const workshopEnMessages = {
     "Projections use conservative blended assumptions (2% / 6% / 10%), not the top of these ranges.",
   "workshop.pdf.efOversavedNote":
     "Emergency fund oversaved: {excess} excess could grow to ≈ {opportunity} by retirement if invested.",
-  "workshop.pdf.goalInflatedAttained": "Inflated target {amount} · {attained}",
   "workshop.pdf.goalAttainedAge": "reached at age {age}",
-  "workshop.pdf.retirementTargetLine":
-    "Target: {target} — projected {projected}",
+  "workshop.pdf.goalProgressLine": "Target {amount} · reached at age {age}",
   "workshop.pdf.investPerMonth": "{amount} invested",
   "workshop.pdf.protectionDetail": "{percent}% · CI {amount}",
   "workshop.pdf.impactMonths": "{n} mo",

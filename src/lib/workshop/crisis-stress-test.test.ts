@@ -35,15 +35,12 @@ function basePyramid(overrides?: {
           targetAmountHKD: 200_000,
           targetAge: 40,
           targetYear: NOW_YEAR + 5,
-          goalType: "spend",
         },
       ],
     },
     investment: {
       riskAllocation: { low: 40, mid: 40, high: 20 },
       lumpSumHKD: 500_000,
-      monthlyInvestmentHKD: 8_000,
-      monthlyFunHKD: 4_000,
       ...overrides?.investment,
     },
   };
@@ -149,8 +146,6 @@ describe("runCrisisStressTest", () => {
         investment: {
           riskAllocation: { low: 50, mid: 40, high: 10 },
           lumpSumHKD: 300_000,
-          monthlyInvestmentHKD: 5_000,
-          monthlyFunHKD: 3_000,
         },
       }),
       expenses,
@@ -178,8 +173,6 @@ describe("runCrisisStressTest", () => {
         investment: {
           riskAllocation: { low: 80, mid: 15, high: 5 },
           lumpSumHKD: 20_000,
-          monthlyInvestmentHKD: 0,
-          monthlyFunHKD: 0,
         },
       }),
       expenses: {
@@ -240,4 +233,75 @@ describe("runCrisisStressTest", () => {
     expect(rating.breakdown.crisisResilience).toBe(summary.resilienceScore);
     expect(rating.breakdown.crisisResilience).toBeGreaterThanOrEqual(85);
   });
+});
+
+it("v6: 75% coverage with a small residual dent is PARTIAL, not PENETRATED (Prisken's case)", () => {
+  const result = runCrisisStressTest({
+    age: 30,
+    retirementAge: 65,
+    monthlyIncome: 30_000,
+    industry: "Education",
+    riskProfile: "conservative",
+    pyramid: basePyramid({
+      protection: {
+        medicalCoveragePercent: 75,
+        criticalIllnessAmountHKD: 3_300_000,
+      },
+      emergencyFund: { savedAmountHKD: 40_000 },
+      investment: {
+        riskAllocation: { low: 15, mid: 15, high: 70 },
+        lumpSumHKD: 150_000,
+      },
+    }),
+    expenses: {
+      // Discretionary squeezed to ~0 (mirrors his post-journey state).
+      totalHKD: 20_050,
+      categories: [
+        { key: "housing", icon: "Home", amountHKD: 12_000 },
+        { key: "food_living", icon: "Utensils", amountHKD: 6_000 },
+        { key: "transport", icon: "Bus", amountHKD: 2_000 },
+        { key: "insurance", icon: "Shield", amountHKD: 50 },
+        { key: "discretionary", icon: "Sparkles", amountHKD: 0 },
+      ],
+    },
+    nowYear: NOW_YEAR,
+  });
+  expect(result.scenario).toBe("medical");
+  expect(result.impactResult.coverage?.coveredHKD).toBe(180_000);
+  expect(result.impactResult.coverage?.uncoveredHKD).toBe(60_000);
+  expect(result.verdict).toBe("PARTIAL");
+  // 55 + 0.75*15 − 0.6 − drawdown penalty ≈ 63 — fair, not crushed.
+  expect(result.resilienceScore).toBeGreaterThanOrEqual(55);
+  expect(result.resilienceScore).toBeLessThanOrEqual(78);
+});
+
+it("v6: zero cover with heavy penetration stays PENETRATED", () => {
+  const result = runCrisisStressTest({
+    age: 30,
+    retirementAge: 65,
+    monthlyIncome: 30_000,
+    industry: "Education",
+    riskProfile: "conservative",
+    pyramid: basePyramid({
+      protection: { medicalCoveragePercent: 0, criticalIllnessAmountHKD: 0 },
+      emergencyFund: { savedAmountHKD: 40_000 },
+      investment: {
+        riskAllocation: { low: 15, mid: 15, high: 70 },
+        lumpSumHKD: 150_000,
+      },
+    }),
+    expenses: {
+      totalHKD: 23_050,
+      categories: [
+        { key: "housing", icon: "Home", amountHKD: 12_000 },
+        { key: "food_living", icon: "Utensils", amountHKD: 6_000 },
+        { key: "transport", icon: "Bus", amountHKD: 2_000 },
+        { key: "insurance", icon: "Shield", amountHKD: 50 },
+        { key: "discretionary", icon: "Sparkles", amountHKD: 3_000 },
+      ],
+    },
+    nowYear: NOW_YEAR,
+  });
+  expect(result.verdict).toBe("PENETRATED");
+  expect(result.resilienceScore).toBeLessThanOrEqual(45);
 });

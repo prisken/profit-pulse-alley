@@ -19,6 +19,9 @@ function formatCreatedDate(iso: string): string {
   }).format(new Date(iso));
 }
 
+/** Proxy label for leads captured without contact details. */
+export const ANONYMOUS_PLAYER_LABEL = "Anonymous player";
+
 type WorkshopLeadsAdminTableProps = Readonly<{
   leads: WorkshopAdminLeadRow[];
 }>;
@@ -85,7 +88,8 @@ export default function WorkshopLeadsAdminTable({
               <th className="px-3 py-3 font-semibold sm:px-4">Industry</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Age</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Ret. age</th>
-              <th className="px-3 py-3 font-semibold sm:px-4">Depleted</th>
+              <th className="px-3 py-3 font-semibold sm:px-4">Runway Δ</th>
+              <th className="px-3 py-3 font-semibold sm:px-4">Levers</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Weakest</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Risk profile</th>
               <th className="px-3 py-3 font-semibold sm:px-4">Rating score</th>
@@ -121,9 +125,16 @@ function WorkshopRow({
   isOpen: boolean;
   onToggle: () => void;
 }) {
+  const hasName = Boolean(lead.name.trim());
+  const hasEmail = Boolean(lead.email.trim());
+  const hasPhone = Boolean(lead.phone.trim());
+
   return (
     <>
-      <tr className="align-top hover:bg-zinc-900/40">
+      <tr
+        className="cursor-pointer align-top hover:bg-zinc-900/40"
+        onClick={onToggle}
+      >
         <td className="px-2 py-3">
           <button
             type="button"
@@ -140,11 +151,19 @@ function WorkshopRow({
           </button>
         </td>
         <td className="px-3 py-3 font-medium text-zinc-100 sm:px-4">
-          {lead.name}
+          {hasName ? (
+            lead.name
+          ) : (
+            <span className="font-normal italic text-zinc-500">
+              {ANONYMOUS_PLAYER_LABEL}
+            </span>
+          )}
         </td>
-        <td className="px-3 py-3 text-zinc-300 sm:px-4">{lead.email}</td>
+        <td className="px-3 py-3 text-zinc-300 sm:px-4">
+          {hasEmail ? lead.email : <span className="text-zinc-600">—</span>}
+        </td>
         <td className="px-3 py-3 text-zinc-400 sm:px-4">
-          {lead.phone}
+          {hasPhone ? lead.phone : <span className="text-zinc-600">—</span>}
         </td>
         <td className="px-3 py-3 text-zinc-300 sm:px-4">
           {lead.industry}
@@ -156,7 +175,16 @@ function WorkshopRow({
           {lead.retirementAge ?? "—"}
         </td>
         <td className="px-3 py-3 font-mono tabular-nums text-zinc-300 sm:px-4">
-          {lead.assetsDepletedAtAge ?? "—"}
+          {lead.runwayBeforeAge == null && lead.runwayAfterAge == null
+            ? "—"
+            : lead.runwayBeforeAge == null
+              ? `${lead.runwayAfterAge} (90+)`
+              : lead.runwayAfterAge == null
+                ? `90+ (was ${lead.runwayBeforeAge})`
+                : `${lead.runwayAfterAge} (was ${lead.runwayBeforeAge})`}
+        </td>
+        <td className="px-3 py-3 font-mono text-[11px] tabular-nums text-zinc-400 sm:px-4">
+          {lead.actionGoalLevers ?? "—"}
         </td>
         <td className="px-3 py-3 capitalize text-zinc-300 sm:px-4">
           {lead.weakestLayer ?? "—"}
@@ -178,7 +206,7 @@ function WorkshopRow({
       </tr>
       {isOpen && lead.sessionJson && (
         <tr className="bg-zinc-900/30">
-          <td colSpan={13} className="px-4 py-5 sm:px-6">
+          <td colSpan={14} className="px-4 py-5 sm:px-6">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
               Session — what the user entered
             </h4>

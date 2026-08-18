@@ -22,6 +22,9 @@ const FIXTURE_LEAD: WorkshopAdminLeadRow = {
   retirementAge: 65,
   monthlyIncomeHKD: 80000,
   assetsDepletedAtAge: 82,
+  runwayBeforeAge: 82,
+  runwayAfterAge: 88,
+  actionGoalLevers: "instant,structural,behavioral",
   weakestLayer: "emergencyFund",
   riskProfile: "balanced",
   ratingScore: 62,
@@ -38,15 +41,12 @@ const FIXTURE_LEAD: WorkshopAdminLeadRow = {
             targetAmountHKD: 500_000,
             targetAge: 45,
             targetYear: 2037,
-            goalType: "spend",
           },
         ],
       },
       investment: {
         riskAllocation: { low: 40, mid: 40, high: 20 },
         lumpSumHKD: 50_000,
-        monthlyInvestmentHKD: 8_000,
-        monthlyFunHKD: 3_000,
       },
     },
     aiPyramid: {
@@ -56,8 +56,6 @@ const FIXTURE_LEAD: WorkshopAdminLeadRow = {
       investment: {
         riskAllocation: { low: 30, mid: 50, high: 20 },
         lumpSumHKD: 0,
-        monthlyInvestmentHKD: 6_000,
-        monthlyFunHKD: 3_000,
       },
     },
     expenses: {
@@ -112,6 +110,15 @@ describe("WorkshopSessionDetail", () => {
     expect(screen.getByText("balanced")).toBeInTheDocument();
     expect(screen.queryByText("finalPyramid")).not.toBeInTheDocument();
     expect(screen.queryByText(/"protection"/)).not.toBeInTheDocument();
+  });
+
+  it("shows v5 investment values (lump sum + risk allocation, no monthly investing)", () => {
+    render(<WorkshopSessionDetail lead={FIXTURE_LEAD} />);
+    expect(screen.getByText("Lump sum invested")).toBeInTheDocument();
+    expect(screen.getByText("HK$50K")).toBeInTheDocument();
+    expect(screen.getByText("Risk allocation low/mid/high")).toBeInTheDocument();
+    expect(screen.getByText("40 / 40 / 20")).toBeInTheDocument();
+    expect(screen.queryByText(/\/mo/)).not.toBeInTheDocument();
   });
 
   it("can switch to the AI-predicted pyramid", async () => {

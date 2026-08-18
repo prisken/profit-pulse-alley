@@ -23,7 +23,6 @@ function goal(
     icon: "Target",
     label: { en: partial.id, zhHant: partial.id },
     targetYear: NOW_YEAR + (partial.targetAge - 35),
-    goalType: "spend",
     ...partial,
   };
 }
@@ -34,11 +33,9 @@ function baseInput(overrides?: Partial<TimelineInput>): TimelineInput {
     retirementAge: 65,
     monthlyIncome: 50_000,
     monthlyExpenses: 20_000,
-    monthlyFun: 2_000,
     emergencyFundSavedHKD: 120_000,
     investment: {
       lumpSumHKD: 200_000,
-      monthlyInvestmentHKD: 0,
       allocation: { low: 40, mid: 40, high: 20 },
     },
     goals: [
@@ -122,7 +119,6 @@ describe("runLifeTimeline", () => {
         retirementAge: 65,
         investment: {
           lumpSumHKD: 1_000_000,
-          monthlyInvestmentHKD: 0,
           allocation: { low: 0, mid: 100, high: 0 },
         },
       }),
@@ -150,12 +146,10 @@ describe("runLifeTimeline", () => {
         retirementAge: 30 + years + 5,
         monthlyIncome: 0,
         monthlyExpenses: 0,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 0,
         goals: [],
         investment: {
           lumpSumHKD: start,
-          monthlyInvestmentHKD: 0,
           allocation: { low: 100, mid: 0, high: 0 },
         },
       }),
@@ -166,12 +160,10 @@ describe("runLifeTimeline", () => {
         retirementAge: 30 + years + 5,
         monthlyIncome: 0,
         monthlyExpenses: 0,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 0,
         goals: [],
         investment: {
           lumpSumHKD: start,
-          monthlyInvestmentHKD: 0,
           allocation: { low: 0, mid: 100, high: 0 },
         },
       }),
@@ -182,12 +174,10 @@ describe("runLifeTimeline", () => {
         retirementAge: 30 + years + 5,
         monthlyIncome: 0,
         monthlyExpenses: 0,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 0,
         goals: [],
         investment: {
           lumpSumHKD: start,
-          monthlyInvestmentHKD: 0,
           allocation: { low: 0, mid: 0, high: 100 },
         },
       }),
@@ -209,12 +199,10 @@ describe("runLifeTimeline", () => {
         retirementAge: 65,
         monthlyIncome: 0,
         monthlyExpenses: 0,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 100_000,
         goals: [],
         investment: {
           lumpSumHKD: 0,
-          monthlyInvestmentHKD: 0,
           allocation: { low: 100, mid: 0, high: 0 },
         },
       }),
@@ -223,69 +211,64 @@ describe("runLifeTimeline", () => {
     expect(at40.liquidPool).toBeCloseTo(100_000 * 0.97, 2);
   });
 
-  it("holds expenses flat in real terms (no inflation)", () => {
+  it("holds expenses flat in real terms (no inflation, no fun line)", () => {
     const result = runLifeTimeline(
       baseInput({
         age: 35,
         retirementAge: 65,
         monthlyIncome: 80_000,
         monthlyExpenses: 20_000,
-        monthlyFun: 5_000,
         goals: [],
       }),
     );
     const at35 = result.rows.find((r) => r.age === 35)!;
     const at50 = result.rows.find((r) => r.age === 50)!;
-    expect(at35.expenses).toBeCloseTo(25_000 * 12, 2);
+    expect(at35.expenses).toBeCloseTo(20_000 * 12, 2);
     expect(at50.expenses).toBeCloseTo(at35.expenses, 2);
   });
 
-  it("caps invested contribution by surplus and sends remainder to liquid", () => {
+  it("sends the full working-year surplus to liquid (no monthly-investing input)", () => {
     const result = runLifeTimeline(
       baseInput({
         age: 35,
         retirementAge: 65,
         monthlyIncome: 50_000,
         monthlyExpenses: 20_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 100_000,
         goals: [],
         investment: {
           lumpSumHKD: 0,
-          monthlyInvestmentHKD: 40_000,
           allocation: { low: 100, mid: 0, high: 0 },
         },
       }),
     );
 
     const row = result.rows.find((r) => r.age === 35)!;
-    expect(row.investedContributionHKD).toBeCloseTo(360_000, 2);
-    // Liquid: 100k × 0.97 decay, then +0 remainder
-    expect(row.liquidPool).toBeCloseTo(100_000 * 0.97, 2);
-    expect(row.investedPool).toBeCloseTo(360_000, 2);
+    // Surplus = (600k − 240k) = 360k → all liquid; invested stays 0.
+    expect(row.surplus).toBeCloseTo(360_000, 2);
+    expect(row.liquidPool).toBeCloseTo(100_000 * 0.97 + 360_000, 2);
+    expect(row.investedPool).toBeCloseTo(0, 2);
   });
 
-  it("sends surplus remainder to liquid when investing below surplus", () => {
+  it("keeps lump-sum capital invested at the blended return (no contributions)", () => {
     const result = runLifeTimeline(
       baseInput({
         age: 35,
         retirementAge: 65,
         monthlyIncome: 50_000,
         monthlyExpenses: 20_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 0,
         goals: [],
         investment: {
-          lumpSumHKD: 0,
-          monthlyInvestmentHKD: 10_000,
+          lumpSumHKD: 100_000,
           allocation: { low: 100, mid: 0, high: 0 },
         },
       }),
     );
 
     const row = result.rows.find((r) => r.age === 35)!;
-    expect(row.investedContributionHKD).toBeCloseTo(120_000, 2);
-    expect(row.liquidPool).toBeCloseTo(240_000, 2);
+    expect(row.liquidPool).toBeCloseTo(360_000, 2);
+    expect(row.investedPool).toBeCloseTo(100_000 * (1 - 0.01), 2);
   });
 
   it("liquidates invested when liquid is short for an opted-in spend goal", () => {
@@ -295,11 +278,9 @@ describe("runLifeTimeline", () => {
         retirementAge: 65,
         monthlyIncome: 10_000,
         monthlyExpenses: 9_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 20_000,
         investment: {
           lumpSumHKD: 200_000,
-          monthlyInvestmentHKD: 0,
           allocation: { low: 0, mid: 100, high: 0 },
         },
         goals: [
@@ -328,11 +309,9 @@ describe("runLifeTimeline", () => {
         retirementAge: 65,
         monthlyIncome: 10_000,
         monthlyExpenses: 9_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 20_000,
         investment: {
           lumpSumHKD: 200_000,
-          monthlyInvestmentHKD: 0,
           allocation: { low: 0, mid: 100, high: 0 },
         },
         goals: [
@@ -354,18 +333,16 @@ describe("runLifeTimeline", () => {
     expect(atPay.investedPool).toBeGreaterThan(0);
   });
 
-  it("never deducts retirementTarget goals and reports gap math in real HKD", () => {
+  it("treats every goal as a spend goal — never deducted pre-target, funded at target age", () => {
     const result = runLifeTimeline(
       baseInput({
         age: 60,
         retirementAge: 65,
         monthlyIncome: 40_000,
         monthlyExpenses: 20_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 100_000,
         investment: {
           lumpSumHKD: 500_000,
-          monthlyInvestmentHKD: 5_000,
           allocation: { low: 0, mid: 100, high: 0 },
         },
         goals: [
@@ -373,19 +350,17 @@ describe("runLifeTimeline", () => {
             id: "nest",
             targetAge: 65,
             targetAmountHKD: 50_000_000,
-            goalType: "retirementTarget",
           }),
         ],
       }),
     );
 
-    expect(result.retirementTargets).toHaveLength(1);
-    const rt = result.retirementTargets[0]!;
-    expect(rt.goalId).toBe("nest");
-    expect(rt.targetHKD).toBe(50_000_000);
-    expect(rt.met).toBe(false);
-    expect(rt.gapHKD).toBeGreaterThan(0);
-    expect(rt.projectedAssetsHKD).toBe(result.retirement.assetsAtRetirement);
+    const projection = result.goals.find((row) => row.goalId === "nest")!;
+    expect(projection.targetAge).toBe(65);
+    expect(projection.inflatedTargetHKD).toBe(50_000_000);
+    // Way out of reach → never attained, red.
+    expect(projection.attainedAtAge).toBeNull();
+    expect(projection.status).toBe("red");
 
     const at65 = result.rows.find((r) => r.age === 65)!;
     expect(at65.investedLiquidatedHKD).toBe(0);
@@ -399,12 +374,10 @@ describe("runLifeTimeline", () => {
         retirementAge: 65,
         monthlyIncome: 130_000,
         monthlyExpenses: 65_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 200_000,
         investment: {
-          lumpSumHKD: 500_000,
-          monthlyInvestmentHKD: 30_000,
-          allocation: { low: 20, mid: 40, high: 40 },
+          lumpSumHKD: 2_000_000,
+          allocation: { low: 0, mid: 20, high: 80 },
         },
         goals: [],
       }),
@@ -415,7 +388,7 @@ describe("runLifeTimeline", () => {
     expect(at90.liquidPool + at90.investedPool).toBeGreaterThan(0);
     // Guard against accidental reversion to nominal compounding (~much higher).
     expect(at90.investedPool).toBeGreaterThanOrEqual(5_000_000);
-    expect(at90.investedPool).toBeLessThanOrEqual(30_000_000);
+    expect(at90.investedPool).toBeLessThanOrEqual(60_000_000);
   });
 
   it("keeps goal targets in today's HKD (no inflation)", () => {
@@ -425,7 +398,6 @@ describe("runLifeTimeline", () => {
         age: 35,
         monthlyIncome: 100_000,
         monthlyExpenses: 5_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 1_000_000,
         goals: [
           goal({
@@ -447,11 +419,9 @@ describe("runLifeTimeline", () => {
         retirementAge: 65,
         monthlyIncome: 0,
         monthlyExpenses: 30_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 50_000,
         investment: {
           lumpSumHKD: 200_000,
-          monthlyInvestmentHKD: 0,
           allocation: { low: 0, mid: 100, high: 0 },
         },
         goals: [],
@@ -471,11 +441,9 @@ describe("runLifeTimeline", () => {
         retirementAge: 65,
         monthlyIncome: 0,
         monthlyExpenses: 40_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 10_000,
         investment: {
           lumpSumHKD: 20_000,
-          monthlyInvestmentHKD: 0,
           allocation: { low: 0, mid: 100, high: 0 },
         },
         goals: [],
@@ -498,7 +466,6 @@ describe("runLifeTimeline", () => {
         age: 35,
         retirementAge: 65,
         monthlyExpenses: 20_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: saved,
         goals: [],
       }),
@@ -517,7 +484,6 @@ describe("goalStatusAtYear", () => {
         age: 35,
         monthlyIncome: 80_000,
         monthlyExpenses: 10_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 500_000,
         goals: [
           goal({ id: "car", targetAge: 40, targetAmountHKD: 80_000 }),
@@ -536,18 +502,16 @@ describe("goalStatusAtYear", () => {
     expect(statuses(attainedYear).car).toBe("attained");
   });
 
-  it("treats retirementTarget met as on_track before retirement", () => {
+  it("treats a fully-funded spend goal as attained on time", () => {
     const result = runLifeTimeline(
       baseInput({
         age: 60,
         retirementAge: 65,
         monthlyIncome: 100_000,
         monthlyExpenses: 20_000,
-        monthlyFun: 0,
         emergencyFundSavedHKD: 2_000_000,
         investment: {
           lumpSumHKD: 5_000_000,
-          monthlyInvestmentHKD: 20_000,
           allocation: { low: 40, mid: 40, high: 20 },
         },
         goals: [
@@ -555,13 +519,13 @@ describe("goalStatusAtYear", () => {
             id: "nest",
             targetAge: 65,
             targetAmountHKD: 1_000_000,
-            goalType: "retirementTarget",
           }),
         ],
       }),
     );
 
-    expect(result.retirementTargets[0]!.met).toBe(true);
+    const projection = result.goals.find((row) => row.goalId === "nest")!;
+    expect(projection.status).toBe("green");
     const before = goalStatusAtYear(result, NOW_YEAR);
     expect(before[0]!.status).toBe("on_track");
   });

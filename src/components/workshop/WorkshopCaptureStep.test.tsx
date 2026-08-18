@@ -17,6 +17,7 @@ vi.mock("@/components/providers/LocaleProvider", () => ({
         "workshop.capture.nameLabel": "Name",
         "workshop.capture.emailLabel": "Email",
         "workshop.capture.phoneLabel": "Phone",
+        "workshop.capture.optionalLabel": "Optional",
         "workshop.capture.requiredMark": "*",
         "workshop.capture.namePlaceholder": "Your name",
         "workshop.capture.emailPlaceholder": "you@example.com",
@@ -27,6 +28,9 @@ vi.mock("@/components/providers/LocaleProvider", () => ({
         "workshop.capture.downloadButton": "Save & download blueprint",
         "workshop.capture.submitting": "Saving…",
         "workshop.capture.downloadAgainButton": "Download again",
+        "workshop.capture.playAgainButton": "Play again",
+        "workshop.capture.nameRequired": "Please enter your name.",
+        "workshop.capture.emailRequired": "Please enter a valid email address.",
         "workshop.capture.thankYouMessage": "Thank you",
         "workshop.capture.thankYouBody": "Ready for",
         "workshop.capture.backToSummary": "Back to summary",
@@ -53,6 +57,7 @@ describe("WorkshopCaptureStep mobile field attrs", () => {
         sessionId="sess_1"
         selectedGoalTitle="Emergency fund"
         onBack={() => {}}
+        onRestart={() => {}}
       />,
     );
 
@@ -87,6 +92,7 @@ describe("WorkshopCaptureStep mobile field attrs", () => {
         sessionId="sess_1"
         selectedGoalTitle="Emergency fund"
         onBack={() => {}}
+        onRestart={() => {}}
       />,
     );
 

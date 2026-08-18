@@ -5,7 +5,6 @@ import { icons, type LucideIcon } from "lucide-react";
 
 import CollapsibleWidget from "@/components/workshop/CollapsibleWidget";
 import WorkshopGoalJourneyCard from "@/components/workshop/WorkshopGoalJourneyCard";
-import WorkshopGoalJourneyFinaleCard from "@/components/workshop/WorkshopGoalJourneyFinaleCard";
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import {
   areSpendGoalsResolved,
@@ -14,10 +13,8 @@ import {
   firstPendingRailGoalId,
   isGoalJourneyResolved,
   isRailGoalLocked,
-  isRetirementRailGoal,
   journeyDecisionForGoal,
   resolveGoalJourneyRailChip,
-  RETIREMENT_RAIL_ID,
   type GoalJourneyRailChip,
 } from "@/lib/workshop/goal-journey";
 import { pickBilingual } from "@/lib/workshop/bilingual";
@@ -50,30 +47,26 @@ type WorkshopGoalJourneyRailProps = Readonly<{
   tone: WorkshopTone;
   pyramid: PyramidState;
   expenses: ExpensesState;
-  retirementAge: number;
-  userAge: number;
   journey?: GoalJourneyState;
   timeline?: TimelineResult | null;
   onPlanChange?: (update: GoalJourneyPlanUpdate) => void;
-  /** Fires when every spend goal has a decision (retirement finale unlocked). */
-  onFinaleReachedChange?: (reached: boolean) => void;
+  /** Fires when every spend goal has a decision (Continue unlocks). */
+  onGoalsResolvedChange?: (resolved: boolean) => void;
 }>;
 
 /**
- * Vertical age-rail of goal CollapsibleWidgets with sequencing locks.
- * Spend interiors: WorkshopGoalJourneyCard. Retirement: finale charts + recap.
+ * Vertical age-rail of spend-goal CollapsibleWidgets with sequencing locks.
+ * Every goal is a spend goal; Continue unlocks once all have a decision.
  */
 export default function WorkshopGoalJourneyRail({
   sessionId,
   tone,
   pyramid,
   expenses,
-  retirementAge,
-  userAge,
   journey: journeyProp,
   timeline = null,
   onPlanChange,
-  onFinaleReachedChange,
+  onGoalsResolvedChange,
 }: WorkshopGoalJourneyRailProps) {
   const { t, locale } = useTranslations();
   const [journey, setJourney] = useState<GoalJourneyState>(
@@ -81,8 +74,9 @@ export default function WorkshopGoalJourneyRail({
   );
   const [needsRevisit, setNeedsRevisit] = useState<Set<string>>(() => new Set());
   const [livePyramid, setLivePyramid] = useState(pyramid);
-  const [liveExpenses, setLiveExpenses] = useState(expenses);
   const [liveTimeline, setLiveTimeline] = useState(timeline);
+  /** Bumped every time a decision lands — cards refetch outlook/recommendation. */
+  const [planRevision, setPlanRevision] = useState(0);
 
   useEffect(() => {
     if (journeyProp) {
@@ -95,10 +89,6 @@ export default function WorkshopGoalJourneyRail({
   }, [pyramid]);
 
   useEffect(() => {
-    setLiveExpenses(expenses);
-  }, [expenses]);
-
-  useEffect(() => {
     setLiveTimeline(timeline);
   }, [timeline]);
 
@@ -106,10 +96,8 @@ export default function WorkshopGoalJourneyRail({
     () =>
       buildGoalJourneyRailItems({
         goals: livePyramid.goals.goals,
-        retirementAge,
-        userAge,
       }),
-    [livePyramid.goals.goals, retirementAge, userAge],
+    [livePyramid.goals.goals],
   );
 
   const finaleReached = useMemo(
@@ -118,8 +106,8 @@ export default function WorkshopGoalJourneyRail({
   );
 
   useEffect(() => {
-    onFinaleReachedChange?.(finaleReached);
-  }, [finaleReached, onFinaleReachedChange]);
+    onGoalsResolvedChange?.(finaleReached);
+  }, [finaleReached, onGoalsResolvedChange]);
 
   const firstPendingId = useMemo(
     () => firstPendingRailGoalId(railItems, journey),
@@ -170,8 +158,8 @@ export default function WorkshopGoalJourneyRail({
   function handleDecisionComplete(result: ApplyGoalJourneyDecisionActionResult) {
     setJourney(result.journey);
     setLivePyramid(result.pyramid);
-    setLiveExpenses(result.expenses);
     setLiveTimeline(result.timeline);
+    setPlanRevision((n) => n + 1);
     setNeedsRevisit((prev) => {
       const updated = new Set(prev);
       const decided = result.journey.decisions[result.journey.decisions.length - 1];
@@ -183,8 +171,6 @@ export default function WorkshopGoalJourneyRail({
     const nextPending = firstPendingRailGoalId(
       buildGoalJourneyRailItems({
         goals: result.pyramid.goals.goals,
-        retirementAge,
-        userAge,
       }),
       result.journey,
     );
@@ -217,21 +203,11 @@ export default function WorkshopGoalJourneyRail({
             decision,
             timelineStatus: timelineGoal?.status ?? null,
           });
-          const isRetirement = isRetirementRailGoal(goal);
-          const title = isRetirement
-            ? goal.id === RETIREMENT_RAIL_ID
-              ? t("workshop.journey.retirementLabel")
-              : pickBilingual(goal.label, locale)
-            : pickBilingual(goal.label, locale);
-          const subtitle = isRetirement
-            ? t("workshop.journey.retirementSubtitle").replace(
-                "{age}",
-                String(goal.targetAge),
-              )
-            : t("workshop.stressTest.goalInflatedTarget").replace(
-                "{amount}",
-                formatCompactHkd(goal.targetAmountHKD),
-              );
+          const title = pickBilingual(goal.label, locale);
+          const subtitle = t("workshop.stressTest.goalTargetAmount").replace(
+            "{amount}",
+            formatCompactHkd(goal.targetAmountHKD),
+          );
           const showRevisit =
             needsRevisit.has(goal.id) && isGoalJourneyResolved(decision);
           const isExpanded = !locked && expandedId === goal.id;
@@ -321,23 +297,14 @@ export default function WorkshopGoalJourneyRail({
                   }
                 >
                   {isExpanded ? (
-                    isRetirement ? (
-                      <WorkshopGoalJourneyFinaleCard
-                        pyramid={livePyramid}
-                        expenses={liveExpenses}
-                        journey={journey}
-                        railItems={railItems}
-                        timeline={liveTimeline}
-                      />
-                    ) : (
-                      <WorkshopGoalJourneyCard
-                        sessionId={sessionId}
-                        goal={goal}
-                        tone={tone}
-                        active={isExpanded}
-                        onDecisionComplete={handleDecisionComplete}
-                      />
-                    )
+                    <WorkshopGoalJourneyCard
+                      sessionId={sessionId}
+                      goal={goal}
+                      tone={tone}
+                      active={isExpanded}
+                      planRevision={planRevision}
+                      onDecisionComplete={handleDecisionComplete}
+                    />
                   ) : (
                     <p className="text-sm text-slate-400">
                       {t("workshop.journey.stubPlaceholder")}

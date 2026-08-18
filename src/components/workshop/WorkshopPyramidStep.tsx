@@ -120,11 +120,8 @@ export default function WorkshopPyramidStep({
   const [isConfirming, startConfirmTransition] = useTransition();
 
   const layerFlags = useMemo(
-    () =>
-      computeLayerFlags(pyramid, benchmarks, {
-        monthlyIncomeHKD,
-      }),
-    [pyramid, benchmarks, monthlyIncomeHKD],
+    () => computeLayerFlags(pyramid, benchmarks),
+    [pyramid, benchmarks],
   );
 
   function handleConfirm() {
@@ -166,7 +163,6 @@ export default function WorkshopPyramidStep({
           status={layerFlags.protection}
           disabled={isConfirming}
         />
-
         <EmergencyFundLayerEditor
           value={pyramid.emergencyFund}
           onChange={(emergencyFund) => onChange({ ...pyramid, emergencyFund })}
@@ -188,7 +184,6 @@ export default function WorkshopPyramidStep({
           value={pyramid.investment}
           onChange={(investment) => onChange({ ...pyramid, investment })}
           age={age}
-          monthlyIncomeHKD={monthlyIncomeHKD}
           status={layerFlags.investment}
           disabled={isConfirming}
         />

@@ -18,6 +18,10 @@ export function normalizeWorkshopPhone(raw: string): string {
 /**
  * Accepts +852 + 8 digits, or a general international number:
  * optional leading +, then 8–15 digits.
+ *
+ * Bare 8-digit inputs are normalized to HK E.164 (+852…): the WhatsApp
+ * delivery bridge requires a full E.164 number, and 8-digit local format is
+ * the overwhelmingly common entry style on this HK-focused site.
  */
 export function validateWorkshopPhone(
   raw: string,
@@ -39,6 +43,11 @@ export function validateWorkshopPhone(
       ok: false,
       errorKey: "workshop.capture.phoneInvalidHk",
     };
+  }
+
+  // Bare 8 digits → treat as a local HK number and expand to E.164.
+  if (/^\d{8}$/.test(phone)) {
+    return { ok: true, phone: `+852${phone}` };
   }
 
   // General international: optional +, then 8–15 digits.

@@ -261,23 +261,37 @@ function deriveVerdictAndScore(input: {
     }
   }
 
-  const investedHit = impact.cutOrder.investedAbsorbedHKD > 0;
+  // v6: measure the dent, not the touch.
+  // - penetrationRatio: how big the residual shock is vs total liquid+invested
+  // - investedDrawdownPct: how deep into the invested pool the shock went
+  // A small drawdown (≤10% of invested) with good coverage is NOT a failure.
+  const liquidAtStart = Math.max(0, pyramid.emergencyFund.savedAmountHKD);
+  const investedAtStart = Math.max(0, pyramid.investment.lumpSumHKD);
+  const assetsAtStart = Math.max(1, liquidAtStart + investedAtStart);
+  const penetrationRatio = penetrationAmount / assetsAtStart;
+  const investedDrawdownPct =
+    investedAtStart > 0
+      ? impact.cutOrder.investedAbsorbedHKD / investedAtStart
+      : 0;
+
   const heavyPenetration = penetrationAmount > income * 6;
   const weakCover = gross > 0 && coverRatio < 0.25;
 
   let verdict: CrisisStressTestVerdict;
   if (
-    coverRatio >= 0.8 &&
-    penetrationAmount <= income * 0.5 &&
+    coverRatio >= 0.6 &&
+    penetrationRatio <= 0.15 &&
     delayYears == null &&
-    !investedHit
+    investedDrawdownPct <= 0.1
   ) {
     verdict = "SHIELDED";
   } else if (
     weakCover ||
-    investedHit ||
-    (delayYears != null && delayYears >= 1) ||
-    heavyPenetration
+    (gross > 0 && coverRatio < 0.4) ||
+    penetrationRatio > 0.6 ||
+    (delayYears != null && delayYears >= 2) ||
+    heavyPenetration ||
+    (investedDrawdownPct > 0.5 && coverRatio < 0.6)
   ) {
     verdict = "PENETRATED";
   } else {
@@ -294,15 +308,19 @@ function deriveVerdictAndScore(input: {
   }
 
   // Keep badge colour bands and gauge sub-score aligned forever.
+  const drawdownPenalty = Math.min(10, investedDrawdownPct * 25);
   let resilienceScore: number;
   if (verdict === "SHIELDED") {
     resilienceScore = Math.round(clamp(88 + coverRatio * 12, 85, 100));
   } else if (verdict === "PARTIAL") {
     resilienceScore = Math.round(
       clamp(
-        55 + coverRatio * 15 - Math.min(12, penetrationAmount / 100_000),
+        55 +
+          coverRatio * 15 -
+          Math.min(12, penetrationAmount / 100_000) -
+          drawdownPenalty,
         45,
-        70,
+        78,
       ),
     );
   } else {
@@ -311,9 +329,9 @@ function deriveVerdictAndScore(input: {
         28 +
           coverRatio * 10 -
           Math.min(18, penetrationAmount / 120_000) -
-          (investedHit ? 6 : 0),
+          drawdownPenalty * 0.8,
         10,
-        40,
+        45,
       ),
     );
   }
@@ -353,11 +371,9 @@ function resolveBaselineTimeline(
     retirementAge: Math.min(80, Math.max(ctx.age + 1, Math.round(ctx.retirementAge))),
     monthlyIncome: ctx.monthlyIncome,
     monthlyExpenses: ctx.expenses.totalHKD,
-    monthlyFun: ctx.pyramid.investment.monthlyFunHKD,
     emergencyFundSavedHKD: ctx.pyramid.emergencyFund.savedAmountHKD,
     investment: {
       lumpSumHKD: ctx.pyramid.investment.lumpSumHKD,
-      monthlyInvestmentHKD: ctx.pyramid.investment.monthlyInvestmentHKD,
       allocation: ctx.pyramid.investment.riskAllocation,
     },
     goals: activeGoalsForJourney(ctx.pyramid, ctx.journey),

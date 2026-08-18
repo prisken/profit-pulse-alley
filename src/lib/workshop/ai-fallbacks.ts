@@ -65,12 +65,6 @@ export function buildDeterministicPyramidGuess(input: {
   const lumpSumHKD = Math.round(
     annualIncome * 0.1 * savingYears * 0.55,
   );
-  // ~15% of income, rounded to nearest 500 — typical surplus share for investing.
-  const monthlyInvestmentHKD = Math.max(
-    0,
-    Math.round((Math.max(0, input.monthlyIncome) * 0.15) / 500) * 500,
-  );
-  const monthlyFunHKD = Math.round(input.monthlyIncome * 0.05);
 
   const pyramid: PyramidState = {
     protection: {
@@ -87,16 +81,15 @@ export function buildDeterministicPyramidGuess(input: {
     goals: {
       goals: [
         {
-          id: "retirement",
-          icon: "PiggyBank",
+          id: "home-down-payment",
+          icon: "House",
           label: {
-            en: "Retirement nest egg",
-            zhHant: "退休儲備",
+            en: "Home down payment",
+            zhHant: "置業首期",
           },
           targetAmountHKD: Math.round(input.monthlyIncome * 12 * 15),
           targetAge: retirementAge,
           targetYear: deriveGoalYear(retirementAge, userAge),
-          goalType: "retirementTarget",
         },
         {
           id: "family-buffer",
@@ -108,15 +101,12 @@ export function buildDeterministicPyramidGuess(input: {
           targetAmountHKD: Math.round(input.monthlyIncome * 6),
           targetAge: bufferAge,
           targetYear: deriveGoalYear(bufferAge, userAge),
-          goalType: "spend",
         },
       ],
     },
     investment: {
       riskAllocation: { ...benchmarks.riskAllocation },
       lumpSumHKD,
-      monthlyInvestmentHKD,
-      monthlyFunHKD,
     },
   };
 

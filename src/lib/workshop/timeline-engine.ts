@@ -1,10 +1,11 @@
 /**
- * Deterministic life-timeline engine for Workshop Pyramid Lab v3.2 (real terms).
+ * Deterministic life-timeline engine for Workshop Pyramid Lab v4 (real terms).
  * Pure TypeScript — no AI, no I/O, no Prisma.
  *
  * All figures in today's purchasing power:
- * - Expenses / fun / goal amounts: no inflation (entered values held flat).
- * - Invested pool compounds at blended REAL return.
+ * - Expenses / goal amounts: no inflation (entered values held flat).
+ * - Invested pool compounds at blended REAL return (lump sum only — no monthly
+ *   investing input in the game anymore; working-year surplus goes to liquid).
  * - Liquid pool decays at LIQUID_REAL_RETURN (−3%/yr).
  * - Salary follows real career curve via advanceMonthlyIncomeForYear.
  */
@@ -15,25 +16,22 @@ import {
   LIQUID_REAL_RETURN,
 } from "@/lib/workshop/investment-returns";
 import { getEmergencyFundTargetMonths } from "@/lib/workshop/pyramid-benchmarks";
-import type { GoalItem, GoalType, LayerFlag } from "@/lib/workshop/types";
+import type { GoalItem, LayerFlag } from "@/lib/workshop/types";
 
 export const TIMELINE_MAX_AGE = 90;
 export const OVERSAVED_EF_MULTIPLIER = 1.5;
 /** Debug / parse hint — payload version stays "lifeTimeline". */
-export const TIMELINE_ENGINE_REVISION = 3;
+export const TIMELINE_ENGINE_REVISION = 4;
 
 export type TimelineInput = {
   age: number;
   retirementAge: number;
   monthlyIncome: number;
-  /** Living expenses (monthly). Fun is tracked separately and added to outflow. */
+  /** Living expenses (monthly). */
   monthlyExpenses: number;
-  monthlyFun: number;
   emergencyFundSavedHKD: number;
   investment: {
     lumpSumHKD: number;
-    /** Monthly contribution during working years (stops at retirement). */
-    monthlyInvestmentHKD: number;
     allocation: { low: number; mid: number; high: number };
   };
   goals: GoalItem[];
@@ -57,10 +55,7 @@ export type TimelineYearRow = {
   passiveIncome: number;
   totalIncome: number;
   expenses: number;
-  funBudget: number;
   surplus: number;
-  /** Annual contribution swept into invested (working years only). */
-  investedContributionHKD: number;
   /** Invested capital liquidated this year to fund spend goals. */
   investedLiquidatedHKD: number;
   liquidPool: number;
@@ -69,19 +64,10 @@ export type TimelineYearRow = {
 
 export type GoalTimelineProjection = {
   goalId: string;
-  goalType: GoalType;
   targetAge: number;
   inflatedTargetHKD: number;
   attainedAtAge: number | null;
   status: LayerFlag;
-};
-
-export type RetirementTargetProjection = {
-  goalId: string;
-  targetHKD: number;
-  projectedAssetsHKD: number;
-  gapHKD: number;
-  met: boolean;
 };
 
 export type EmergencyFundTimelineStatus =
@@ -108,7 +94,6 @@ export type TimelineRetirement = {
 export type TimelineResult = {
   rows: TimelineYearRow[];
   goals: GoalTimelineProjection[];
-  retirementTargets: RetirementTargetProjection[];
   emergencyFund: TimelineEmergencyFund;
   retirement: TimelineRetirement;
   blendedRate: number;
@@ -201,7 +186,6 @@ function analyzeEmergencyFund(input: {
 
 type MutableGoal = {
   goalId: string;
-  goalType: GoalType;
   targetAge: number;
   baseAmountHKD: number;
   inflatedTargetHKD: number;
@@ -218,11 +202,9 @@ export function runLifeTimeline(input: TimelineInput): TimelineResult {
   const maxAge = TIMELINE_MAX_AGE;
   const nowYear = input.nowYear ?? new Date().getFullYear();
   const blendedRate = blendedAnnualReturn(input.investment.allocation);
-  const monthlyInvest = clampNonNeg(input.investment.monthlyInvestmentHKD);
 
   let monthlySalary = clampNonNeg(input.monthlyIncome);
   const monthlyLiving = clampNonNeg(input.monthlyExpenses);
-  const monthlyFun = clampNonNeg(input.monthlyFun);
 
   let liquidPool = clampNonNeg(input.emergencyFundSavedHKD);
   let investedPool = clampNonNeg(input.investment.lumpSumHKD);
@@ -231,11 +213,8 @@ export function runLifeTimeline(input: TimelineInput): TimelineResult {
     .map((g) => {
       const targetAge = Math.round(g.targetAge);
       const baseAmountHKD = clampNonNeg(g.targetAmountHKD);
-      const goalType: GoalType =
-        g.goalType === "retirementTarget" ? "retirementTarget" : "spend";
       return {
         goalId: g.id,
-        goalType,
         targetAge,
         baseAmountHKD,
         // Real terms: target stays at today's HKD (field name kept for UI/PDF compat).
@@ -288,23 +267,14 @@ export function runLifeTimeline(input: TimelineInput): TimelineResult {
       }
     }
 
-    const funBudget = roundMoney(monthlyFun * 12);
-    // Real terms: expenses + fun held flat (no inflation).
-    const expenses = roundMoney((monthlyLiving + monthlyFun) * 12);
+    const expenses = roundMoney(monthlyLiving * 12);
     const totalIncome = roundMoney(salaryIncome + passiveIncome);
     let surplus = roundMoney(totalIncome - expenses);
-    let investedContributionHKD = 0;
     let investedLiquidatedHKD = 0;
 
     if (surplus >= 0) {
-      if (!isRetired && monthlyInvest > 0) {
-        const planned = roundMoney(monthlyInvest * 12);
-        investedContributionHKD = roundMoney(Math.min(planned, surplus));
-        investedPool = roundMoney(investedPool + investedContributionHKD);
-        surplus = roundMoney(surplus - investedContributionHKD);
-      }
+      // No monthly-investing input anymore: all working-year surplus sits in liquid.
       liquidPool = roundMoney(liquidPool + surplus);
-      surplus = roundMoney(investedContributionHKD + surplus); // report total cash surplus
     } else {
       let shortfall = -surplus;
       const fromLiquid = Math.min(liquidPool, shortfall);
@@ -320,9 +290,6 @@ export function runLifeTimeline(input: TimelineInput): TimelineResult {
 
     // Spend goals: liquid first; invested only when this goal explicitly allows it.
     for (const goal of goals) {
-      if (goal.goalType === "retirementTarget") {
-        continue;
-      }
       if (goal.attainedAtAge != null) {
         continue;
       }
@@ -365,9 +332,7 @@ export function runLifeTimeline(input: TimelineInput): TimelineResult {
       passiveIncome,
       totalIncome,
       expenses,
-      funBudget,
       surplus,
-      investedContributionHKD,
       investedLiquidatedHKD,
       liquidPool: roundMoney(liquidPool),
       investedPool: roundMoney(investedPool),
@@ -382,38 +347,12 @@ export function runLifeTimeline(input: TimelineInput): TimelineResult {
           year: simYearIndex,
         });
       }
-      // Expenses + fun stay flat in real terms (no end-of-year inflation).
+      // Expenses stay flat in real terms (no end-of-year inflation).
     }
   }
 
   if (!capturedRetirement) {
     assetsAtRetirement = roundMoney(liquidPool + investedPool);
-  }
-
-  const retirementTargets: RetirementTargetProjection[] = goals
-    .filter((g) => g.goalType === "retirementTarget")
-    .map((g) => {
-      const targetHKD = roundMoney(g.baseAmountHKD);
-      const projectedAssetsHKD = roundMoney(assetsAtRetirement);
-      const gapHKD = roundMoney(Math.max(0, targetHKD - projectedAssetsHKD));
-      return {
-        goalId: g.goalId,
-        targetHKD,
-        projectedAssetsHKD,
-        gapHKD,
-        met: projectedAssetsHKD + 1e-9 >= targetHKD,
-      };
-    });
-
-  // Stamp inflated target on retirement-target projections for UI/rating.
-  for (const rt of retirementTargets) {
-    const g = goals.find((x) => x.goalId === rt.goalId);
-    if (g) {
-      g.inflatedTargetHKD = rt.targetHKD;
-      if (rt.met) {
-        g.attainedAtAge = retirementAge;
-      }
-    }
   }
 
   const emergencyFund = analyzeEmergencyFund({
@@ -427,38 +366,13 @@ export function runLifeTimeline(input: TimelineInput): TimelineResult {
 
   return {
     rows,
-    goals: goals.map((g) => {
-      if (g.goalType === "retirementTarget") {
-        const rt = retirementTargets.find((r) => r.goalId === g.goalId);
-        let status: LayerFlag = "red";
-        if (rt?.met) {
-          status = "green";
-        } else if (rt && rt.gapHKD / Math.max(1, rt.targetHKD) <= 0.2) {
-          status = "amber";
-        }
-        return {
-          goalId: g.goalId,
-          goalType: g.goalType,
-          targetAge: g.targetAge,
-          inflatedTargetHKD: g.inflatedTargetHKD,
-          attainedAtAge: g.attainedAtAge,
-          status,
-        };
-      }
-      return {
-        goalId: g.goalId,
-        goalType: g.goalType,
-        targetAge: g.targetAge,
-        inflatedTargetHKD: g.inflatedTargetHKD,
-        attainedAtAge: g.attainedAtAge,
-        status: goalStatusFromAttainment(
-          g.attainedAtAge,
-          g.targetAge,
-          startAge,
-        ),
-      };
-    }),
-    retirementTargets,
+    goals: goals.map((g) => ({
+      goalId: g.goalId,
+      targetAge: g.targetAge,
+      inflatedTargetHKD: g.inflatedTargetHKD,
+      attainedAtAge: g.attainedAtAge,
+      status: goalStatusFromAttainment(g.attainedAtAge, g.targetAge, startAge),
+    })),
     emergencyFund,
     retirement: {
       retirementAge,
@@ -488,34 +402,8 @@ export function goalStatusAtYear(
   }
 
   const ageAtScrub = first.age + (scrubbedYear - first.year);
-  const retirementAge = result.retirement.retirementAge;
-  const retirementTargets = result.retirementTargets ?? [];
 
   return result.goals.map((g) => {
-    if (g.goalType === "retirementTarget") {
-      const rt = retirementTargets.find((r) => r.goalId === g.goalId);
-      if (!rt) {
-        return { goalId: g.goalId, status: "never" };
-      }
-      if (rt.met) {
-        return {
-          goalId: g.goalId,
-          status: ageAtScrub >= retirementAge ? "attained" : "on_track",
-        };
-      }
-      const ratio = rt.gapHKD / Math.max(1, rt.targetHKD);
-      if (ratio <= 0.2) {
-        return {
-          goalId: g.goalId,
-          status: ageAtScrub >= retirementAge ? "late" : "on_track",
-        };
-      }
-      return {
-        goalId: g.goalId,
-        status: ageAtScrub >= retirementAge ? "never" : "late",
-      };
-    }
-
     if (g.attainedAtAge == null) {
       return { goalId: g.goalId, status: "never" };
     }

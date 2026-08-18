@@ -20,7 +20,6 @@ const expenses: ExpensesState = {
 describe("SPENDING_CUT_ORDER", () => {
   it("keeps the shared crisis/squeeze order stable", () => {
     expect(SPENDING_CUT_ORDER).toEqual([
-      "fun",
       "discretionary",
       "liquid",
       "invested",
@@ -29,22 +28,20 @@ describe("SPENDING_CUT_ORDER", () => {
 });
 
 describe("cutAvailable", () => {
-  it("cuts fun first, then discretionary", () => {
-    const result = cutAvailable(expenses, 5_000, 90_000);
-    expect(result.squeezeCutsHKD.fun).toBe(60_000);
-    expect(result.squeezeCutsHKD.discretionary).toBe(30_000);
-    expect(result.monthlyFunRemainingHKD).toBe(0);
-    expect(result.monthlyDiscretionaryRemainingHKD).toBe(1_500);
-    expect(result.remainingHKD).toBe(0);
+  it("cuts discretionary up to the requested annual amount", () => {
+    const result = cutAvailable(expenses, 90_000);
+    expect(result.squeezeCutsHKD.fun).toBe(0);
+    expect(result.squeezeCutsHKD.discretionary).toBe(48_000);
+    expect(result.monthlyDiscretionaryRemainingHKD).toBe(0);
+    expect(result.remainingHKD).toBe(42_000);
   });
 
-  it("caps at available fun + discretionary without going negative", () => {
-    const result = cutAvailable(expenses, 1_000, 100_000);
-    expect(result.trimmedHKD).toBe(60_000);
-    expect(result.squeezeCutsHKD.fun).toBe(12_000);
+  it("caps at available discretionary without going negative", () => {
+    const result = cutAvailable(expenses, 100_000);
+    expect(result.trimmedHKD).toBe(48_000);
+    expect(result.squeezeCutsHKD.fun).toBe(0);
     expect(result.squeezeCutsHKD.discretionary).toBe(48_000);
-    expect(result.monthlyFunRemainingHKD).toBe(0);
     expect(result.monthlyDiscretionaryRemainingHKD).toBe(0);
-    expect(result.remainingHKD).toBe(40_000);
+    expect(result.remainingHKD).toBe(52_000);
   });
 });

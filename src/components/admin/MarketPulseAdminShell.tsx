@@ -149,6 +149,12 @@ export function MarketPulseAdminQuickActions({
       <p className="w-full text-xs text-zinc-500 sm:mr-auto sm:w-auto">
         {t("auth.admin.mp.nav.playerLinksHint")}
       </p>
+      <Link href="/admin/market-pulse/approvals" className={linkClass}>
+        {t("auth.admin.mp.nav.approvals")}
+      </Link>
+      <Link href="/admin/market-pulse/cycles" className={linkClass}>
+        {t("auth.admin.mp.nav.cyclesHub")}
+      </Link>
       <Link href="/market-pulse" className={linkClass}>
         {t("auth.admin.quickActions.hub")}
       </Link>

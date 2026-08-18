@@ -26,7 +26,6 @@ import {
 import {
   buildFallbackReaction,
   computeBand,
-  computeExtras,
   isValidEmail,
   parseNumericInput,
   type GameLocale,
@@ -73,18 +72,18 @@ function buildReactionUserPrompt(args: {
   band: BandKey;
   roundKey: RoundKey;
 }): string {
-  const module = getModule(args.moduleId);
+  const mod = getModule(args.moduleId);
   const facts: Record<string, string> = {};
-  for (const field of module?.fields ?? []) {
+  for (const field of mod?.fields ?? []) {
     const value = args.inputs[field.key];
     facts[field.label.en] =
       value !== undefined ? String(value) : "(not provided)";
   }
   let thresholdFact: Record<string, string> = {};
-  if (module && module.rule.kind === "threshold") {
-    const rule = module.rule;
+  if (mod && mod.rule.kind === "threshold") {
+    const rule = mod.rule;
     thresholdFact = Object.fromEntries(
-      module.fields
+      mod.fields
         .filter((f) => f.key === rule.field)
         .map((f) => [f.label, `green=${rule.green} amber=${rule.amber}`]),
     );
@@ -93,8 +92,8 @@ function buildReactionUserPrompt(args: {
     "FACTS BLOCK (JSON):",
     JSON.stringify(
       {
-        archetype: module?.archetype,
-        question: module?.question.en,
+        archetype: mod?.archetype,
+        question: mod?.question.en,
         numbers: facts,
         computedSeverity: BAND_META[args.band].label.en,
         benchmarkThresholds: thresholdFact,
@@ -125,18 +124,18 @@ export async function predictPitchReaction(
   args: ReactionRequest,
 ): Promise<ReactionResult> {
   const locale: GameLocale = args.locale ?? "en";
-  const module = getModule(args.moduleId);
-  const fallbackText = module
-    ? buildFallbackReaction(module, computeBand(module, args.inputs), args.inputs, locale)
+  const mod = getModule(args.moduleId);
+  const fallbackText = mod
+    ? buildFallbackReaction(mod, computeBand(mod, args.inputs), args.inputs, locale)
     : locale === "zhHant"
       ? "有趣的數字。在進一步之前，我想先深入了解當中的假設。"
       : "Interesting numbers. I'd want to dig into the assumptions before I go further.";
 
-  if (!module) {
+  if (!mod) {
     return { text: fallbackText, fromAi: false };
   }
 
-  const band = computeBand(module, args.inputs);
+  const band = computeBand(mod, args.inputs);
   try {
     if (!process.env.DEEPSEEK_API_KEY) {
       return { text: fallbackText, fromAi: false };
@@ -196,16 +195,19 @@ export async function savePitchLead(payload: LeadPayload): Promise<LeadResult> {
   const company = payload.company.trim();
   const concern = payload.concern?.trim() || null;
 
-  if (name.length < 2) {
+  // Contact is OPTIONAL: players who skip it still land as a lead with their
+  // full journey data (admin shows "Anonymous player" / "—" proxies).
+  // When a field IS provided it is still validated.
+  if (name && name.length < 2) {
     return { ok: false, error: "Please tell us your name." };
   }
-  if (!isValidEmail(email)) {
+  if (email && !isValidEmail(email)) {
     return { ok: false, error: "That work email doesn't look right." };
   }
-  if (phone.length < 6) {
+  if (phone && phone.length < 6) {
     return { ok: false, error: "We need a phone number to reach you." };
   }
-  if (company.length < 2) {
+  if (company && company.length < 2) {
     return { ok: false, error: "What's your company called?" };
   }
 

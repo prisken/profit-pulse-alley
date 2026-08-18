@@ -41,7 +41,6 @@ export type PyramidBenchmarkSnapshot = {
   emergencyFundTargetMonths: number;
   emergencyFundTargetHKD: number;
   riskAllocation: RiskAllocationBenchmark;
-  suggestedMonthlyInvestmentHKD: number;
   ciBreakdown: CriticalIllnessBreakdown;
   efBreakdown: EmergencyFundBreakdown;
 };
@@ -224,8 +223,6 @@ export function buildPyramidBenchmarks(input: {
     emergencyFundTargetMonths: efBreakdown.targetMonths,
     emergencyFundTargetHKD: efBreakdown.recommendedHKD,
     riskAllocation: getRiskAllocationBenchmark(input.age),
-    // Soft savings rate target (~10% of gross) for investment-layer flags.
-    suggestedMonthlyInvestmentHKD: Math.round(monthly * 0.1),
     ciBreakdown,
     efBreakdown,
   };
@@ -250,46 +247,16 @@ function worseFlag(a: LayerFlag, b: LayerFlag): LayerFlag {
   return rank[a] >= rank[b] ? a : b;
 }
 
-/** i18n key for amber when monthly investing exceeds available surplus. */
-export const MONTHLY_INVESTING_OVER_SURPLUS_KEY =
-  "workshop.pyramid.investment.monthlyInvesting.amberWarning" as const;
-
-export type ComputeLayerFlagsOptions = {
-  /** Gross monthly income (HKD). Enables surplus-vs-investing amber rule. */
-  monthlyIncomeHKD?: number;
-  /**
-   * Confirmed monthly expenses total (HKD). When omitted, uses
-   * `monthlyIncome × BENCHMARK_EXPENSE_RATIO` as a stand-in.
-   */
-  monthlyExpensesHKD?: number;
-};
-
-/**
- * Available monthly surplus for investing helper / amber rule:
- * income − expenses − fun. Expenses fall back to the benchmark burn ratio.
- */
-export function availableMonthlySurplusHKD(input: {
-  monthlyIncomeHKD: number;
-  monthlyExpensesHKD?: number;
-  monthlyFunHKD: number;
-}): number {
-  const income = Math.max(0, input.monthlyIncomeHKD);
-  const expenses =
-    input.monthlyExpensesHKD != null && Number.isFinite(input.monthlyExpensesHKD)
-      ? Math.max(0, input.monthlyExpensesHKD)
-      : income * BENCHMARK_EXPENSE_RATIO;
-  const fun = Math.max(0, input.monthlyFunHKD);
-  return Math.round(income - expenses - fun);
-}
-
 /**
  * Compare a pyramid (usually AI current-state guesses) to deterministic benchmarks.
  * Flags are never AI-decided.
+ *
+ * v4 investment flag: closeness of the risk allocation to the age-based glide
+ * path benchmark + a penalty for holding zero invested capital.
  */
 export function computeLayerFlags(
   pyramid: PyramidState,
   benchmarks: PyramidBenchmarkSnapshot,
-  options?: ComputeLayerFlagsOptions,
 ): LayerFlags {
   const medicalFlag = ratioToFlag(
     pyramid.protection.medicalCoveragePercent,
@@ -310,24 +277,18 @@ export function computeLayerFlags(
     goalsFlag = "amber";
   }
 
-  const monthlyInvest = Math.max(0, pyramid.investment.monthlyInvestmentHKD);
-  let investmentFlag = ratioToFlag(
-    monthlyInvest,
-    benchmarks.suggestedMonthlyInvestmentHKD,
+  const risk = pyramid.investment.riskAllocation;
+  const bench = benchmarks.riskAllocation;
+  const maxDelta = Math.max(
+    Math.abs(risk.low - bench.low),
+    Math.abs(risk.mid - bench.mid),
+    Math.abs(risk.high - bench.high),
   );
+  let investmentFlag: LayerFlag =
+    maxDelta <= 15 ? "green" : maxDelta <= 30 ? "amber" : "red";
 
-  if (
-    options?.monthlyIncomeHKD != null &&
-    Number.isFinite(options.monthlyIncomeHKD)
-  ) {
-    const surplus = availableMonthlySurplusHKD({
-      monthlyIncomeHKD: options.monthlyIncomeHKD,
-      monthlyExpensesHKD: options.monthlyExpensesHKD,
-      monthlyFunHKD: pyramid.investment.monthlyFunHKD,
-    });
-    if (monthlyInvest > surplus) {
-      investmentFlag = worseFlag(investmentFlag, "amber");
-    }
+  if (pyramid.investment.lumpSumHKD <= 0) {
+    investmentFlag = worseFlag(investmentFlag, "amber");
   }
 
   return {

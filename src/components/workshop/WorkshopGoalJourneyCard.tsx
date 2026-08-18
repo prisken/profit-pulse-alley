@@ -19,7 +19,6 @@ import {
   computeSqueezeRecommendationAction,
   narrateGoalSqueezeAction,
 } from "@/lib/workshop/pyramid-actions";
-import { isRetirementRailGoal } from "@/lib/workshop/goal-journey";
 import type {
   GoalItem,
   SqueezeRecommendation,
@@ -48,6 +47,8 @@ type WorkshopGoalJourneyCardProps = Readonly<{
   goal: GoalItem;
   tone: WorkshopTone;
   active: boolean;
+  /** Bumped after each journey decision — forces a fresh outlook recompute. */
+  planRevision: number;
   onDecisionComplete: (result: ApplyGoalJourneyDecisionActionResult) => void;
 }>;
 
@@ -60,11 +61,11 @@ export default function WorkshopGoalJourneyCard({
   goal,
   tone,
   active,
+  planRevision,
   onDecisionComplete,
 }: WorkshopGoalJourneyCardProps) {
   const { t, locale } = useTranslations();
   const switchId = useId();
-  const isSyntheticRetirement = isRetirementRailGoal(goal);
 
   const [outlook, setOutlook] = useState<GoalOutlook | null>(null);
   const [efMonths, setEfMonths] = useState<number | null>(null);
@@ -99,7 +100,7 @@ export default function WorkshopGoalJourneyCard({
     : null;
 
   useEffect(() => {
-    if (!active || isSyntheticRetirement) {
+    if (!active) {
       return;
     }
 
@@ -146,8 +147,8 @@ export default function WorkshopGoalJourneyCard({
     active,
     allowLiquidation,
     goal.id,
-    isSyntheticRetirement,
     loadRetry,
+    planRevision,
     sessionId,
     t,
   ]);
@@ -199,9 +200,6 @@ export default function WorkshopGoalJourneyCard({
   }
 
   function submitDecision(status: "applied" | "given_up") {
-    if (isSyntheticRetirement) {
-      return;
-    }
     setDecisionError(null);
     startDecideTransition(async () => {
       try {
@@ -220,14 +218,6 @@ export default function WorkshopGoalJourneyCard({
         );
       }
     });
-  }
-
-  if (isSyntheticRetirement) {
-    return (
-      <p className="text-sm text-slate-500" data-testid="workshop-journey-card-body">
-        {t("workshop.journey.retirementReadOnly")}
-      </p>
-    );
   }
 
   if (loadError) {
@@ -339,15 +329,17 @@ export default function WorkshopGoalJourneyCard({
           role="switch"
           aria-checked={allowLiquidation}
           className={[
-            "relative mt-0.5 h-7 w-12 shrink-0 touch-manipulation rounded-full transition-colors",
+            "relative mt-0.5 h-7 w-12 shrink-0 touch-manipulation rounded-full p-0 transition-colors",
             allowLiquidation ? "bg-emerald-500" : "bg-slate-300",
           ].join(" ")}
           onClick={() => handleLiquidationToggle(!allowLiquidation)}
         >
           <span
             className={[
-              "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform",
-              allowLiquidation ? "translate-x-5" : "translate-x-0.5",
+              "absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform",
+              allowLiquidation
+                ? "translate-x-[calc(100%_-_0.25rem)]"
+                : "translate-x-0",
             ].join(" ")}
           />
         </button>
@@ -360,11 +352,10 @@ export default function WorkshopGoalJourneyCard({
       </div>
 
       {recommendation ? (
-        <section className="min-w-0 space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        <section className="min-w-0 space-y-3">          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
             {t("workshop.journey.squeezeHeading")}
           </p>
-          <div className="grid min-w-0 grid-cols-1 gap-3 min-[360px]:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="min-w-0 overflow-x-hidden rounded-xl border border-slate-200 bg-white p-2.5">
               <p className="mb-1 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                 {t("workshop.journey.donutCurrent")}
@@ -425,18 +416,32 @@ export default function WorkshopGoalJourneyCard({
             className={[
               "inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border px-3.5 text-sm font-semibold transition-colors sm:w-auto",
               acceptedSqueeze
-                ? "border-emerald-500 bg-emerald-100 text-emerald-900"
+                ? "border-emerald-500 bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
                 : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100",
             ].join(" ")}
-            onClick={() => setAcceptedSqueeze(true)}
-            disabled={acceptedSqueeze}
+            onClick={() => setAcceptedSqueeze((prev) => !prev)}
+            aria-pressed={acceptedSqueeze}
           >
             {acceptedSqueeze
-              ? t("workshop.journey.squeezeAccepted")
+              ? t("workshop.journey.undoSqueeze")
               : t("workshop.journey.acceptSqueeze")}
           </button>
         </section>
-      ) : null}
+      ) : (
+        <p
+          className={[
+            "rounded-xl border px-3.5 py-3 text-sm leading-snug",
+            allowLiquidation
+              ? "border-emerald-200 bg-emerald-50/80 text-emerald-800"
+              : "border-slate-200 bg-slate-50 text-slate-600",
+          ].join(" ")}
+          data-testid="workshop-journey-no-squeeze-note"
+        >
+          {allowLiquidation
+            ? t("workshop.journey.noSqueezeLiquidation")
+            : t("workshop.journey.noSqueezeOnTrack")}
+        </p>
+      )}
 
       {decisionError ? (
         <p className="text-sm text-rose-700" role="alert">

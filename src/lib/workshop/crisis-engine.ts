@@ -94,18 +94,17 @@ export function computeCoverageOffset(
 }
 
 /**
- * Cut order: monthlyFun (annualised) → discretionary (annualised) → liquid → invested.
+ * Cut order: discretionary (annualised) → liquid → invested.
+ * Fun is no longer part of the game (v4).
  */
 export function applyCutOrder(input: {
   toAbsorbHKD: number;
-  monthlyFunHKD: number;
   monthlyDiscretionaryHKD: number;
   liquidPoolHKD: number;
   investedPoolHKD: number;
 }): CrisisCutOrder & {
   liquidRemainingHKD: number;
   investedRemainingHKD: number;
-  monthlyFunRemainingHKD: number;
   monthlyDiscretionaryRemainingHKD: number;
 } {
   let remaining = Math.max(0, roundMoney(input.toAbsorbHKD));
@@ -120,13 +119,11 @@ export function applyCutOrder(input: {
         },
       ],
     },
-    input.monthlyFunHKD,
     remaining,
   );
-  const funAbsorbedHKD = spendingCuts.squeezeCutsHKD.fun;
+  const funAbsorbedHKD = 0;
   const discretionaryAbsorbedHKD = spendingCuts.squeezeCutsHKD.discretionary;
   remaining = spendingCuts.remainingHKD;
-  const monthlyFunRemainingHKD = spendingCuts.monthlyFunRemainingHKD;
   const monthlyDiscretionaryRemainingHKD =
     spendingCuts.monthlyDiscretionaryRemainingHKD;
 
@@ -154,7 +151,6 @@ export function applyCutOrder(input: {
     remainingUncoveredHKD: remaining,
     liquidRemainingHKD,
     investedRemainingHKD,
-    monthlyFunRemainingHKD,
     monthlyDiscretionaryRemainingHKD,
   };
 }
@@ -214,12 +210,10 @@ export function applyCrisis(
     invested = roundMoney(invested - marketDropHKD);
   }
 
-  const monthlyFun = Math.max(0, context.pyramid.investment.monthlyFunHKD);
   const monthlyDisc = discretionaryMonthly(context.expenses);
 
   const cut = applyCutOrder({
     toAbsorbHKD: uncoveredOneTime,
-    monthlyFunHKD: monthlyFun,
     monthlyDiscretionaryHKD: monthlyDisc,
     liquidPoolHKD: liquid,
     investedPoolHKD: invested,
@@ -245,11 +239,9 @@ export function applyCrisis(
     retirementAge: context.retirementAge,
     monthlyIncome: context.monthlyIncome,
     monthlyExpenses: shockedLiving,
-    monthlyFun: cut.monthlyFunRemainingHKD,
     emergencyFundSavedHKD: cut.liquidRemainingHKD,
     investment: {
       lumpSumHKD: cut.investedRemainingHKD,
-      monthlyInvestmentHKD: context.pyramid.investment.monthlyInvestmentHKD,
       allocation: context.pyramid.investment.riskAllocation,
     },
     goals: shockedGoals,
@@ -347,6 +339,7 @@ export function buildCrisisImpactsFromEngine(
   }
 
   if (result.cutOrder.funAbsorbedHKD > 0) {
+    // Legacy sessions only — fun is not part of the game anymore (v4).
     impacts.push({
       layer: "goals",
       stageId: "fun",

@@ -480,6 +480,14 @@ model WorkshopLead {
   stressTestVerdict        String?
   /** Risk-quiz profile vs goal-journey behavior gap (advisor follow-up). */
   profileBehaviorMismatch  Boolean?
+  /** Set when the player provided a phone: the blueprint PDF is queued for WhatsApp delivery. */
+  whatsappPdfRequestedAt   DateTime?
+  /** Set when the delivery worker confirmed the PDF was sent via WhatsApp. */
+  whatsappPdfSentAt        DateTime?
+  /** Delivery worker retry counter (guards against infinite retries). */
+  whatsappPdfAttempts      Int          @default(0)
+  /** Last delivery error, surfaced in the admin console. */
+  whatsappPdfError         String?
   createdAt                DateTime        @default(now())
 
   @@index([createdAt])

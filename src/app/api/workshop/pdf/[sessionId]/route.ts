@@ -315,6 +315,12 @@ function parseSummary(value: unknown): SummaryState | null {
         rank: Math.round(asFiniteNumber(row.rank)),
         title,
         category,
+        leverType:
+          row.leverType === "instant" ||
+          row.leverType === "structural" ||
+          row.leverType === "behavioral"
+            ? row.leverType
+            : "behavioral",
         icon: String(row.icon ?? "Target"),
         impactPoints: asFiniteNumber(row.impactPoints),
         reasoning,

@@ -53,7 +53,6 @@ function pyramid(overrides?: {
           targetAmountHKD: 200_000,
           targetAge: 38,
           targetYear: NOW_YEAR + 3,
-          goalType: "spend",
         },
         {
           id: "home",
@@ -62,7 +61,6 @@ function pyramid(overrides?: {
           targetAmountHKD: 1_500_000,
           targetAge: 42,
           targetYear: NOW_YEAR + 7,
-          goalType: "spend",
         },
         {
           id: "edu",
@@ -71,15 +69,12 @@ function pyramid(overrides?: {
           targetAmountHKD: 600_000,
           targetAge: 45,
           targetYear: NOW_YEAR + 10,
-          goalType: "spend",
         },
       ],
     },
     investment: {
       riskAllocation: { low: 40, mid: 40, high: 20 },
       lumpSumHKD: 400_000,
-      monthlyInvestmentHKD: 6_000,
-      monthlyFunHKD: 4_000,
       ...overrides?.investment,
     },
   };
@@ -104,8 +99,6 @@ describe("action-goals decisions payload + fallback", () => {
       investment: {
         riskAllocation: { low: 20, mid: 30, high: 50 },
         lumpSumHKD: 15_000,
-        monthlyInvestmentHKD: 0,
-        monthlyFunHKD: 0,
       },
     });
     const ex = expenses(32_000);
@@ -178,18 +171,21 @@ describe("action-goals decisions payload + fallback", () => {
       {
         rank: 1,
         category: "protection" as const,
+        leverType: "structural" as const,
         icon: "Shield",
         impactPoints: 18.5,
       },
       {
         rank: 2,
         category: "savings" as const,
+        leverType: "instant" as const,
         icon: "PiggyBank",
         impactPoints: 14,
       },
       {
         rank: 3,
         category: "investment" as const,
+        leverType: "behavioral" as const,
         icon: "TrendingUp",
         impactPoints: 12,
       },
@@ -222,8 +218,6 @@ describe("action-goals decisions payload + fallback", () => {
       investment: {
         riskAllocation: { low: 60, mid: 30, high: 10 },
         lumpSumHKD: 300_000,
-        monthlyInvestmentHKD: 5_000,
-        monthlyFunHKD: 2_000,
       },
     });
     const ex = expenses(25_000);
@@ -287,9 +281,9 @@ describe("action-goals decisions payload + fallback", () => {
 
     const goals = buildDeterministicActionGoalsFallback(
       [
-        { rank: 1, category: "goal", icon: "Target", impactPoints: 9 },
-        { rank: 2, category: "investment", icon: "TrendingUp", impactPoints: 6 },
-        { rank: 3, category: "savings", icon: "PiggyBank", impactPoints: 4 },
+        { rank: 1, category: "goal", leverType: "instant", icon: "Target", impactPoints: 9 },
+        { rank: 2, category: "investment", leverType: "structural", icon: "TrendingUp", impactPoints: 6 },
+        { rank: 3, category: "savings", leverType: "behavioral", icon: "PiggyBank", impactPoints: 4 },
       ],
       decisions,
     );
@@ -313,8 +307,6 @@ describe("action-goals decisions payload + fallback", () => {
       investment: {
         riskAllocation: { low: 30, mid: 40, high: 30 },
         lumpSumHKD: 80_000,
-        monthlyInvestmentHKD: 2_000,
-        monthlyFunHKD: 1_000,
       },
     });
     const j = journey([
@@ -391,9 +383,9 @@ describe("action-goals decisions payload + fallback", () => {
 
     const goals = buildDeterministicActionGoalsFallback(
       [
-        { rank: 1, category: "savings", icon: "PiggyBank", impactPoints: 16 },
-        { rank: 2, category: "protection", icon: "Shield", impactPoints: 11 },
-        { rank: 3, category: "goal", icon: "Target", impactPoints: 8 },
+        { rank: 1, category: "savings", leverType: "instant", icon: "PiggyBank", impactPoints: 16 },
+        { rank: 2, category: "protection", leverType: "structural", icon: "Shield", impactPoints: 11 },
+        { rank: 3, category: "goal", leverType: "behavioral", icon: "Target", impactPoints: 8 },
       ],
       decisions,
     );
@@ -431,11 +423,14 @@ describe("action-goals decisions payload + fallback", () => {
     expect(Object.keys(decisions).sort()).toEqual(
       [
         "crisisStressTest",
+        "dataGaps",
+        "goalOutlooks",
         "goalsApplied",
         "goalsGivenUp",
         "postJourneyState",
         "profileBehaviorMismatch",
         "riskQuizProfile",
+        "runway",
         "squeezesAccepted",
         "squeezesRejected",
       ].sort(),

@@ -6,17 +6,13 @@ import { formatCompactHkd } from "@/lib/workshop/format-compact-hkd";
 import {
   buildPyramidBenchmarks,
   computeLayerFlags,
-  type PyramidBenchmarkSnapshot,
 } from "@/lib/workshop/pyramid-benchmarks";
 import { normalizePyramidState } from "@/lib/workshop/pyramid-normalize";
 import type {
-  ExpensesState,
   GoalItem,
-  GoalJourneyState,
   LayerFlag,
   LayerFlags,
   PyramidState,
-  RiskQuizState,
 } from "@/lib/workshop/types";
 import type { WorkshopAdminLeadRow } from "@/lib/workshop/admin-data";
 
@@ -69,14 +65,12 @@ function PyramidDiagram({
   age,
   monthlyIncomeHKD,
   industry,
-  expensesTotalHKD,
 }: {
   finalJson: unknown;
   aiJson: unknown;
   age: number;
   monthlyIncomeHKD: number | null;
   industry: string;
-  expensesTotalHKD: number | null;
 }) {
   const [mode, setMode] = useState<"final" | "ai">("final");
 
@@ -99,10 +93,7 @@ function PyramidDiagram({
       monthlyIncomeHKD: monthlyIncomeHKD ?? 0,
       industry,
     });
-    const flags = computeLayerFlags(chosen, benchmarks, {
-      monthlyIncomeHKD: monthlyIncomeHKD ?? undefined,
-      monthlyExpensesHKD: expensesTotalHKD ?? undefined,
-    });
+    const flags = computeLayerFlags(chosen, benchmarks);
     return {
       pyramid: chosen,
       benchmarks,
@@ -114,7 +105,7 @@ function PyramidDiagram({
             ? "ai"
             : null,
     };
-  }, [finalJson, aiJson, age, monthlyIncomeHKD, industry, expensesTotalHKD, mode]);
+  }, [finalJson, aiJson, age, monthlyIncomeHKD, industry, mode]);
 
   if (!pyramid || !benchmarks || !flags) {
     return (
@@ -188,7 +179,10 @@ function PyramidDiagram({
 
       {/* Layer values */}
       <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
-        <Value label="Protection · medical" value={`${pyramid.protection.medicalCoveragePercent}%`} />
+        <Value
+          label="Protection · medical"
+          value={`${pyramid.protection.medicalCoveragePercent}%`}
+        />
         <Value
           label="Protection · critical illness"
           value={formatCompactHkd(pyramid.protection.criticalIllnessAmountHKD)}
@@ -202,12 +196,12 @@ function PyramidDiagram({
           value={`${pyramid.goals.goals.length} goal${pyramid.goals.goals.length === 1 ? "" : "s"}`}
         />
         <Value
-          label="Investing"
-          value={`${formatCompactHkd(pyramid.investment.monthlyInvestmentHKD)}/mo`}
+          label="Lump sum invested"
+          value={formatCompactHkd(pyramid.investment.lumpSumHKD)}
         />
         <Value
-          label="Lump sum · fun money"
-          value={`${formatCompactHkd(pyramid.investment.lumpSumHKD)} · ${formatCompactHkd(pyramid.investment.monthlyFunHKD)}/mo`}
+          label="Risk allocation low/mid/high"
+          value={`${pyramid.investment.riskAllocation.low} / ${pyramid.investment.riskAllocation.mid} / ${pyramid.investment.riskAllocation.high}`}
         />
       </dl>
 
@@ -473,7 +467,6 @@ export default function WorkshopSessionDetail({
           age={lead.age}
           monthlyIncomeHKD={lead.monthlyIncomeHKD}
           industry={lead.industry}
-          expensesTotalHKD={expensesTotal}
         />
         <div className="grid content-start gap-4">
           <ExpensesSummary json={expensesJson} />
@@ -487,6 +480,14 @@ export default function WorkshopSessionDetail({
           crisisJson={lead.sessionJson?.crisis}
         />
       </div>
+      {expensesTotal != null && (
+        <p className="mt-4 text-xs text-zinc-500">
+          Monthly expenses total:{" "}
+          <span className="font-mono tabular-nums text-zinc-300">
+            {formatCompactHkd(expensesTotal)}
+          </span>
+        </p>
+      )}
     </div>
   );
 }

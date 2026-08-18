@@ -45,11 +45,14 @@ import {
   computeGoalOutlook,
   currentJourneyAllocation,
   emptyGoalJourneyState,
+  normalizeGoalsLayerForPyramid,
   parseGoalJourneyState,
   rerunTimelineForJourney,
   type GoalOutlook,
 } from "@/lib/workshop/goal-journey";
 import { solveSqueeze } from "@/lib/workshop/squeeze-solver";
+import { computeRunwayBeforeAfter } from "@/lib/workshop/runway";
+import { buildActionGoalSeeds, ACTION_GOAL_CATEGORIES, type ActionGoalSeed } from "@/lib/workshop/action-goal-seeds";
 import {
   runLifeTimeline,
   type TimelineResult,
@@ -144,13 +147,11 @@ Given age, planned retirement age, monthly income (HKD), industry, and household
    - unmarried / single and under 35 → often include a wedding fund
    - age under 28 → may include further-education / upskilling fund
    - has kids (married with kids / single parent) → include kids' education fund
-   - always include at least one sensible retirement-adjacent or long-horizon goal if the list would otherwise be thin
-   - when retirementAge − age is short, prefer nearer-term goals and smaller retirement nest eggs
-   - You MAY propose at most ONE goal with goalType "retirementTarget" (nest-egg line at retirement — not a cash spend). All other goals must use goalType "spend" (cash outflow at target age). Always set goalType explicitly.
-   Each goal needs: id (short slug like "wedding"), icon (a lucide-react icon name string e.g. "Heart", "GraduationCap", "PiggyBank", "Home", "Plane"), label as bilingual { en, zhHant }, targetAmountHKD (income-relative), targetAge (age the person will be when the goal is due — preferred), goalType ("spend" | "retirementTarget"). You may also include targetYear (calendar year); the app derives the other from age + userAge.
-5) investment.lumpSumHKD — REQUIRED. Guess a plausible CURRENT total invested capital (HKD) already held today in stocks/funds/bonds/MPF excess — NOT a monthly contribution. Scale with age, income, industry, and remaining runway to retirementAge (shorter runway → often smaller lump sum; longer career of saving → larger).
-   Also investment.monthlyInvestmentHKD — REQUIRED. Guess a sensible MONTHLY amount they already put into investments (stocks/funds/MPF excess). Typical 10–30% of monthly income, never above estimated surplus (income − living costs − fun). Prefer ~15% of income when unsure.
-   Also investment.monthlyFunHKD — plausible monthly discretionary/fun budget.
+   - always include at least one sensible long-horizon goal if the list would otherwise be thin
+   - when retirementAge − age is short, prefer nearer-term goals
+   Every goal is a SPEND goal — a cash outflow at its target age (no nest-egg / retirementTarget type exists anymore).
+   Each goal needs: id (short slug like "wedding"), icon (a lucide-react icon name string e.g. "Heart", "GraduationCap", "PiggyBank", "Home", "Plane"), label as bilingual { en, zhHant }, targetAmountHKD (income-relative), targetAge (age the person will be when the goal is due — preferred). You may also include targetYear (calendar year); the app derives the other from age + userAge.
+5) investment.lumpSumHKD — REQUIRED. Guess a plausible CURRENT total invested capital (HKD) already held today in stocks/funds/bonds/MPF excess. Scale with age, income, industry, and remaining runway to retirementAge (shorter runway → often smaller lump sum; longer career of saving → larger).
 6) investment.riskAllocation — your FIRST GUESS of how they might currently allocate risk as integer % { low, mid, high } summing to 100. Shorter runway to retirementAge → bias toward higher low% / lower high%. This is informational flavor only.
 7) rationale — 2–3 sentences, tone-flavored, referencing THEIR specific guessed CURRENT numbers (not generic advice). Must be bilingual { en, zhHant }.
 8) protectionExplanation — bilingual { en, zhHant }. The user prompt includes a DETERMINISTIC critical-illness recommendation (multiple × annual income = recommended HKD). Explain WHY that computed guide makes sense for this age/income profile in the chosen tone. HARD RULE: do NOT invent a different recommended CI amount or multiple — only narrate the provided numbers.
@@ -169,16 +170,13 @@ Return ONLY valid JSON:
         "icon": string,
         "label": { "en": string, "zhHant": string },
         "targetAmountHKD": number,
-        "targetAge": number,
-        "goalType": "spend" | "retirementTarget"
+        "targetAge": number
       }
     ]
   },
   "investment": {
     "riskAllocation": { "low": number, "mid": number, "high": number },
-    "lumpSumHKD": number,
-    "monthlyInvestmentHKD": number,
-    "monthlyFunHKD": number
+    "lumpSumHKD": number
   },
   "rationale": { "en": string, "zhHant": string },
   "protectionExplanation": { "en": string, "zhHant": string },
@@ -280,7 +278,6 @@ function parseGoalItem(
     targetAmountHKD,
     targetAge,
     targetYear,
-    goalType: record.goalType === "retirementTarget" ? "retirementTarget" : "spend",
   };
 }
 
@@ -352,16 +349,6 @@ function parseAiPyramidPrediction(
     parseGoalItem(item, index, userAge),
   );
 
-  const monthlyFunHKD = assertFiniteNumber(
-    investmentRaw.monthlyFunHKD,
-    "investment.monthlyFunHKD",
-  );
-  if (monthlyFunHKD < 0) {
-    throw new Error(
-      "Invalid pyramid prediction: investment.monthlyFunHKD cannot be negative.",
-    );
-  }
-
   let lumpSumHKD = 0;
   if (
     typeof investmentRaw.lumpSumHKD === "number" &&
@@ -377,19 +364,6 @@ function parseAiPyramidPrediction(
     throw new Error(
       'Invalid pyramid prediction: "investment.lumpSumHKD" is required.',
     );
-  }
-
-  let monthlyInvestmentHKD = 0;
-  if (
-    typeof investmentRaw.monthlyInvestmentHKD === "number" &&
-    Number.isFinite(investmentRaw.monthlyInvestmentHKD)
-  ) {
-    monthlyInvestmentHKD = Math.round(investmentRaw.monthlyInvestmentHKD);
-    if (monthlyInvestmentHKD < 0) {
-      throw new Error(
-        "Invalid pyramid prediction: investment.monthlyInvestmentHKD cannot be negative.",
-      );
-    }
   }
 
   const riskAllocation = parseRiskAllocation(
@@ -419,8 +393,6 @@ function parseAiPyramidPrediction(
       investment: {
         riskAllocation,
         lumpSumHKD,
-        monthlyInvestmentHKD,
-        monthlyFunHKD: Math.round(monthlyFunHKD),
       },
     },
     rationale,
@@ -584,9 +556,7 @@ export async function predictPyramidAction(
     },
   };
 
-  const layerFlags = computeLayerFlags(aiPyramid, benchmarks, {
-    monthlyIncomeHKD: validated.monthlyIncome,
-  });
+  const layerFlags = computeLayerFlags(aiPyramid, benchmarks);
 
   const aiPyramidJson = {
     ...aiPyramid,
@@ -670,6 +640,14 @@ export async function confirmPyramidAction(
     throw new Error("Risk allocation must be non-negative percentages summing to 100.");
   }
 
+  const session = await prisma.workshopSession.findUnique({
+    where: { id: sessionId },
+    select: { age: true, retirementAge: true },
+  });
+  if (!session) {
+    throw new Error("Workshop session not found. Please restart from intake.");
+  }
+
   const lumpSumHKD = Math.max(
     0,
     Math.round(
@@ -679,29 +657,18 @@ export async function confirmPyramidAction(
         : 0,
     ),
   );
-  const monthlyInvestmentHKD = Math.max(
-    0,
-    Math.round(
-      typeof pyramid.investment.monthlyInvestmentHKD === "number" &&
-        Number.isFinite(pyramid.investment.monthlyInvestmentHKD)
-        ? pyramid.investment.monthlyInvestmentHKD
-        : 0,
-    ),
-  );
 
   const writablePyramid: PyramidState = {
     ...pyramid,
     goals: {
-      goals: pyramid.goals.goals.map((g) => ({
-        ...g,
-        goalType: g.goalType === "retirementTarget" ? "retirementTarget" : "spend",
-      })),
+      goals: normalizeGoalsLayerForPyramid(pyramid.goals.goals, {
+        userAge: session.age,
+        retirementAge: session.retirementAge,
+      }),
     },
     investment: {
       riskAllocation: { ...risk },
       lumpSumHKD,
-      monthlyInvestmentHKD,
-      monthlyFunHKD: Math.max(0, Math.round(pyramid.investment.monthlyFunHKD)),
     },
   };
 
@@ -712,7 +679,13 @@ export async function confirmPyramidAction(
 
   const updated = await prisma.workshopSession.updateMany({
     where: { id: sessionId },
-    data: { finalPyramidJson },
+    data: {
+      finalPyramidJson,
+      // Reconfirming Step 2 invalidates downstream journey / rating caches.
+      goalJourneyJson: Prisma.DbNull,
+      macroResultJson: Prisma.DbNull,
+      goalsJson: Prisma.DbNull,
+    },
   });
 
   if (updated.count === 0) {
@@ -952,7 +925,6 @@ export async function predictExpensesAction(
     "Other confirmed pyramid context:",
     `- emergencyFund.savedAmountHKD: ${input.pyramid.emergencyFund.savedAmountHKD}`,
     `- lumpSumHKD: ${input.pyramid.investment.lumpSumHKD}`,
-    `- monthlyFunHKD: ${input.pyramid.investment.monthlyFunHKD}`,
     `- goals: ${JSON.stringify(input.pyramid.goals.goals.map((g) => g.label))}`,
     "",
     "Estimate CURRENT monthly cash outflows for the 5 required categories.",
@@ -1020,7 +992,13 @@ export async function confirmExpensesAction(
 
   const updated = await prisma.workshopSession.updateMany({
     where: { id: sessionId },
-    data: { expensesJson },
+    data: {
+      expensesJson,
+      // Reconfirming Step 3 invalidates journey / rating caches built on old spend.
+      goalJourneyJson: Prisma.DbNull,
+      macroResultJson: Prisma.DbNull,
+      goalsJson: Prisma.DbNull,
+    },
   });
 
   if (updated.count === 0) {
@@ -1181,11 +1159,9 @@ export async function runLifeTimelineAction(
     retirementAge,
     monthlyIncome: session.monthlyIncome,
     monthlyExpenses: expenses.totalHKD,
-    monthlyFun: pyramid.investment.monthlyFunHKD,
     emergencyFundSavedHKD: pyramid.emergencyFund.savedAmountHKD,
     investment: {
       lumpSumHKD: pyramid.investment.lumpSumHKD,
-      monthlyInvestmentHKD: pyramid.investment.monthlyInvestmentHKD,
       allocation: pyramid.investment.riskAllocation,
     },
     goals: activeGoalsForJourney(pyramid, journey),
@@ -1406,8 +1382,6 @@ export async function computeSqueezeRecommendationAction(
     targetAge: goal.targetAge,
     monthlyIncomeHKD: session.monthlyIncome,
     expenses,
-    monthlyFunHKD: workingPyramid.investment.monthlyFunHKD,
-    monthlyInvestmentHKD: workingPyramid.investment.monthlyInvestmentHKD,
   });
 
   return { timeline, journey, recommendation, outlook };
@@ -1417,11 +1391,11 @@ const NARRATE_GOAL_SQUEEZE_SYSTEM_PROMPT = `You explain ONE spending-squeeze rec
 
 You receive ALREADY-COMPUTED numbers only. You narrate — you MUST NOT invent, recalculate, or round differently than the figures provided.
 
-Write 1–2 short bilingual sentences that explain the trade-off (cutting fun and/or discretionary) in the workshop tone.
+Write 1–2 short bilingual sentences that explain the trade-off (cutting discretionary spending) in the workshop tone.
 
 Rules:
-- Reference the ACTUAL requiredExtraMonthlyHKD and the specific funCutMonthlyHKD / discretionaryCutMonthlyHKD passed in.
-- If partialCapped is true (fun+discretionary could not fully cover the need), you MUST say so honestly and mention achievableAtAge when provided.
+- Reference the ACTUAL requiredExtraMonthlyHKD and the specific discretionaryCutMonthlyHKD passed in.
+- If partialCapped is true (discretionary could not fully cover the need), you MUST say so honestly and mention achievableAtAge when provided.
 - Do not invent different HKD amounts or ages. Do not give generic tips.
 
 Return ONLY valid JSON:
@@ -1640,8 +1614,6 @@ export async function applyGoalJourneyDecisionAction(
       targetAge: goal.targetAge,
       monthlyIncomeHKD: session.monthlyIncome,
       expenses,
-      monthlyFunHKD: workingPyramid.investment.monthlyFunHKD,
-      monthlyInvestmentHKD: workingPyramid.investment.monthlyInvestmentHKD,
     });
   }
 
@@ -1657,20 +1629,7 @@ export async function applyGoalJourneyDecisionAction(
       ...decision,
       squeezeCutsHKD: recommendation
         ? {
-            fun:
-              recommendation.currentAllocation.find((s) => s.key === "fun")
-                ?.amountHKD != null &&
-              recommendation.recommendedAllocation.find((s) => s.key === "fun")
-                ?.amountHKD != null
-                ? Math.round(
-                    ((recommendation.currentAllocation.find((s) => s.key === "fun")
-                      ?.amountHKD ?? 0) -
-                      (recommendation.recommendedAllocation.find(
-                        (s) => s.key === "fun",
-                      )?.amountHKD ?? 0)) *
-                      12,
-                  )
-                : 0,
+            fun: 0,
             discretionary:
               recommendation.currentAllocation.find(
                 (s) => s.key === "discretionary",
@@ -1727,8 +1686,6 @@ export async function applyGoalJourneyDecisionAction(
     allocation: currentJourneyAllocation({
       monthlyIncomeHKD: session.monthlyIncome,
       expenses: next.expenses,
-      monthlyFunHKD: next.pyramid.investment.monthlyFunHKD,
-      monthlyInvestmentHKD: next.pyramid.investment.monthlyInvestmentHKD,
     }),
   };
 }
@@ -1747,13 +1704,13 @@ export type NarrateStressTestContext = {
 
 const NARRATE_STRESS_SYSTEM_PROMPT = `You explain amber/red (and oversaved emergency-fund) stress-test outcomes for a Hong Kong workshop participant.
 
-You receive deterministic life-timeline numbers. For EACH flagged item only (amber or red goals, and emergency fund if amber/red/oversaved), write ONE short note (1–2 sentences) explaining WHY the projection needs attention — tone-flavored.
+You receive deterministic life-timeline numbers in REAL TERMS (today's purchasing power — amounts are not inflation-adjusted). For EACH flagged item only (amber or red goals, and emergency fund if amber/red/oversaved), write ONE short note (1–2 sentences) explaining WHY the projection needs attention — tone-flavored.
 
 Rules:
-- Reference ACTUAL numbers from the payload (target age, attained age or "not reached", inflated target HKD, EF months/target/excess/opportunity cost, surplus samples).
+- Reference ACTUAL numbers from the payload (target age, attained age or "not reached", target HKD as inflatedTargetHKD field — treat it as the real-terms target amount, EF months/target/excess/opportunity cost, surplus samples).
 - For oversaved emergency fund: explain that excess cash above ~1.5× the target could be invested, citing excessHKD and opportunityCostHKD when provided. Do not invent those figures.
 - Skip every green item entirely — positive-by-omission; do not write praise notes.
-- Do not invent numbers. Do not give generic tips.
+- Do not invent numbers. Do not give generic tips. Do not say amounts are "inflated" or inflation-adjusted.
 - id must be the goal id, or exactly "emergencyFund" for the emergency-fund card.
 - Each note must be bilingual: { "en": string, "zhHant": string } — never a plain string.
 
@@ -2459,11 +2416,9 @@ export async function generateCrisisAction(
       retirementAge,
       monthlyIncome: session.monthlyIncome,
       monthlyExpenses: expenses.totalHKD,
-      monthlyFun: pyramid.investment.monthlyFunHKD,
       emergencyFundSavedHKD: pyramid.emergencyFund.savedAmountHKD,
       investment: {
         lumpSumHKD: pyramid.investment.lumpSumHKD,
-        monthlyInvestmentHKD: pyramid.investment.monthlyInvestmentHKD,
         allocation: pyramid.investment.riskAllocation,
       },
       goals: activeGoals,
@@ -2801,43 +2756,33 @@ export async function generateGoalsAction(
   return result;
 }
 
-const ACTION_GOAL_CATEGORIES = new Set([
-  "protection",
-  "savings",
-  "investment",
-  "goal",
-]);
-
-const ACTION_CATEGORY_META: Array<{
-  actionCategory: ActionGoal["category"];
-  ratingKey: RatingCategory;
-  icon: string;
-}> = [
-  { actionCategory: "protection", ratingKey: "protection", icon: "Shield" },
-  { actionCategory: "savings", ratingKey: "emergencyFund", icon: "PiggyBank" },
-  { actionCategory: "goal", ratingKey: "goalsOnTrack", icon: "Target" },
-  {
-    actionCategory: "investment",
-    ratingKey: "crisisResilience",
-    icon: "TrendingUp",
-  },
-];
-
 const GENERATE_ACTION_GOALS_SYSTEM_PROMPT = `You write exactly 3 ranked action goals for a Hong Kong workshop participant.
 
 You receive:
-1. A DETERMINISTIC rating breakdown and a pre-ranked list of 3 seed goals (rank, category, icon, impactPoints already fixed).
+1. A DETERMINISTIC rating breakdown and a pre-ranked list of 3 seed goals (rank, category, leverType, icon, impactPoints already fixed).
 2. A curated "decisions" block from their goal journey and crisis stress test — this is the only behavioral context you may cite.
+3. A "runway" block: assets-last-until age before the user's journey decisions vs after. Use it for the behavioral goal's reasoning when the change is meaningful.
+
+The three seeds are intentionally DIFFERENT levers — write them so they feel different:
+- leverType "instant" (rank 1): a this-week action (e.g. move money into the emergency fund). Concrete and immediate.
+- leverType "structural" (rank 2): a set-it-up-once action (e.g. protection / insurance cover, or a standing investment rule). Once-and-done framing.
+- leverType "behavioral" (rank 3): the monthly habit that moves the plan (e.g. keeping discretionary spending at the squeezed level, or a standing investment rule). Habit framing.
 
 Your job is ONLY to write:
 - title — short, specific, action-oriented (not generic), as bilingual { en, zhHant }
 - reasoning — 2–3 sentences explaining WHY the math recommends this action, as bilingual { en, zhHant }
 
 Rules:
-- You are explaining WHY the math recommends each action. Every reasoning paragraph MUST reference at least one specific decision the user made in their goal journey (a goal they protected, gave up, or funded via liquidation; a squeeze they accepted/rejected) OR the crisis stress test outcome. Generic financial advice with no reference to their decisions is a failure.
+- You are explaining WHY the math recommends each action. Every reasoning paragraph MUST reference at least one specific decision the user made in their goal journey (a goal they protected, gave up, or funded via liquidation; a squeeze they accepted/rejected) OR the crisis stress test outcome OR the runway change. Generic financial advice with no reference to their decisions is a failure.
+- KEEP IT SHORT. Hard limits: title ≤ 6 English words / ≤ 16 zh-Hant characters; reasoning ≤ 40 English words / ≤ 70 zh-Hant characters — two tight sentences, never three long ones. Do NOT include "Estimated rating impact" or any impact text in reasoning — the UI shows the impact badge separately. No filler, no em-dash chains, no ALL-CAPS words.
+- The seeds are GAP-DRIVEN: a category only appears when it is one of the three WEAKEST pillars. NEVER recommend buying medical insurance when the protection pillar is already strong (the seeds will not contain protection in that case). If a protection seed IS present, frame it by the ACTUAL gap: medical coverage % below the age benchmark → top up medical cover; critical-illness cover low vs income multiple → CI cover. Only cite VHIS when the medical-coverage angle is real.
+- The "decisions" block includes goalOutlooks: per applied goal, how late it lands (delayYears / attainedAge) and how much monthly surplus it needs (requiredExtraMonthlyHKD / effortRatio / heavyMonthlyCommitment). If ANY applied goal is late or heavy (e.g. a retirement fund that only lands at 69 when the target was 65, needing most of the monthly surplus), the goal-category action goal MUST call it out as a gap: name the goal, the late age, and the monthly amount needed — and recommend making the target realistic or freeing up that amount. Do not hide it.
+- The "decisions" block includes dataGaps: inputs that are missing or zero (e.g. medicalCoverage, criticalIllness, lumpSum, emergencyFund, expenses, goals, riskQuiz). If a gap matches the goal's category, end the reasoning with ONE short sentence asking for the real value ("Tell us your actual {label} for a precise figure"). NEVER invent a number for a missing input — ask instead, and never mention step numbers in the ask. If no gap matches, ignore the block.
+- REALISM: never ask the user to commit more than the monthly surplus shown in postJourneyState.remainingMonthlySurplus. If a goal needs more than the plan can give, the recommendation is to make the target realistic (adjust the amount or target age), not to save harder. Never tell a user to "save every single month" as if that were easy — if it takes most of the surplus, say so plainly and recommend adjusting the goal.
+- Use authentic Hong Kong texture where it fits naturally and stays factual: VHIS-qualified medical plans (premiums can be tax-deductible up to HK$8,000 per insured person per year), MPF voluntary contributions / MPF excess, private hospital bills, first-home down payments (typically 10%+ for first-time buyers of smaller flats, up to 50% for higher-priced homes), 3–6 months of expenses as an emergency runway in HK's cost of living. Do not invent policy numbers beyond these.
 - You may NOT invent, round, or modify any number. Use only the numbers provided in the payload, verbatim.
-- Keep rank, category, icon, and impactPoints EXACTLY as given in the seeds — echo impactPoints unchanged.
-- If crisisStressTest.verdict is PENETRATED, the highest-ranked protection-category action goal must explicitly connect the recommendation to the affected goal and delay (e.g., "this is what stops your [goal] from being delayed by [N] years").
+- Keep rank, category, leverType, icon, and impactPoints EXACTLY as given in the seeds — echo impactPoints unchanged.
+- If crisisStressTest.verdict is PENETRATED and a protection seed is present, that goal must explicitly connect the recommendation to the affected goal and delay (e.g., "this is what stops your [goal] from being delayed by [N] years").
 - If profileBehaviorMismatch is true, exactly one action goal's reasoning may reference the gap between their quiz profile and their actual behavior — as an insight, never as criticism.
 - Never shame the user for goals they gave up. Frame given-up goals as deliberate prioritization if referenced.
 - Do not reference step numbers ("Step 4", "Step 6") — refer to experiences ("your goal journey", "the stress test"). Step numbering changed and must not leak into user-facing copy.
@@ -2851,6 +2796,7 @@ Return ONLY valid JSON:
       "rank": 1,
       "title": { "en": string, "zhHant": string },
       "category": "protection" | "savings" | "investment" | "goal",
+      "leverType": "instant" | "structural" | "behavioral",
       "icon": string,
       "impactPoints": number,
       "reasoning": { "en": string, "zhHant": string }
@@ -2876,53 +2822,6 @@ export type GenerateActionGoalsInput = {
   age?: number;
   industry?: string;
 };
-
-type ActionGoalSeed = {
-  rank: number;
-  category: ActionGoal["category"];
-  icon: string;
-  impactPoints: number;
-  ratingKey: RatingCategory;
-  currentScore: number;
-  gap: number;
-};
-
-function buildActionGoalSeeds(
-  rating: SummaryRating,
-  impactContext?: GoalImpactContext,
-): ActionGoalSeed[] {
-  const candidates = ACTION_CATEGORY_META.map((meta) => {
-    const currentScore = rating.breakdown[meta.ratingKey];
-    const gap = Math.max(0, 100 - currentScore);
-    const impactPoints = computeGoalImpactPoints(
-      meta.ratingKey,
-      gap,
-      RATING_WEIGHTS[meta.ratingKey],
-      impactContext,
-    );
-    return {
-      category: meta.actionCategory,
-      icon: meta.icon,
-      impactPoints,
-      ratingKey: meta.ratingKey,
-      currentScore,
-      gap,
-    };
-  });
-
-  return [...candidates]
-    .sort((a, b) => {
-      if (b.impactPoints !== a.impactPoints) {
-        return b.impactPoints - a.impactPoints;
-      }
-      return b.gap - a.gap;
-    })
-    .slice(0, 3)
-    .map((seed, index) => ({
-      ...seed,
-      rank: index + 1,
-    }));
-}
 
 function parseActionGoalsResult(
   raw: string,
@@ -2963,6 +2862,11 @@ function parseActionGoalsResult(
     }
 
     const title = assertStrictBilingual(row.title, `actionGoals[${index}].title`);
+    if (title.en.trim().split(/\s+/).length > 6 || title.zhHant.trim().length > 16) {
+      throw new Error(
+        `Invalid action goals response: title too long at rank ${rank} (max 6 EN words / 16 zh-Hant chars).`,
+      );
+    }
     const categoryRaw = assertNonEmptyString(
       row.category,
       `actionGoals[${index}].category`,
@@ -2976,6 +2880,14 @@ function parseActionGoalsResult(
       row.reasoning,
       `actionGoals[${index}].reasoning`,
     );
+    if (
+      reasoning.en.trim().split(/\s+/).length > 40 ||
+      reasoning.zhHant.trim().length > 70
+    ) {
+      throw new Error(
+        `Invalid action goals response: reasoning too long at rank ${rank} (max 40 EN words / 70 zh-Hant chars).`,
+      );
+    }
 
     const impactPoints = assertFiniteNumber(
       row.impactPoints,
@@ -2992,6 +2904,7 @@ function parseActionGoalsResult(
       rank: seed.rank,
       title,
       category: seed.category,
+      leverType: seed.leverType,
       icon: seed.icon,
       impactPoints: seed.impactPoints,
       reasoning,
@@ -3116,6 +3029,17 @@ export async function generateActionGoalsAction(
   });
   const crisisStressTest = toCrisisStressTestSummary(stressTestResult);
 
+  const runway = computeRunwayBeforeAfter({
+    age,
+    retirementAge: session.retirementAge,
+    monthlyIncome,
+    industry,
+    pyramid,
+    expenses,
+    journey,
+    timeline,
+  });
+
   const rating = computeFinancialRating({
     pyramid,
     benchmarks: input.benchmarks,
@@ -3150,6 +3074,8 @@ export async function generateActionGoalsAction(
     crisisStressTest,
     riskProfile,
     timeline,
+    runway,
+    riskQuizMissing: parseRiskProfileFromQuiz(session.riskQuizJson) === null,
   });
 
   const userPrompt = [
@@ -3160,11 +3086,12 @@ export async function generateActionGoalsAction(
     "Rating (deterministic — do not invent scores):",
     JSON.stringify(rating),
     "",
-    "Pre-ranked action seeds (keep rank/category/icon/impactPoints exact — echo impactPoints verbatim):",
+    "Pre-ranked action seeds (keep rank/category/leverType/icon/impactPoints exact — echo impactPoints verbatim):",
     JSON.stringify(
       seeds.map((s) => ({
         rank: s.rank,
         category: s.category,
+        leverType: s.leverType,
         icon: s.icon,
         impactPoints: s.impactPoints,
         currentScore: s.currentScore,
@@ -3175,6 +3102,8 @@ export async function generateActionGoalsAction(
     "",
     "decisions (curated — cite these facts; do not invent):",
     JSON.stringify(decisions),
+    "",
+    `runway (assets last until age; null = sustained past 90): before ${runway.beforeAge ?? "past 90"} → after ${runway.afterAge ?? "past 90"}`,
     "",
     "Write title + reasoning for each seed. Every reasoning must reference a goal-journey decision and/or the stress test. Numbers verbatim. No step numbers.",
   ].join("\n");
@@ -3204,7 +3133,7 @@ export async function generateActionGoalsAction(
     actionGoals = buildDeterministicActionGoalsFallback(seeds, decisions);
   }
 
-  const summary: SummaryState = { rating, actionGoals, crisisStressTest };
+  const summary: SummaryState = { rating, actionGoals, crisisStressTest, runway };
 
   await prisma.workshopSession.update({
     where: { id: session.id },

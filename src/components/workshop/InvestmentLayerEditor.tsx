@@ -83,13 +83,6 @@ type InvestmentLayerEditorProps = Readonly<{
   value: InvestmentLayer;
   onChange: (next: InvestmentLayer) => void;
   age: number;
-  /** Gross monthly income — enables surplus helper / amber warning. */
-  monthlyIncomeHKD?: number;
-  /**
-   * Confirmed monthly expenses total. When omitted, surplus helper line is hidden
-   * (pyramid step runs before expenses are confirmed).
-   */
-  monthlyExpensesHKD?: number;
   status?: LayerFlag;
   rationale?: Bilingual | string;
   disabled?: boolean;
@@ -102,9 +95,6 @@ function patchInvestment(
   return {
     riskAllocation: patch.riskAllocation ?? value.riskAllocation,
     lumpSumHKD: patch.lumpSumHKD ?? value.lumpSumHKD,
-    monthlyInvestmentHKD:
-      patch.monthlyInvestmentHKD ?? value.monthlyInvestmentHKD,
-    monthlyFunHKD: patch.monthlyFunHKD ?? value.monthlyFunHKD,
   };
 }
 
@@ -112,8 +102,6 @@ export default function InvestmentLayerEditor({
   value,
   onChange,
   age,
-  monthlyIncomeHKD,
-  monthlyExpensesHKD,
   status,
   rationale,
   disabled = false,
@@ -121,21 +109,6 @@ export default function InvestmentLayerEditor({
   const { t, locale } = useTranslations();
   const benchmark = getRiskAllocationBenchmark(age);
   const risk = value.riskAllocation;
-
-  const expensesConfirmed =
-    monthlyExpensesHKD != null && Number.isFinite(monthlyExpensesHKD);
-  const availableSurplus =
-    monthlyIncomeHKD != null &&
-    Number.isFinite(monthlyIncomeHKD) &&
-    expensesConfirmed
-      ? Math.round(
-          Math.max(0, monthlyIncomeHKD) -
-            Math.max(0, monthlyExpensesHKD) -
-            Math.max(0, value.monthlyFunHKD),
-        )
-      : null;
-  const overSurplus =
-    availableSurplus != null && value.monthlyInvestmentHKD > availableSurplus;
 
   function updateRisk(key: RiskAllocationKey, nextValue: number) {
     onChange(
@@ -183,8 +156,7 @@ export default function InvestmentLayerEditor({
     >
       <div className="min-w-0 space-y-3">
         <p className="text-sm text-slate-600">
-          {t("workshop.pyramid.investment.funBudgetLine")
-            .replace("{fun}", formatHkd(value.monthlyFunHKD))
+          {t("workshop.pyramid.investment.riskSummaryLine")
             .replace("{low}", String(risk.low))
             .replace("{mid}", String(risk.mid))
             .replace("{high}", String(risk.high))}
@@ -195,34 +167,6 @@ export default function InvestmentLayerEditor({
             {rationaleText}
           </p>
         ) : null}
-
-        <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3.5 sm:px-4">
-          <WorkshopNumberField
-            id="workshop-monthly-investing"
-            variant="currency"
-            label={t("workshop.pyramid.investment.monthlyInvesting.label")}
-            min={0}
-            disabled={disabled}
-            value={value.monthlyInvestmentHKD}
-            enterKeyHint="next"
-            onChange={(monthlyInvestmentHKD) =>
-              onChange(patchInvestment(value, { monthlyInvestmentHKD }))
-            }
-          />
-          {availableSurplus != null ? (
-            <p className="mt-1.5 text-[11px] leading-snug text-slate-500">
-              {t("workshop.pyramid.investment.monthlyInvesting.helper").replace(
-                "{amount}",
-                formatHkd(availableSurplus),
-              )}
-            </p>
-          ) : null}
-          {overSurplus ? (
-            <p className="mt-1.5 text-[11px] leading-snug text-amber-800">
-              {t("workshop.pyramid.investment.monthlyInvesting.amberWarning")}
-            </p>
-          ) : null}
-        </div>
 
         <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3.5 sm:px-4">
           <div>
@@ -348,54 +292,26 @@ export default function InvestmentLayerEditor({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="min-w-0 space-y-3">
-            <WorkshopStatCard
-              icon="Rocket"
-              label={t("workshop.pyramid.investment.investCardLabel")}
-              value={formatHkd(value.lumpSumHKD)}
-              subtext={t("workshop.pyramid.investment.investSubtext")}
+        <div className="min-w-0 space-y-3">
+          <WorkshopStatCard
+            icon="Rocket"
+            label={t("workshop.pyramid.investment.investCardLabel")}
+            value={formatHkd(value.lumpSumHKD)}
+            subtext={t("workshop.pyramid.investment.investSubtext")}
+          />
+          <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3.5 sm:px-4">
+            <WorkshopNumberField
+              id="workshop-lump-sum"
+              variant="currency"
+              label={t("workshop.pyramid.investment.lumpSumLabel")}
+              min={0}
+              disabled={disabled}
+              value={value.lumpSumHKD}
+              enterKeyHint="done"
+              onChange={(lumpSumHKD) =>
+                onChange(patchInvestment(value, { lumpSumHKD }))
+              }
             />
-            <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3.5 sm:px-4">
-              <WorkshopNumberField
-                id="workshop-lump-sum"
-                variant="currency"
-                label={t("workshop.pyramid.investment.lumpSumLabel")}
-                min={0}
-                disabled={disabled}
-                value={value.lumpSumHKD}
-                enterKeyHint="next"
-                onChange={(lumpSumHKD) =>
-                  onChange(patchInvestment(value, { lumpSumHKD }))
-                }
-              />
-            </div>
-          </div>
-
-          <div className="min-w-0 space-y-3">
-            <WorkshopStatCard
-              icon="PartyPopper"
-              label={t("workshop.pyramid.investment.funCardLabel")}
-              value={formatHkd(value.monthlyFunHKD)}
-              subtext={t("workshop.pyramid.investment.funSubtext")}
-            />
-            <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3.5 sm:px-4">
-              <WorkshopNumberField
-                id="workshop-monthly-fun"
-                variant="currency"
-                label={t("workshop.pyramid.investment.monthlyFunLabel")}
-                min={0}
-                disabled={disabled}
-                value={value.monthlyFunHKD}
-                enterKeyHint="done"
-                onChange={(monthlyFunHKD) =>
-                  onChange(patchInvestment(value, { monthlyFunHKD }))
-                }
-              />
-              <p className="mt-1.5 text-[11px] leading-snug text-slate-500">
-                {t("workshop.pyramid.investment.funCrisisHint")}
-              </p>
-            </div>
           </div>
         </div>
       </div>

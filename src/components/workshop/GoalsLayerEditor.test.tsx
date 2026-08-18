@@ -39,7 +39,6 @@ describe("GoalsLayerEditor icon defaults", () => {
           targetAmountHKD: 100_000,
           targetAge: userAge + 5,
           targetYear: deriveGoalYear(userAge + 5, userAge),
-          goalType: "spend",
         },
       ],
     };
@@ -76,35 +75,52 @@ describe("GoalsLayerEditor icon defaults", () => {
     expect(layer.goals[0]!.label.en).toBe("My custom goal");
   });
 
-  it("shows live derived calendar year from target age", () => {
-    const userAge = 40;
-    const targetAge = 50;
+  it("shows goals age-ordered with nest-egg last even when input is unsorted", () => {
+    const userAge = 35;
     const layer: GoalsLayer = {
       goals: [
         {
-          id: "g1",
+          id: "nest",
           icon: "PiggyBank",
-          label: { en: "Retire", zhHant: "退休" },
-          targetAmountHKD: 1_000_000,
-          targetAge,
-          targetYear: deriveGoalYear(targetAge, userAge),
-          goalType: "spend",
+          label: { en: "Nest", zhHant: "儲備" },
+          targetAmountHKD: 5_000_000,
+          targetAge: 70,
+          targetYear: deriveGoalYear(70, userAge),
+        },
+        {
+          id: "home",
+          icon: "House",
+          label: { en: "Home", zhHant: "置業" },
+          targetAmountHKD: 800_000,
+          targetAge: 42,
+          targetYear: deriveGoalYear(42, userAge),
+        },
+        {
+          id: "trip",
+          icon: "Plane",
+          label: { en: "Trip", zhHant: "旅行" },
+          targetAmountHKD: 40_000,
+          targetAge: 37,
+          targetYear: deriveGoalYear(37, userAge),
         },
       ],
     };
 
     render(
-      <GoalsLayerEditor value={layer} userAge={userAge} onChange={() => {}} />,
+      <GoalsLayerEditor
+        value={layer}
+        userAge={userAge}
+        onChange={() => {}}
+      />,
     );
 
-    const year = deriveGoalYear(targetAge, userAge);
-    expect(
-      screen.getByText(
-        workshopEnMessages["workshop.pyramid.goals.derivedYearHint"].replace(
-          "{year}",
-          String(year),
-        ),
-      ),
-    ).toBeInTheDocument();
+    const labels = screen.getAllByLabelText(
+      workshopEnMessages["workshop.pyramid.goals.labelField"],
+    );
+    expect(labels.map((el) => (el as HTMLInputElement).value)).toEqual([
+      "Trip",
+      "Home",
+      "Nest",
+    ]);
   });
 });

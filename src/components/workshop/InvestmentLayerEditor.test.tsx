@@ -59,8 +59,6 @@ vi.mock("@/components/providers/LocaleProvider", () => ({
 
 const baseValue: InvestmentLayer = {
   lumpSumHKD: 5000,
-  monthlyInvestmentHKD: 2000,
-  monthlyFunHKD: 1000,
   riskAllocation: { low: 40, mid: 40, high: 20 },
 };
 

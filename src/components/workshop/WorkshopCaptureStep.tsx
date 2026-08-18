@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import WorkshopStickyFooter from "@/components/workshop/WorkshopStickyFooter";
 import { useTranslations } from "@/components/providers/LocaleProvider";
@@ -26,6 +26,7 @@ type WorkshopCaptureStepProps = Readonly<{
   sessionId: string;
   selectedGoalTitle: string | Bilingual;
   onBack: () => void;
+  onRestart: () => void;
 }>;
 
 function pdfUrl(sessionId: string): string {
@@ -56,6 +57,7 @@ export default function WorkshopCaptureStep({
   sessionId,
   selectedGoalTitle,
   onBack,
+  onRestart,
 }: WorkshopCaptureStepProps) {
   const { t, locale } = useTranslations();
   const goalTitle = pickBilingual(selectedGoalTitle, locale);
@@ -63,19 +65,19 @@ export default function WorkshopCaptureStep({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
 
-  const phoneValidation = useMemo(
-    () => validateWorkshopPhone(phone),
-    [phone],
-  );
-  const phoneIsValid = phoneValidation.ok;
-
   function syncPhoneError(nextPhone: string, force = false) {
+    if (!nextPhone.trim()) {
+      setPhoneError(null);
+      return true;
+    }
     const result = validateWorkshopPhone(nextPhone);
     if (!result.ok && (force || phoneTouched || nextPhone.trim().length > 0)) {
       setPhoneError(t(result.errorKey));
@@ -89,6 +91,18 @@ export default function WorkshopCaptureStep({
     event.preventDefault();
     setError(null);
     setPhoneTouched(true);
+
+    // Name and email are now REQUIRED; phone stays optional (WhatsApp copy).
+    const trimmedName = name.trim();
+    if (trimmedName.length < 2) {
+      setNameError(t("workshop.capture.nameRequired"));
+      return;
+    }
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setEmailError(t("workshop.capture.emailRequired"));
+      return;
+    }
 
     if (!syncPhoneError(phone, true)) {
       return;
@@ -126,7 +140,7 @@ export default function WorkshopCaptureStep({
     }
   }
 
-  const requiredMark = t("workshop.capture.requiredMark");
+  const optionalLabel = t("workshop.capture.optionalLabel");
 
   if (completed) {
     return (
@@ -142,6 +156,11 @@ export default function WorkshopCaptureStep({
             {t("workshop.capture.thankYouBody")}{" "}
             <span className="font-medium text-emerald-800">{goalTitle}</span>
           </p>
+          {phone.trim() ? (
+            <p className="mx-auto mt-3 max-w-md rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-2.5 text-pretty text-xs leading-relaxed text-sky-900">
+              {t("workshop.capture.whatsappSentNote")}
+            </p>
+          ) : null}
         </div>
 
         <WorkshopStickyFooter
@@ -150,6 +169,14 @@ export default function WorkshopCaptureStep({
           secondaryLabel={t("workshop.capture.backToSummary")}
           onSecondaryClick={onBack}
         />
+
+        <button
+          type="button"
+          onClick={onRestart}
+          className="inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+        >
+          {t("workshop.capture.playAgainButton")}
+        </button>
       </div>
     );
   }
@@ -168,6 +195,10 @@ export default function WorkshopCaptureStep({
         {t("workshop.capture.intro")}
       </p>
 
+      <p className="text-xs leading-relaxed text-slate-400">
+        {t("workshop.capture.optionalHint")}
+      </p>
+
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm leading-relaxed text-emerald-900">
         {t("workshop.capture.selectedGoal")}{" "}
         <span className="font-semibold break-words">{goalTitle}</span>
@@ -176,67 +207,93 @@ export default function WorkshopCaptureStep({
       <div>
         <label htmlFor="workshop-lead-name" className={labelClass}>
           {t("workshop.capture.nameLabel")}{" "}
-          <span className="text-rose-600" aria-hidden="true">
-            {requiredMark}
-          </span>
+          <span className="text-rose-500">{t("workshop.capture.requiredMark")}</span>
         </label>
         <input
           id="workshop-lead-name"
           type="text"
           name="name"
-          required
           autoFocus={false}
           autoComplete="name"
           enterKeyHint="next"
+          required
+          aria-invalid={nameError ? true : undefined}
+          aria-describedby={nameError ? "workshop-lead-name-error" : undefined}
           disabled={submitting}
           value={name}
-          onChange={(e) => setName(e.target.value)}
-          className={fieldClass}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (nameError) {
+              setNameError(null);
+            }
+          }}
+          className={nameError ? fieldErrorClass : fieldClass}
           placeholder={t("workshop.capture.namePlaceholder")}
         />
+        {nameError ? (
+          <p
+            id="workshop-lead-name-error"
+            role="alert"
+            className="mt-1.5 text-sm text-rose-700"
+          >
+            {nameError}
+          </p>
+        ) : null}
       </div>
 
       <div>
         <label htmlFor="workshop-lead-email" className={labelClass}>
           {t("workshop.capture.emailLabel")}{" "}
-          <span className="text-rose-600" aria-hidden="true">
-            {requiredMark}
-          </span>
+          <span className="text-rose-500">{t("workshop.capture.requiredMark")}</span>
         </label>
         <input
           id="workshop-lead-email"
           type="email"
           name="email"
-          required
           autoFocus={false}
           inputMode="email"
           autoComplete="email"
           enterKeyHint="next"
+          required
+          aria-invalid={emailError ? true : undefined}
+          aria-describedby={emailError ? "workshop-lead-email-error" : undefined}
           disabled={submitting}
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={fieldClass}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (emailError) {
+              setEmailError(null);
+            }
+          }}
+          className={emailError ? fieldErrorClass : fieldClass}
           placeholder={t("workshop.capture.emailPlaceholder")}
         />
+        {emailError ? (
+          <p
+            id="workshop-lead-email-error"
+            role="alert"
+            className="mt-1.5 text-sm text-rose-700"
+          >
+            {emailError}
+          </p>
+        ) : null}
       </div>
 
       <div>
         <label htmlFor="workshop-lead-phone" className={labelClass}>
           {t("workshop.capture.phoneLabel")}{" "}
-          <span className="text-rose-600" aria-hidden="true">
-            {requiredMark}
+          <span className="text-xs font-normal text-slate-400">
+            ({optionalLabel})
           </span>
         </label>
         <input
           id="workshop-lead-phone"
           type="tel"
           name="tel"
-          required
           autoFocus={false}
           inputMode="tel"
           autoComplete="tel"
           enterKeyHint="done"
-          aria-required="true"
           aria-invalid={phoneError ? true : undefined}
           aria-describedby={phoneError ? "workshop-lead-phone-error" : undefined}
           disabled={submitting}
@@ -284,7 +341,7 @@ export default function WorkshopCaptureStep({
         }
         primaryType="submit"
         primaryForm="workshop-capture-form"
-        primaryDisabled={submitting || !phoneIsValid}
+        primaryDisabled={submitting}
         secondaryLabel={t("workshop.errors.backButton")}
         secondaryDisabled={submitting}
         onSecondaryClick={onBack}

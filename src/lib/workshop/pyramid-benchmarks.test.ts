@@ -115,7 +115,6 @@ describe("computeLayerFlags", () => {
           targetAmountHKD: 200_000,
           targetAge: 40,
           targetYear: 2028,
-          goalType: "spend",
         },
         {
           id: "retire",
@@ -124,15 +123,12 @@ describe("computeLayerFlags", () => {
           targetAmountHKD: 1_000_000,
           targetAge: 40,
           targetYear: 2055,
-          goalType: "spend",
         },
       ],
     },
     investment: {
       riskAllocation: { low: 20, mid: 30, high: 50 },
       lumpSumHKD: 5_000,
-      monthlyInvestmentHKD: 4_000,
-      monthlyFunHKD: 1_000,
     },
   });
 
@@ -155,10 +151,8 @@ describe("computeLayerFlags", () => {
         emergencyFund: { savedAmountHKD: 1_000 },
         goals: { goals: [] },
         investment: {
-          riskAllocation: { low: 20, mid: 30, high: 50 },
+          riskAllocation: { low: 100, mid: 0, high: 0 },
           lumpSumHKD: 0,
-          monthlyInvestmentHKD: 0,
-          monthlyFunHKD: 0,
         },
       },
       benchmarks,
@@ -169,26 +163,35 @@ describe("computeLayerFlags", () => {
     expect(weak.investment).toBe("red");
   });
 
-  it("flags amber when monthly investing exceeds available surplus", () => {
+  it("flags investment on risk-glide deviation and zero invested capital (v4)", () => {
     const benchmarks = buildPyramidBenchmarks({
       age: 32,
       monthlyIncomeHKD: 40_000,
       industry: "Tech",
     });
-    // income 40k − expenses 30k − fun 1k = 9k surplus; investing 15k → amber
-    const flags = computeLayerFlags(
+    // Far from the age glide path (benchmark at 32 ≈ L38/M17/H45):
+    const farOff = computeLayerFlags(
       {
         ...basePyramid(),
         investment: {
           riskAllocation: { low: 20, mid: 30, high: 50 },
           lumpSumHKD: 50_000,
-          monthlyInvestmentHKD: 15_000,
-          monthlyFunHKD: 1_000,
         },
       },
       benchmarks,
-      { monthlyIncomeHKD: 40_000, monthlyExpensesHKD: 30_000 },
     );
-    expect(flags.investment).toBe("amber");
+    expect(farOff.investment).toBe("amber");
+
+    const noCapital = computeLayerFlags(
+      {
+        ...basePyramid(),
+        investment: {
+          riskAllocation: { ...benchmarks.riskAllocation },
+          lumpSumHKD: 0,
+        },
+      },
+      benchmarks,
+    );
+    expect(noCapital.investment).toBe("amber");
   });
 });

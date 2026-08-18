@@ -80,7 +80,8 @@ vi.mock("@/components/providers/LocaleProvider", () => ({
         "workshop.journey.finaleMonthlyPlan":
           "Monthly plan after squeezes: {before}/mo → {after}/mo",
         "workshop.journey.finaleTimelineMissing": "Timeline missing",
-        "workshop.stressTest.goalInflatedTarget": "Inflated target: {amount}",
+        "workshop.stressTest.goalTargetAmount": "Target: {amount}",
+        "workshop.stressTest.goalInflatedTarget": "Target: {amount}",
       };
       return map[key] ?? key;
     },
@@ -99,7 +100,6 @@ function goal(
     icon: "Target",
     label: { en: partial.id, zhHant: partial.id },
     targetYear: 2026 + (partial.targetAge - 35),
-    goalType: "spend",
     ...partial,
   };
 }
@@ -119,8 +119,6 @@ const pyramid: PyramidState = {
   investment: {
     riskAllocation: { low: 40, mid: 40, high: 20 },
     lumpSumHKD: 100_000,
-    monthlyInvestmentHKD: 5_000,
-    monthlyFunHKD: 2_000,
   },
 };
 
@@ -218,8 +216,6 @@ describe("WorkshopGoalJourneyRail", () => {
         tone="professional"
         pyramid={pyramid}
         expenses={baseExpenses}
-        retirementAge={65}
-        userAge={35}
       />,
     );
 
@@ -250,7 +246,6 @@ describe("WorkshopGoalJourneyRail", () => {
         goals: [
           {
             goalId: "trip",
-            goalType: "spend",
             targetAge: 36,
             inflatedTargetHKD: 40_000,
             attainedAtAge: 38,
@@ -258,14 +253,12 @@ describe("WorkshopGoalJourneyRail", () => {
           },
         ],
         rows: [],
-        retirementTargets: [],
         emergencyFund: {
           status: "green",
           targetHKD: 1,
           targetMonths: 6,
         },
         retirement: {
-          retirementAge: 65,
           passiveIncomeAtRetirement: 0,
           assetsAtRetirement: 0,
           assetsDepletedAtAge: null,
@@ -309,8 +302,6 @@ describe("WorkshopGoalJourneyRail", () => {
         tone="professional"
         pyramid={pyramid}
         expenses={baseExpenses}
-        retirementAge={65}
-        userAge={35}
       />,
     );
 
@@ -341,16 +332,53 @@ describe("WorkshopGoalJourneyRail", () => {
     });
   });
 
-  it("auto-expands retirement finale with charts + recap once spend goals are decided", async () => {
-    const onFinaleReachedChange = vi.fn();
+  it("puts every goal on the rail sorted by target age (no nest-egg type in v4)", () => {
+    const withNest: PyramidState = {
+      ...pyramid,
+      goals: {
+        goals: [
+          ...pyramid.goals.goals,
+          {
+            id: "nest",
+            icon: "PiggyBank",
+            label: { en: "Nest egg", zhHant: "儲備" },
+            targetAmountHKD: 5_000_000,
+            targetAge: 65,
+            targetYear: 2056,
+          },
+        ],
+      },
+    };
+
+    render(
+      <WorkshopGoalJourneyRail
+        sessionId="sess_1"
+        tone="professional"
+        pyramid={withNest}
+        expenses={baseExpenses}
+      />,
+    );
+
+    const rail = screen.getByTestId("workshop-goal-journey-rail");
+    expect(rail.querySelector('[data-goal-id="trip"]')).toBeTruthy();
+    expect(rail.querySelector('[data-goal-id="home"]')).toBeTruthy();
+    expect(rail.querySelector('[data-goal-id="nest"]')).toBeTruthy();
+    expect(
+      rail.querySelector('[data-goal-id="__retirement_rail__"]'),
+    ).toBeNull();
+    expect(
+      within(rail).queryByTestId("workshop-journey-finale-card"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("signals finale reached without embedding retirement charts in the rail", async () => {
+    const onGoalsResolvedChange = vi.fn();
     render(
       <WorkshopGoalJourneyRail
         sessionId="sess_1"
         tone="professional"
         pyramid={pyramid}
         expenses={baseExpenses}
-        retirementAge={65}
-        userAge={35}
         journey={{
           decisions: [
             {
@@ -373,7 +401,6 @@ describe("WorkshopGoalJourneyRail", () => {
           goals: [
             {
               goalId: "trip",
-              goalType: "spend",
               targetAge: 36,
               inflatedTargetHKD: 40_000,
               attainedAtAge: 36,
@@ -388,9 +415,7 @@ describe("WorkshopGoalJourneyRail", () => {
               passiveIncome: 0,
               totalIncome: 50_000,
               expenses: 14_000,
-              funBudget: 2_000,
               surplus: 34_000,
-              investedContributionHKD: 5_000,
               investedLiquidatedHKD: 0,
               liquidPool: 100_000,
               investedPool: 100_000,
@@ -402,15 +427,12 @@ describe("WorkshopGoalJourneyRail", () => {
               passiveIncome: 8_000,
               totalIncome: 8_000,
               expenses: 14_000,
-              funBudget: 2_000,
               surplus: 0,
-              investedContributionHKD: 0,
               investedLiquidatedHKD: 0,
               liquidPool: 200_000,
               investedPool: 800_000,
             },
           ],
-          retirementTargets: [],
           emergencyFund: {
             status: "green",
             targetHKD: 84_000,
@@ -423,39 +445,19 @@ describe("WorkshopGoalJourneyRail", () => {
             assetsDepletedAtAge: null,
           },
           blendedRate: 0.03,
-          engineRevision: 3,
+          engineRevision: 4,
         }}
-        onFinaleReachedChange={onFinaleReachedChange}
+        onGoalsResolvedChange={onGoalsResolvedChange}
       />,
     );
 
     const rail = screen.getByTestId("workshop-goal-journey-rail");
-    const retirement = rail.querySelector(
-      '[data-goal-id="__retirement_rail__"]',
-    ) as HTMLElement;
-
-    expect(retirement).toHaveAttribute("data-locked", "false");
-    expect(onFinaleReachedChange).toHaveBeenCalledWith(true);
-
-    await waitFor(() => {
-      expect(
-        within(retirement).getByTestId("workshop-journey-finale-card"),
-      ).toBeInTheDocument();
-      expect(
-        within(retirement).getByTestId("workshop-retirement-finale-charts"),
-      ).toBeInTheDocument();
-      expect(
-        within(retirement).getByText(
-          /1 goals achieved on time, 0 delayed, 1 given up/i,
-        ),
-      ).toBeInTheDocument();
-      expect(
-        within(retirement).getByTestId("workshop-journey-monthly-plan"),
-      ).toBeInTheDocument();
-    });
-
     expect(
-      within(retirement).queryByRole("button", { name: /apply goal/i }),
+      rail.querySelector('[data-goal-id="__retirement_rail__"]'),
+    ).toBeNull();
+    expect(
+      within(rail).queryByTestId("workshop-journey-finale-card"),
     ).not.toBeInTheDocument();
+    expect(onGoalsResolvedChange).toHaveBeenCalledWith(true);
   });
 });

@@ -173,6 +173,18 @@ export default function AdminOverviewCards({ overview }: Readonly<Props>) {
           {t("auth.admin.quickActions.manageMp")}
         </Link>
         <Link
+          href="/admin/market-pulse/approvals"
+          className={`inline-flex min-h-11 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-800 ${focusRing}`}
+        >
+          {t("auth.admin.mp.nav.approvals")}
+        </Link>
+        <Link
+          href="/admin/workshop"
+          className={`inline-flex min-h-11 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-800 ${focusRing}`}
+        >
+          {t("auth.admin.quickActions.workshopLeads")}
+        </Link>
+        <Link
           href="/admin/matching-pulse"
           className={`inline-flex min-h-11 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-800 ${focusRing}`}
         >
@@ -197,14 +209,6 @@ export default function AdminOverviewCards({ overview }: Readonly<Props>) {
           {t("auth.admin.quickActions.leaderboard")}
         </Link>
       </div>
-      <p className="mt-3">
-        <Link
-          href="/admin/workshop"
-          className="text-xs font-medium text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-300 hover:underline"
-        >
-          {t("auth.admin.quickActions.workshopLeads")}
-        </Link>
-      </p>
     </section>
   );
 }
