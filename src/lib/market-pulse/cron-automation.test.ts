@@ -54,6 +54,21 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+// New server-only dependencies pulled in by the rollover/reveal automation
+// (cron-automation.ts) — vitest cannot load `server-only` modules.
+vi.mock("@/lib/market-pulse/reveal-ppa-validation.server", () => ({
+  validateCycleReadyForReveal: vi.fn(),
+}));
+vi.mock("@/lib/notifications/reveal-email", () => ({
+  sendRevealReadyEmailsForCycle: vi.fn(),
+}));
+vi.mock("@/lib/notifications/winner-email", () => ({
+  sendWinnerEmailForCycle: vi.fn(),
+}));
+vi.mock("@/lib/market-pulse/server", () => ({
+  calculateAndPersistCycleScores: vi.fn(),
+}));
+
 type StoreCard = MarketPulseCard & { _count: { decisions: number } };
 
 type Store = {
