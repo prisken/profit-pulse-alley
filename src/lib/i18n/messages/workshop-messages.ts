@@ -259,6 +259,7 @@ export const workshopEnMessages = {
   "workshop.journey.donutOutflow": "Outflow",
   "workshop.journey.acceptSqueeze": "Accept AI recommendation",
   "workshop.journey.squeezeAccepted": "Recommendation accepted",
+  "workshop.journey.undoSqueeze": "Undo recommendation",
   "workshop.journey.applyGoal": "Apply goal",
   "workshop.journey.giveUpGoal": "Give up goal",
   "workshop.journey.loadingOutlook": "Checking this goal on your plan…",
@@ -493,6 +494,8 @@ export const workshopEnMessages = {
   "workshop.capture.whatsappSentNote":
     "We're sending a copy to your WhatsApp as well — it usually lands within a few minutes.",
   "workshop.capture.phoneRequired": "Phone number is required.",
+  "workshop.capture.nameRequired": "Please enter your name.",
+  "workshop.capture.emailRequired": "Please enter a valid email address.",
   "workshop.capture.phoneInvalid":
     "Enter a valid phone number (e.g. +85212345678 or another +country code).",
   "workshop.capture.phoneInvalidHk":
@@ -503,6 +506,7 @@ export const workshopEnMessages = {
   "workshop.capture.downloadButton": "Save & download blueprint",
   "workshop.capture.submitting": "Saving…",
   "workshop.capture.downloadAgainButton": "Download again",
+  "workshop.capture.playAgainButton": "Play again",
   "workshop.capture.thankYouMessage": "Thank you — your blueprint is ready",
   "workshop.capture.thankYouBody":
     "We saved your details and started your PDF download. Your #1 goal:",
@@ -512,7 +516,7 @@ export const workshopEnMessages = {
   "workshop.capture.selectedGoal": "Selected goal:",
   "workshop.capture.optionalLabel": "Optional",
   "workshop.capture.optionalHint":
-    "All fields are optional — you can skip straight to your blueprint if you prefer.",
+    "Your name and email help us personalise your plan. Add your WhatsApp number and we'll send your blueprint there too.",
   "workshop.capture.requiredMark": "*",
   "workshop.capture.saveError":
     "Could not save your details. Please try again.",

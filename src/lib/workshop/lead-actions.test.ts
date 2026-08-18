@@ -73,7 +73,7 @@ describe("captureWorkshopLeadAction — WhatsApp PDF queue flag", () => {
     await captureWorkshopLeadAction({
       sessionId: "sess-1",
       name: "Ada",
-      email: "",
+      email: "ada@example.com",
       phone: "+85261234567",
       selectedGoal: "Retirement",
     });
@@ -87,7 +87,7 @@ describe("captureWorkshopLeadAction — WhatsApp PDF queue flag", () => {
     await captureWorkshopLeadAction({
       sessionId: "sess-1",
       name: "Ada",
-      email: "",
+      email: "ada@example.com",
       phone: "",
       selectedGoal: "Retirement",
     });
@@ -96,5 +96,33 @@ describe("captureWorkshopLeadAction — WhatsApp PDF queue flag", () => {
       unknown
     >;
     expect(updateNoPhone.whatsappPdfRequestedAt).toBeUndefined();
+  });
+
+  it("requires name and email before capturing", async () => {
+    const noName = await captureWorkshopLeadAction({
+      sessionId: "sess-1",
+      name: "",
+      email: "ada@example.com",
+      phone: "",
+      selectedGoal: "Retirement",
+    });
+    expect(noName).toEqual({
+      ok: false,
+      error: "workshop.capture.nameRequired",
+      field: "name",
+    });
+
+    const noEmail = await captureWorkshopLeadAction({
+      sessionId: "sess-1",
+      name: "Ada",
+      email: "",
+      phone: "",
+      selectedGoal: "Retirement",
+    });
+    expect(noEmail).toEqual({
+      ok: false,
+      error: "workshop.capture.emailRequired",
+      field: "email",
+    });
   });
 });

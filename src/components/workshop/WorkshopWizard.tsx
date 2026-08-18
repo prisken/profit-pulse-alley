@@ -123,6 +123,31 @@ export default function WorkshopWizard() {
     }
   }
 
+  /** Fresh run: back to intake with a clean slate (a new session is created on submit). */
+  function restartWorkshop() {
+    setStepIndex(0);
+    setSessionId(null);
+    setPyramid(null);
+    setPyramidRationale(null);
+    setProtectionExplanation(null);
+    setEmergencyFundExplanation(null);
+    setBenchmarks(null);
+    setExpenses(null);
+    setAge(0);
+    setRetirementAge(65);
+    setMonthlyIncome(0);
+    setIndustry("");
+    setIndustryOther("");
+    setHouseholdStatus("");
+    setTone(null);
+    setStressTest(null);
+    setSummary(null);
+    setSelectedActionGoal(null);
+    setIntakeError(null);
+    setIntakeAiFailed(false);
+    setIsPredicting(false);
+  }
+
   async function handleIntakeSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIntakeError(null);
@@ -720,6 +745,7 @@ export default function WorkshopWizard() {
                   sessionId={sessionId}
                   selectedGoalTitle={selectedActionGoal.title}
                   onBack={() => goToStep("summary")}
+                  onRestart={restartWorkshop}
                 />
               </WorkshopErrorBoundary>
             ) : null}

@@ -337,7 +337,7 @@ export default function WorkshopGoalJourneyCard({
           <span
             className={[
               "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform",
-              allowLiquidation ? "translate-x-5" : "translate-x-0.5",
+              allowLiquidation ? "translate-x-[22px]" : "translate-x-0.5",
             ].join(" ")}
           />
         </button>
@@ -415,14 +415,14 @@ export default function WorkshopGoalJourneyCard({
             className={[
               "inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border px-3.5 text-sm font-semibold transition-colors sm:w-auto",
               acceptedSqueeze
-                ? "border-emerald-500 bg-emerald-100 text-emerald-900"
+                ? "border-emerald-500 bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
                 : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100",
             ].join(" ")}
-            onClick={() => setAcceptedSqueeze(true)}
-            disabled={acceptedSqueeze}
+            onClick={() => setAcceptedSqueeze((prev) => !prev)}
+            aria-pressed={acceptedSqueeze}
           >
             {acceptedSqueeze
-              ? t("workshop.journey.squeezeAccepted")
+              ? t("workshop.journey.undoSqueeze")
               : t("workshop.journey.acceptSqueeze")}
           </button>
         </section>

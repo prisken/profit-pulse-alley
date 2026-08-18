@@ -244,6 +244,7 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.journey.donutOutflow": "流出",
   "workshop.journey.acceptSqueeze": "接受 AI 建議",
   "workshop.journey.squeezeAccepted": "已接受建議",
+  "workshop.journey.undoSqueeze": "撤銷建議",
   "workshop.journey.applyGoal": "套用目標",
   "workshop.journey.giveUpGoal": "放棄目標",
   "workshop.journey.loadingOutlook": "正在以你的計劃檢視此目標…",
@@ -450,6 +451,8 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.capture.whatsappSentNote":
     "我們亦會將副本發送至你的 WhatsApp——通常幾分鐘內送達。",
   "workshop.capture.phoneRequired": "必須填寫電話號碼。",
+  "workshop.capture.nameRequired": "請輸入你的姓名。",
+  "workshop.capture.emailRequired": "請輸入有效的電郵地址。",
   "workshop.capture.phoneInvalid":
     "請輸入有效電話號碼（例如 +85212345678，或其他 +國家碼）。",
   "workshop.capture.phoneInvalidHk": "香港號碼應為 +852 再加 8 位數字。",
@@ -459,6 +462,7 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.capture.downloadButton": "儲存並下載藍圖",
   "workshop.capture.submitting": "儲存中…",
   "workshop.capture.downloadAgainButton": "再次下載",
+  "workshop.capture.playAgainButton": "再玩一次",
   "workshop.capture.thankYouMessage": "謝謝——你的藍圖已準備好",
   "workshop.capture.thankYouBody":
     "我們已儲存你的資料並開始下載 PDF。你的首要目標：",
@@ -468,7 +472,7 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.capture.selectedGoal": "已選目標：",
   "workshop.capture.optionalLabel": "選填",
   "workshop.capture.optionalHint":
-    "所有欄位均為選填——如不想填寫，可直接跳至下載你的藍圖。",
+    "你的姓名和電郵有助我們為你度身訂造計劃。填寫 WhatsApp 號碼，我們亦會把藍圖發送到你的 WhatsApp。",
   "workshop.capture.requiredMark": "*",
   "workshop.capture.saveError": "未能儲存你的資料，請再試一次。",
   "workshop.capture.needSummary": "請先在總結頁選擇首要焦點，才可收取藍圖。",

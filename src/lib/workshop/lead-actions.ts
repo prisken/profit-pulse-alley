@@ -63,10 +63,10 @@ function parseStressTestVerdict(goalsJson: unknown): string | null {
 
 /**
  * Validates and saves a WorkshopLead for the given session.
- * Contact fields are OPTIONAL: a player can finish the game without entering
- * name/email/phone and the lead is still captured with their full session
- * data. When a field IS provided it is validated; empty values are stored as
- * "" and shown as proxy labels ("Anonymous player") in the admin console.
+ * Name and email are REQUIRED; phone is optional (used to send the blueprint
+ * PDF over WhatsApp when provided). When the phone IS provided it is
+ * validated; empty values are stored as "" and shown as proxy labels in the
+ * admin console.
  * Additive: stressTestVerdict + profileBehaviorMismatch from session JSON.
  */
 export async function captureWorkshopLeadAction(
@@ -79,15 +79,15 @@ export async function captureWorkshopLeadAction(
     }
 
     const name = input.name?.trim();
-    if (name && name.length < 2) {
-      return { ok: false, error: "Please enter your name.", field: "name" };
+    if (!name || name.length < 2) {
+      return { ok: false, error: "workshop.capture.nameRequired", field: "name" };
     }
 
     const email = normalizeEmail(input.email ?? "");
-    if (email && !EMAIL_RE.test(email)) {
+    if (!email || !EMAIL_RE.test(email)) {
       return {
         ok: false,
-        error: "Please enter a valid email address.",
+        error: "workshop.capture.emailRequired",
         field: "email",
       };
     }
