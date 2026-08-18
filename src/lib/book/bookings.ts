@@ -54,6 +54,8 @@ export async function suggestSlots(input: {
   dayPref: DayPref;
   timePref: TimePref;
   now: Date;
+  /** which slot of each day to return: 0 = earliest, 1 = second, ... */
+  variant?: number;
 }): Promise<CandidateSlot[]> {
   if (!isValidWeekOption(input.weekOption, input.now)) {
     throw new Error("That week is no longer bookable — please pick a fresh week.");
@@ -66,7 +68,7 @@ export async function suggestSlots(input: {
     now: input.now,
     busy,
   });
-  return pickThreeSlots(slots);
+  return pickThreeSlots(slots, input.variant ?? 0);
 }
 
 function normalizePhone(value: string): string {

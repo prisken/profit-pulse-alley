@@ -59,6 +59,7 @@ export const AVAILABILITY_WINDOWS: TimeWindow[] = [
   { dayType: "weekday", timePref: "office", startHour: 10, startMinute: 0, endHour: 18, endMinute: 0 },
   { dayType: "weekday", timePref: "after_office", startHour: 18, startMinute: 30, endHour: 21, endMinute: 0 },
   { dayType: "weekend", timePref: "office", startHour: 10, startMinute: 0, endHour: 13, endMinute: 0 },
+  { dayType: "weekend", timePref: "after_office", startHour: 18, startMinute: 30, endHour: 21, endMinute: 0 },
 ];
 
 export type BusyInterval = { start: Date; end: Date };
@@ -215,10 +216,12 @@ export function generateCandidateSlots(opts: {
 }
 
 /**
- * Pick 3 slots from 3 different days: the earliest available slot of each day,
- * in day order. Returns fewer when fewer days are available.
+ * Pick up to 3 slots from 3 different days. `variant` selects WHICH slot of
+ * each day: 0 = earliest available, 1 = second, etc. — so "show more options"
+ * returns genuinely different times. Days with fewer than `variant+1` slots
+ * are skipped.
  */
-export function pickThreeSlots(slots: CandidateSlot[]): CandidateSlot[] {
+export function pickThreeSlots(slots: CandidateSlot[], variant = 0): CandidateSlot[] {
   const byDay = new Map<string, CandidateSlot[]>();
   for (const slot of slots) {
     const key = formatHktDateOnlyFromUtcInstant(slot.start);
@@ -234,7 +237,11 @@ export function pickThreeSlots(slots: CandidateSlot[]): CandidateSlot[] {
   for (const day of days) {
     const daySlots = byDay.get(day) ?? [];
     daySlots.sort((a, b) => a.start.getTime() - b.start.getTime());
-    chosen.push(daySlots[0]);
+    const slot = daySlots[variant];
+    if (!slot) {
+      continue;
+    }
+    chosen.push(slot);
     if (chosen.length === 3) {
       break;
     }

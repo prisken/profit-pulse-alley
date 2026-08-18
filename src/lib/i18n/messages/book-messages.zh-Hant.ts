@@ -34,6 +34,7 @@ export const bookZhHantMessages: Pick<Messages, keyof typeof bookEnMessages> = {
   "book.flow.time.subtitle": "兩個時段都有——選最適合你的。",
   "book.flow.time.office.label": "辦公時間",
   "book.flow.time.office.description": "10:00 – 18:00",
+  "book.flow.time.office.descriptionWeekend": "10:00 – 13:00",
   "book.flow.time.afterOffice.label": "下班後",
   "book.flow.time.afterOffice.description": "18:30 – 21:00",
 
@@ -41,6 +42,8 @@ export const bookZhHantMessages: Pick<Messages, keyof typeof bookEnMessages> = {
   "book.flow.slots.subtitle": "為你找到 3 個空檔——每天一個。選一個最適合你的。",
   "book.flow.slots.loading": "正在查看時間表……",
   "book.flow.slots.refresh": "看看其他選項",
+  "book.flow.slots.firstOptions": "顯示最初的選項",
+  "book.flow.slots.noMore": "這些選擇的開放時段已全部顯示——試試其他偏好。",
   "book.flow.slots.hktNote": "所有時間均為香港時間",
 
   "book.flow.confirm.title": "差不多完成了",

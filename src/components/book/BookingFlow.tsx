@@ -55,6 +55,7 @@ export default function BookingFlow({ initialWeeks }: { initialWeeks: WeekOption
   const [step, setStep] = useState<Step>({ name: "contact" });
   const [state, setState] = useState<FlowState>(INITIAL_STATE);
   const [slots, setSlots] = useState<SlotChoice[] | null>(null);
+  const [variant, setVariant] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,7 +71,12 @@ export default function BookingFlow({ initialWeeks }: { initialWeeks: WeekOption
   }, []);
 
   const requestSlots = useCallback(
-    async (week: WeekOption, day: "weekday" | "weekend", time: "office" | "after_office") => {
+    async (
+      week: WeekOption,
+      day: "weekday" | "weekend",
+      time: "office" | "after_office",
+      nextVariant = 0,
+    ) => {
       setLoading(true);
       setError(null);
       setSlots(null);
@@ -83,6 +89,7 @@ export default function BookingFlow({ initialWeeks }: { initialWeeks: WeekOption
             dayPref: day,
             timePref: time,
             locale,
+            variant: nextVariant,
           }),
         });
         const data = (await res.json()) as {
@@ -105,6 +112,7 @@ export default function BookingFlow({ initialWeeks }: { initialWeeks: WeekOption
           return;
         }
         setSlots(data.slots ?? []);
+        setVariant(nextVariant);
         go({ name: "slots" });
       } catch {
         setError(t("book.flow.errors.generic"));
@@ -332,7 +340,13 @@ export default function BookingFlow({ initialWeeks }: { initialWeeks: WeekOption
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {(
               [
-                ["office", "book.flow.time.office.label", "book.flow.time.office.description"],
+                [
+                  "office",
+                  "book.flow.time.office.label",
+                  state.day === "weekend"
+                    ? "book.flow.time.office.descriptionWeekend"
+                    : "book.flow.time.office.description",
+                ],
                 [
                   "after_office",
                   "book.flow.time.afterOffice.label",
@@ -348,12 +362,14 @@ export default function BookingFlow({ initialWeeks }: { initialWeeks: WeekOption
                   const week = state.week;
                   if (!week) return;
                   setState({ ...state, time: value });
-                  void requestSlots(week, state.day ?? "weekday", value);
+                  void requestSlots(week, state.day ?? "weekday", value, 0);
                 }}
                 className="rounded-2xl border border-white/10 bg-[#111318] p-5 text-left transition hover:border-emerald-500/40 hover:bg-[#15181f] disabled:opacity-50"
               >
                 <span className="text-base font-semibold">{t(labelKey)}</span>
-                <span className="mt-1 block text-xs text-foreground/45">{t(descKey)}</span>
+                <span className="mt-1 block text-xs text-foreground/45">
+                  {t(descKey)}
+                </span>
               </button>
             ))}
           </div>
@@ -368,7 +384,11 @@ export default function BookingFlow({ initialWeeks }: { initialWeeks: WeekOption
           {slots === null ? (
             <div className="mt-8 text-sm text-foreground/50">{t("book.flow.slots.loading")}</div>
           ) : slots.length === 0 ? (
-            <div className="mt-8 text-sm text-red-300">{t("book.flow.errors.noSlots")}</div>
+            <div className="mt-8 text-sm text-red-300">
+              {variant > 0
+                ? t("book.flow.slots.noMore")
+                : t("book.flow.errors.noSlots")}
+            </div>
           ) : (
             <div className="mt-6 space-y-3">
               {slots.map((slot) => (
@@ -397,10 +417,19 @@ export default function BookingFlow({ initialWeeks }: { initialWeeks: WeekOption
             <button
               type="button"
               disabled={loading}
-              onClick={() => void requestSlots(state.week!, state.day!, state.time!)}
+              onClick={() =>
+                void requestSlots(
+                  state.week!,
+                  state.day!,
+                  state.time!,
+                  slots && slots.length === 0 && variant > 0 ? 0 : variant + 1,
+                )
+              }
               className="mt-4 w-full rounded-xl border border-white/10 px-5 py-3 text-sm text-foreground/60 transition hover:border-emerald-500/30 hover:text-foreground/90 disabled:opacity-50"
             >
-              {t("book.flow.slots.refresh")}
+              {slots && slots.length === 0 && variant > 0
+                ? t("book.flow.slots.firstOptions")
+                : t("book.flow.slots.refresh")}
             </button>
           )}
         </div>

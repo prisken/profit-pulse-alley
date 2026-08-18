@@ -116,9 +116,12 @@ describe("generateCandidateSlots", () => {
     expect(slots.length).toBeGreaterThan(10);
   });
 
-  it("no weekend after-office by default", () => {
+  it("weekend after-office: Sat/Sun 18:30–20:00 starts", () => {
     const slots = generateCandidateSlots({ ...base, dayPref: "weekend", timePref: "after_office" });
-    expect(slots.length).toBe(0);
+    // Sat + Sun x (18:30,19:00,19:30,20:00) = 8
+    expect(slots.length).toBe(8);
+    const starts = slots.map((s) => new Date(s.start.getTime() + 8 * 3600 * 1000).getUTCHours());
+    expect(starts.every((h) => h >= 18)).toBe(true);
   });
 });
 
@@ -140,6 +143,26 @@ describe("pickThreeSlots", () => {
   it("returns fewer when fewer days available", () => {
     const chosen = pickThreeSlots([]);
     expect(chosen.length).toBe(0);
+  });
+
+  it("variant 1 returns the SECOND slot of each day", () => {
+    const base = { mondayKey: MON_2026_08_17, now: hkt(2026, 8, 17, 0, 0), busy: [] as { start: Date; end: Date }[] };
+    const slots = generateCandidateSlots({ ...base, dayPref: "weekday", timePref: "office" });
+    const v0 = pickThreeSlots(slots, 0);
+    const v1 = pickThreeSlots(slots, 1);
+    expect(v1.length).toBe(3);
+    const hktWall = (d: Date) => new Date(d.getTime() + 8 * 3600 * 1000);
+    // v0 starts at 10:00; v1 starts at 10:30
+    expect(hktWall(v0[0]!.start).getUTCMinutes()).toBe(0);
+    expect(hktWall(v1[0]!.start).getUTCMinutes()).toBe(30);
+    expect(v1[0]!.start.toISOString().slice(0, 10)).toBe("2026-08-17");
+  });
+
+  it("variant beyond a day's slots skips that day", () => {
+    const base = { mondayKey: MON_2026_08_17, now: hkt(2026, 8, 17, 0, 0), busy: [] as { start: Date; end: Date }[] };
+    const slots = generateCandidateSlots({ ...base, dayPref: "weekday", timePref: "office" });
+    // 15 slots/day (10:00..17:00); variant 20 -> no slots at all
+    expect(pickThreeSlots(slots, 20).length).toBe(0);
   });
 
   it("sessions are SESSION_MINUTES long", () => {

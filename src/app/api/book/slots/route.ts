@@ -22,7 +22,12 @@ export async function POST(request: Request) {
   const weekKey = (body as { weekKey?: unknown }).weekKey;
   const dayPref = (body as { dayPref?: unknown }).dayPref;
   const timePref = (body as { timePref?: unknown }).timePref;
+  const variantRaw = (body as { variant?: unknown }).variant;
   const locale = (body as { locale?: unknown }).locale === "zh-Hant" ? "zh-Hant" : "en";
+  const variant =
+    typeof variantRaw === "number" && Number.isInteger(variantRaw) && variantRaw >= 0
+      ? variantRaw
+      : 0;
 
   if (typeof weekKey !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(weekKey)) {
     return NextResponse.json(
@@ -52,6 +57,7 @@ export async function POST(request: Request) {
       dayPref: dayPref as DayPref,
       timePref: timePref as TimePref,
       now,
+      variant,
     });
     if (slots.length === 0) {
       return NextResponse.json(

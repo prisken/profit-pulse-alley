@@ -32,6 +32,7 @@ export const bookEnMessages = {
   "book.flow.time.subtitle": "Both are available — pick what fits your day.",
   "book.flow.time.office.label": "Office hours",
   "book.flow.time.office.description": "10:00 – 18:00",
+  "book.flow.time.office.descriptionWeekend": "10:00 – 13:00",
   "book.flow.time.afterOffice.label": "After office hours",
   "book.flow.time.afterOffice.description": "18:30 – 21:00",
 
@@ -40,6 +41,8 @@ export const bookEnMessages = {
     "Here are 3 open slots we found — one per day. Choose what suits you.",
   "book.flow.slots.loading": "Checking availability…",
   "book.flow.slots.refresh": "Show me other options",
+  "book.flow.slots.firstOptions": "Show the first options again",
+  "book.flow.slots.noMore": "You've seen all the open slots for those choices — try different preferences.",
   "book.flow.slots.hktNote": "All times are Hong Kong time",
 
   "book.flow.confirm.title": "Almost there",
