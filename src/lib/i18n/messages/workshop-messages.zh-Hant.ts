@@ -245,6 +245,9 @@ export const workshopZhHantMessages: Record<WorkshopMessageKey, string> = {
   "workshop.journey.acceptSqueeze": "接受 AI 建議",
   "workshop.journey.squeezeAccepted": "已接受建議",
   "workshop.journey.undoSqueeze": "撤銷建議",
+  "workshop.journey.noSqueezeLiquidation":
+    "無需縮減開支——容許動用應急基金／投資已可達成此目標。",
+  "workshop.journey.noSqueezeOnTrack": "進度理想——無需縮減開支。",
   "workshop.journey.applyGoal": "套用目標",
   "workshop.journey.giveUpGoal": "放棄目標",
   "workshop.journey.loadingOutlook": "正在以你的計劃檢視此目標…",

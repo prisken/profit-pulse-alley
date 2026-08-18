@@ -260,6 +260,9 @@ export const workshopEnMessages = {
   "workshop.journey.acceptSqueeze": "Accept AI recommendation",
   "workshop.journey.squeezeAccepted": "Recommendation accepted",
   "workshop.journey.undoSqueeze": "Undo recommendation",
+  "workshop.journey.noSqueezeLiquidation":
+    "No spending squeeze needed — allowing your emergency fund / investments covers this goal.",
+  "workshop.journey.noSqueezeOnTrack": "On track — no spending squeeze needed.",
   "workshop.journey.applyGoal": "Apply goal",
   "workshop.journey.giveUpGoal": "Give up goal",
   "workshop.journey.loadingOutlook": "Checking this goal on your plan…",

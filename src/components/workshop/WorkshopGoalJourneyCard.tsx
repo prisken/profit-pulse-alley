@@ -352,8 +352,7 @@ export default function WorkshopGoalJourneyCard({
       </div>
 
       {recommendation ? (
-        <section className="min-w-0 space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        <section className="min-w-0 space-y-3">          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
             {t("workshop.journey.squeezeHeading")}
           </p>
           <div className="grid min-w-0 grid-cols-1 gap-3 min-[360px]:grid-cols-2">
@@ -428,7 +427,21 @@ export default function WorkshopGoalJourneyCard({
               : t("workshop.journey.acceptSqueeze")}
           </button>
         </section>
-      ) : null}
+      ) : (
+        <p
+          className={[
+            "rounded-xl border px-3.5 py-3 text-sm leading-snug",
+            allowLiquidation
+              ? "border-emerald-200 bg-emerald-50/80 text-emerald-800"
+              : "border-slate-200 bg-slate-50 text-slate-600",
+          ].join(" ")}
+          data-testid="workshop-journey-no-squeeze-note"
+        >
+          {allowLiquidation
+            ? t("workshop.journey.noSqueezeLiquidation")
+            : t("workshop.journey.noSqueezeOnTrack")}
+        </p>
+      )}
 
       {decisionError ? (
         <p className="text-sm text-rose-700" role="alert">
