@@ -85,6 +85,54 @@ const reviewStatusKeys: Record<MarketPulseCardReviewStatus, MessageKey> = {
   REJECTED: "auth.admin.mp.approvals.status.rejected",
 };
 
+/**
+ * Parse the PPA decision matrix out of researchNotes.
+ * The research pass writes labeled sections:
+ *   BULLISH case:\n ... Insight EN: ... / Insight 中文: ...
+ *   CAUTIOUS case:\n ... Insight EN: ... / Insight 中文: ...
+ *   SUGGESTED signal: ...
+ */
+function parsePpaMatrix(researchNotes: string | null) {
+  const rn = researchNotes ?? "";
+  const section = (label: string, next?: string) => {
+    const start = rn.indexOf(label);
+    if (start === -1) return "";
+    const from = start + label.length;
+    const end = next ? rn.indexOf(next, from) : rn.length;
+    return (end === -1 ? rn.slice(from) : rn.slice(from, end)).trim();
+  };
+  const bullish = section("BULLISH case:", "CAUTIOUS case:");
+  const cautious = section("CAUTIOUS case:", "SUGGESTED signal:");
+  const suggested =
+    section("SUGGESTED signal:") || section("SUGGESTED:");
+  const insightLine = (s: string, key: string) => {
+    const i = s.indexOf(key);
+    if (i === -1) return "";
+    return s.slice(i + key.length).split("\n")[0].trim();
+  };
+  return {
+    bullish,
+    cautious,
+    suggested,
+    bullishInsightEn: insightLine(bullish, "Insight EN:"),
+    bullishInsightZh: insightLine(bullish, "Insight 中文:"),
+    cautiousInsightEn: insightLine(cautious, "Insight EN:"),
+    cautiousInsightZh: insightLine(cautious, "Insight 中文:"),
+  };
+}
+
+type PpaMatrix = ReturnType<typeof parsePpaMatrix>;
+
+const EMPTY_MATRIX: PpaMatrix = {
+  bullish: "",
+  cautious: "",
+  suggested: "",
+  bullishInsightEn: "",
+  bullishInsightZh: "",
+  cautiousInsightEn: "",
+  cautiousInsightZh: "",
+};
+
 const cycleStatusKeys: Record<MarketPulseCycleStatus, MessageKey> = {
   DRAFT: "auth.admin.mp.approvals.cycleStatus.draft",
   OPEN: "auth.admin.mp.approvals.cycleStatus.open",
@@ -218,6 +266,43 @@ export default function MarketPulseApprovalsClient({
     const ppaInsightValue = draft?.ppaInsight ?? card.ppaInsight ?? "";
     const ppaInsightZhValue =
       draft?.ppaInsightZhHant ?? card.ppaInsightZhHant ?? "";
+    const matrix = useMemo(
+      () => parsePpaMatrix(card.researchNotes),
+      [card.researchNotes],
+    );
+
+    const handleSignalChange = (signal: MarketPulseSignal | "") => {
+      if (signal === "") {
+        setPpaDraft(card.id, { ppaSignal: "", ppaInsight: "", ppaInsightZhHant: "" });
+        return;
+      }
+      // Auto-fill the insight from the matching case in the PPA matrix.
+      const isBull = signal === "BULLISH";
+      setPpaDraft(card.id, {
+        ppaSignal: signal,
+        ppaInsight: isBull ? matrix.bullishInsightEn : matrix.cautiousInsightEn,
+        ppaInsightZhHant: isBull ? matrix.bullishInsightZh : matrix.cautiousInsightZh,
+      });
+    };
+
+    const matrixCard = (
+      label: string,
+      body: string,
+      tone: "emerald" | "amber",
+    ) => (
+      <details className="group rounded-lg border border-zinc-800 bg-zinc-900/60 open:bg-zinc-900">
+        <summary
+          className={`flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-xs font-semibold ${tone === "emerald" ? "text-emerald-300" : "text-amber-200"}`}
+        >
+          <span>{label}</span>
+          <span className="text-zinc-500 group-open:hidden">▸</span>
+          <span className="hidden text-zinc-500 group-open:inline">▾</span>
+        </summary>
+        <p className="whitespace-pre-wrap border-t border-zinc-800 px-3 py-2 text-xs leading-relaxed text-zinc-400">
+          {body}
+        </p>
+      </details>
+    );
 
     return (
       <article
@@ -268,15 +353,43 @@ export default function MarketPulseApprovalsClient({
           <p className="mt-3 text-sm leading-relaxed text-zinc-300">{card.summary}</p>
         ) : null}
 
+        {(matrix.bullish || matrix.cautious) && !isRest ? (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {matrix.bullish
+              ? matrixCard(
+                  `${t("auth.admin.mp.approvals.signal.bullish")} case`,
+                  matrix.bullish,
+                  "emerald",
+                )
+              : null}
+            {matrix.cautious
+              ? matrixCard(
+                  `${t("auth.admin.mp.approvals.signal.cautious")} case`,
+                  matrix.cautious,
+                  "amber",
+                )
+              : null}
+          </div>
+        ) : null}
+
+        {matrix.suggested && !isRest ? (
+          <p className="mt-2 rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-1.5 text-xs text-zinc-300">
+            <span className="font-semibold text-zinc-400">
+              {t("auth.admin.mp.approvals.suggestedSignal")}:
+            </span>{" "}
+            {matrix.suggested}
+          </p>
+        ) : null}
+
         {card.researchNotes ? (
-          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              {t("auth.admin.mp.approvals.researchNotes")}
-            </p>
-            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-zinc-400">
+          <details className="mt-3">
+            <summary className="cursor-pointer list-none text-xs font-medium text-zinc-500 hover:text-zinc-300">
+              {t("auth.admin.mp.approvals.researchNotes")} ▸
+            </summary>
+            <p className="mt-1 whitespace-pre-wrap rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 text-xs leading-relaxed text-zinc-400">
               {card.researchNotes}
             </p>
-          </div>
+          </details>
         ) : null}
 
         {card.reviewNote ? (
@@ -309,9 +422,7 @@ export default function MarketPulseApprovalsClient({
                 <select
                   value={ppaSignalValue}
                   onChange={(e) =>
-                    setPpaDraft(card.id, {
-                      ppaSignal: e.target.value as MarketPulseSignal | "",
-                    })
+                    handleSignalChange(e.target.value as MarketPulseSignal | "")
                   }
                   className={fieldClass}
                 >
@@ -323,6 +434,11 @@ export default function MarketPulseApprovalsClient({
                     {t("auth.admin.mp.approvals.signal.cautious")}
                   </option>
                 </select>
+                {matrix.suggested ? (
+                  <p className="mt-1 text-[11px] text-zinc-500">
+                    {t("auth.admin.mp.approvals.suggestedSignal")}: {matrix.suggested}
+                  </p>
+                ) : null}
               </div>
               <div>
                 <label className="text-xs text-zinc-500">

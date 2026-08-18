@@ -5,12 +5,17 @@ import type { AutomationResult } from "@/lib/market-pulse/cron-automation";
 import {
   automationApprovePpa,
   automationCreateGuidedCycle,
+  automationDeleteCycle,
   automationGetCardDetail,
   automationGetCycleStatus,
   automationGetStatus,
   automationLaunchCycle,
   automationPublishCard,
   automationPublishReadyCards,
+  automationRevealCycle,
+  automationActivateCycle,
+  automationRollover,
+  automationRejectCard,
   automationUnpublishCard,
   automationUpdateCard,
 } from "@/lib/market-pulse/cron-automation";
@@ -29,6 +34,10 @@ export const runtime = "nodejs";
  * - `approvePpa`    -> lock PPA signal + insight on a SIGNAL card
  * - `publishCards`  -> publish every currently-ready card in a cycle
  * - `launchCycle`   -> guided launch (publish ready, open, pin active, runtime OPEN)
+ * - `revealCycle`   -> reveal a cycle (PPA check, status REVEALED, scoring, emails)
+ * - `activateCycle` -> open + pin a fresh cycle as active (no readiness gate)
+ * - `rejectCard`     -> reject a draft card (REJECTED + note) — triggers replacement
+ * - `rollover`      -> reveal due cycles + activate the next pending cycle
  */
 export async function POST(request: Request) {
   if (!isAuthorizedCronRequest(request)) {
@@ -70,6 +79,21 @@ export async function POST(request: Request) {
         break;
       case "launchCycle":
         result = await automationLaunchCycle(body.cycleId);
+        break;
+      case "revealCycle":
+        result = await automationRevealCycle(body.cycleId);
+        break;
+      case "activateCycle":
+        result = await automationActivateCycle(body.cycleId);
+        break;
+      case "rejectCard":
+        result = await automationRejectCard(body.cardId, body.reviewNote);
+        break;
+      case "deleteCycle":
+        result = await automationDeleteCycle(body.cycleId);
+        break;
+      case "rollover":
+        result = await automationRollover();
         break;
       default:
         return NextResponse.json(

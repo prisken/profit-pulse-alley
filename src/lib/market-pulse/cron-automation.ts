@@ -29,12 +29,19 @@ import {
   planGuidedLaunchPublishes,
 } from "@/lib/market-pulse/guided-launch-publish";
 import {
+  addHktCalendarDays,
   addHktDateOnlyDays,
+  formatHktDateOnlyFromUtcInstant,
   hktDateOnlyDayKey,
 } from "@/lib/market-pulse/hkt-time";
 import type { GuidedCycleDayOverride } from "@/lib/market-pulse/guided-cycle";
 import { validateGuidedCycleInput } from "@/lib/market-pulse/guided-cycle";
 import { QUICK_CREATE_CYCLE_PRIZE_LABEL } from "@/lib/market-pulse/quick-create-cycle-defaults";
+import { validateCycleReadyForReveal } from "@/lib/market-pulse/reveal-ppa-validation.server";
+import { sendRevealReadyEmailsForCycle } from "@/lib/notifications/reveal-email";
+import { sendWinnerEmailForCycle } from "@/lib/notifications/winner-email";
+import { calculateAndPersistCycleScores } from "@/lib/market-pulse/server";
+import type { CycleScoreCalculationSummary } from "@/lib/market-pulse/server";
 
 /**
  * CRON automation service for Market Pulse.
@@ -123,7 +130,35 @@ export type AutomationCreateCycleInput = {
   restOnWeekends?: boolean;
   /** Explicit per-day overrides; wins over `restOnWeekends`. */
   dayOverrides?: GuidedCycleDayOverride[];
+  /** Prize label shown to players. Defaults to the quick-create default. */
+  prizeLabel?: string;
 };
+
+/**
+ * Prize label used for auto-created cycles (rollover). The legacy quick-create
+ * default stays untouched for the admin form / first-cycle guidance.
+ */
+export const AUTO_CREATE_CYCLE_PRIZE_LABEL = "1 on 1 financial analysis";
+
+const CYCLE_NAME_MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+] as const;
+
+/** Format "16Aug-25Aug 2026" style cycle names from HKT date-only strings. */
+export function formatCycleNameFromDates(
+  startDate: string,
+  endDate: string,
+): string {
+  const fmt = (dateOnly: string) => {
+    const [year, month, day] = dateOnly.split("-").map(Number);
+    if (!year || !month || !day) {
+      return dateOnly;
+    }
+    return `${day}${CYCLE_NAME_MONTHS[month - 1] ?? month}`;
+  };
+  return `${fmt(startDate)}-${fmt(endDate)} ${startDate.slice(0, 4)}`;
+}
 
 export async function automationCreateGuidedCycle(
   input: AutomationCreateCycleInput,
@@ -142,10 +177,15 @@ export async function automationCreateGuidedCycle(
     input.restOnWeekends === false
       ? []
       : weekendRestOverrides(input.startDate, input.endDate);
+  const autoOverrideDays = new Set(autoOverrides.map((row) => row.dayIndex));
 
+  // userOverrides win over auto weekend REST; non-overlapping user overrides
+  // (e.g. a forced Day-1 REST) are kept. (Fixed 2026-08-17: the old filter
+  // dropped every user override because each was by construction in
+  // overrideByDay.)
   const dayOverrides: GuidedCycleDayOverride[] = [
     ...autoOverrides.map((row) => overrideByDay.get(row.dayIndex) ?? row),
-    ...userOverrides.filter((row) => !overrideByDay.has(row.dayIndex)),
+    ...userOverrides.filter((row) => !autoOverrideDays.has(row.dayIndex)),
   ];
 
   const validation = validateGuidedCycleInput({
@@ -172,7 +212,7 @@ export async function automationCreateGuidedCycle(
           startsAt: validation.dates!.startsAt,
           endsAt: validation.dates!.endsAt,
           revealAt: validation.dates!.revealAt,
-          prizeLabel: QUICK_CREATE_CYCLE_PRIZE_LABEL,
+          prizeLabel: input.prizeLabel?.trim() || QUICK_CREATE_CYCLE_PRIZE_LABEL,
           status: "DRAFT",
         },
       });
@@ -701,6 +741,382 @@ export async function automationLaunchCycle(
   };
 }
 
+/**
+ * Reveal a cycle: validate PPA readiness, mark cycle + published cards
+ * REVEALED, score decisions, and send reveal/winner emails (non-blocking).
+ * Mirrors the admin reveal action but is driven by the cron endpoint.
+ */
+export async function automationRevealCycle(
+  cycleId: string,
+): Promise<
+  AutomationResult<{
+    cycleId: string;
+    name: string;
+    alreadyRevealed: boolean;
+    decisionsScored: number;
+    usersScored: number;
+    eventsCreated: number;
+  }>
+> {
+  const cycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: cycleId },
+    select: { id: true, name: true, status: true, revealAt: true },
+  });
+  if (!cycle) {
+    return automationFail("Cycle not found.");
+  }
+  if (cycle.status === "REVEALED") {
+    return {
+      ok: true,
+      data: {
+        cycleId,
+        name: cycle.name,
+        alreadyRevealed: true,
+        decisionsScored: 0,
+        usersScored: 0,
+        eventsCreated: 0,
+      },
+    };
+  }
+
+  const ppaValidation = await validateCycleReadyForReveal(cycleId);
+  if (!ppaValidation.ready) {
+    return automationFail(ppaValidation.message);
+  }
+
+  const now = new Date();
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.marketPulseCycle.update({
+        where: { id: cycleId },
+        data: {
+          status: "REVEALED",
+          revealAt: cycle.revealAt > now ? now : cycle.revealAt,
+        },
+      });
+      await tx.marketPulseCard.updateMany({
+        where: { cycleId, status: "PUBLISHED" },
+        data: { status: "REVEALED" },
+      });
+    });
+  } catch (error) {
+    console.error("[cron-automation] revealCycle transaction failed:", error);
+    return automationFail("Reveal failed. Check server logs.");
+  }
+
+  let summary: CycleScoreCalculationSummary = {
+    cycleId,
+    decisionsScored: 0,
+    usersScored: 0,
+    eventsCreated: 0,
+    participationPoints: 0,
+    matchBonusPoints: 0,
+    streakBonusPoints: 0,
+    totalPoints: 0,
+    topScore: null,
+  };
+
+  try {
+    summary = await calculateAndPersistCycleScores(cycleId);
+    try {
+      await sendRevealReadyEmailsForCycle(cycleId);
+    } catch (emailError) {
+      console.error("[cron-automation] reveal emails failed:", emailError);
+    }
+    try {
+      await sendWinnerEmailForCycle(cycleId);
+    } catch (emailError) {
+      console.error("[cron-automation] winner email failed:", emailError);
+    }
+  } catch (error) {
+    console.error("[cron-automation] reveal scoring failed:", error);
+  }
+
+  return {
+    ok: true,
+    data: {
+      cycleId,
+      name: cycle.name,
+      alreadyRevealed: false,
+      decisionsScored: summary.decisionsScored,
+      usersScored: summary.usersScored,
+      eventsCreated: summary.eventsCreated,
+    },
+  };
+}
+
+/**
+ * Activate a cycle: open it (status OPEN), pin it as the active cycle and
+ * ensure runtime is OPEN. Unlike launchCycle, this does NOT require all cards
+ * to be ready — it is the cron equivalent of the admin "open + set active"
+ * step used when a fresh cycle takes over after the previous one ends.
+ */
+export async function automationActivateCycle(
+  cycleId: string,
+): Promise<
+  AutomationResult<{
+    cycleId: string;
+    name: string;
+    alreadyActive: boolean;
+  }>
+> {
+  const cycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: cycleId },
+    select: { id: true, name: true, status: true },
+  });
+  if (!cycle) {
+    return automationFail("Cycle not found.");
+  }
+  if (cycle.status === "REVEALED" || cycle.status === "ARCHIVED") {
+    return automationFail(
+      `Cannot activate a ${cycle.status} cycle.`,
+    );
+  }
+
+  const settings = await prisma.marketPulseGameSetting.findFirst({
+    orderBy: { createdAt: "asc" },
+  });
+  if (!settings) {
+    return automationFail("Game settings not found.");
+  }
+
+  const alreadyActive =
+    cycle.status === "OPEN" &&
+    settings.activeCycleId === cycleId &&
+    settings.runtimeStatus === "OPEN";
+  if (alreadyActive) {
+    return {
+      ok: true,
+      data: { cycleId, name: cycle.name, alreadyActive: true },
+    };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (cycle.status !== "OPEN") {
+        await tx.marketPulseCycle.update({
+          where: { id: cycleId },
+          data: { status: "OPEN" },
+        });
+      }
+      await tx.marketPulseGameSetting.update({
+        where: { id: settings.id },
+        data: { activeCycleId: cycleId, runtimeStatus: "OPEN" },
+      });
+    });
+  } catch (error) {
+    console.error("[cron-automation] activateCycle failed:", error);
+    return automationFail("Could not activate cycle.");
+  }
+
+  return {
+    ok: true,
+    data: { cycleId, name: cycle.name, alreadyActive: false },
+  };
+}
+
+/**
+ * Reject a draft card from the approval queue (cron equivalent of the admin
+ * reject action): sets reviewStatus REJECTED + reviewedAt + reviewNote.
+ * Guards: card must exist and be DRAFT (published cards cannot be rejected).
+ */
+export async function automationRejectCard(
+  cardId: string,
+  reviewNote?: string | null,
+): Promise<
+  AutomationResult<{
+    cardId: string;
+    headline: string | null;
+    alreadyRejected: boolean;
+  }>
+> {
+  const card = await prisma.marketPulseCard.findUnique({
+    where: { id: cardId },
+    select: { id: true, headline: true, status: true, reviewStatus: true },
+  });
+  if (!card) {
+    return automationFail("Card not found.");
+  }
+  if (card.status !== "DRAFT") {
+    return automationFail("Published cards cannot be rejected.");
+  }
+  if (card.reviewStatus === "REJECTED") {
+    return {
+      ok: true,
+      data: { cardId, headline: card.headline, alreadyRejected: true },
+    };
+  }
+
+  try {
+    await prisma.marketPulseCard.update({
+      where: { id: cardId },
+      data: {
+        reviewStatus: "REJECTED",
+        reviewedAt: new Date(),
+        reviewNote: reviewNote?.trim() || null,
+      },
+    });
+  } catch (error) {
+    console.error("[cron-automation] rejectCard failed:", error);
+    return automationFail("Could not reject card.");
+  }
+
+  return {
+    ok: true,
+    data: { cardId, headline: card.headline, alreadyRejected: false },
+  };
+}
+
+/**
+ * Rollover: reveal any cycle whose revealAt has passed (status OPEN/CLOSED)
+ * and activate the next pending cycle whose startsAt has arrived.
+ * Returns a summary of what was revealed / activated.
+ */
+export async function automationRollover(): Promise<
+  AutomationResult<{
+    revealed: Array<{ cycleId: string; name: string; alreadyRevealed: boolean }>;
+    activated: Array<{ cycleId: string; name: string; alreadyActive: boolean }>;
+    created: {
+      cycleId: string;
+      name: string;
+      prizeLabel: string;
+    } | null;
+  }>
+> {
+  const now = new Date();
+  const cycles = await prisma.marketPulseCycle.findMany({
+    where: {
+      status: { in: ["DRAFT", "OPEN", "CLOSED"] },
+    },
+    orderBy: { startsAt: "asc" },
+    select: { id: true, name: true, status: true, startsAt: true, revealAt: true, endsAt: true },
+  });
+
+  const revealed: Array<{
+    cycleId: string;
+    name: string;
+    alreadyRevealed: boolean;
+  }> = [];
+  const activated: Array<{
+    cycleId: string;
+    name: string;
+    alreadyActive: boolean;
+  }> = [];
+
+  // 1) Reveal cycles past their revealAt (oldest first).
+  for (const cycle of cycles) {
+    if (
+      (cycle.status === "OPEN" || cycle.status === "CLOSED") &&
+      cycle.revealAt <= now
+    ) {
+      const result = await automationRevealCycle(cycle.id);
+      if (result.ok) {
+        revealed.push(result.data);
+      }
+    }
+  }
+
+  // 2) Activate the earliest cycle whose start has arrived and is not yet active.
+  const settings = await prisma.marketPulseGameSetting.findFirst({
+    orderBy: { createdAt: "asc" },
+  });
+  const activeCycleId = settings?.activeCycleId ?? null;
+  for (const cycle of cycles) {
+    if (
+      cycle.startsAt <= now &&
+      cycle.status !== "REVEALED" &&
+      cycle.id !== activeCycleId
+    ) {
+      const result = await automationActivateCycle(cycle.id);
+      if (result.ok) {
+        activated.push(result.data);
+        // Publish ready cards on the newly active cycle: REST days go live
+        // immediately (Day 1 "Market rest day"), APPROVED signals get their
+        // scheduled publishedAt. Signals still PENDING are skipped.
+        await automationPublishReadyCards(cycle.id);
+        break; // only the earliest eligible next cycle
+      }
+    }
+  }
+
+  // 3) Ensure the "one active + one upcoming" invariant: if no upcoming
+  // (DRAFT, future start) cycle exists, auto-create a 10-day cycle that
+  // starts the day after the active cycle ends. Day 1 is always REST so the
+  // Daily-Pipeline (20:00 HKT, drafts "tomorrow") can seed Day 2+ signals
+  // before the first signal day goes live. Idempotent: skipped when an
+  // upcoming cycle already exists.
+  let created: {
+    cycleId: string;
+    name: string;
+    prizeLabel: string;
+  } | null = null;
+  const hasUpcoming = cycles.some(
+    (c) => c.status === "DRAFT" && c.startsAt > now,
+  );
+  if (!hasUpcoming) {
+    const anchor = activeCycleId
+      ? await prisma.marketPulseCycle.findUnique({
+          where: { id: activeCycleId },
+          select: { endsAt: true },
+        })
+      : null;
+    if (anchor) {
+      const startDate = formatHktDateOnlyFromUtcInstant(
+        addHktCalendarDays(anchor.endsAt, 1),
+      );
+      const endDate = addHktDateOnlyDays(startDate, 9);
+      if (startDate && endDate) {
+        const revealDate = addHktDateOnlyDays(endDate, 1);
+        if (revealDate) {
+          const result = await automationCreateGuidedCycle({
+            name: formatCycleNameFromDates(startDate, endDate),
+            startDate,
+            endDate,
+            revealDate,
+            defaultSignalCardsPerDay: 2,
+            dayOverrides: [{ dayIndex: 1, dayType: "REST" }],
+            prizeLabel: AUTO_CREATE_CYCLE_PRIZE_LABEL,
+          });
+          if (result.ok) {
+            created = {
+              cycleId: result.data.cycleId,
+              name: result.data.name,
+              prizeLabel: AUTO_CREATE_CYCLE_PRIZE_LABEL,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  return { ok: true, data: { revealed, activated, created } };
+}
+
+export async function automationDeleteCycle(
+  cycleId: string,
+): Promise<AutomationResult<{ cycleId: string; name: string }>> {
+  const cycle = await prisma.marketPulseCycle.findUnique({
+    where: { id: cycleId },
+    select: { id: true, name: true, status: true },
+  });
+  if (!cycle) {
+    return automationFail("Cycle not found.");
+  }
+  if (cycle.status !== "DRAFT") {
+    return automationFail("Only DRAFT cycles can be deleted.");
+  }
+  try {
+    await prisma.$transaction([
+      prisma.marketPulseCard.deleteMany({ where: { cycleId } }),
+      prisma.marketPulseCycle.delete({ where: { id: cycleId } }),
+    ]);
+    return { ok: true, data: { cycleId, name: cycle.name } };
+  } catch (error) {
+    console.error("[cron-automation] deleteCycle failed:", error);
+    return automationFail("Cycle delete failed.");
+  }
+}
+
 export async function automationGetCardDetail(
   cardId: string,
 ): Promise<
@@ -899,6 +1315,8 @@ export async function automationGetStatus(): Promise<
       reviewStatus: string;
       reviewNote: string | null;
     }>;
+    /** Health warnings for automation watchers (empty when healthy). */
+    warnings: string[];
   }>
 > {
   const settings = await prisma.marketPulseGameSetting.findFirst({
@@ -969,6 +1387,25 @@ export async function automationGetStatus(): Promise<
     });
   }
 
+  // Health warnings for automation watchers (rollover readiness).
+  const warnings: string[] = [];
+  if (activeCycle) {
+    if (activeCycle.status === "REVEALED") {
+      warnings.push("active cycle is REVEALED — rollover may have been missed");
+    } else if (activeCycle.revealAt.getTime() <= Date.now()) {
+      warnings.push("active cycle revealAt is in the past — rollover may have been missed");
+    }
+  } else {
+    warnings.push("no active cycle — site is not playable");
+  }
+  const upcomingCycle = await prisma.marketPulseCycle.findFirst({
+    where: { status: "DRAFT", startsAt: { gt: new Date() } },
+    select: { id: true },
+  });
+  if (!upcomingCycle) {
+    warnings.push("no upcoming cycle scheduled — create one before the active cycle ends");
+  }
+
   return {
     ok: true,
     data: {
@@ -998,6 +1435,7 @@ export async function automationGetStatus(): Promise<
         reviewStatus: card.reviewStatus,
         reviewNote: card.reviewNote,
       })),
+      warnings,
     },
   };
 }
