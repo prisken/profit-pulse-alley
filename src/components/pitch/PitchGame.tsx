@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Check,
@@ -18,6 +19,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import {
   predictPitchReaction,
   savePitchLead,
+  updatePitchLeadPhone,
   type JourneySnapshot,
 } from "@/lib/pitch-game/actions";
 import {
@@ -276,6 +278,10 @@ export default function PitchGame() {
   const [leadError, setLeadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [phonePromptOpen, setPhonePromptOpen] = useState(false);
+  const [pendingPhone, setPendingPhone] = useState("");
+  const [phoneSaving, setPhoneSaving] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const mod: PitchModule | null = useMemo(
@@ -427,6 +433,53 @@ export default function PitchGame() {
       setLeadError(result.error);
     }
   }, [mod, band, posture, condition, roundKey, lead, numericInputs, reaction, locale]);
+
+  const router = useRouter();
+
+  /** Jump to /book with the captured details prefilled (phone optional). */
+  const goToBooking = useCallback(
+    (phoneOverride?: string) => {
+      const params = new URLSearchParams();
+      const name = lead.name.trim();
+      const email = lead.email.trim();
+      const phone = (phoneOverride ?? lead.phone).trim();
+      if (name) params.set("name", name);
+      if (email) params.set("email", email);
+      if (phone) params.set("whatsapp", phone);
+      const qs = params.toString();
+      router.push(`/book${qs ? `?${qs}` : ""}`);
+    },
+    [lead.name, lead.email, lead.phone, router],
+  );
+
+  const handleBookMeeting = useCallback(() => {
+    if (lead.phone.trim()) {
+      goToBooking();
+    } else {
+      setPendingPhone("");
+      setPhoneError(null);
+      setPhonePromptOpen(true);
+    }
+  }, [lead.phone, goToBooking]);
+
+  const submitPhoneForBooking = useCallback(async () => {
+    if (!savedId) return;
+    const digits = pendingPhone.replace(/\D/g, "");
+    if (digits.length < 8) {
+      setPhoneError(pick(HANDOFF_COPY.phoneInvalid, locale));
+      return;
+    }
+    setPhoneSaving(true);
+    setPhoneError(null);
+    const result = await updatePitchLeadPhone(savedId, pendingPhone.trim());
+    setPhoneSaving(false);
+    if (result.ok) {
+      setPhonePromptOpen(false);
+      goToBooking(pendingPhone.trim());
+    } else {
+      setPhoneError(result.error);
+    }
+  }, [savedId, pendingPhone, goToBooking, locale]);
 
   const beat = beatIndex(phase);
   const inMeeting = phase !== "setup" && phase !== "done";
@@ -1112,12 +1165,64 @@ export default function PitchGame() {
                   </dl>
                 </div>
 
+                <div className="mt-6 space-y-3">
+                  <button
+                    type="button"
+                    onClick={handleBookMeeting}
+                    className={`${primaryBtnClass} w-full`}
+                  >
+                    {pick(HANDOFF_COPY.bookMeeting, locale)}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <p className="text-xs text-foreground/40">
+                    {pick(HANDOFF_COPY.bookMeetingNote, locale)}
+                  </p>
+                  {phonePromptOpen && (
+                    <div className="rounded-2xl border border-white/10 bg-[#111318] p-4 text-left">
+                      <p className="text-sm font-semibold">
+                        {pick(HANDOFF_COPY.phonePromptTitle, locale)}
+                      </p>
+                      <p className="mt-1 text-xs text-foreground/55">
+                        {pick(HANDOFF_COPY.phonePromptBody, locale)}
+                      </p>
+                      <input
+                        type="tel"
+                        className={`${inputClass} mt-3`}
+                        value={pendingPhone}
+                        onChange={(e) => setPendingPhone(e.target.value)}
+                        placeholder="+852 9123 4567"
+                        autoComplete="tel"
+                      />
+                      {phoneError && (
+                        <p className="mt-2 text-xs text-red-400">{phoneError}</p>
+                      )}
+                      <button
+                        type="button"
+                        disabled={phoneSaving}
+                        onClick={() => void submitPhoneForBooking()}
+                        className={`${primaryBtnClass} mt-3 w-full`}
+                      >
+                        {phoneSaving ? (
+                          <>
+                            <Loader className="h-4 w-4 animate-spin" />
+                            {pick(GAME_UI.sending, locale)}
+                          </>
+                        ) : (
+                          <>
+                            {pick(HANDOFF_COPY.phoneContinue, locale)}
+                            <ArrowRight className="h-4 w-4" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {savedId && (
                   <p className="mt-3 text-xs text-foreground/40">
                     {pick(HANDOFF_COPY.reference, locale).replace("{id}", savedId.slice(0, 8))}
                   </p>
                 )}
-                <button type="button" onClick={restart} className={`${ghostBtnClass} mt-6`}>
+                <button type="button" onClick={restart} className={`${ghostBtnClass} mt-4`}>
                   {pick(GAME_UI.playAgain, locale)}
                   <ChevronRight className="h-4 w-4" />
                 </button>

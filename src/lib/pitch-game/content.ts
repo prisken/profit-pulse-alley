@@ -405,6 +405,30 @@ export const HANDOFF_COPY = {
     zhHant:
       "Elena的**判決**、支票的附加條件、以及**自動化缺口**——全部都在你的報告裏。會有真人跟進。",
   } satisfies Bi,
+  bookMeeting: {
+    en: "Book a meeting",
+    zhHant: "預約會面",
+  } satisfies Bi,
+  bookMeetingNote: {
+    en: "Pick a time for a 1-on-1 with the team — we'll take it from here.",
+    zhHant: "選擇時間，與團隊進行一對一會面——接下來交給我們。",
+  } satisfies Bi,
+  phonePromptTitle: {
+    en: "One more thing — your phone number",
+    zhHant: "還差一步——你的電話號碼",
+  } satisfies Bi,
+  phonePromptBody: {
+    en: "So we can confirm your meeting on WhatsApp.",
+    zhHant: "方便我們透過 WhatsApp 確認會面。",
+  } satisfies Bi,
+  phoneContinue: {
+    en: "Continue to booking",
+    zhHant: "前往預約",
+  } satisfies Bi,
+  phoneInvalid: {
+    en: "Please enter a valid phone number.",
+    zhHant: "請輸入有效的電話號碼。",
+  } satisfies Bi,
   privacyNote: {
     en: "Your details go to the Profit Pulse Ally team for a human follow-up. No spam, no sharing.",
     zhHant: "你的資料會交給 Profit Pulse Ally 團隊作真人跟進。不會發垃圾訊息，不會轉交第三方。",

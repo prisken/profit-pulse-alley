@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useTranslations } from "@/components/providers/LocaleProvider";
 import type { WeekOption } from "@/lib/book/availability";
@@ -64,6 +64,22 @@ export default function BookingFlow({ initialWeeks }: { initialWeeks: WeekOption
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [initialWeeks],
   );
+
+  // Prefill from the pitch-game handoff (?name=&email=&whatsapp=).
+  useEffect(() => {
+    const qs = new URLSearchParams(window.location.search);
+    const name = qs.get("name") ?? "";
+    const email = qs.get("email") ?? "";
+    const whatsapp = qs.get("whatsapp") ?? "";
+    if (name || email || whatsapp) {
+      setState((s) => ({
+        ...s,
+        name: s.name || name,
+        email: s.email || email,
+        whatsapp: s.whatsapp || whatsapp,
+      }));
+    }
+  }, []);
 
   const go = useCallback((next: Step) => {
     setError(null);

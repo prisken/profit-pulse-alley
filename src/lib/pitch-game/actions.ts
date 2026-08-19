@@ -233,3 +233,29 @@ export async function savePitchLead(payload: LeadPayload): Promise<LeadResult> {
 
 // Re-export so the client can use the same parsing the game uses.
 export { parseNumericInput };
+
+/**
+ * Backfill a phone number onto an already-saved lead (booking handoff).
+ * Used when a player reaches the "Book a meeting" step without a phone.
+ */
+export async function updatePitchLeadPhone(
+  id: string,
+  phone: string,
+): Promise<LeadResult> {
+  const trimmed = phone.trim();
+  if (trimmed.length < 6) {
+    return { ok: false, error: "We need a phone number to reach you." };
+  }
+  try {
+    await prisma.pitchMeetingLead.update({
+      where: { id },
+      data: { phone: trimmed },
+    });
+    return { ok: true, id };
+  } catch (error) {
+    console.error(
+      `[pitch-game] phone backfill failed (${error instanceof Error ? error.message : "unknown"})`,
+    );
+    return { ok: false, error: "Couldn't save your number — please try again." };
+  }
+}
