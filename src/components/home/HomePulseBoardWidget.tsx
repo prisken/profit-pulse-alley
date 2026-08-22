@@ -278,7 +278,7 @@ export default async function HomePulseBoardWidget() {
                   </span>
                   <h2
                     id="home-pulse-board-heading"
-                    className="text-xl font-bold tracking-tight text-white sm:text-2xl"
+                    className="brand-display text-xl font-bold tracking-tight text-white sm:text-2xl"
                   >
                     {t(titleKey)}
                   </h2>

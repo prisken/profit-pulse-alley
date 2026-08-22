@@ -224,7 +224,7 @@ export default async function LiveEventsHubSection({
           </p>
           <h2
             id="live-events-heading"
-            className="mt-1.5 text-lg font-bold tracking-tight text-zinc-100 sm:mt-2 sm:text-2xl"
+            className="brand-display mt-1.5 text-lg font-bold tracking-tight text-zinc-100 sm:mt-2 sm:text-2xl"
           >
             {t("home.events.heading")}
           </h2>

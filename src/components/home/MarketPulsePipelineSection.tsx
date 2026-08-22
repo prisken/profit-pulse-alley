@@ -209,7 +209,7 @@ export default async function MarketPulsePipelineSection() {
           </div>
           <h2
             id="market-pulse-pipeline-heading"
-            className="mt-3 text-balance text-xl font-bold tracking-tight text-white sm:text-3xl"
+            className="brand-display mt-3 text-balance text-xl font-bold tracking-tight text-white sm:text-3xl"
           >
             {t("home.pipeline.title")}
           </h2>

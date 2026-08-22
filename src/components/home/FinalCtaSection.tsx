@@ -28,7 +28,7 @@ export default async function FinalCtaSection() {
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center px-1 text-center">
         <h2
           id="final-cta-heading"
-          className="text-balance text-xl font-bold tracking-tight text-white sm:text-2xl md:text-3xl"
+          className="brand-display text-balance text-xl font-bold tracking-tight text-white sm:text-2xl md:text-3xl"
         >
           {t("home.finalCta.heading")}
         </h2>
@@ -37,8 +37,7 @@ export default async function FinalCtaSection() {
             href={memberHref}
             aria-label={t("home.finalCta.memberAria")}
             className={mergeMpClasses(
-              MP_PRIMARY_BTN,
-              "min-h-12 w-full px-8 py-3 text-sm sm:min-w-[14rem] sm:text-base",
+              "inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-brand-gold px-8 py-3 text-sm font-bold text-black transition-colors hover:bg-brand-gold-deep sm:min-w-[14rem] sm:text-base",
               MP_FOCUS_RING,
             )}
           >

@@ -235,7 +235,7 @@ export default async function HomeRewardsShowcase() {
         <header className="mx-auto max-w-2xl text-center">
           <h2
             id="home-rewards-heading"
-            className="text-balance text-xl font-bold tracking-tight text-white sm:text-3xl"
+            className="brand-display text-balance text-xl font-bold tracking-tight text-white sm:text-3xl"
           >
             {t("home.rewards.title")}
           </h2>

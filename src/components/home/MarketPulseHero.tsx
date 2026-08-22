@@ -57,7 +57,7 @@ export default function MarketPulseHero() {
               />
               <h1
                 id="market-pulse-heading"
-                className="mt-2.5 text-balance text-2xl font-bold leading-tight tracking-tight text-white sm:mt-3 sm:text-3xl md:text-[2rem] lg:text-[2.25rem] lg:leading-[1.15]"
+                className="brand-display mt-2.5 text-balance text-2xl font-bold leading-tight tracking-tight text-white sm:mt-3 sm:text-3xl md:text-[2rem] lg:text-[2.25rem] lg:leading-[1.15]"
               >
                 {t("home.hero.headline")}
               </h1>
@@ -77,8 +77,7 @@ export default function MarketPulseHero() {
                   status: heroStatus,
                 }}
                 className={mergeMpClasses(
-                  MP_PRIMARY_BTN,
-                  "min-h-12 w-full px-6 py-3 text-base sm:w-auto sm:min-w-[12rem] sm:px-8",
+                  "inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-brand-gold px-6 py-3 text-base font-bold text-black transition-colors hover:bg-brand-gold-deep active:bg-brand-gold-deep sm:w-auto sm:min-w-[12rem] sm:px-8",
                   MP_FOCUS_RING,
                 )}
               >

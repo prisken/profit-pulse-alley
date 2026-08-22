@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Cinzel, Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import LayoutShell from "@/components/LayoutShell";
 import AuthSessionProvider from "@/components/providers/AuthSessionProvider";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
@@ -16,6 +16,19 @@ const inter = Inter({
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+// PPA brand typography (brand guide: hero display — Cinzel; pull quotes — Playfair Italic)
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
   display: "swap",
 });
@@ -42,7 +55,7 @@ export default async function RootLayout({
   return (
     <html
       lang={siteLocaleToHtmlLang(locale)}
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${jetbrainsMono.variable} ${cinzel.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="flex min-h-dvh min-w-0 flex-col overflow-x-clip bg-background font-sans text-foreground">
         <LocaleProvider initialLocale={locale}>

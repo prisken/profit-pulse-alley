@@ -16,6 +16,15 @@
   --mp-border: rgba(255, 255, 255, 0.08);
   --mp-border-strong: rgba(255, 255, 255, 0.12);
   --mp-panel-highlight: rgba(255, 255, 255, 0.05);
+
+  /* PPA brand palette (brand guide — old-money cinematic) */
+  --brand-black: #0a0a0a;
+  --brand-cream: #f5f0e6;
+  --brand-gold: #d4af37;
+  --brand-gold-deep: #b8860b;
+  --brand-crimson: #c40000;
+  --brand-espresso: #3a2a1a;
+  --brand-forest: #2e5d3e;
 }
 
 @theme inline {
@@ -29,6 +38,17 @@
   --color-mp-muted: var(--mp-text-muted);
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --font-display: var(--font-cinzel), "Cinzel", Georgia, serif;
+  --font-serif: var(--font-playfair), "Playfair Display", Georgia, serif;
+
+  /* Brand colors as Tailwind utilities */
+  --color-brand-gold: var(--brand-gold);
+  --color-brand-gold-deep: var(--brand-gold-deep);
+  --color-brand-crimson: var(--brand-crimson);
+  --color-brand-cream: var(--brand-cream);
+  --color-brand-black: var(--brand-black);
+  --color-brand-espresso: var(--brand-espresso);
+  --color-brand-forest: var(--brand-forest);
 }
 
 @media (min-width: 48rem) {
@@ -70,6 +90,34 @@ video {
 /* Market Pulse terminal utilities */
 .mp-bg-obsidian {
   background-color: var(--mp-obsidian);
+}
+
+/* PPA brand display — Cinzel, wide tracking, old-money gravitas */
+.brand-display {
+  font-family: var(--font-display), "Cinzel", Georgia, serif;
+  letter-spacing: 0.02em;
+}
+
+/* PPA brand pull quote — Playfair Italic */
+.brand-serif {
+  font-family: var(--font-serif), "Playfair Display", Georgia, serif;
+}
+
+/* Gold accent text */
+.brand-gold {
+  color: var(--brand-gold);
+}
+
+.brand-gold-deep {
+  color: var(--brand-gold-deep);
+}
+
+.brand-crimson {
+  color: var(--brand-crimson);
+}
+
+.brand-cream {
+  color: var(--brand-cream);
 }
 
 .mp-terminal-panel {

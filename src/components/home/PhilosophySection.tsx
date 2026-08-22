@@ -51,12 +51,12 @@ const ACCENT_STYLES: Record<
   }
 > = {
   pulse: {
-    card: "border-mp-pulse/25 hover:border-mp-pulse/40",
-    glow: "bg-mp-pulse/25",
-    icon: "border-mp-pulse/40 bg-mp-pulse/15 text-mp-pulse shadow-[0_0_36px_rgba(0,230,118,0.28)]",
-    iconInner: "from-mp-pulse/20 to-transparent",
-    bar: "from-mp-pulse via-mp-pulse/70 to-transparent",
-    index: "text-mp-pulse/20",
+    card: "border-brand-gold/30 hover:border-brand-gold/50",
+    glow: "bg-brand-gold/25",
+    icon: "border-brand-gold/40 bg-brand-gold/15 text-brand-gold shadow-[0_0_36px_rgba(212,175,55,0.25)]",
+    iconInner: "from-brand-gold/20 to-transparent",
+    bar: "from-brand-gold via-brand-gold/70 to-transparent",
+    index: "text-brand-gold/25",
   },
   amber: {
     card: "border-amber-400/25 hover:border-amber-400/40",
@@ -174,7 +174,7 @@ export default async function PhilosophySection() {
         <header className="mx-auto max-w-3xl text-center">
           <h2
             id="philosophy-heading"
-            className="text-xl font-bold tracking-tight text-white sm:text-2xl"
+            className="brand-display text-xl font-bold tracking-tight text-white sm:text-2xl"
           >
             {t("home.philosophy.heading")}
           </h2>
@@ -194,7 +194,7 @@ export default async function PhilosophySection() {
         </ul>
 
         <div className="mt-7 border-t border-white/10 pt-7 sm:mt-8 sm:pt-8">
-          <h3 className="text-center text-base font-semibold tracking-tight text-white sm:text-xl">
+          <h3 className="brand-serif text-center text-base font-semibold italic tracking-tight text-brand-cream sm:text-xl">
             {t("home.philosophy.mindsHeading")}
           </h3>
           <ul className="mt-5 flex flex-wrap justify-center gap-6 sm:mt-6 sm:gap-10 md:gap-14">
