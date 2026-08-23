@@ -90,14 +90,14 @@ export const enMessages = {
   "home.hero.proof.dailySignals": "Daily challenge",
   "home.hero.proof.leaderboard": "Cycle leaderboard",
   "home.hero.proof.ppaReveal": "PPA Insight",
-  "home.hero.proof.prize": "Ocean Park ticket",
+  "home.hero.proof.prize": "1-on-1 financial analysis",
   "home.hero.preview.ariaLabel":
     "Decorative preview of the Market Pulse daily signal card, decision buttons, sample leaderboard, and countdown",
   "home.hero.preview.signalLabel": "Today's Signal",
   "home.hero.preview.headline": "AI demand lifts chip-sector momentum",
   "home.hero.preview.yourCall": "Your call",
   "home.hero.preview.cycle": "Cycle 01",
-  "home.hero.preview.prize": "Prize: Ocean Park ticket",
+  "home.hero.preview.prize": "Prize: 1-on-1 financial analysis",
   "home.hero.preview.leaderboard": "Leaderboard preview",
   "home.hero.preview.statusLabel": "Status",
 
@@ -150,7 +150,7 @@ export const enMessages = {
   "home.pipeline.scoring.note":
     "Match and streak bonuses unlock after PPA Insight reveal.",
   "home.pipeline.prize.heading": "Cycle winner prize",
-  "home.pipeline.prize.body": "One Ocean Park ticket per cycle winner.",
+  "home.pipeline.prize.body": "One on one Financial analysis per cycle winner.",
   "home.pipeline.ctaEnter": "Enter Market Pulse",
   "home.pipeline.ctaEnterAria": "Enter the Market Pulse hub",
   "home.pipeline.ctaPlayToday": "Play Today",
@@ -184,7 +184,7 @@ export const enMessages = {
   "home.rewards.subtitle":
     "Confirmed cycle rewards, founder events, and post-reveal PPA Insight.",
   "home.rewards.prize.title": "Cycle reward",
-  "home.rewards.prize.body": "One Ocean Park ticket per cycle winner.",
+  "home.rewards.prize.body": "One on one Financial analysis per cycle winner.",
   "home.rewards.prize.cta": "Contest rules",
   "home.rewards.prize.ctaAria": "Read Market Pulse contest rules and prize eligibility",
   "home.rewards.events.title": "Founder events",
@@ -271,7 +271,7 @@ export const enMessages = {
     "Live sessions with founders and industry leaders.",
   "home.playLearnWin.prize.heading": "Cycle Winner Prize",
   "home.playLearnWin.prize.text":
-    "Each Market Pulse cycle awards one Ocean Park ticket to the winner.",
+    "Each Market Pulse cycle awards a one-on-one financial analysis to the winner.",
 
   "home.events.eyebrow": "Community",
   "home.events.heading": "Founder events beyond the board",
