@@ -58,8 +58,9 @@ export const enMessages = {
   "footer.link.contestRules": "Contest Rules",
   "footer.link.postMatchingPulseRequest": "Post a request",
   "footer.link.cashFlowCalculator": "Cash-Flow Calculator",
-  "footer.newsletter.description":
-    "Get Market Pulse updates, event invites, and community highlights in your inbox.",
+  "footer.newsletter.heldDescription":
+    "Stay in touch — email us anytime. We reply within 1–2 business days.",
+  "footer.newsletter.emailCta": "Email info@profitpulseally.com",
   "footer.newsletter.emailAria": "Email address",
   "footer.newsletter.placeholder": "you@example.com",
   "footer.newsletter.subscribe": "Subscribe",

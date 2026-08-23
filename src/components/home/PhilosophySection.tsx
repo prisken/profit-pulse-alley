@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Layers, Shield, TrendingUp, type LucideIcon } from "lucide-react";
 
 import CashFlowProtectionSection from "@/components/home/CashFlowProtectionSection";
+import { CASH_FLOW_PROTECTOR_LIVE } from "@/lib/cash-flow/feature-flag";
 import { getExpertsShowcase } from "@/lib/home/proof-of-concept";
 import { getServerTranslations } from "@/lib/i18n/server";
 import {
@@ -194,8 +195,9 @@ export default async function PhilosophySection() {
           ))}
         </ul>
 
-        {/* Cash-flow protection — after "Think in systems" pillars, before Operators */}
-        <CashFlowProtectionSection />
+        {/* Cash-flow protection — after "Think in systems" pillars, before Operators.
+            HELD pending lawyer/AIA review (CASH_FLOW_PROTECTOR_LIVE=false). */}
+        {CASH_FLOW_PROTECTOR_LIVE ? <CashFlowProtectionSection /> : null}
 
         <div className="mt-7 border-t border-white/10 pt-7 sm:mt-8 sm:pt-8">
           <h3 className="brand-serif text-center text-base font-semibold italic tracking-tight text-brand-cream sm:text-xl">

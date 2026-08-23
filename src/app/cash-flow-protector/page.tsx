@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import CashFlowCalculator from "@/components/cash-flow/CashFlowCalculator";
+import { CASH_FLOW_PROTECTOR_LIVE } from "@/lib/cash-flow/feature-flag";
 import { getServerSiteLocale } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,6 +20,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CashFlowProtectorPage() {
+  // HELD pending lawyer/AIA review — not publicly reachable until flag flips.
+  if (!CASH_FLOW_PROTECTOR_LIVE) {
+    notFound();
+  }
+
   const locale = await getServerSiteLocale();
   const isEn = locale === "en";
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState, type ReactNode } from "react";
 
 import { useTranslations } from "@/components/providers/LocaleProvider";
+import { CASH_FLOW_PROTECTOR_LIVE } from "@/lib/cash-flow/feature-flag";
 import type { MessageKey } from "@/lib/i18n/messages";
 
 const focusRing =
@@ -78,7 +79,10 @@ const PPA_LINK_KEYS: ReadonlyArray<{ labelKey: MessageKey; href: string }> = [
   { labelKey: "nav.events", href: "/events" },
   { labelKey: "nav.philosophy", href: "/concept" },
   { labelKey: "nav.blog", href: "/blog" },
-  { labelKey: "footer.link.cashFlowCalculator", href: "/cash-flow-protector" },
+  // Calculator link only shows once the feature is live (held pending legal review).
+  ...(CASH_FLOW_PROTECTOR_LIVE
+    ? [{ labelKey: "footer.link.cashFlowCalculator" as MessageKey, href: "/cash-flow-protector" }]
+    : []),
 ];
 
 const COMMUNITY_LINK_KEYS: ReadonlyArray<{ labelKey: MessageKey; href: string }> =
@@ -189,17 +193,7 @@ function FooterAccordionSection({
   );
 }
 
-function StayConnectedBlock({
-  email,
-  subscribeMessage,
-  onEmailChange,
-  onSubscribe,
-}: Readonly<{
-  email: string;
-  subscribeMessage: string | null;
-  onEmailChange: (value: string) => void;
-  onSubscribe: (event: FormEvent<HTMLFormElement>) => void;
-}>) {
+function StayConnectedBlock() {
   const { t } = useTranslations();
 
   return (
@@ -208,58 +202,22 @@ function StayConnectedBlock({
         {t("footer.column.stayConnected")}
       </h3>
       <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:mt-4">
-        {t("footer.newsletter.description")}
+        {/* Newsletter form held — contact by email only (Prisken 2026-08-23). */}
+        {t("footer.newsletter.heldDescription")}
       </p>
 
-      <form className="mt-3 space-y-3 sm:mt-4" onSubmit={onSubscribe}>
-        <label htmlFor="footer-newsletter-email" className="sr-only">
-          {t("footer.newsletter.emailAria")}
-        </label>
-        <input
-          id="footer-newsletter-email"
-          type="email"
-          name="email"
-          autoComplete="email"
-          placeholder={t("footer.newsletter.placeholder")}
-          value={email}
-          onChange={(event) => onEmailChange(event.target.value)}
-          className={`w-full rounded-lg border border-white/10 bg-mp-obsidian-panel px-3.5 py-2.5 text-sm text-white placeholder:text-mp-muted ${focusRing}`}
-        />
-        <button
-          type="submit"
-          className={`w-full rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200 active:bg-zinc-300 sm:w-auto sm:px-6 ${focusRing}`}
-        >
-          {t("footer.newsletter.subscribe")}
-        </button>
-        {subscribeMessage ? (
-          <p className="text-xs text-zinc-400" role="status">
-            {subscribeMessage}
-          </p>
-        ) : null}
-      </form>
-
-      <div className="mt-4 flex items-center gap-2 sm:mt-5">
-        {SOCIAL_LINKS.map(({ labelKey, href, icon: Icon }) => (
-          <a
-            key={labelKey}
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={t(labelKey)}
-            className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 text-zinc-400 transition-colors hover:border-white/20 hover:bg-white/5 hover:text-white ${focusRing}`}
-          >
-            <Icon aria-hidden="true" />
-          </a>
-        ))}
-      </div>
+      <a
+        href="mailto:info@profitpulseally.com"
+        className={`mt-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200 active:bg-zinc-300 ${focusRing}`}
+      >
+        {t("footer.newsletter.emailCta")}
+      </a>
     </div>
   );
 }
 
 export default function SiteFooter() {
   const { t } = useTranslations();
-  const [email, setEmail] = useState("");
-  const [subscribeMessage, setSubscribeMessage] = useState<string | null>(null);
 
   const ppaLinks = useMemo(
     () => PPA_LINK_KEYS.map((link) => ({ ...link, label: t(link.labelKey) })),
@@ -274,16 +232,6 @@ export default function SiteFooter() {
     () => LEGAL_LINK_KEYS.map((link) => ({ ...link, label: t(link.labelKey) })),
     [t],
   );
-
-  function handleSubscribe(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!email.trim()) {
-      setSubscribeMessage(t("footer.newsletter.emailRequired"));
-      return;
-    }
-    setSubscribeMessage(t("footer.newsletter.success"));
-    setEmail("");
-  }
 
   return (
     <footer className="border-t border-white/[0.08] bg-mp-obsidian pb-[env(safe-area-inset-bottom,0px)] text-zinc-50">
@@ -340,28 +288,12 @@ export default function SiteFooter() {
           <FooterLinkColumn title={t("footer.column.legal")} links={legalLinks} />
 
           <div className="sm:col-span-2 lg:col-span-1">
-            <StayConnectedBlock
-              email={email}
-              subscribeMessage={subscribeMessage}
-              onEmailChange={(value) => {
-                setEmail(value);
-                if (subscribeMessage) setSubscribeMessage(null);
-              }}
-              onSubscribe={handleSubscribe}
-            />
+            <StayConnectedBlock />
           </div>
         </div>
 
         <div className="mt-6 sm:hidden">
-          <StayConnectedBlock
-            email={email}
-            subscribeMessage={subscribeMessage}
-            onEmailChange={(value) => {
-              setEmail(value);
-              if (subscribeMessage) setSubscribeMessage(null);
-            }}
-            onSubscribe={handleSubscribe}
-          />
+          <StayConnectedBlock />
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-5 sm:mt-12 sm:flex-row sm:pt-8">

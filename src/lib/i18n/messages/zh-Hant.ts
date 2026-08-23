@@ -57,8 +57,9 @@ export const zhHantMessages: Messages = {
   "footer.link.contestRules": "比賽規則",
   "footer.link.postMatchingPulseRequest": "提交協作請求",
   "footer.link.cashFlowCalculator": "現金流計算器",
-  "footer.newsletter.description":
-    "訂閱以接收 Market Pulse 更新、活動邀請及社群精選資訊。",
+  "footer.newsletter.heldDescription":
+    "保持聯繫 — 隨時電郵我們。我們通常會在 1–2 個工作天內回覆。",
+  "footer.newsletter.emailCta": "電郵 info@profitpulseally.com",
   "footer.newsletter.emailAria": "電郵地址",
   "footer.newsletter.placeholder": "you@example.com",
   "footer.newsletter.subscribe": "訂閱",
