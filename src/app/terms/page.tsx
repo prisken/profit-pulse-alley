@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import ContentPageLayout from "@/components/layout/ContentPageLayout";
-import LegalDraftNotice from "@/components/legal/LegalDraftNotice";
 import { getServerTranslations, getServerSiteLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
 
@@ -19,7 +18,6 @@ export default async function TermsPage() {
 
   return (
     <ContentPageLayout title={t("legal.terms.title")}>
-      <LegalDraftNotice />
 
       <p>{t("legal.terms.intro")}</p>
 
