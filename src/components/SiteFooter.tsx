@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState, type ReactNode } from "react";
 
 import { useTranslations } from "@/components/providers/LocaleProvider";
+import CommunityPartnersSection from "@/components/home/CommunityPartnersSection";
 import { CASH_FLOW_PROTECTOR_LIVE } from "@/lib/cash-flow/feature-flag";
 import type { MessageKey } from "@/lib/i18n/messages";
 
@@ -295,6 +296,8 @@ export default function SiteFooter() {
         <div className="mt-6 sm:hidden">
           <StayConnectedBlock />
         </div>
+
+        <CommunityPartnersSection variant="footer" />
 
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-5 sm:mt-12 sm:flex-row sm:pt-8">
           <Link

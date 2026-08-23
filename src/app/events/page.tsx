@@ -11,6 +11,7 @@ import { fortifyYourFutureEvent } from "@/lib/events/fortify-your-future";
 import { getFortifySalesMarketingShowcase } from "@/lib/events/upcoming-event-display";
 import { getServerSiteLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
+import CommunityPartnersSection from "@/components/home/CommunityPartnersSection";
 import type { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -159,6 +160,20 @@ export default async function EventsHubPage() {
             </Link>
           </li>
         </ul>
+      </section>
+
+      {/* Venues & Event Partners */}
+      <section
+        className="mt-6 border-t border-foreground/10 pt-6 sm:mt-10 sm:pt-10"
+        aria-labelledby="partners-heading"
+      >
+        <h2
+          id="partners-heading"
+          className="text-base font-semibold text-foreground sm:text-xl"
+        >
+          {translate(locale, "events.partners.heading")}
+        </h2>
+        <CommunityPartnersSection />
       </section>
     </main>
   );

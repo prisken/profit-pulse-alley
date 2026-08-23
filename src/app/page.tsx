@@ -1,4 +1,5 @@
 import FinalCtaSection from "@/components/home/FinalCtaSection";
+import CommunityPartnersSection from "@/components/home/CommunityPartnersSection";
 import HomePpaEcosystemSection from "@/components/home/HomePpaEcosystemSection";
 import LiveEventsHubSection from "@/components/home/LiveEventsHubSection";
 import HomePulseBoardWidget from "@/components/home/HomePulseBoardWidget";
@@ -38,6 +39,7 @@ export default async function Home() {
         pastEvents={pastEvents}
       />
       <PhilosophySection />
+      <CommunityPartnersSection />
       <FinalCtaSection />
     </main>
   );
