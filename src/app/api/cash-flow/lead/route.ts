@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
+import { CASH_FLOW_PROTECTOR_LIVE } from "@/lib/cash-flow/feature-flag";
 import { syncMemberSignupToCrm } from "@/lib/crm-member-sync";
 
 /**
  * Calculator lead gate — collects email before showing results.
  * Reuses the CRM member-sync webhook (same pattern as member signup),
  * tagged as "Calculator Lead / Cash Flow Interest".
+ *
+ * HELD: returns 404 while CASH_FLOW_PROTECTOR_LIVE=false (feature held
+ * pending lawyer/AIA review) so no part of the held feature is reachable.
  */
 export async function POST(request: Request) {
+  if (!CASH_FLOW_PROTECTOR_LIVE) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   let body: { email?: string; monthly?: number; years?: number; locale?: string };
   try {
     body = await request.json();
