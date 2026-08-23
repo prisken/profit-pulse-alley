@@ -28,7 +28,7 @@ export const enMessages = {
   "announcement.firstCycle":
     "Each challenge cycle runs for ten calendar days (Hong Kong time).",
   "announcement.prize":
-    "One Ocean Park ticket will be awarded to the winner of each cycle.",
+    "One on one financial analysis will be awarded to the winner of each cycle.",
   "announcement.comingSoon": "Market Pulse",
   "signal.bullish": "Bullish",
   "signal.cautious": "Cautious",
@@ -466,7 +466,7 @@ export const enMessages = {
   "legal.contest.prizesCycle":
     "Challenge cycles run on a recurring ten-day schedule (Hong Kong time). Active dates are shown in Market Pulse.",
   "legal.contest.prizesAward":
-    "One Ocean Park ticket is awarded to the winner of each cycle.",
+    "One on one financial analysis is awarded to the winner of each cycle.",
   "legal.contest.prizesVerificationPrefix": "All prizes are subject to verification",
   "legal.contest.prizesVerificationSuffix":
     ", availability, and substitution of equal or greater value where permitted.",

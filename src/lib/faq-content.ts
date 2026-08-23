@@ -95,9 +95,9 @@ export const FAQ_SECTIONS: FaqSection[] = [
         qEn: "What can I win?",
         qZh: "可以贏得什麼？",
         aEn:
-          "One Ocean Park ticket is awarded to the winner of each cycle (subject to verification and the [Contest Rules](/contest-rules)). Participation does not guarantee a prize.",
+          "One on one financial analysis is awarded to the winner of each cycle (subject to verification and the [Contest Rules](/contest-rules)). Participation does not guarantee a prize.",
         aZh:
-          "每個週期的贏家可獲一張海洋公園門票（須經核實並符合[比賽規則](/contest-rules)）。參與並不保證獲獎。",
+          "每個週期的贏家可獲一對一財務分析（須經核實並符合[比賽規則](/contest-rules)）。參與並不保證獲獎。",
       },
       {
         qEn: "Is Market Pulse investment advice?",

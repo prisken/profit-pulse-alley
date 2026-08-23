@@ -27,7 +27,7 @@ export const zhHantMessages: Messages = {
   "nav.board": "排行",
   "announcement.opens": "Market Pulse 已上線。",
   "announcement.firstCycle": "每期挑戰為十個曆日（香港時間）。",
-  "announcement.prize": "每期冠軍將獲得一張海洋公園門票。",
+  "announcement.prize": "每期冠軍可獲一對一財務分析。",
   "announcement.comingSoon": "Market Pulse",
   "signal.bullish": "看升",
   "signal.cautious": "謹慎",
@@ -434,7 +434,7 @@ export const zhHantMessages: Messages = {
   "legal.contest.prizesHeading": "獎賞",
   "legal.contest.prizesCycle":
     "挑戰週期按固定十天曆日（香港時間）重複進行。進行中的日期於 Market Pulse 內顯示。",
-  "legal.contest.prizesAward": "每期冠軍獲得一張海洋公園門票。",
+  "legal.contest.prizesAward": "每期冠軍可獲一對一財務分析。",
   "legal.contest.prizesVerificationPrefix": "所有獎賞須經核實",
   "legal.contest.prizesVerificationSuffix":
     "，並視供應情況而定；在法律允許下可替換為同等或更高價值的獎品。",

@@ -61,7 +61,7 @@ Public launch gate **1 Jul 2026 00:00 HKT** has passed. Pre-launch announcement 
 
 **Source of truth:** `src/lib/market-pulse/launch-config.ts` (`MARKET_PULSE_PUBLIC_LAUNCH_AT`, `canAccessMarketPulsePlay`, `canSubmitMarketPulseDecision`, `shouldShowMarketPulsePreLaunchUi`).
 
-**Prize copy:** One **Ocean Park ticket** per cycle winner (homepage, hub, rules, contest-rules, launch announcement).
+**Prize copy:** One **1-on-1 financial analysis** per cycle winner (homepage, hub, rules, contest-rules, launch announcement).
 
 **Pre-launch announcement:** `MarketPulseLaunchAnnouncement` on hero, hub, leaderboard (pre-launch), play (pre-launch), rules, contest-rules — **hidden automatically after public launch**.
 
@@ -251,7 +251,7 @@ Automated tests cover server rules below. Live browser sign-in was not re-run in
 | 5 | ADMIN test before launch | **Pass** | DB role check on submit; session role for play UI |
 | 6 | Launch announcements | **Pass** | `MarketPulseLaunchAnnouncement` on hero, hub, play, leaderboard |
 | 7 | First cycle 1–10 Jul 2026 | **Pass** | `challenge-cycle.ts`, `first-cycle-admin-guidance.ts` |
-| 8 | Ocean Park ticket per cycle winner | **Pass** | `launch-config.ts`, `prize-constants.ts`, legal pages |
+| 8 | 1-on-1 financial analysis per cycle winner | **Pass** | `launch-config.ts`, `prize-constants.ts`, legal pages |
 | 9 | Remove other prize mentions | **Pass** | Public copy is Ocean Park only; rules *gameplay* text still references legacy arcade sim (see §16) |
 | 10 | Bilingual EN / zh-Hant | **Pass** (MP cards + site chrome) | Admin builder EN/zh-Hant tabs; player card text via `card-localization.ts` + `ppa_locale`; event detail pages still static bilingual |
 | 11 | Language switcher placement | **Pass** | Header, mobile nav, MP play, login, onboarding |
@@ -457,7 +457,7 @@ Use this as the **end-to-end ops playbook**. UI labels are English; player card 
 | `startsAt` | Previous cycle `endsAt`, or next HKT midnight |
 | `endsAt` | Prior cycle duration, or first-cycle window from `launch-config.ts` |
 | `revealAt` | Same instant as `endsAt` (editable later) |
-| `prizeLabel` | `FIRST_CYCLE_GUIDANCE.prizeLabel` (Ocean Park ticket copy) |
+| `prizeLabel` | `FIRST_CYCLE_GUIDANCE.prizeLabel` (1-on-1 financial analysis copy) |
 | **Active cycle** | **Not** auto-pinned — you must pin in `#cycles` before go-live |
 
 **Advanced cycle form** (`MarketPulseCycleForm.tsx`, `cycle-validation.ts`):
@@ -1204,7 +1204,7 @@ Panel **“First public cycle guidance”** — collapsible under **Setup guide*
 | Start | 1 Jul 2026 00:00 HKT |
 | End | 10 Jul 2026 (closes 11 Jul 00:00 HKT) |
 | Reveal | On or after cycle end (recommended 11 Jul 00:00 HKT) |
-| Prize label | One Ocean Park ticket |
+| Prize label | One 1-on-1 financial analysis |
 | Runtime | `OPEN` |
 | Cards | All cards **PUBLISHED** for play (PPA not required for player decisions) |
 | PPA & reveal | Locked PPA signal + insight on all published cards **before reveal/scoring**; 72h admin warning if incomplete |

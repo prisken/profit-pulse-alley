@@ -19,7 +19,7 @@ function baseCycle(
     startsAt: "2026-03-01T00:00:00.000Z",
     endsAt: "2026-03-10T23:59:59.000Z",
     revealAt: "2026-03-11T12:00:00.000Z",
-    prizeLabel: "One Ocean Park ticket",
+    prizeLabel: "1-on-1 financial analysis",
     isActive: false,
     isPlayableNow: false,
     playabilityIssue: null,

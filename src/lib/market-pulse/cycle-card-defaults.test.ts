@@ -16,7 +16,7 @@ import {
 const CYCLE = {
   startsAt: MARKET_PULSE_PUBLIC_LAUNCH_AT,
   revealAt: new Date("2026-04-01T12:00:00+08:00"),
-  prizeLabel: "One Ocean Park ticket",
+  prizeLabel: "1-on-1 financial analysis",
 };
 
 describe("pickLatestCycleCardReference", () => {
@@ -58,7 +58,7 @@ describe("deriveCycleCardCreationDefaults", () => {
     expect(defaults.exchange).toBe("HKEX");
     expect(defaults.sourceName).toBe("Bloomberg");
     expect(defaults.sourceUrl).toBe("https://news.example.com");
-    expect(defaults.prizeLabel).toBe("One Ocean Park ticket");
+    expect(defaults.prizeLabel).toBe("1-on-1 financial analysis");
     expect(defaults.referenceCardId).toBe("card-2");
     expect(defaults.referenceDayIndex).toBe(2);
   });

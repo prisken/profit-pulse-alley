@@ -63,7 +63,7 @@ const cycleReveal = new Date("2026-07-10T16:00:00.000Z");
 const activeCycle = {
   id: "cycle-july",
   name: "July 2026 Market Pulse",
-  prizeLabel: "One Ocean Park ticket",
+  prizeLabel: "1-on-1 financial analysis",
   startsAt: cycleStart,
   endsAt: cycleEnd,
   revealAt: cycleReveal,

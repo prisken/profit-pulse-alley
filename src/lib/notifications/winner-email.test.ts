@@ -68,7 +68,7 @@ function assertNoPpaPayloadFields(payload: {
 describe("buildWinnerEmailBodies", () => {
   it("includes prize label without PPA or leaderboard score fields", () => {
     const bodies = buildWinnerEmailBodies({
-      prizeLabel: "One Ocean Park ticket",
+      prizeLabel: "1-on-1 financial analysis",
     });
 
     expect(bodies.subject).toBe(
@@ -78,11 +78,11 @@ describe("buildWinnerEmailBodies", () => {
       "Congratulations — you finished at the top of this Market Pulse cycle.",
     );
     expect(bodies.text).toContain("Prize:");
-    expect(bodies.text).toContain("One Ocean Park ticket");
+    expect(bodies.text).toContain("1-on-1 financial analysis");
     expect(bodies.text).toContain(
       "We will contact you about prize fulfilment. You can also reply directly to this email.",
     );
-    expect(bodies.html).toContain("One Ocean Park ticket");
+    expect(bodies.html).toContain("1-on-1 financial analysis");
     assertNoPpaPayloadFields(bodies);
   });
 });
@@ -106,7 +106,7 @@ describe("sendWinnerEmailToUser", () => {
       userId: "user-1",
       email: "Winner@Example.com",
       cycleId: CYCLE_ID,
-      prizeLabel: "One Ocean Park ticket",
+      prizeLabel: "1-on-1 financial analysis",
     });
 
     expect(result).toEqual({
@@ -126,7 +126,7 @@ describe("sendWinnerEmailToUser", () => {
         to: "winner@example.com",
         subject: "Congratulations — you won this Market Pulse cycle",
         text: expect.stringContaining("Prize:"),
-        html: expect.stringContaining("One Ocean Park ticket"),
+        html: expect.stringContaining("1-on-1 financial analysis"),
       }),
     );
     assertNoPpaPayloadFields(mocks.sendProductEmail.mock.calls[0][0]);
@@ -221,7 +221,7 @@ describe("sendWinnerEmailForCycle", () => {
       email: "winner@example.com",
     });
     mocks.cycleFindUnique.mockResolvedValue({
-      prizeLabel: "One Ocean Park ticket",
+      prizeLabel: "1-on-1 financial analysis",
     });
 
     const result = await sendWinnerEmailForCycle(CYCLE_ID);

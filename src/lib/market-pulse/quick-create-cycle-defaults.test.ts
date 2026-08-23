@@ -59,7 +59,7 @@ describe("buildQuickCreateCycleDefaults", () => {
 
     expect(defaults.name).toBe("Cycle 02");
     expect(defaults.status).toBe("DRAFT");
-    expect(defaults.prizeLabel).toBe("One Ocean Park ticket");
+    expect(defaults.prizeLabel).toBe("1-on-1 financial analysis");
     expect(defaults.startsAt.getTime()).toBe(MARKET_PULSE_FIRST_CYCLE_END_AT.getTime());
     expect(defaults.endsAt.getTime() - defaults.startsAt.getTime()).toBe(
       MARKET_PULSE_FIRST_CYCLE_END_AT.getTime() -

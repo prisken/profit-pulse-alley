@@ -29,7 +29,7 @@ export type DemoCardSeed = {
   userPrompt?: string;
 };
 
-export const DEMO_CYCLE_PRIZE_LABEL = "1 Ocean Park ticket (cycle winner)";
+export const DEMO_CYCLE_PRIZE_LABEL = "1-on-1 financial analysis (cycle winner)";
 
 export const DEMO_CARDS: DemoCardSeed[] = [
   {

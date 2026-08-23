@@ -25,7 +25,7 @@ function buildCycle(
     startsAt: "2026-07-01T00:00:00.000Z",
     endsAt: "2026-07-10T16:00:00.000Z",
     revealAt: "2026-07-10T16:00:00.000Z",
-    prizeLabel: "One Ocean Park ticket",
+    prizeLabel: "1-on-1 financial analysis",
     isActive: true,
     isPlayableNow: true,
     playabilityIssue: null,

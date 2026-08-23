@@ -31,12 +31,12 @@ export const MARKET_PULSE_LAUNCH_MESSAGES = {
     opens: "Market Pulse is live.",
     firstCycle:
       "Each challenge cycle runs for ten calendar days (Hong Kong time).",
-    prize: "One Ocean Park ticket will be awarded to the winner of each cycle.",
+    prize: "One on one financial analysis will be awarded to the winner of each cycle.",
   },
   "zh-HK": {
     opens: "Market Pulse 已上線。",
     firstCycle: "每期挑戰為十個曆日（香港時間）。",
-    prize: "每期冠軍將獲得一張海洋公園門票。",
+    prize: "每期冠軍可獲一對一財務分析。",
   },
 } as const;
 
@@ -52,7 +52,7 @@ export function getMarketPulseLaunchMessages(
 }
 
 /** Short prize line for cycle banners and admin defaults. */
-export const MARKET_PULSE_CYCLE_PRIZE_SHORT = "1 Ocean Park ticket per cycle winner";
+export const MARKET_PULSE_CYCLE_PRIZE_SHORT = "1-on-1 financial analysis per cycle winner";
 
 /** @deprecated Use `getMarketPulseLaunchMessages("en").opens`. */
 export const MARKET_PULSE_OPENS_MESSAGE = MARKET_PULSE_LAUNCH_MESSAGES.en.opens;

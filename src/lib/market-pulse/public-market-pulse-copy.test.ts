@@ -263,14 +263,14 @@ describe("public Market Pulse production copy", () => {
     expect(zhHantMessages["home.rewards.ppa.lockedNote"]).toMatch(/解鎖/);
   });
 
-  it("keeps One Ocean Park ticket prize copy in EN and zh-Hant", () => {
+  it("keeps 1-on-1 financial analysis prize copy in EN and zh-Hant", () => {
     expect(marketPulseEnMessages["mp.prize.heading"]).toBeTruthy();
-    expect(enMessages["home.pipeline.prize.body"]).toContain("One Ocean Park ticket");
-    expect(enMessages["home.rewards.prize.body"]).toContain("One Ocean Park ticket");
-    expect(zhHantMessages["home.playLearnWin.prize.text"]).toContain("海洋公園");
-    expect(zhHantMessages["home.rewards.prize.body"]).toContain("海洋公園");
-    expect(MARKET_PULSE_LAUNCH_MESSAGES.en.prize).toContain("One Ocean Park ticket");
-    expect(MARKET_PULSE_LAUNCH_MESSAGES["zh-HK"].prize).toContain("海洋公園");
+    expect(enMessages["home.pipeline.prize.body"]).toContain("Financial analysis");
+    expect(enMessages["home.rewards.prize.body"]).toContain("Financial analysis");
+    expect(zhHantMessages["home.playLearnWin.prize.text"]).toContain("財務分析");
+    expect(zhHantMessages["home.rewards.prize.body"]).toContain("財務分析");
+    expect(MARKET_PULSE_LAUNCH_MESSAGES.en.prize).toContain("financial analysis");
+    expect(MARKET_PULSE_LAUNCH_MESSAGES["zh-HK"].prize).toContain("財務分析");
   });
 
   it("keeps accurate locked and pending state copy", () => {

@@ -73,7 +73,7 @@ describe("quickCreateMarketPulseCardDraftAction", () => {
       id: "cycle-1",
       startsAt: MARKET_PULSE_PUBLIC_LAUNCH_AT,
       revealAt: new Date("2026-04-01T12:00:00+08:00"),
-      prizeLabel: "One Ocean Park ticket",
+      prizeLabel: "1-on-1 financial analysis",
       cards: [{ dayIndex: 1 }, EXISTING_CARD],
     });
     prismaMocks.cardCreate.mockResolvedValue({ id: "card-new" });
@@ -156,7 +156,7 @@ describe("quickCreateMarketPulseCardDraftAction", () => {
       startsAt: MARKET_PULSE_PUBLIC_LAUNCH_AT,
       endsAt: new Date("2026-04-10T12:00:00+08:00"),
       revealAt: new Date("2026-04-01T12:00:00+08:00"),
-      prizeLabel: "One Ocean Park ticket",
+      prizeLabel: "1-on-1 financial analysis",
       cards: [],
     });
 

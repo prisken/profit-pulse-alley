@@ -95,7 +95,7 @@ describe("getMarketPulseHubPageData production hardening", () => {
     mocks.getActiveMarketPulseCycle.mockResolvedValue({
       id: "cycle-july",
       name: "July 2026 Market Pulse",
-      prizeLabel: "Ocean Park ticket",
+      prizeLabel: "1-on-1 financial analysis",
       startsAt: new Date("2026-06-30T16:00:00.000Z"),
       endsAt: new Date("2026-07-10T16:00:00.000Z"),
       revealAt: new Date("2026-07-10T16:00:00.000Z"),
@@ -107,6 +107,6 @@ describe("getMarketPulseHubPageData production hardening", () => {
     expect(data.cycleId).toBe("cycle-july");
     expect(data.challengeName).toBe("July 2026 Market Pulse");
     expect(data.hasDatabaseCycle).toBe(true);
-    expect(data.prizeLabel).toBe("Ocean Park ticket");
+    expect(data.prizeLabel).toBe("1-on-1 financial analysis");
   });
 });

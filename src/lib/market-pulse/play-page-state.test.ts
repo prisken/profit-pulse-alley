@@ -10,7 +10,7 @@ const baseData: MarketPulsePlayPageData = {
   status: "playable",
   isAuthenticated: true,
   challengeName: "Cycle 01",
-  prizeLabel: "One Ocean Park ticket",
+  prizeLabel: "1-on-1 financial analysis",
   dayCurrent: 2,
   dayTotal: 10,
   revealAtIso: "2026-07-10T16:00:00.000Z",

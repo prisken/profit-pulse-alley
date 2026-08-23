@@ -21,7 +21,7 @@ export const FIRST_CYCLE_GUIDANCE = {
   endLabel: "July 10, 2026 (closes 11 July 2026 00:00 HKT)",
   revealLabel:
     "On or after cycle end — recommended 11 July 2026 00:00 HKT (existing rule: reveal ≥ end)",
-  prizeLabel: "One Ocean Park ticket",
+  prizeLabel: "1-on-1 financial analysis",
   runtimeRequired: "OPEN" as const,
   cardRequirements:
     "All cards PUBLISHED for player visibility (runtime, cycle dates, and publish status control play — not PPA completion)",
@@ -58,8 +58,8 @@ function prizeLabelMatches(label: string | null | undefined): boolean {
   }
   const normalized = label.toLowerCase();
   return (
-    normalized.includes("ocean park") ||
-    normalized.includes("海洋公園")
+    normalized.includes("financial analysis") ||
+    normalized.includes("財務分析")
   );
 }
 

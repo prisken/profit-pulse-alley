@@ -99,7 +99,7 @@ describe("quickCreateMarketPulseCycleAction", () => {
     expect(prismaMocks.cycleCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({
         name: "Cycle 02",
-        prizeLabel: "One Ocean Park ticket",
+        prizeLabel: "1-on-1 financial analysis",
         status: "DRAFT",
         startsAt: MARKET_PULSE_FIRST_CYCLE_END_AT,
       }),

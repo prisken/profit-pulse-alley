@@ -23,7 +23,7 @@ function buildCycle(
     startsAt: MARKET_PULSE_PUBLIC_LAUNCH_AT.toISOString(),
     endsAt: MARKET_PULSE_FIRST_CYCLE_END_AT.toISOString(),
     revealAt: MARKET_PULSE_FIRST_CYCLE_END_AT.toISOString(),
-    prizeLabel: "1 Ocean Park ticket",
+    prizeLabel: "1-on-1 financial analysis",
     isActive: true,
     isPlayableNow: true,
     playabilityIssue: null,
@@ -91,7 +91,7 @@ describe("getFirstPublicCycleFormPrefill", () => {
     expect(prefill.name).toBe(FIRST_PUBLIC_CYCLE_NAME);
     expect(prefill.status).toBe("OPEN");
     expect(prefill.setActive).toBe(true);
-    expect(prefill.prizeLabel).toContain("Ocean Park");
+    expect(prefill.prizeLabel).toContain("financial analysis");
     expect(parseCycleDate(prefill.startsAt)?.toISOString()).toBe(
       MARKET_PULSE_PUBLIC_LAUNCH_AT.toISOString(),
     );

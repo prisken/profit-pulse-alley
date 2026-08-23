@@ -211,7 +211,7 @@ describe("Launch smoke — admin access and readiness", () => {
         startsAt: unrevealedCycle.startsAt,
         endsAt: unrevealedCycle.endsAt,
         revealAt: unrevealedCycle.revealAt,
-        prizeLabel: "One Ocean Park ticket",
+        prizeLabel: "1-on-1 financial analysis",
         isActive: true,
         isPlayableNow: true,
         playabilityIssue: null,

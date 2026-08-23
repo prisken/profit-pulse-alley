@@ -235,7 +235,7 @@ function seedCycle(store: Store, overrides: Partial<MarketPulseCycle> = {}): Mar
     endsAt: new Date("2026-08-25T13:00:00.000Z"),
     revealAt: new Date("2026-08-26T01:00:00.000Z"),
     status: "DRAFT",
-    prizeLabel: "Ocean Park ticket",
+    prizeLabel: "1-on-1 financial analysis",
     createdAt: FIXED_CREATED_AT,
     updatedAt: FIXED_CREATED_AT,
     ...overrides,

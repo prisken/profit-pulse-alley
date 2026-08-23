@@ -74,7 +74,7 @@ describe("launch-config", () => {
   it("exposes bilingual launch copy for future locale switching", () => {
     expect(MARKET_PULSE_LAUNCH_MESSAGES.en.opens).toContain("live");
     expect(MARKET_PULSE_LAUNCH_MESSAGES["zh-HK"].opens).toContain("已上線");
-    expect(MARKET_PULSE_LAUNCH_MESSAGES.en.prize).toContain("One Ocean Park ticket");
-    expect(MARKET_PULSE_LAUNCH_MESSAGES["zh-HK"].prize).toContain("海洋公園");
+    expect(MARKET_PULSE_LAUNCH_MESSAGES.en.prize).toContain("financial analysis");
+    expect(MARKET_PULSE_LAUNCH_MESSAGES["zh-HK"].prize).toContain("財務分析");
   });
 });

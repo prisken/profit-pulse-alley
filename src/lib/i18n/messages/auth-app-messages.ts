@@ -72,7 +72,7 @@ export const authAppEnMessages = {
   "auth.marketPulse.benefit.saveCalls": "Save every Bullish or Cautious call you make",
   "auth.marketPulse.benefit.participation": "Earn participation points each cycle",
   "auth.marketPulse.benefit.leaderboard": "Climb the cycle leaderboard after reveal",
-  "auth.marketPulse.benefit.prize": "Compete for the One Ocean Park ticket each cycle",
+  "auth.marketPulse.benefit.prize": "Compete for the one-on-one financial analysis each cycle",
   "auth.marketPulse.onboarding.title": "Optional contact for prizes and events",
   "auth.marketPulse.onboarding.body":
     "You can play Market Pulse now. Add a contact number anytime if you want prize coordination or event reminders.",
@@ -1198,7 +1198,7 @@ export const authAppZhHantMessages: Record<AuthAppMessageKey, string> = {
   "auth.marketPulse.benefit.saveCalls": "儲存每次看漲或謹慎的判斷",
   "auth.marketPulse.benefit.participation": "每個週期累積參與分",
   "auth.marketPulse.benefit.leaderboard": "揭曉後登上週期排行榜",
-  "auth.marketPulse.benefit.prize": "每期競逐一張海洋公園門票",
+  "auth.marketPulse.benefit.prize": "每期競逐一對一財務分析",
   "auth.marketPulse.onboarding.title": "獎品及活動的選填聯絡方式",
   "auth.marketPulse.onboarding.body":
     "你現在就可以玩 Market Pulse。如需獎品安排或活動提醒，可隨時加入聯絡電話。",
