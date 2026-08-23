@@ -252,7 +252,7 @@ Automated tests cover server rules below. Live browser sign-in was not re-run in
 | 6 | Launch announcements | **Pass** | `MarketPulseLaunchAnnouncement` on hero, hub, play, leaderboard |
 | 7 | First cycle 1–10 Jul 2026 | **Pass** | `challenge-cycle.ts`, `first-cycle-admin-guidance.ts` |
 | 8 | 1-on-1 financial analysis per cycle winner | **Pass** | `launch-config.ts`, `prize-constants.ts`, legal pages |
-| 9 | Remove other prize mentions | **Pass** | Public copy is Ocean Park only; rules *gameplay* text still references legacy arcade sim (see §16) |
+| 9 | Remove other prize mentions | **Pass** | Public prize is 1-on-1 financial analysis; rules *gameplay* text still references legacy arcade sim (see §16) |
 | 10 | Bilingual EN / zh-Hant | **Pass** (MP cards + site chrome) | Admin builder EN/zh-Hant tabs; player card text via `card-localization.ts` + `ppa_locale`; event detail pages still static bilingual |
 | 11 | Language switcher placement | **Pass** | Header, mobile nav, MP play, login, onboarding |
 | 12 | Onboarding blank/loop fix | **Pass** | Server redirect via `/api/auth/complete-onboarding`; no client redirect loop |
@@ -1847,7 +1847,7 @@ Premium dark terminal layout (`bg-mp-obsidian`, `overflow-x-hidden`). Composes s
 | # | Component | Purpose | Primary CTAs |
 |---|-----------|---------|--------------|
 | 1 | `MarketPulseHero` | Brand logo, pre-launch/live status chip, headline + subheadline, launch-aware primary CTA; mounts **`HomeMarketPulseSimulator`**. **No** proof-chip row under CTAs (trimmed 15 Jul 2026). | Pre-launch → hub; post-launch → play; secondary → leaderboard |
-| 2 | `MarketPulsePipelineSection` | 4 textured accent step cards (Signal → Lock In → Reveal → Reward) + Ocean Park prize strip. **No** pipeline subtitle or scoring-summary panel (trimmed 15 Jul 2026). | Footer links → leaderboard, contest rules |
+| 2 | `MarketPulsePipelineSection` | 4 textured accent step cards (Signal → Lock In → Reveal → Reward) + prize strip (1-on-1 financial analysis). **No** pipeline subtitle or scoring-summary panel (trimmed 15 Jul 2026). | Footer links → leaderboard, contest rules |
 | 3 | `HomePulseBoardWidget` | Mini leaderboard preview with **winner highlight**; **privacy-safe** via `getHomePulseBoardPreview()` | → `/market-pulse/leaderboard` |
 | 4 | `HomeRewardsShowcase` | Heading + three pipeline-style accent cards (prize, events, PPA). **No** eyebrow/subtitle (trimmed 15 Jul 2026). | → contest rules, events, rules |
 | 5 | `HomePpaEcosystemSection` | Market Pulse (**Live MVP**) + PPA Events + Matching Pulse (**Pilot**). Same accent-card chrome as Rewards/Pipeline. Supporting — does not replace MP hero CTAs. | → `/market-pulse/play`, `/events`, `/matching-pulse` |
