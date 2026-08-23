@@ -24,6 +24,52 @@ const nextConfig: NextConfig = {
         destination: "/fortify-registration",
         permanent: true,
       },
+      // Legal/trust URL consolidation — legacy paths keep working, no 404s.
+      {
+        source: "/privacy-policy",
+        destination: "/privacy",
+        permanent: true,
+      },
+      {
+        source: "/privacy-policy/",
+        destination: "/privacy",
+        permanent: true,
+      },
+      {
+        source: "/cookie-policy",
+        destination: "/privacy",
+        permanent: true,
+      },
+      {
+        source: "/faqs",
+        destination: "/faq",
+        permanent: true,
+      },
+      {
+        source: "/faqs/",
+        destination: "/faq",
+        permanent: true,
+      },
+      {
+        source: "/terms-of-service",
+        destination: "/terms",
+        permanent: true,
+      },
+      {
+        source: "/terms-of-service/",
+        destination: "/terms",
+        permanent: true,
+      },
+      {
+        source: "/our-philosophy",
+        destination: "/concept",
+        permanent: true,
+      },
+      {
+        source: "/our-philosophy/",
+        destination: "/concept",
+        permanent: true,
+      },
     ];
   },
   images: {
