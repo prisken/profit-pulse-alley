@@ -57,6 +57,7 @@ export const enMessages = {
   "footer.link.investmentDisclaimer": "Investment Disclaimer",
   "footer.link.contestRules": "Contest Rules",
   "footer.link.postMatchingPulseRequest": "Post a request",
+  "footer.link.cashFlowCalculator": "Cash-Flow Calculator",
   "footer.newsletter.description":
     "Get Market Pulse updates, event invites, and community highlights in your inbox.",
   "footer.newsletter.emailAria": "Email address",

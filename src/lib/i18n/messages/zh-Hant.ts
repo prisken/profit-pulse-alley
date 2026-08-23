@@ -56,6 +56,7 @@ export const zhHantMessages: Messages = {
   "footer.link.investmentDisclaimer": "投資免責聲明",
   "footer.link.contestRules": "比賽規則",
   "footer.link.postMatchingPulseRequest": "提交協作請求",
+  "footer.link.cashFlowCalculator": "現金流計算器",
   "footer.newsletter.description":
     "訂閱以接收 Market Pulse 更新、活動邀請及社群精選資訊。",
   "footer.newsletter.emailAria": "電郵地址",

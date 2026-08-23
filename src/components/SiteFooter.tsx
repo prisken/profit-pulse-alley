@@ -78,6 +78,7 @@ const PPA_LINK_KEYS: ReadonlyArray<{ labelKey: MessageKey; href: string }> = [
   { labelKey: "nav.events", href: "/events" },
   { labelKey: "nav.philosophy", href: "/concept" },
   { labelKey: "nav.blog", href: "/blog" },
+  { labelKey: "footer.link.cashFlowCalculator", href: "/cash-flow-protector" },
 ];
 
 const COMMUNITY_LINK_KEYS: ReadonlyArray<{ labelKey: MessageKey; href: string }> =

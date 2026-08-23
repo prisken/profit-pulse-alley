@@ -274,9 +274,9 @@ export const FAQ_SECTIONS: FaqSection[] = [
         qEn: "How do I get started?",
         qZh: "如何開始？",
         aEn:
-          "Play the free [Market Pulse game](/market-pulse/play). Subscribe to the newsletter for cycle updates and event invites. Attend a founder event. Explore the [Zero-Cost Life philosophy](/concept).",
+          "Play the free [Market Pulse game](/market-pulse/play). Subscribe to the newsletter for cycle updates and event invites. Attend a founder event. Explore the [Zero-Cost Life philosophy](/concept). Try the [Cash-Flow Protector Calculator](/cash-flow-protector).",
         aZh:
-          "遊玩免費的 [Market Pulse 遊戲](/market-pulse/play)。訂閱電子報以獲取週期更新和活動邀請。參加創辦人活動。探索 [Zero-Cost Life 理念](/concept)。",
+          "遊玩免費的 [Market Pulse 遊戲](/market-pulse/play)。訂閱電子報以獲取週期更新和活動邀請。參加創辦人活動。探索 [Zero-Cost Life 理念](/concept)。試用[現金流保障計算器](/cash-flow-protector)。",
       },
       {
         qEn: "How do I contact you?",
