@@ -316,6 +316,9 @@ export const zhHantMessages: Messages = {
   "home.philosophy.quote":
     "Profit Pulse Ally 以系統思維平衡進攻與防守，讓每一步更接近零成本人生——同樣的嚴謹亦體現於 Market Pulse 的 PPA Insight。",
   "home.philosophy.mindsHeading": "網絡背後的經營者",
+  "home.experts.prisken.title": "Profit Pulse Ally 創辦人",
+  "home.experts.prisken.bio":
+    "Profit Pulse Ally 創辦人——建立讓創業者以系統思維前行的網絡。",
   "home.experts.vicky.title": "Zeppelin Hot Dog 聯合創辦人",
   "home.experts.vicky.bio":
     "融資與品牌從零成長的實戰經驗——為社群帶來經營者視角。",

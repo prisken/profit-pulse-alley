@@ -14,6 +14,13 @@ export type ExpertShowcase = {
 export function getExpertsShowcase(locale: SiteLocale): ExpertShowcase[] {
   return [
     {
+      name: "Prisken Lo",
+      title: translate(locale, "home.experts.prisken.title"),
+      bio: translate(locale, "home.experts.prisken.bio"),
+      headshotSrc: "/prisken-headshot.png",
+      imageObjectPosition: "center",
+    },
+    {
       name: "Vicky Huang",
       title: translate(locale, "home.experts.vicky.title"),
       bio: translate(locale, "home.experts.vicky.bio"),

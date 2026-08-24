@@ -340,6 +340,9 @@ export const enMessages = {
   "home.philosophy.quote":
     "Profit Pulse Ally helps founders think in systems—balancing offense, defense, and compounding toward a zero-cost life. The same rigor powers PPA Insight in Market Pulse.",
   "home.philosophy.mindsHeading": "Operators behind the network",
+  "home.experts.prisken.title": "Founder, Profit Pulse Ally",
+  "home.experts.prisken.bio":
+    "Founder of Profit Pulse Ally — building the network where founders think in systems.",
   "home.experts.vicky.title": "Co-founder, Zeppelin Hot Dog",
   "home.experts.vicky.bio":
     "Growth funding and brand-building from the ground up—operator insight for our community.",
