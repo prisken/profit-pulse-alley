@@ -3,9 +3,9 @@
  *
  * Model:
  * - Weeks are Mon–Sun, labeled by their Monday ("Week of 17 Aug").
- * - Week options follow the rule:
- *   [Mon 00:00 HKT, Wed 12:00 HKT)  -> offer current week + next week
- *   [Wed 12:00 HKT, next Mon 12:00) -> offer next week + week after
+ * - Week options follow the rule (three weeks offered):
+ *   [Mon 00:00 HKT, Wed 12:00 HKT)  -> current + next + week after
+ *   [Wed 12:00 HKT, next Mon 12:00) -> next + week after + week after that
  * - Sessions are 60 minutes; slots are generated from availability windows,
  *   aligned to :00/:30, minus past times, minus Google Calendar busy blocks
  *   (with a configurable buffer).
@@ -110,15 +110,16 @@ function toWeekOption(mondayIndex: number): WeekOption {
 }
 
 /**
- * The two bookable weeks per the rule:
- * before Wed 12:00 HKT -> current + next; after -> next + week after.
+ * The three bookable weeks per the rule:
+ * before Wed 12:00 HKT -> current + next + week after;
+ * after -> next + week after + week after that.
  */
 export function getWeekOptions(now: Date): WeekOption[] {
   const mondayIndex = hktMondayIndex(now);
   const cutoff = hktWeekCutoff(mondayIndex);
   const afterCutoff = now.getTime() >= cutoff.getTime();
   const first = afterCutoff ? mondayIndex + 7 : mondayIndex;
-  return [toWeekOption(first), toWeekOption(first + 7)];
+  return [toWeekOption(first), toWeekOption(first + 7), toWeekOption(first + 14)];
 }
 
 export function isWeekday(dow: number): boolean {

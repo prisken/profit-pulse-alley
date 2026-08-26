@@ -26,35 +26,35 @@ describe("hktDayOfWeek", () => {
 });
 
 describe("getWeekOptions", () => {
-  it("before Wed 12:00 offers current + next", () => {
+  it("before Wed 12:00 offers current + next + week after", () => {
     const now = hkt(2026, 8, 19, 10, 0); // Wed 10:00
     const opts = getWeekOptions(now);
-    expect(opts.map((o) => o.key)).toEqual(["2026-08-17", "2026-08-24"]);
+    expect(opts.map((o) => o.key)).toEqual(["2026-08-17", "2026-08-24", "2026-08-31"]);
     expect(opts[0].label.en).toMatch(/Week of 17 Aug/);
   });
 
-  it("Monday 00:00 still offers current + next", () => {
+  it("Monday 00:00 still offers current + next + week after", () => {
     const now = hkt(2026, 8, 17, 0, 30); // Mon 00:30
     const opts = getWeekOptions(now);
-    expect(opts.map((o) => o.key)).toEqual(["2026-08-17", "2026-08-24"]);
+    expect(opts.map((o) => o.key)).toEqual(["2026-08-17", "2026-08-24", "2026-08-31"]);
   });
 
-  it("at Wed 12:00 exactly switches to next + week after", () => {
+  it("at Wed 12:00 exactly switches to next + week after + week after that", () => {
     const now = hkt(2026, 8, 19, 12, 0); // Wed 12:00
     const opts = getWeekOptions(now);
-    expect(opts.map((o) => o.key)).toEqual(["2026-08-24", "2026-08-31"]);
+    expect(opts.map((o) => o.key)).toEqual(["2026-08-24", "2026-08-31", "2026-09-07"]);
   });
 
-  it("Saturday offers next + week after", () => {
+  it("Saturday offers next + week after + week after that", () => {
     const now = hkt(2026, 8, 22, 15, 0); // Sat
     const opts = getWeekOptions(now);
-    expect(opts.map((o) => o.key)).toEqual(["2026-08-24", "2026-08-31"]);
+    expect(opts.map((o) => o.key)).toEqual(["2026-08-24", "2026-08-31", "2026-09-07"]);
   });
 
-  it("next Monday 09:00 rolls forward to that week + following", () => {
+  it("next Monday 09:00 rolls forward to that week + following + next", () => {
     const now = hkt(2026, 8, 24, 9, 0); // next Mon
     const opts = getWeekOptions(now);
-    expect(opts.map((o) => o.key)).toEqual(["2026-08-24", "2026-08-31"]);
+    expect(opts.map((o) => o.key)).toEqual(["2026-08-24", "2026-08-31", "2026-09-07"]);
   });
 });
 
