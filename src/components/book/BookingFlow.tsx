@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useTranslations } from "@/components/providers/LocaleProvider";
-import type { WeekOption } from "@/lib/book/availability";
+import { weekRangeLabel, type WeekOption } from "@/lib/book/availability";
 
 type Step =
   | { name: "contact" }
@@ -312,7 +312,7 @@ export default function BookingFlow({ initialWeeks }: { initialWeeks: WeekOption
                   })}
                 </span>
                 <span className="mt-1 block text-xs text-foreground/45">
-                  {week.startIso.slice(0, 10)} – {week.endIso.slice(0, 10)}
+                  {weekRangeLabel(week, locale === "zh-Hant" ? "zh-Hant" : "en")}
                 </span>
               </button>
             ))}
@@ -430,23 +430,32 @@ export default function BookingFlow({ initialWeeks }: { initialWeeks: WeekOption
             {t("book.flow.slots.hktNote")}
           </p>
           {state.week && state.day && state.time && (
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() =>
-                void requestSlots(
-                  state.week!,
-                  state.day!,
-                  state.time!,
-                  slots && slots.length === 0 && variant > 0 ? 0 : variant + 1,
-                )
-              }
-              className="mt-4 w-full rounded-xl border border-white/10 px-5 py-3 text-sm text-foreground/60 transition hover:border-emerald-500/30 hover:text-foreground/90 disabled:opacity-50"
-            >
-              {slots && slots.length === 0 && variant > 0
-                ? t("book.flow.slots.firstOptions")
-                : t("book.flow.slots.refresh")}
-            </button>
+            <div className="mt-4 space-y-2">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() =>
+                  void requestSlots(
+                    state.week!,
+                    state.day!,
+                    state.time!,
+                    slots && slots.length === 0 && variant > 0 ? 0 : variant + 1,
+                  )
+                }
+                className="w-full rounded-xl border border-white/10 px-5 py-3 text-sm text-foreground/60 transition hover:border-emerald-500/30 hover:text-foreground/90 disabled:opacity-50"
+              >
+                {slots && slots.length === 0 && variant > 0
+                  ? t("book.flow.slots.firstOptions")
+                  : t("book.flow.slots.refresh")}
+              </button>
+              <button
+                type="button"
+                onClick={() => go({ name: "week" })}
+                className="w-full text-center text-xs text-foreground/40 underline-offset-4 transition hover:text-foreground/70 hover:underline"
+              >
+                {t("book.flow.slots.otherWeek")}
+              </button>
+            </div>
           )}
         </div>
       )}

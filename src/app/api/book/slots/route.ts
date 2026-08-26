@@ -59,12 +59,8 @@ export async function POST(request: Request) {
       now,
       variant,
     });
-    if (slots.length === 0) {
-      return NextResponse.json(
-        { ok: false, code: "no_slots", error: "No free slots left for those choices." },
-        { status: 409 },
-      );
-    }
+    // Empty (not an error) = that page has no more choices. The client shows
+    // the "no more / see first options again" loop instead of a dead end.
     return NextResponse.json({
       ok: true,
       slots: slots.map((s) => ({

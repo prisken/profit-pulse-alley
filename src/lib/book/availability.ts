@@ -86,16 +86,76 @@ export function hktWeekCutoff(mondayIndex: number): Date {
   );
 }
 
-function weekLabel(mondayIndex: number, locale: "en" | "zh-Hant"): string {
-  const monday = hktMidnightUtcFromCalendarDayIndex(mondayIndex);
+/**
+ * HKT wall-clock date parts for a UTC instant, using numeric month/day so we
+ * can compose CJK dates explicitly ("8月24日") instead of relying on Intl's
+ * zh-Hant month "short" rendering (which can come back as bare "8").
+ */
+function hktCalendarParts(date: Date, locale: "en" | "zh-Hant") {
   const formatter = new Intl.DateTimeFormat(
     locale === "zh-Hant" ? "zh-Hant-HK" : "en-GB",
-    { timeZone: BOOK_TZ_LABEL, day: "numeric", month: "short" },
+    {
+      timeZone: BOOK_TZ_LABEL,
+      year: "numeric",
+      month: locale === "zh-Hant" ? "numeric" : "short",
+      day: "numeric",
+      weekday: "short",
+    },
   );
-  const parts = formatter.formatToParts(monday);
-  const day = parts.find((p) => p.type === "day")?.value ?? "";
-  const month = parts.find((p) => p.type === "month")?.value ?? "";
-  return locale === "zh-Hant" ? `${month}${day}日當週` : `Week of ${day} ${month}`;
+  const parts = formatter.formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  return {
+    year: value("year"),
+    month: value("month"),
+    day: value("day"),
+    weekday: value("weekday"),
+  };
+}
+
+/** "24 Aug" (en) / "8月24日" (zh-Hant). */
+export function hktDateLabel(date: Date, locale: "en" | "zh-Hant"): string {
+  const p = hktCalendarParts(date, locale);
+  return locale === "zh-Hant" ? `${p.month}月${p.day}日` : `${p.day} ${p.month}`;
+}
+
+/** "Sat 24 Aug" (en) / "8月24日（週六）" (zh-Hant). */
+export function hktDateLabelWithWeekday(
+  date: Date,
+  locale: "en" | "zh-Hant",
+): string {
+  const p = hktCalendarParts(date, locale);
+  return locale === "zh-Hant"
+    ? `${p.month}月${p.day}日（${p.weekday}）`
+    : `${p.weekday} ${p.day} ${p.month}`;
+}
+
+/** Week range, e.g. "17 Aug – 24 Aug 2026" / "2026年8月17日 – 8月24日". */
+export function weekRangeLabel(
+  week: Pick<WeekOption, "startIso" | "endIso">,
+  locale: "en" | "zh-Hant",
+): string {
+  const start = new Date(week.startIso);
+  const end = new Date(week.endIso);
+  if (locale === "zh-Hant") {
+    const s = hktCalendarParts(start, "zh-Hant");
+    const e = hktCalendarParts(end, "zh-Hant");
+    return s.year === e.year
+      ? `${s.year}年${s.month}月${s.day}日 – ${e.month}月${e.day}日`
+      : `${s.year}年${s.month}月${s.day}日 – ${e.year}年${e.month}月${e.day}日`;
+  }
+  const s = hktCalendarParts(start, "en");
+  const e = hktCalendarParts(end, "en");
+  return s.year === e.year
+    ? `${s.day} ${s.month} – ${e.day} ${e.month} ${e.year}`
+    : `${s.day} ${s.month} ${s.year} – ${e.day} ${e.month} ${e.year}`;
+}
+
+function weekLabel(mondayIndex: number, locale: "en" | "zh-Hant"): string {
+  const monday = hktMidnightUtcFromCalendarDayIndex(mondayIndex);
+  const p = hktCalendarParts(monday, locale);
+  // Date only — the UI template adds "Week of " / " 當週" around it.
+  return locale === "zh-Hant" ? `${p.month}月${p.day}日` : `${p.day} ${p.month}`;
 }
 
 function toWeekOption(mondayIndex: number): WeekOption {
@@ -217,10 +277,16 @@ export function generateCandidateSlots(opts: {
 }
 
 /**
- * Pick up to 3 slots from 3 different days. `variant` selects WHICH slot of
- * each day: 0 = earliest available, 1 = second, etc. — so "show more options"
- * returns genuinely different times. Days with fewer than `variant+1` slots
- * are skipped.
+ * Pick up to 3 slots for a "page" of options. `variant` is the page index.
+ *
+ * Pages first walk through DIFFERENT days (3 per page), so "show more options"
+ * surfaces genuinely new dates; when the days are exhausted it cycles back
+ * through the same days offering later times. When every slot of every day
+ * has been shown, it returns [] — the caller loops back to variant 0.
+ *
+ * If a page has fewer than 3 distinct days (e.g. weekend: only 2 days), the
+ * remaining slots come from the next time on those days, so a page always
+ * offers up to 3 clickable choices.
  */
 export function pickThreeSlots(slots: CandidateSlot[], variant = 0): CandidateSlot[] {
   const byDay = new Map<string, CandidateSlot[]>();
@@ -233,18 +299,42 @@ export function pickThreeSlots(slots: CandidateSlot[], variant = 0): CandidateSl
       byDay.set(key, [slot]);
     }
   }
+  for (const list of byDay.values()) {
+    list.sort((a, b) => a.start.getTime() - b.start.getTime());
+  }
   const days = [...byDay.keys()].sort();
+  if (days.length === 0) {
+    return [];
+  }
+
+  const pagesPerPass = Math.max(1, Math.ceil(days.length / 3));
+  const pass = Math.floor(variant / pagesPerPass);
+  const pageInPass = variant % pagesPerPass;
+  const pageDays = days.slice(pageInPass * 3, pageInPass * 3 + 3);
+  if (pageDays.length === 0) {
+    return [];
+  }
+
   const chosen: CandidateSlot[] = [];
-  for (const day of days) {
-    const daySlots = byDay.get(day) ?? [];
-    daySlots.sort((a, b) => a.start.getTime() - b.start.getTime());
-    const slot = daySlots[variant];
-    if (!slot) {
-      continue;
+  // Primary: earliest slot of each day on this page.
+  for (const day of pageDays) {
+    const slot = byDay.get(day)?.[pass];
+    if (slot) {
+      chosen.push(slot);
     }
-    chosen.push(slot);
-    if (chosen.length === 3) {
-      break;
+  }
+  // Fill: if the page has fewer than 3 distinct days, add the next time on
+  // those days so the page is never short of choices.
+  if (chosen.length < 3) {
+    for (const day of pageDays) {
+      if (chosen.length >= 3) {
+        break;
+      }
+      const daySlots = byDay.get(day) ?? [];
+      const extra = daySlots[pass + 1];
+      if (extra && !chosen.some((c) => c.start.getTime() === extra.start.getTime())) {
+        chosen.push(extra);
+      }
     }
   }
   return chosen;
@@ -255,15 +345,6 @@ export function slotLabels(slot: CandidateSlot, locale: "en" | "zh-Hant"): {
   dayLabel: string;
   timeLabel: string;
 } {
-  const fmtDay = new Intl.DateTimeFormat(
-    locale === "zh-Hant" ? "zh-Hant-HK" : "en-GB",
-    {
-      timeZone: BOOK_TZ_LABEL,
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    },
-  );
   const fmtTime = new Intl.DateTimeFormat(
     locale === "zh-Hant" ? "zh-Hant-HK" : "en-GB",
     {
@@ -274,7 +355,7 @@ export function slotLabels(slot: CandidateSlot, locale: "en" | "zh-Hant"): {
     },
   );
   return {
-    dayLabel: fmtDay.format(slot.start),
+    dayLabel: hktDateLabelWithWeekday(slot.start, locale),
     timeLabel: `${fmtTime.format(slot.start)} – ${fmtTime.format(slot.end)}`,
   };
 }

@@ -43,6 +43,7 @@ export const bookZhHantMessages: Pick<Messages, keyof typeof bookEnMessages> = {
   "book.flow.slots.loading": "正在查看時間表……",
   "book.flow.slots.refresh": "看看其他選項",
   "book.flow.slots.firstOptions": "顯示最初的選項",
+  "book.flow.slots.otherWeek": "選擇其他週次",
   "book.flow.slots.noMore": "這些選擇的開放時段已全部顯示——試試其他偏好。",
   "book.flow.slots.hktNote": "所有時間均為香港時間",
 

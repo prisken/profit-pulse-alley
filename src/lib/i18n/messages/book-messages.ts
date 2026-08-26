@@ -42,6 +42,7 @@ export const bookEnMessages = {
   "book.flow.slots.loading": "Checking availability…",
   "book.flow.slots.refresh": "Show me other options",
   "book.flow.slots.firstOptions": "Show the first options again",
+  "book.flow.slots.otherWeek": "Choose a different week",
   "book.flow.slots.noMore": "You've seen all the open slots for those choices — try different preferences.",
   "book.flow.slots.hktNote": "All times are Hong Kong time",
 

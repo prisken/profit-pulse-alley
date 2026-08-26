@@ -7,6 +7,7 @@ import {
   getWeekOptions,
   hktDayOfWeek,
   pickThreeSlots,
+  type CandidateSlot,
 } from "@/lib/book/availability";
 
 /** 2026-08-17 is a Monday. */
@@ -30,7 +31,7 @@ describe("getWeekOptions", () => {
     const now = hkt(2026, 8, 19, 10, 0); // Wed 10:00
     const opts = getWeekOptions(now);
     expect(opts.map((o) => o.key)).toEqual(["2026-08-17", "2026-08-24", "2026-08-31"]);
-    expect(opts[0].label.en).toMatch(/Week of 17 Aug/);
+    expect(opts[0].label.en).toMatch(/17 Aug/);
   });
 
   it("Monday 00:00 still offers current + next + week after", () => {
@@ -145,24 +146,34 @@ describe("pickThreeSlots", () => {
     expect(chosen.length).toBe(0);
   });
 
-  it("variant 1 returns the SECOND slot of each day", () => {
+  it("variant 1 pages to the NEXT 3 days (different dates, not just times)", () => {
     const base = { mondayKey: MON_2026_08_17, now: hkt(2026, 8, 17, 0, 0), busy: [] as { start: Date; end: Date }[] };
     const slots = generateCandidateSlots({ ...base, dayPref: "weekday", timePref: "office" });
     const v0 = pickThreeSlots(slots, 0);
     const v1 = pickThreeSlots(slots, 1);
-    expect(v1.length).toBe(3);
-    const hktWall = (d: Date) => new Date(d.getTime() + 8 * 3600 * 1000);
-    // v0 starts at 10:00; v1 starts at 10:30
-    expect(hktWall(v0[0]!.start).getUTCMinutes()).toBe(0);
-    expect(hktWall(v1[0]!.start).getUTCMinutes()).toBe(30);
-    expect(v1[0]!.start.toISOString().slice(0, 10)).toBe("2026-08-17");
+    // Mon–Fri week: page 0 = Mon/Tue/Wed, page 1 = Thu/Fri (+ fill)
+    const dayOf = (s: CandidateSlot) => s.start.toISOString().slice(0, 10);
+    expect(v0.map(dayOf)).toEqual(["2026-08-17", "2026-08-18", "2026-08-19"]);
+    expect(v1.map(dayOf).slice(0, 2)).toEqual(["2026-08-20", "2026-08-21"]);
   });
 
-  it("variant beyond a day's slots skips that day", () => {
+  it("pages cycle back through days with later times (loop never dead)", () => {
     const base = { mondayKey: MON_2026_08_17, now: hkt(2026, 8, 17, 0, 0), busy: [] as { start: Date; end: Date }[] };
     const slots = generateCandidateSlots({ ...base, dayPref: "weekday", timePref: "office" });
-    // 15 slots/day (10:00..17:00); variant 20 -> no slots at all
-    expect(pickThreeSlots(slots, 20).length).toBe(0);
+    // 5 weekdays -> 2 pages per pass. variant 2 = second pass, page 0:
+    // Mon/Tue/Wed at the SECOND time of each day (10:30 HKT).
+    const v2 = pickThreeSlots(slots, 2);
+    expect(v2.length).toBe(3);
+    const hktWall = (d: Date) => new Date(d.getTime() + 8 * 3600 * 1000);
+    expect(hktWall(v2[0]!.start).getUTCHours()).toBe(10);
+    expect(hktWall(v2[0]!.start).getUTCMinutes()).toBe(30);
+  });
+
+  it("very high variant returns empty (all slots exhausted)", () => {
+    const base = { mondayKey: MON_2026_08_17, now: hkt(2026, 8, 17, 0, 0), busy: [] as { start: Date; end: Date }[] };
+    const slots = generateCandidateSlots({ ...base, dayPref: "weekday", timePref: "office" });
+    // 14 slots/day; variant 100 -> pass 50 -> beyond every day's slots
+    expect(pickThreeSlots(slots, 100).length).toBe(0);
   });
 
   it("sessions are SESSION_MINUTES long", () => {
