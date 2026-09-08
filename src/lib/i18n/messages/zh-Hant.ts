@@ -274,14 +274,14 @@ export const zhHantMessages: Messages = {
   "home.events.pastHeading": "精彩回顧",
   "home.events.guestTba": "嘉賓待定",
   "home.events.upcoming.salesMarketing.title":
-    "Fortify Your Future (Lunch & Learn)",
+    "AI Copilot Lunch & Learn — Secure & Cost effective AI Gateway",
   "home.events.upcoming.salesMarketing.titleZh":
-    "守業增值創未來（Lunch & Learn）",
+    "AI Copilot Lunch & Learn 午餐研討會 — 安全又慳本嘅 AI Gateway",
   "home.events.upcoming.salesMarketing.subtitle":
-    "Ghost in the Shopping Cart! — Amazon 的 AI 銷售引擎。嘉賓講者 Vickie Yau。免費 Lunch & Learn，地點 WeWork Taikoo。",
+    "你團隊用 AI 嗰陣，有冇洩漏敏感資料？三場香港分享會——即場示範自動遮蓋 PII 嘅 AI Gateway，同埋可慳 70–90% API 成本嘅智能 LLM Router。",
   "home.events.upcoming.salesMarketing.date":
-    "2026年7月30日（星期四），12:30–13:30",
-  "home.events.upcoming.salesMarketing.location": "WeWork Taikoo 22B 室",
+    "2026年9月16、23、29日，每日 12:30–14:00",
+  "home.events.upcoming.salesMarketing.location": "WeWork — Lee Garden · YF Life Tower · Cityplaza Taikoo",
   "home.events.past1.title": "《我兩樣都要》線下戰略會議",
   "home.events.past1.summary":
     "創業者與 Vicky Huang、Marcy Chan 探討如何在拓展業務的同時累積長遠財富。",

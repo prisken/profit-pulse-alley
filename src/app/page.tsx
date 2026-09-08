@@ -32,8 +32,8 @@ export default async function Home() {
           topic: t("home.events.upcoming.salesMarketing.subtitle"),
           date: t("home.events.upcoming.salesMarketing.date"),
           location: t("home.events.upcoming.salesMarketing.location"),
-          posterSrc: "/images/fortify-lunch-learn-july-2026-poster.png",
-          registerHref: "/fortify-registration",
+          posterSrc: "/images/ai-copilot-lnl-poster.png",
+          registerHref: "",
           comingSoon: false,
         }}
         pastEvents={pastEvents}

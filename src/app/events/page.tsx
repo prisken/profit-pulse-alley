@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Calendar } from "lucide-react";
 
 import { fortifyYourFutureEvent } from "@/lib/events/fortify-your-future";
@@ -49,7 +50,18 @@ export default async function EventsHubPage() {
         >
           {translate(locale, "events.hub.upcomingHeading")}
         </h2>
-        <article className="mt-4 overflow-hidden rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-background to-background p-4 shadow-sm sm:mt-6 sm:rounded-2xl sm:p-6">
+        <article className="mt-4 overflow-hidden rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-background to-background shadow-sm sm:mt-6 sm:rounded-2xl">
+          <div className="relative aspect-[3/4] max-h-[20rem] w-full bg-zinc-950 sm:aspect-[16/10] sm:max-h-[22rem]">
+            <Image
+              src="/images/ai-copilot-lnl-poster.png"
+              alt="AI Copilot Lunch &amp; Learn — Secure &amp; Cost effective AI Gateway · 16/23/29 Sep"
+              fill
+              className="object-contain object-center"
+              sizes="(max-width: 768px) 100vw, 1024px"
+              priority
+            />
+          </div>
+          <div className="p-4 sm:p-6">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-600 dark:text-amber-400 sm:text-xs">
             AI Copilot Lunch &amp; Learn Series · 午餐研討會系列
           </p>
@@ -99,6 +111,7 @@ export default async function EventsHubPage() {
                 {" "}(Non-member? Follow us for future public sessions)
               </span>
             </p>
+          </div>
           </div>
         </article>
       </section>

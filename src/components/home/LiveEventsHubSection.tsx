@@ -44,7 +44,7 @@ export type LiveUpcomingEvent =
       date: string;
       location: string;
       posterSrc: string;
-      registerHref: string;
+      registerHref?: string;
       comingSoon?: boolean;
     };
 
@@ -296,16 +296,18 @@ export default async function LiveEventsHubSection({
                   {upcomingEvent.location}
                 </p>
               ) : null}
-              <Link
-                href={upcomingEvent.registerHref}
-                className={mergeMpClasses(
-                  MP_PRIMARY_BTN,
-                  "mt-4 min-h-11 w-full px-5 py-2.5 text-sm sm:mt-6 sm:w-auto sm:px-8",
-                  focusRing,
-                )}
-              >
-                {ctaLabel}
-              </Link>
+              {upcomingEvent.registerHref ? (
+                <Link
+                  href={upcomingEvent.registerHref}
+                  className={mergeMpClasses(
+                    MP_PRIMARY_BTN,
+                    "mt-4 min-h-11 w-full px-5 py-2.5 text-sm sm:mt-6 sm:w-auto sm:px-8",
+                    focusRing,
+                  )}
+                >
+                  {ctaLabel}
+                </Link>
+              ) : null}
             </div>
           </div>
         </article>

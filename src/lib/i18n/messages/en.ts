@@ -292,14 +292,14 @@ export const enMessages = {
   "home.events.pastHeading": "What You've Missed",
   "home.events.guestTba": "Guest Speaker TBA",
   "home.events.upcoming.salesMarketing.title":
-    "Fortify Your Future (Lunch & Learn)",
+    "AI Copilot Lunch & Learn — Secure & Cost effective AI Gateway",
   "home.events.upcoming.salesMarketing.titleZh":
-    "守業增值創未來（Lunch & Learn）",
+    "AI Copilot Lunch & Learn 午餐研討會 — 安全又慳本嘅 AI Gateway",
   "home.events.upcoming.salesMarketing.subtitle":
-    "Ghost in the Shopping Cart! — Amazon's AI Sales Engine. Guest speaker Vickie Yau. Free Lunch & Learn at WeWork Taikoo.",
+    "Is your team leaking sensitive data while using AI? Three Hong Kong sessions — live demos of a PII-redacting AI gateway and a smart LLM router that cuts API cost ~70–90%.",
   "home.events.upcoming.salesMarketing.date":
-    "30th July 2026 (Thursday), 12:30–13:30",
-  "home.events.upcoming.salesMarketing.location": "WeWork Taikoo, Room 22B",
+    "16 · 23 · 29 Sep 2026, 12:30–14:00 each",
+  "home.events.upcoming.salesMarketing.location": "WeWork — Lee Garden · YF Life Tower · Cityplaza Taikoo",
   "home.events.past1.title": "《我兩樣都要》線下戰略會議",
   "home.events.past1.summary":
     "Founders explored how to scale a business while building long-term wealth with Vicky Huang and Marcy Chan.",
