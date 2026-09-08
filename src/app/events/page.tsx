@@ -1,14 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
-import { Calendar, MapPin } from "lucide-react";
+import { Calendar } from "lucide-react";
 
-import {
-  FORTIFY_LUNCH_LEARN_POSTER,
-  FORTIFY_LUNCH_LEARN_REGISTRATION_PATH,
-  getFortifySalesMarketingEvent,
-} from "@/lib/events/fortify-sales-marketing";
 import { fortifyYourFutureEvent } from "@/lib/events/fortify-your-future";
-import { getFortifySalesMarketingShowcase } from "@/lib/events/upcoming-event-display";
 import { getServerSiteLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
 import CommunityPartnersSection from "@/components/home/CommunityPartnersSection";
@@ -25,16 +18,14 @@ export async function generateMetadata(): Promise<Metadata> {
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
-const ctaPrimary =
-  `inline-flex min-h-11 w-full items-center justify-center rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 sm:w-auto ${focusRing}`;
-
-const ctaSecondary =
-  `inline-flex min-h-11 w-full items-center justify-center rounded-full border border-foreground/20 bg-background px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-foreground/[0.04] sm:w-auto ${focusRing}`;
+const AI_COPILOT_SESSIONS = [
+  { date: "Wed 16 Sep · 星期三", venue: "WeWork Lee Garden" },
+  { date: "Wed 23 Sep · 星期三", venue: "WeWork YF Life Tower" },
+  { date: "Tue 29 Sep · 星期二", venue: "WeWork Cityplaza Taikoo" },
+];
 
 export default async function EventsHubPage() {
   const locale = await getServerSiteLocale();
-  const upcoming = getFortifySalesMarketingEvent(locale);
-  const upcomingShowcase = getFortifySalesMarketingShowcase(locale);
 
   return (
     <main className="mx-auto w-full max-w-5xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-12">
@@ -58,65 +49,56 @@ export default async function EventsHubPage() {
         >
           {translate(locale, "events.hub.upcomingHeading")}
         </h2>
-        <article className="mt-4 overflow-hidden rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-background to-background shadow-sm sm:mt-6 sm:rounded-2xl">
-          <div className="relative aspect-[3/4] max-h-[20rem] w-full bg-zinc-950 sm:aspect-[16/10] sm:max-h-[22rem]">
-            <Image
-              src={FORTIFY_LUNCH_LEARN_POSTER}
-              alt={upcoming.heroImage?.alt ?? upcoming.title}
-              fill
-              className="object-contain object-center"
-              sizes="(max-width: 768px) 100vw, 1024px"
-              priority
-            />
-          </div>
-          <div className="p-4 sm:p-6">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-600 dark:text-amber-400 sm:text-xs">
-              {translate(locale, "events.hub.openRegistration")}
-            </p>
-            <h3 className="mt-1.5 text-base font-bold text-foreground sm:mt-2 sm:text-xl">
-              {upcomingShowcase.title}
-            </h3>
-            <p className="mt-1.5 text-xs leading-relaxed text-foreground/80 sm:mt-2 sm:text-base">
-              {upcomingShowcase.blurb}
-            </p>
+        <article className="mt-4 overflow-hidden rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-background to-background p-4 shadow-sm sm:mt-6 sm:rounded-2xl sm:p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-600 dark:text-amber-400 sm:text-xs">
+            AI Copilot Lunch &amp; Learn Series · 午餐研討會系列
+          </p>
+          <h3 className="mt-1.5 text-base font-bold text-foreground sm:mt-2 sm:text-xl">
+            AI Copilot Lunch &amp; Learn — Secure &amp; Cost effective AI Gateway
+          </h3>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-foreground sm:text-base">
+            Is your team leaking sensitive data while using AI?
+          </p>
 
-            <dl className="mt-3 space-y-2 text-xs sm:mt-4 sm:text-sm">
-              <div className="flex items-start gap-2">
+          <p className="mt-3 text-xs leading-relaxed text-foreground/80 sm:mt-4 sm:text-sm">
+            Three Hong Kong sessions, 12:30–14:00 each:
+          </p>
+          <ul className="mt-2 space-y-1 text-xs text-foreground/80 sm:text-sm">
+            {AI_COPILOT_SESSIONS.map((s) => (
+              <li key={s.date} className="flex items-start gap-2">
                 <Calendar
                   className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400 sm:h-4 sm:w-4"
                   aria-hidden="true"
                 />
-                <dt className="sr-only">Date</dt>
-                <dd className="font-medium text-foreground/90">
-                  {upcomingShowcase.date}
-                </dd>
-              </div>
-              <div className="flex items-start gap-2">
-                <MapPin
-                  className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400 sm:h-4 sm:w-4"
-                  aria-hidden="true"
-                />
-                <dt className="sr-only">Location</dt>
-                <dd className="font-medium text-foreground/90">
-                  {upcomingShowcase.location}
-                </dd>
-              </div>
-            </dl>
+                <span>
+                  <span className="font-semibold text-foreground/90">{s.date}</span>
+                  <span className="mx-2 text-foreground/40">·</span>
+                  {s.venue}
+                </span>
+              </li>
+            ))}
+          </ul>
 
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:gap-3">
-              <Link
-                href={FORTIFY_LUNCH_LEARN_REGISTRATION_PATH}
-                className={ctaPrimary}
-              >
-                {translate(locale, "events.hub.registerNow")}
-              </Link>
-              <Link
-                href="/events/fortify-sales-marketing"
-                className={ctaSecondary}
-              >
-                {translate(locale, "events.hub.viewDetails")}
-              </Link>
-            </div>
+          <p className="mt-3 text-xs leading-relaxed text-foreground/80 sm:mt-4 sm:text-sm">
+            Live demos: a data-redaction AI gateway (employee prompts get PII
+            masked before public LLMs) and a smart LLM router with semantic
+            caching (roughly 70–90% lower API cost). Walk away with a 3-Tier
+            Safe AI Architecture blueprint and a 30-day roadmap.
+          </p>
+
+          <div className="mt-4 border-t border-foreground/10 pt-3 text-xs leading-relaxed text-foreground/80 sm:text-sm">
+            <p>
+              WeWork 會員：於 WeWork App 內報名{" "}
+              <span className="text-foreground/50">
+                (Book your seat via the WeWork app)
+              </span>
+            </p>
+            <p className="mt-1.5">
+              活動以 WeWork 會員為主，非會員可先 follow 我哋留意之後嘅公開場次
+              <span className="text-foreground/50">
+                {" "}(Non-member? Follow us for future public sessions)
+              </span>
+            </p>
           </div>
         </article>
       </section>
@@ -133,6 +115,19 @@ export default async function EventsHubPage() {
           {translate(locale, "events.hub.pastHeading")}
         </h2>
         <ul className="mt-3 space-y-2 sm:mt-4">
+          <li>
+            <Link
+              href="/events/fortify-sales-marketing"
+              className={`block rounded-xl border border-foreground/10 bg-background p-3 transition-colors hover:border-foreground/20 hover:bg-foreground/[0.02] sm:p-4 ${focusRing}`}
+            >
+              <p className="text-sm font-semibold text-foreground sm:text-base">
+                Fortify Your Future (Lunch &amp; Learn) / 守業增值創未來（Lunch &amp; Learn）
+              </p>
+              <p className="mt-1 text-xs text-foreground/60 sm:text-sm">
+                {translate(locale, "events.hub.archivedClosed")}
+              </p>
+            </Link>
+          </li>
           <li>
             <Link
               href="/events/fortify-your-future"
