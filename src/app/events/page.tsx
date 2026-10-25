@@ -3,6 +3,11 @@ import Image from "next/image";
 import { Calendar } from "lucide-react";
 
 import { fortifyYourFutureEvent } from "@/lib/events/fortify-your-future";
+import {
+  WEBINAR_SERIES_2026,
+  formatEnDate,
+  formatZhDate,
+} from "@/lib/events/webinar-series-2026";
 import { getServerSiteLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n/messages";
 import CommunityPartnersSection from "@/components/home/CommunityPartnersSection";
@@ -50,70 +55,61 @@ export default async function EventsHubPage() {
         >
           {translate(locale, "events.hub.upcomingHeading")}
         </h2>
-        <article className="mt-4 overflow-hidden rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-background to-background shadow-sm sm:mt-6 sm:rounded-2xl">
-          <div className="relative aspect-[3/4] max-h-[20rem] w-full bg-zinc-950 sm:aspect-[16/10] sm:max-h-[22rem]">
-            <Image
-              src="/images/ai-copilot-lnl-poster.png"
-              alt="AI Copilot Lunch &amp; Learn — Secure &amp; Cost effective AI Gateway · 16/23/29 Sep"
-              fill
-              className="object-contain object-center"
-              sizes="(max-width: 768px) 100vw, 1024px"
-              priority
-            />
-          </div>
-          <div className="p-4 sm:p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-600 dark:text-amber-400 sm:text-xs">
-            AI Copilot Lunch &amp; Learn Series · 午餐研討會系列
-          </p>
-          <h3 className="mt-1.5 text-base font-bold text-foreground sm:mt-2 sm:text-xl">
-            AI Copilot Lunch &amp; Learn — Secure &amp; Cost effective AI Gateway
-          </h3>
-          <p className="mt-2 text-sm font-medium leading-relaxed text-foreground sm:text-base">
-            Is your team leaking sensitive data while using AI?
-          </p>
-
-          <p className="mt-3 text-xs leading-relaxed text-foreground/80 sm:mt-4 sm:text-sm">
-            Three Hong Kong sessions, 12:30–14:00 each:
-          </p>
-          <ul className="mt-2 space-y-1 text-xs text-foreground/80 sm:text-sm">
-            {AI_COPILOT_SESSIONS.map((s) => (
-              <li key={s.date} className="flex items-start gap-2">
-                <Calendar
-                  className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400 sm:h-4 sm:w-4"
-                  aria-hidden="true"
-                />
-                <span>
-                  <span className="font-semibold text-foreground/90">{s.date}</span>
-                  <span className="mx-2 text-foreground/40">·</span>
-                  {s.venue}
+        <p className="mt-2 max-w-2xl text-xs leading-relaxed text-foreground/70 sm:text-sm">
+          {locale === "zh-Hant"
+            ? "八場星期六網上研討會，2026 年 11 月 7 日至 12 月 26 日。每場聚焦一個香港實務題目，設有獨立報名頁。"
+            : "Eight Saturday webinars, 7 November – 26 December 2026. Each session focuses on one Hong Kong planning problem, with its own registration page."}
+        </p>
+        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          {WEBINAR_SERIES_2026.map((event) => {
+            const published = event.week <= 4;
+            const card = (
+              <>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-600 dark:text-amber-400">
+                    W{event.week}
+                  </span>
+                  <span className="text-[11px] text-foreground/50">
+                    {locale === "zh-Hant"
+                      ? formatZhDate(event.date)
+                      : formatEnDate(event.date)}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm font-semibold text-foreground sm:text-base">
+                  {locale === "zh-Hant" ? event.topicZh : event.topicEn}
+                </p>
+                <p className="mt-0.5 text-xs text-foreground/60 sm:text-sm">
+                  {locale === "zh-Hant" ? event.targetZh : event.targetEn}
+                </p>
+                <span className="mt-2 inline-block text-[11px] font-semibold text-foreground/70">
+                  {published
+                    ? locale === "zh-Hant"
+                      ? "詳情及報名 →"
+                      : "Details & registration →"
+                    : locale === "zh-Hant"
+                      ? "詳情稍後公布"
+                      : "Details coming soon"}
                 </span>
+              </>
+            );
+            return (
+              <li key={event.slug}>
+                {published ? (
+                  <Link
+                    href={`/events/${event.slug}`}
+                    className={`block h-full rounded-xl border border-foreground/10 bg-background p-3 transition-colors hover:border-foreground/20 hover:bg-foreground/[0.02] sm:p-4 ${focusRing}`}
+                  >
+                    {card}
+                  </Link>
+                ) : (
+                  <div className="block h-full rounded-xl border border-foreground/10 bg-background p-3 opacity-60 sm:p-4">
+                    {card}
+                  </div>
+                )}
               </li>
-            ))}
-          </ul>
-
-          <p className="mt-3 text-xs leading-relaxed text-foreground/80 sm:mt-4 sm:text-sm">
-            Live demos: a data-redaction AI gateway (employee prompts get PII
-            masked before public LLMs) and a smart LLM router with semantic
-            caching (roughly 70–90% lower API cost). Walk away with a 3-Tier
-            Safe AI Architecture blueprint and a 30-day roadmap.
-          </p>
-
-          <div className="mt-4 border-t border-foreground/10 pt-3 text-xs leading-relaxed text-foreground/80 sm:text-sm">
-            <p>
-              WeWork 會員：於 WeWork App 內報名{" "}
-              <span className="text-foreground/50">
-                (Book your seat via the WeWork app)
-              </span>
-            </p>
-            <p className="mt-1.5">
-              活動以 WeWork 會員為主，非會員可先 follow 我哋留意之後嘅公開場次
-              <span className="text-foreground/50">
-                {" "}(Non-member? Follow us for future public sessions)
-              </span>
-            </p>
-          </div>
-          </div>
-        </article>
+            );
+          })}
+        </ul>
       </section>
 
       <section
@@ -167,7 +163,17 @@ export default async function EventsHubPage() {
               </p>
             </Link>
           </li>
-        </ul>
+                  <li>
+            <div className="rounded-xl border border-foreground/10 bg-background p-3 sm:p-4">
+              <p className="text-sm font-semibold text-foreground sm:text-base">
+                AI Copilot Lunch &amp; Learn — Secure &amp; Cost effective AI Gateway
+              </p>
+              <p className="mt-1 text-xs text-foreground/60 sm:text-sm">
+                16 / 23 / 29 September 2026 · WeWork Hong Kong
+              </p>
+            </div>
+          </li>
+</ul>
       </section>
 
       {/* Venues & Event Partners */}

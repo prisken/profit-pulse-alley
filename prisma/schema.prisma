@@ -592,3 +592,21 @@ model BookingWhatsAppQueue {
 
   @@index([status])
 }
+
+model WebinarRegistration {
+  id        String   @id @default(cuid())
+  slug      String
+  week      Int
+  name      String?
+  email     String
+  phone     String?
+  company   String?
+  locale    String?
+  answers   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([slug, email])
+  @@index([week])
+  @@index([createdAt])
+}
