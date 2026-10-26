@@ -610,3 +610,17 @@ model WebinarRegistration {
   @@index([week])
   @@index([createdAt])
 }
+
+model GroupMedicalLead {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  name        String
+  email       String
+  phone       String
+  companySize String
+  locale      String?
+  source      String   @default("Group medical landing")
+
+  @@index([createdAt])
+  @@index([email])
+}

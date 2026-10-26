@@ -13,6 +13,7 @@ const SECTIONS = [
   { href: "/admin/pitch", label: "Pitch Meeting leads", match: /^\/admin\/pitch/ },
   { href: "/admin/workshop", label: "Workshop leads", match: /^\/admin\/workshop/ },
   { href: "/admin/webinars", label: "Webinars", match: /^\/admin\/webinars/ },
+  { href: "/admin/group-medical", label: "Group medical", match: /^\/admin\/group-medical/ },
 ] as const;
 
 /**
