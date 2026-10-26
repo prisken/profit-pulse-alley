@@ -616,7 +616,8 @@ model GroupMedicalLead {
   createdAt   DateTime @default(now())
   name        String
   email       String
-  phone       String
+  phone       String?
+  preferredContact String @default("email")
   companySize String
   locale      String?
   source      String   @default("Group medical landing")

@@ -31,6 +31,25 @@ const copy = {
       "No product pitch on the first call. Ever.",
     ],
     formTitle: "Get your quote",
+    trust: [
+      "Independent — we quote across insurers",
+      "Cantonese + English claims support",
+      "Briefings with HK banks and professional firms",
+    ],
+    mockNote: "Illustrative only — not a quotation. A real 20-person team would see different numbers.",
+    humanTitle: "Who actually prepares your quote",
+    humanName: "Prisken Lo",
+    humanRole: "Founder, Profit Pulse Ally",
+    humanBody: "He prepares the quotes himself and answers the follow-up questions. No hand-off to a call centre.",
+    cta2: "Get my one-page quote",
+    faqTitle: "The questions people actually ask",
+    faq: [
+      ["Is this really free?", "Requesting a quote is free. If you place a policy, the insurer pays us a commission — we confirm the arrangement in writing before anything is signed."],
+      ["Will an agent call me?", "No. We email unless you choose WhatsApp or ask for a call."],
+      ["What’s the minimum team size?", "From two staff upwards, subject to each insurer’s rules."],
+      ["We already have a plan — can you still quote?", "Yes. Send your renewal and we’ll benchmark it against the market."],
+      ["Which insurers do you cover?", "We quote across Hong Kong’s major group medical insurers, and we can include your incumbent for a like-for-like comparison."],
+    ],
     trustNote: "Your details stay with PPA. We only contact you about this enquiry.",
     partnersHeading: "The room we work in",
     disclaimer:
@@ -61,6 +80,25 @@ const copy = {
       "第一次通話不推銷產品，永遠不會。",
     ],
     formTitle: "索取報價",
+    trust: [
+      "獨立——跨保險公司報價",
+      "廣東話及英語索償支援",
+      "與香港銀行及專業機構合辦簡報",
+    ],
+    mockNote: "僅作示意，並非報價。真實 20 人團隊的數字會有所不同。",
+    humanTitle: "為你準備報價的人",
+    humanName: "Prisken Lo",
+    humanRole: "創辦人，Profit Pulse Ally",
+    humanBody: "報價由他親手準備，後續問題也由他回答。不會轉交客服中心。",
+    cta2: "索取一頁報價",
+    faqTitle: "大家真正想問的問題",
+    faq: [
+      ["真的免費嗎？", "索取報價免費。若你落實保單，保險公司會向我們支付佣金——任何簽署前，我們會以書面確認安排。"],
+      ["會有經紀致電我嗎？", "不會。除非你選擇 WhatsApp 或主動要求通話，我們以電郵聯絡。"],
+      ["最少幾多人？", "由兩名員工起，視乎各保險公司規則。"],
+      ["我們已有計劃，仍可報價嗎？", "可以。把續保資料給我們，我們會與市場作對比。"],
+      ["你們涵蓋哪些保險公司？", "我們跨香港主要團體醫療保險公司報價，亦可加入你現有的承保公司作同類比較。"],
+    ],
     trustNote: "你的資料只留在 PPA，我們只會就這次查詢聯絡你。",
     partnersHeading: "我們合作的場景",
     disclaimer:
@@ -106,6 +144,14 @@ export default async function GroupMedicalPage() {
               </div>
             ))}
           </dl>
+
+          <ul className="mt-6 flex flex-wrap gap-2">
+            {t.trust.map((item) => (
+              <li key={item} className="rounded-full border border-foreground/12 bg-foreground/[0.03] px-3 py-1.5 text-[11px] font-medium text-foreground/70">
+                {item}
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className="relative">
@@ -123,8 +169,9 @@ export default async function GroupMedicalPage() {
                 </div>
               ))}
             </div>
+            <p className="mt-3 text-[10px] leading-relaxed text-foreground/55">{t.mockNote}</p>
             <div className="mt-4 rounded-xl border border-dashed border-foreground/15 px-3 py-2.5 text-[11px] leading-relaxed text-foreground/55">
-              ✅ Outpatient covered · ⚠️ Dental excluded · 🕳️ Pre-existing: 12-month wait
+              ✅ Outpatient covered · ⚠️ Dental excluded · ⏳ Pre-existing: 12-month wait
             </div>
           </div>
         </div>
@@ -145,6 +192,17 @@ export default async function GroupMedicalPage() {
         </div>
       </section>
 
+      <section className="border-t border-foreground/10 bg-brand-gold/[0.05]">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
+          <p className="text-sm font-semibold text-foreground/85">
+            {locale === "zh-Hant" ? "準備好睇一頁真數字？" : "Ready to see real numbers on one page?"}
+          </p>
+          <a href="#quote" className="inline-flex items-center justify-center rounded-full bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-black transition hover:bg-brand-gold-deep">
+            {t.cta2}
+          </a>
+        </div>
+      </section>
+
       <section className="border-t border-foreground/10">
         <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:gap-14">
           <div>
@@ -157,10 +215,34 @@ export default async function GroupMedicalPage() {
                 </li>
               ))}
             </ul>
+
+            <div className="mt-8 flex items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-4">
+              <div className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-brand-gold/15 text-sm font-bold text-brand-gold">PL</div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-foreground/40">{t.humanTitle}</p>
+                <p className="mt-1 text-sm font-semibold">{t.humanName}</p>
+                <p className="text-[11px] text-foreground/50">{t.humanRole}</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-foreground/65">{t.humanBody}</p>
+              </div>
+            </div>
           </div>
           <div id="quote" className="scroll-mt-24">
             <GroupMedicalForm locale={locale} />
           </div>
+        </div>
+      </section>
+
+      <section className="border-t border-foreground/10">
+        <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6">
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.faqTitle}</h2>
+          <dl className="mt-6 divide-y divide-foreground/10">
+            {t.faq.map(([q, a]) => (
+              <div key={q} className="py-5">
+                <dt className="text-sm font-semibold">{q}</dt>
+                <dd className="mt-1.5 text-sm leading-relaxed text-foreground/65">{a}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 

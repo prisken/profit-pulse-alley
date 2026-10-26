@@ -52,7 +52,7 @@ export default async function AdminGroupMedicalPage() {
               <th className="px-4 py-3 font-semibold">Name</th>
               <th className="px-4 py-3 font-semibold">Company size</th>
               <th className="px-4 py-3 font-semibold">Email</th>
-              <th className="px-4 py-3 font-semibold">Phone</th>
+              <th className="px-4 py-3 font-semibold">Contact</th>
               <th className="px-4 py-3 font-semibold">Lang</th>
             </tr>
           </thead>
@@ -70,7 +70,9 @@ export default async function AdminGroupMedicalPage() {
                   <td className="px-4 py-3">{r.name}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-emerald-400">{r.companySize}</td>
                   <td className="px-4 py-3 text-zinc-300">{r.email}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-zinc-400">{r.phone}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-zinc-400">
+                    {r.preferredContact === "whatsapp" ? `WhatsApp ${r.phone ?? ""}` : "Email"}
+                  </td>
                   <td className="px-4 py-3 text-xs uppercase text-zinc-500">{r.locale === "zh-Hant" ? "ZH" : "EN"}</td>
                 </tr>
               ))

@@ -12,6 +12,7 @@ export async function POST(request: Request) {
     phone?: string;
     companySize?: string;
     locale?: string;
+    preferredContact?: string;
   };
   try {
     body = await request.json();
@@ -24,13 +25,17 @@ export async function POST(request: Request) {
   const phone = String(body.phone ?? "").trim();
   const companySize = String(body.companySize ?? "").trim();
   const locale = String(body.locale ?? "").trim() || null;
+  const preferredContact =
+    String(body.preferredContact ?? "email").trim().toLowerCase() === "whatsapp"
+      ? "whatsapp"
+      : "email";
 
   if (name.length < 2) return NextResponse.json({ error: "name required" }, { status: 400 });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: "valid email required" }, { status: 400 });
   }
-  if (phone.replace(/\D/g, "").length < 6) {
-    return NextResponse.json({ error: "valid phone required" }, { status: 400 });
+  if (preferredContact === "whatsapp" && phone.replace(/\D/g, "").length < 6) {
+    return NextResponse.json({ error: "phone required for WhatsApp" }, { status: 400 });
   }
   if (!COMPANY_SIZES.includes(companySize as (typeof COMPANY_SIZES)[number])) {
     return NextResponse.json({ error: "company size required" }, { status: 400 });
@@ -38,7 +43,7 @@ export async function POST(request: Request) {
 
   try {
     await prisma.groupMedicalLead.create({
-      data: { name, email, phone, companySize, locale },
+      data: { name, email, phone: phone || null, companySize, locale, preferredContact },
     });
   } catch (error) {
     console.error("[group-medical] lead save failed:", error);
@@ -51,10 +56,10 @@ export async function POST(request: Request) {
       userId: `group-medical-${Date.now()}`,
       email,
       name,
-      contactNumber: phone,
+      contactNumber: phone || null,
       provider: "Profit Pulse Ally",
       role: "Group medical lead",
-      source: `Group medical quote — ${companySize} staff`,
+      source: `Group medical quote — ${companySize} staff — via ${preferredContact}`,
       signedUpAt: new Date().toISOString(),
     });
   } catch (error) {
