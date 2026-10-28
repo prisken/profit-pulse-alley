@@ -117,6 +117,9 @@ const copy = {
     docFor: "為",
     docRef: "第 1 頁，共 1 頁",
     docStamp: "示意樣本",
+    sceneAlt: "兩位同事討論團體醫療續保方案",
+    sceneCap: "呢頁就係為咗呢個場面：一頁，兩個人，一個決定。",
+    sceneNote: "示意圖片",
     docNote: "僅為格式示意，並非報價。實際保費、保障及條款以正式報價文件為準。",
     sheetNow: "現有續保",
     sheetNext: "建議方案",
@@ -157,6 +160,9 @@ const copy = {
     docFor: "Prepared for",
     docRef: "Page 1 of 1",
     docStamp: "SAMPLE",
+    sceneAlt: "Two colleagues discussing a group medical renewal",
+    sceneCap: "The moment this page is built for: one page, two people, a decision.",
+    sceneNote: "Illustrative image",
     docNote: "Layout illustration only — not a quotation. Actual premium, cover and terms are confirmed in the formal quotation.",
     sheetNow: "Current renewal",
     sheetNext: "Proposed",
@@ -197,7 +203,7 @@ export default async function GroupMedicalPage() {
           <div className="flex flex-col items-start gap-3 min-[360px]:flex-row min-[360px]:items-center min-[360px]:gap-4">
             {a.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={a.photo} alt={a.name} className="h-24 w-24 flex-none rounded-2xl object-cover object-top ring-1 ring-foreground/15 min-[360px]:h-28 min-[360px]:w-28 sm:h-32 sm:w-32" />
+              <img src={a.photo} alt={a.name} className="h-20 w-20 flex-none rounded-2xl object-cover object-top ring-1 ring-foreground/15 min-[360px]:h-24 min-[360px]:w-24" />
             ) : null}
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">{t.kicker}</p>
@@ -308,6 +314,24 @@ export default async function GroupMedicalPage() {
           </div>
         </section>
       ) : null}
+
+      <section className="border-t border-foreground/10">
+        <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
+          <figure className="overflow-hidden rounded-2xl ring-1 ring-foreground/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/group-medical/scene.webp"
+              alt={t.sceneAlt}
+              className="h-56 w-full object-cover object-center sm:h-80"
+              loading="lazy"
+            />
+            <figcaption className="flex flex-col gap-0.5 bg-foreground/[0.03] px-4 py-2.5 text-[11px] leading-relaxed text-foreground/55 sm:flex-row sm:items-center sm:justify-between sm:gap-x-3">
+              <span>{t.sceneCap}</span>
+              <span className="text-foreground/35">{t.sceneNote}</span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
 
       {featured.length ? (
         <section className="border-t border-foreground/10">
