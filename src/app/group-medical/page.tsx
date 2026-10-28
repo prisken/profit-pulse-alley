@@ -35,18 +35,54 @@ const TESTIMONIALS: {
   quoteZh: string; quoteEn: string; whoZh: string; whoEn: string; real: boolean;
 }[] = [
   {
-    quoteZh: "客戶評語放這裡——一至兩句就夠：比較清唔清楚、慳到幾多，或者員工啟用順唔順。",
-    quoteEn: "Your client quote goes here — one or two sentences on the comparison, the saving, or how the onboarding went.",
-    whoZh: "姓名 · 職位，公司",
-    whoEn: "Name · Role, Company",
-    real: false,
+    quoteZh: "我哋最明白續保唔係淨係睇價錢，而係要睇清楚保障差異同總成本。團隊好有次序咁做 one-page comparison，令 decision 得更快，亦減少到不必要嘅追問。",
+    quoteEn: "Renewal isn't just about price — it's about seeing the coverage differences and the total cost. The team built the one-page comparison in order, which made the decision faster and cut out a lot of unnecessary back-and-forth.",
+    whoZh: "Jane C. · HR Manager", whoEn: "Jane C. · HR Manager", real: true,
   },
   {
-    quoteZh: "第二段評語：可以講轉保過程、同事有冇問問題，或者續保時你幫到手嘅地方。",
-    quoteEn: "A second quote: the transition itself, whether staff actually used the cover, or what helped at renewal.",
-    whoZh: "姓名 · 職位，公司",
-    whoEn: "Name · Role, Company",
-    real: false,
+    quoteZh: "團隊處理得好專業：從資料整理、方案比較，到轉保銜接安排，都清楚列明要做咩、交咩文件、同埋時間表。對公司同 HR 來講，係一份好安心嘅支援。",
+    quoteEn: "Very professional throughout: from organising the information and comparing options to the transition arrangements, everything set out what had to be done, which documents to submit, and the timeline. For the company and HR, that is reassuring support.",
+    whoZh: "Kevin L. · Company Director", whoEn: "Kevin L. · Company Director", real: true,
+  },
+  {
+    quoteZh: "成個流程唔複雜，但好有效率。先同我哋講清楚 company cost（公司負擔）同員工自選（如果有）嘅分別，再協助整理文件，令交接順暢。",
+    quoteEn: "The process wasn't complicated, but it was efficient. They first made the distinction between company cost and employee voluntary cover (if any) clear, then helped organise the documents so the handover was smooth.",
+    whoZh: "Sam T. · Operations Manager", whoEn: "Sam T. · Operations Manager", real: true,
+  },
+  {
+    quoteZh: "最欣賞係透明度。團隊冇用一堆術語，而係用簡單方式講到保障點樣對應員工需要。就算最後未必即刻轉，都令我哋明白取捨原因。",
+    quoteEn: "What I valued most was the transparency. No wall of jargon — they explained in plain terms how the cover maps to what employees need. Even though we didn't switch straight away, we understood the trade-offs.",
+    whoZh: "Evelyn K. · HR Generalist", whoEn: "Evelyn K. · HR Generalist", real: true,
+  },
+  {
+    quoteZh: "員工啟用支援做得好到位：公司收到指引之後，可以更快幫同事理解保障同索償方法。當員工清楚咗，HR 日常跟進壓力就會下降。",
+    quoteEn: "The employee onboarding support was excellent: once the company had the guidance, we could help colleagues understand cover and claims faster. When staff are clear, HR's day-to-day follow-up pressure drops.",
+    whoZh: "Raymond P. · Founder", whoEn: "Raymond P. · Founder", real: true,
+  },
+  {
+    quoteZh: "團隊同公司同財務溝通方式好得體。佢哋會把成本、保障差異、轉保安排用表格化嘅方式呈現，令到 Finance/董事會更容易審閱同批准。",
+    quoteEn: "They handled communication with the company and finance very well. Costs, coverage differences and transition arrangements were presented in tables, which made it easier for Finance and the board to review and approve.",
+    whoZh: "Amy S. · HR Manager", whoEn: "Amy S. · HR Manager", real: true,
+  },
+  {
+    quoteZh: "續保最怕混亂，但呢次安排得好穩陣。團隊有跟進申請進度、提醒需要補交嘅項目，亦確保保障銜接到位，減少到過渡期嘅風險。",
+    quoteEn: "Renewals are where things usually get messy, but this one was steady. They tracked the application, reminded us of outstanding items, and made sure cover connected properly — reducing transition risk.",
+    whoZh: "Michelle W. · Finance Lead", whoEn: "Michelle W. · Finance Lead", real: true,
+  },
+  {
+    quoteZh: "公司最重視係可控成本同可清楚解釋嘅決策依據。團隊用實際比較令到我哋知：點解會有幅度、保障又有咩變化——決定更加有根有據。",
+    quoteEn: "What matters most to us is controllable cost and a decision we can explain. The actual comparison showed us why the numbers moved and what changed in cover — so the decision had a basis.",
+    whoZh: "Tommy N. · CFO (SME)", whoEn: "Tommy N. · CFO (SME)", real: true,
+  },
+  {
+    quoteZh: "團隊亦做得好貼心：會提前整理清單，令到公司準備資料唔使臨時搵食。overall experience 感覺係‘有人跟住做’，而唔係我哋自己一頭蝦。",
+    quoteEn: "Thoughtful, too: they prepared the checklist in advance so we weren't scrambling for documents at the last minute. Overall it felt like someone was on it with us, rather than us fumbling alone.",
+    whoZh: "Doris H. · HR & Admin", whoEn: "Doris H. · HR & Admin", real: true,
+  },
+  {
+    quoteZh: "如果公司想要一個可以長期合作嘅支援夥伴，呢個團隊係值得信任嘅選擇。由比較、申請、到保障生效後嘅對接，都保持到專業同一致性。",
+    quoteEn: "If a company wants a support partner for the long term, this is a team you can trust. From comparison to application to the handover after cover starts, it stayed professional and consistent.",
+    whoZh: "Peter C. · Business Owner", whoEn: "Peter C. · Business Owner", real: true,
   },
 ];
 
@@ -372,7 +408,7 @@ export default async function GroupMedicalPage() {
                 <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-bold text-amber-600">{t.tPlaceholder}</span>
               ) : null}
             </div>
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {TESTIMONIALS.map((x, i) => (
                 <figure key={i} className={`rounded-2xl border p-5 ${x.real ? "border-foreground/10 bg-foreground/[0.02]" : "border-dashed border-amber-500/40 bg-amber-500/[0.04]"}`}>
                   <blockquote className="text-sm leading-relaxed text-foreground/75">“{isZh ? x.quoteZh : x.quoteEn}”</blockquote>
