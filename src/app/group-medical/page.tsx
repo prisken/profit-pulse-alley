@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileSpreadsheet, Scale, Users, Quote, ArrowRight } from "lucide-react";
+import { FileSpreadsheet, Scale, Users, Quote, ArrowRight, Check } from "lucide-react";
 
 import CommunityPartnersSection from "@/components/home/CommunityPartnersSection";
 import GroupMedicalForm from "@/components/group-medical/GroupMedicalForm";
@@ -118,7 +118,15 @@ const copy = {
     docRef: "第 1 頁，共 1 頁",
     docStamp: "示意樣本",
     sceneAlt: "兩位同事討論團體醫療續保方案",
-    sceneCap: "呢頁就係為咗呢個場面：一頁，兩個人，一個決定。",
+    sceneH2: "為你同老闆喺場對話而設。",
+    sceneBody: "續保時，HR 夾在保險公司同老闆中間。一頁就講清楚：公司畀幾多、保障變咗乜、員工要唔要自己畀。",
+    scenePoints: [
+      "每次同一格式：現有續保同建議方案，左右對照",
+      "公司支出同員工自付分開列，唔會混數",
+      "轉保日期同文件清單，睇完可以即刻做",
+    ],
+    miniTitle: "一頁講完",
+    miniRows: ["保費", "保障", "員工自付"],
     sceneNote: "示意圖片",
     docNote: "僅為格式示意，並非報價。實際保費、保障及條款以正式報價文件為準。",
     sheetNow: "現有續保",
@@ -161,7 +169,15 @@ const copy = {
     docRef: "Page 1 of 1",
     docStamp: "SAMPLE",
     sceneAlt: "Two colleagues discussing a group medical renewal",
-    sceneCap: "The moment this page is built for: one page, two people, a decision.",
+    sceneH2: "Built for the conversation you're already having.",
+    sceneBody: "Renewal season puts HR between the insurer and the boss. One page settles it: what the company pays, what changes in cover, and what staff pay themselves.",
+    scenePoints: [
+      "Same format every time: current renewal and proposed plan, side by side",
+      "Company cost and staff top-up never blurred into one number",
+      "A switch date and document list you can act on",
+    ],
+    miniTitle: "One page",
+    miniRows: ["Premium", "Cover", "Staff pay"],
     sceneNote: "Illustrative image",
     docNote: "Layout illustration only — not a quotation. Actual premium, cover and terms are confirmed in the formal quotation.",
     sheetNow: "Current renewal",
@@ -316,20 +332,49 @@ export default async function GroupMedicalPage() {
       ) : null}
 
       <section className="border-t border-foreground/10">
-        <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
-          <figure className="overflow-hidden rounded-2xl ring-1 ring-foreground/10">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/group-medical/scene.webp"
-              alt={t.sceneAlt}
-              className="h-56 w-full object-cover object-center sm:h-80"
-              loading="lazy"
-            />
-            <figcaption className="flex flex-col gap-0.5 bg-foreground/[0.03] px-4 py-2.5 text-[11px] leading-relaxed text-foreground/55 sm:flex-row sm:items-center sm:justify-between sm:gap-x-3">
-              <span>{t.sceneCap}</span>
-              <span className="text-foreground/35">{t.sceneNote}</span>
-            </figcaption>
-          </figure>
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 pb-12 pt-12 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:pb-24">
+          <div className="relative">
+            <div className="overflow-hidden rounded-3xl ring-1 ring-foreground/10">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/group-medical/scene.webp"
+                alt={t.sceneAlt}
+                className="aspect-[3/2] w-full object-cover object-center"
+                loading="lazy"
+              />
+            </div>
+            <span className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-semibold text-white/85 backdrop-blur">
+              {t.sceneNote}
+            </span>
+            <div className="absolute -bottom-10 right-6 hidden w-48 rounded-xl bg-white p-3 shadow-[0_20px_45px_-12px_rgba(0,0,0,0.6)] ring-1 ring-black/15 sm:block">
+              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-500">Profit Pulse Ally × AIA</p>
+              <p className="mt-0.5 text-[13px] font-semibold text-zinc-900">{t.miniTitle}</p>
+              <ul className="mt-2 space-y-1">
+                {t.miniRows.map((r) => (
+                  <li key={r} className="flex items-center gap-1.5 text-[10.5px] font-medium text-zinc-700">
+                    <Check className="h-3 w-3 flex-none text-emerald-600" strokeWidth={3} aria-hidden />
+                    {r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.sceneH2}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-foreground/70">{t.sceneBody}</p>
+            <ul className="mt-5 space-y-2.5">
+              {t.scenePoints.map((p) => (
+                <li key={p} className="flex gap-2.5 text-sm leading-relaxed text-foreground/75">
+                  <Check className="mt-0.5 h-4 w-4 flex-none text-brand-gold" strokeWidth={2.5} aria-hidden />
+                  {p}
+                </li>
+              ))}
+            </ul>
+            <a href="#quote" className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-gold px-5 py-3 text-sm font-bold text-brand-black transition hover:bg-brand-gold-deep">
+              {t.sticky} <ArrowRight className="h-4 w-4" aria-hidden />
+            </a>
+          </div>
         </div>
       </section>
 
