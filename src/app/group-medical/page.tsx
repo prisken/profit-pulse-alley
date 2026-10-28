@@ -26,6 +26,30 @@ const AGENT = {
   },
 };
 
+/**
+ * Testimonials. `real: false` renders a visible placeholder tag — the layout is
+ * ready, but nothing on the page claims to be a client's words until a genuine
+ * quote is dropped in with real: true.
+ */
+const TESTIMONIALS: {
+  quoteZh: string; quoteEn: string; whoZh: string; whoEn: string; real: boolean;
+}[] = [
+  {
+    quoteZh: "客戶評語放這裡——一至兩句就夠：比較清唔清楚、慳到幾多，或者員工啟用順唔順。",
+    quoteEn: "Your client quote goes here — one or two sentences on the comparison, the saving, or how the onboarding went.",
+    whoZh: "姓名 · 職位，公司",
+    whoEn: "Name · Role, Company",
+    real: false,
+  },
+  {
+    quoteZh: "第二段評語：可以講轉保過程、同事有冇問問題，或者續保時你幫到手嘅地方。",
+    quoteEn: "A second quote: the transition itself, whether staff actually used the cover, or what helped at renewal.",
+    whoZh: "姓名 · 職位，公司",
+    whoEn: "Name · Role, Company",
+    real: false,
+  },
+];
+
 const OFFER = null as null | {
   nameZh: string; nameEn: string;
   whoZh: string; whoEn: string;
@@ -80,6 +104,8 @@ const copy = {
     eOfficeNote: "亦可安排視像傾談。",
     eContact: "聯絡方式",
     fTitle: "實際例子",
+    tTitle: "客戶怎麼說",
+    tPlaceholder: "範本內容，並非真實客戶評語",
     gTitle: "先畀幾項基本資料，我幫你開始比較。",
     gNote: "我會先按你揀嘅方式聯絡，確認公司需要同報價所需資料。呢一步唔係投保申請。",
     disclaimer:
@@ -131,6 +157,8 @@ const copy = {
     eOfficeNote: "Video calls are fine too.",
     eContact: "Contact",
     fTitle: "A real example",
+    tTitle: "What clients say",
+    tPlaceholder: "Placeholder — not a real testimonial",
     gTitle: "A few basics, and I'll start the comparison.",
     gNote: "I'll reply the way you choose, confirm what the company needs and what the quote requires. This step is not an application for cover.",
     disclaimer:
@@ -329,6 +357,28 @@ export default async function GroupMedicalPage() {
               <p className="mt-3 text-xs leading-relaxed text-foreground/65">
                 {isZh ? a.caseStudy.coverageZh : a.caseStudy.coverageEn}
               </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Testimonials — layout ready; placeholders are labelled as such */}
+      {TESTIMONIALS.length ? (
+        <section className="border-t border-foreground/10">
+          <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.tTitle}</h2>
+              {TESTIMONIALS.some((x) => !x.real) ? (
+                <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-bold text-amber-600">{t.tPlaceholder}</span>
+              ) : null}
+            </div>
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {TESTIMONIALS.map((x, i) => (
+                <figure key={i} className={`rounded-2xl border p-5 ${x.real ? "border-foreground/10 bg-foreground/[0.02]" : "border-dashed border-amber-500/40 bg-amber-500/[0.04]"}`}>
+                  <blockquote className="text-sm leading-relaxed text-foreground/75">“{isZh ? x.quoteZh : x.quoteEn}”</blockquote>
+                  <figcaption className="mt-3 text-[11px] text-foreground/50">{isZh ? x.whoZh : x.whoEn}</figcaption>
+                </figure>
+              ))}
             </div>
           </div>
         </section>
