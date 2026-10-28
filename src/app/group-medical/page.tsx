@@ -127,7 +127,6 @@ const copy = {
     ],
     miniTitle: "一頁講完",
     miniRows: ["保費", "保障", "員工自付"],
-    sceneNote: "示意圖片",
     docNote: "僅為格式示意，並非報價。實際保費、保障及條款以正式報價文件為準。",
     sheetNow: "現有續保",
     sheetNext: "建議方案",
@@ -178,7 +177,6 @@ const copy = {
     ],
     miniTitle: "One page",
     miniRows: ["Premium", "Cover", "Staff pay"],
-    sceneNote: "Illustrative image",
     docNote: "Layout illustration only — not a quotation. Actual premium, cover and terms are confirmed in the formal quotation.",
     sheetNow: "Current renewal",
     sheetNext: "Proposed",
@@ -343,9 +341,6 @@ export default async function GroupMedicalPage() {
                 loading="lazy"
               />
             </div>
-            <span className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-semibold text-white/85 backdrop-blur">
-              {t.sceneNote}
-            </span>
             <div className="absolute -bottom-10 right-6 hidden w-48 rounded-xl bg-white p-3 shadow-[0_20px_45px_-12px_rgba(0,0,0,0.6)] ring-1 ring-black/15 sm:block">
               <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-500">Profit Pulse Ally × AIA</p>
               <p className="mt-0.5 text-[13px] font-semibold text-zinc-900">{t.miniTitle}</p>
