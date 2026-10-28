@@ -184,11 +184,20 @@ export default async function GroupMedicalPage() {
     <main className="overflow-x-hidden bg-background text-foreground">
       <section className="mx-auto grid w-full max-w-6xl items-start gap-8 px-4 pb-6 pt-10 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:gap-12 lg:pt-14">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">{t.kicker}</p>
-          <h1 className="mt-3 text-[1.85rem] font-semibold leading-[1.12] tracking-tight sm:text-[2.35rem]">{t.h1}</h1>
+          <div className="flex items-center gap-4">
+            {a.photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={a.photo} alt={a.name} className="h-28 w-28 flex-none rounded-2xl object-cover object-top ring-2 ring-brand-gold/50 sm:h-32 sm:w-32" />
+            ) : null}
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">{t.kicker}</p>
+              <p className="mt-1.5 text-lg font-semibold leading-tight">{a.name}</p>
+              <p className="text-xs text-foreground/60">{isZh ? a.titleZh : a.titleEn}</p>
+              <p className="mt-1 text-[11px] font-semibold text-brand-gold">{t.strip}</p>
+            </div>
+          </div>
+          <h1 className="mt-5 text-[1.85rem] font-semibold leading-[1.12] tracking-tight sm:text-[2.35rem]">{t.h1}</h1>
           <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-foreground/75">{t.lead}</p>
-
-          <p className="mt-4 text-xs font-semibold text-brand-gold">{t.strip}</p>
 
           <ul className="mt-7 space-y-3">
             {t.chips.map(([title, body], i) => {
@@ -207,19 +216,9 @@ export default async function GroupMedicalPage() {
             })}
           </ul>
 
-          <div className="mt-7 flex items-center gap-3">
-            {a.photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={a.photo} alt={a.name} className="h-14 w-14 flex-none rounded-xl object-cover object-top ring-1 ring-foreground/10" />
-            ) : null}
-            <div className="min-w-0 text-xs">
-              <p className="font-semibold text-foreground">{a.name}</p>
-              <p className="text-foreground/60">{isZh ? a.titleZh : a.titleEn}</p>
-              <a href="https://iir.ia.org.hk/" target="_blank" rel="noopener noreferrer" className="mt-0.5 inline-block text-[11px] text-foreground/50 underline underline-offset-4">
-                {t.eRegister}
-              </a>
-            </div>
-          </div>
+          <a href="https://iir.ia.org.hk/" target="_blank" rel="noopener noreferrer" className="mt-5 inline-block text-[11px] text-foreground/50 underline underline-offset-4">
+            {t.eRegister}
+          </a>
         </div>
 
         <div id="quote" className="scroll-mt-24">
