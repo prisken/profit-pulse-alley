@@ -75,8 +75,8 @@ const copy = {
 } as const;
 
 const field =
-  "mt-1.5 w-full min-w-0 rounded-xl border border-foreground/15 bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/35 focus:border-brand-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/25";
-const label = "block text-[11px] uppercase tracking-[0.14em] text-foreground/50";
+  "mt-2 w-full min-w-0 rounded-xl border border-foreground/15 bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/35 focus:border-brand-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/25";
+const label = "block text-[12px] uppercase tracking-[0.12em] text-foreground/60";
 
 export default function GroupMedicalForm({
   locale,

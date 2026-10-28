@@ -184,10 +184,10 @@ export default async function GroupMedicalPage() {
     <main className="overflow-x-hidden bg-background text-foreground">
       <section className="mx-auto grid w-full max-w-6xl items-start gap-8 px-4 pb-6 pt-10 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:gap-12 lg:pt-14">
         <div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col items-start gap-3 min-[360px]:flex-row min-[360px]:items-center min-[360px]:gap-4">
             {a.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={a.photo} alt={a.name} className="h-28 w-28 flex-none rounded-2xl object-cover object-top ring-2 ring-brand-gold/50 sm:h-32 sm:w-32" />
+              <img src={a.photo} alt={a.name} className="h-24 w-24 flex-none rounded-2xl object-cover object-top ring-1 ring-foreground/15 min-[360px]:h-28 min-[360px]:w-28 sm:h-32 sm:w-32" />
             ) : null}
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">{t.kicker}</p>
@@ -216,7 +216,7 @@ export default async function GroupMedicalPage() {
             })}
           </ul>
 
-          <a href="https://iir.ia.org.hk/" target="_blank" rel="noopener noreferrer" className="mt-5 inline-block text-[11px] text-foreground/50 underline underline-offset-4">
+          <a href="https://iir.ia.org.hk/" target="_blank" rel="noopener noreferrer" className="mt-4 inline-block py-1.5 text-[12px] text-foreground/55 underline underline-offset-4">
             {t.eRegister}
           </a>
         </div>
@@ -250,16 +250,16 @@ export default async function GroupMedicalPage() {
               <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-bold text-amber-600">{t.sampleLabel}</span>
             </div>
             <div className="mt-4 overflow-hidden rounded-xl border border-foreground/10">
-              <div className="grid grid-cols-3 bg-foreground/[0.04] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground/45">
-                <span />
-                <span className="text-right">{t.sheetNow}</span>
+              <div className="grid grid-cols-2 gap-x-3 bg-foreground/[0.04] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground/45 sm:grid-cols-3">
+                <span className="hidden sm:block" />
+                <span className="sm:text-right">{t.sheetNow}</span>
                 <span className="text-right text-brand-gold">{t.sheetNext}</span>
               </div>
               {t.sheetRows.map(([label, left, right]) => (
-                <div key={label} className="grid grid-cols-3 items-center border-t border-foreground/8 px-3 py-2.5 text-xs">
-                  <span className="text-foreground/60">{label}</span>
-                  <span className="text-right text-foreground/45">{left}</span>
-                  <span className="text-right font-medium text-foreground/85">{right}</span>
+                <div key={label} className="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-foreground/8 px-3 py-2.5 sm:grid-cols-3 sm:items-center sm:gap-y-0">
+                  <span className="col-span-2 text-[11px] font-medium text-foreground/60 sm:col-span-1 sm:text-xs sm:font-normal">{label}</span>
+                  <span className="text-xs text-foreground/50 sm:text-right">{left}</span>
+                  <span className="text-right text-xs font-medium text-foreground/85">{right}</span>
                 </div>
               ))}
             </div>
