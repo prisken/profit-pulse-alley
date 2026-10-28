@@ -12,7 +12,7 @@ const MONTHS_ZH = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月
 const copy = {
   en: {
     title: "Get the one-page comparison",
-    note: "Four fields. I'll reply with the quote pack — not an application.",
+    note: "For Hong Kong companies. Four fields. I'll reply with the quote pack — not an application.",
     name: "Your name *",
     role: "Role",
     company: "Company name *",
@@ -43,7 +43,7 @@ const copy = {
   },
   "zh-Hant": {
     title: "索取一頁比較及報價",
-    note: "四項就夠。我會回你報價包——不是投保申請。",
+    note: "香港公司用。四項就夠。我會回你報價包——不是投保申請。",
     name: "你的名字 *",
     role: "職位",
     company: "公司名稱 *",

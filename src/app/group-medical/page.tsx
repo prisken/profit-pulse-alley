@@ -95,24 +95,24 @@ const OFFER = null as null | {
 
 const copy = {
   "zh-Hant": {
-    kicker: "AIA 友邦團體醫療｜獨立代理",
-    h1: "續保前，用一頁睇清慳幾多、差幾多。",
-    lead: "填三項資料，我幫你出比較同報價。免費，唔使即刻投保。",
+    kicker: "香港公司團體醫療｜AIA 獨立代理",
+    h1: "續保加價？先睇清慳幾多、保障差幾多。",
+    lead: "畀香港中小企東主、HR 同財務。填公司人數同續保月份，我出一頁比較同報價。免費，唔使即刻轉。",
     strip: "12 月到期？而家比較，先決定續定轉。",
     chips: [
-      ["一頁比較", "現有續保 vs 建議方案：保費、保障、員工自付分開列"],
-      ["公司同員工分開計", "公司保費、增值服務、員工自選唔會混在一張數"],
-      ["跟到同事識用", "文件清單、銜接時間表、啟用同索償指引"],
+      ["一頁交到俾老闆", "而家續保 vs 建議方案：保費、保障、員工自付分開列"],
+      ["公司出同員工出分開", "公司保費同員工自選唔會混在一張數"],
+      ["員工識 claim 先有用", "文件清單、轉保日期、App 同索償點做"],
     ],
-    tTitle: "決策點快咗，因為數字清楚。",
+    tTitle: "HR 同財務批得快，因為數字清楚。",
     moreQuotes: "再睇 7 段評語",
-    stepsTitle: "三步出比較",
+    stepsTitle: "三步，唔使你自己砌表",
     steps: [
-      ["1", "填公司資料", "人數、續保月份、聯絡方式"],
-      ["2", "收到一頁比較", "現有續保 vs 建議方案，保費同保障分開列"],
-      ["3", "決定續定轉", "要跟進申請，我先幫手；唔轉都冇事"],
+      ["1", "公司資料", "幾多人、幾時續保、WhatsApp 定電郵"],
+      ["2", "一頁比較", "而家續保 vs 建議方案，保費同保障分開列"],
+      ["3", "決定續定轉", "要轉我幫手跟文件；唔轉都冇事"],
     ],
-    sheetTitle: "你會收到嘅比較長咁樣",
+    sheetTitle: "交俾財務嗰頁，大概係咁",
     sheetNow: "現有續保",
     sheetNext: "建議方案",
     sheetRows: [
@@ -128,27 +128,26 @@ const copy = {
     disclaimer:
       "本頁由 AIA 保險代理提供，並非 AIA 官方網站，亦不代表 AIA 承保或認可任何內容。AIA 為保單承保人；保障範圍、保費、核保及理賠決定均由 AIA 按保單條款作出。頁內比較屬示意，並非實際報價或要約。優惠（如有）受條款、資格及期限限制。",
     sourceNote: "產品資料來源：AIA 香港官方網站。",
-    partnersCap: "與銀行、專業事務所及社區場地合辦簡報與工作坊。",
   },
   en: {
-    kicker: "AIA group medical · independent agent",
-    h1: "Compare before you renew. One page. Clear numbers.",
-    lead: "Three details. I send the comparison and a quote. Free. No obligation.",
-    strip: "December renewal? Compare first, then decide.",
+    kicker: "Hong Kong group medical · AIA independent agent",
+    h1: "Renewal going up? See the saving — and the gap in cover — first.",
+    lead: "For HK SME owners, HR and finance. Company size and renewal month. I send a one-page comparison. Free. No need to switch.",
+    strip: "Renewing in December? Compare now, then decide.",
     chips: [
-      ["One-page comparison", "Current renewal vs proposed: premium, cover, staff contribution — split out"],
-      ["Company cost, kept separate", "Employer premium, extras, and employee voluntary cover never mixed"],
-      ["Staff actually use it", "Document list, transition dates, launch and claims guide"],
+      ["One page for the boss", "Current renewal vs proposed: premium, cover, staff pay-in — split out"],
+      ["Company cost vs staff top-up", "Employer premium and employee voluntary cover never mixed"],
+      ["Staff who can actually claim", "Checklist, switch date, app and claims in plain language"],
     ],
-    tTitle: "Decisions moved faster when the numbers were clear.",
+    tTitle: "HR and finance signed off faster when the numbers were clear.",
     moreQuotes: "7 more quotes",
-    stepsTitle: "Three steps to a comparison",
+    stepsTitle: "Three steps. You don't have to build the spreadsheet.",
     steps: [
-      ["1", "Company basics", "Headcount, renewal month, how to reach you"],
-      ["2", "One-page comparison", "Current renewal vs proposed — premium and cover split out"],
-      ["3", "Decide to stay or switch", "If you proceed, I handle the paperwork. No obligation if you don't."],
+      ["1", "Company basics", "How many staff, which month it renews, WhatsApp or email"],
+      ["2", "One-page comparison", "This year's renewal vs a proposed plan — premium and cover split out"],
+      ["3", "Stay or switch", "If you switch, I handle the paperwork. If you don't, that's fine."],
     ],
-    sheetTitle: "What the comparison looks like",
+    sheetTitle: "The page you can send to finance",
     sheetNow: "Current renewal",
     sheetNext: "Proposed",
     sheetRows: [
@@ -164,7 +163,6 @@ const copy = {
     disclaimer:
       "This page is provided by an AIA insurance agent. It is not an AIA website and does not represent AIA underwriting or endorsement of its content. AIA is the insurer; cover, premiums, underwriting and claims are decided by AIA under the policy terms. Comparisons shown are illustrative, not a quotation or an offer. Any offer is subject to terms, eligibility and expiry.",
     sourceNote: "Product information: AIA Hong Kong.",
-    partnersCap: "Briefings and workshops with banks, professional firms and community venues.",
   },
 } as const;
 
@@ -325,20 +323,6 @@ export default async function GroupMedicalPage() {
         </section>
       ) : null}
 
-      <section className="border-t border-foreground/10">
-        <div className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6">
-          <figure className="overflow-hidden rounded-2xl border border-foreground/10">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/event/strategy-collaboration.png"
-              alt={t.partnersCap}
-              className="h-40 w-full object-cover sm:h-52"
-              loading="lazy"
-            />
-            <figcaption className="bg-foreground/[0.02] px-4 py-2.5 text-[11px] text-foreground/55">{t.partnersCap}</figcaption>
-          </figure>
-        </div>
-      </section>
       <CommunityPartnersSection />
 
       <footer className="border-t border-foreground/10">
