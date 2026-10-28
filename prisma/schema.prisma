@@ -615,10 +615,14 @@ model GroupMedicalLead {
   id          String   @id @default(cuid())
   createdAt   DateTime @default(now())
   name        String
+  role        String?
+  company     String?
   email       String
   phone       String?
   preferredContact String @default("email")
   companySize String
+  renewalMonth String?
+  existingPremium String?
   locale      String?
   source      String   @default("Group medical landing")
 

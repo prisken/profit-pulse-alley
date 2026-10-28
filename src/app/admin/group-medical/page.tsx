@@ -50,7 +50,9 @@ export default async function AdminGroupMedicalPage() {
             <tr className="bg-zinc-900/80 text-left text-[10px] uppercase tracking-[0.14em] text-zinc-500">
               <th className="px-4 py-3 font-semibold">Received</th>
               <th className="px-4 py-3 font-semibold">Name</th>
-              <th className="px-4 py-3 font-semibold">Company size</th>
+              <th className="px-4 py-3 font-semibold">Company</th>
+              <th className="px-4 py-3 font-semibold">Size</th>
+              <th className="px-4 py-3 font-semibold">Renews</th>
               <th className="px-4 py-3 font-semibold">Email</th>
               <th className="px-4 py-3 font-semibold">Contact</th>
               <th className="px-4 py-3 font-semibold">Lang</th>
@@ -59,7 +61,7 @@ export default async function AdminGroupMedicalPage() {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-sm text-zinc-500">
+                <td colSpan={8} className="px-4 py-10 text-center text-sm text-zinc-500">
                   No quote requests yet.
                 </td>
               </tr>
@@ -67,8 +69,13 @@ export default async function AdminGroupMedicalPage() {
               rows.map((r) => (
                 <tr key={r.id} className="border-t border-zinc-800/80">
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-zinc-400">{fmt(r.createdAt)}</td>
-                  <td className="px-4 py-3">{r.name}</td>
+                  <td className="px-4 py-3">
+                    <div>{r.name}</div>
+                    {r.role ? <div className="text-[11px] text-zinc-500">{r.role}</div> : null}
+                  </td>
+                  <td className="px-4 py-3 text-zinc-300">{r.company ?? "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-emerald-400">{r.companySize}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-xs text-zinc-400">{r.renewalMonth ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-300">{r.email}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-400">
                     {r.preferredContact === "whatsapp" ? `WhatsApp ${r.phone ?? ""}` : "Email"}

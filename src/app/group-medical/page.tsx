@@ -5,226 +5,342 @@ import CommunityPartnersSection from "@/components/home/CommunityPartnersSection
 import GroupMedicalForm from "@/components/group-medical/GroupMedicalForm";
 import { getServerSiteLocale } from "@/lib/i18n/server";
 
-const copy = {
-  en: {
-    kicker: "PPA Group Medical",
-    title: "Group medical, minus the 60-page PDF.",
-    sub: "Tell us four things. Within one working day you get a one-page quote — the plans, the premiums, and the gaps nobody mentions in the pitch.",
-    cta: "Get my one-page quote",
-    micro: "60 seconds · no discovery call · no obligation",
-    stats: [
-      ["1", "page, not a brochure"],
-      ["1", "working day, not a week"],
-      ["0", "sales calls unless you ask"],
-    ],
-    whatTitle: "What lands in your inbox",
-    what: [
-      ["📄", "One page, real numbers", "Three shortlisted plans side by side, with premiums you can actually budget for."],
-      ["⚠️", "The gaps, named", "Pre-existing conditions, outpatient limits, dental, and the exclusions that bite at claim time."],
-      ["🧾", "A clear next step", "If it fits, we help you bind it. If it doesn’t, we tell you that too."],
-    ],
-    whyTitle: "Why founders and HR teams ask us",
-    why: [
-      "Independent — we quote across insurers, not one house.",
-      "Built for Hong Kong teams, from 2 to 500 staff.",
-      "Claims support in Cantonese and English, not a call-centre script.",
-      "No product pitch on the first call. Ever.",
-    ],
-    formTitle: "Get your quote",
-    trust: [
-      "Independent — we quote across insurers",
-      "Cantonese + English claims support",
-      "Briefings with HK banks and professional firms",
-    ],
-    mockNote: "Illustrative only — not a quotation. A real 20-person team would see different numbers.",
-    humanTitle: "Who actually prepares your quote",
-    humanName: "Prisken Lo",
-    humanRole: "Founder, Profit Pulse Ally",
-    humanBody: "He prepares the quotes himself and answers the follow-up questions. No hand-off to a call centre.",
-    cta2: "Get my one-page quote",
-    faqTitle: "The questions people actually ask",
-    faq: [
-      ["Is this really free?", "Requesting a quote is free. If you place a policy, the insurer pays us a commission — we confirm the arrangement in writing before anything is signed."],
-      ["Will an agent call me?", "No. We email unless you choose WhatsApp or ask for a call."],
-      ["What’s the minimum team size?", "From two staff upwards, subject to each insurer’s rules."],
-      ["We already have a plan — can you still quote?", "Yes. Send your renewal and we’ll benchmark it against the market."],
-      ["Which insurers do you cover?", "We quote across Hong Kong’s major group medical insurers, and we can include your incumbent for a like-for-like comparison."],
-    ],
-    trustNote: "Your details stay with PPA. We only contact you about this enquiry.",
-    partnersHeading: "The room we work in",
-    disclaimer:
-      "This is an indicative quotation service, not a contract of insurance. Final terms, premiums and eligibility are set by the insurer. Profit Pulse Ally is not an insurer and does not provide medical advice.",
+/**
+ * Facts the agent must supply before they can be published. Anything blank is
+ * NOT rendered — the page never shows a placeholder licence number, a fake
+ * address, or an invented case study.
+ */
+const AGENT = {
+  name: "Prisken Lo",
+  titleZh: "AIA 友邦保險代理",
+  titleEn: "AIA insurance agent",
+  licence: "",            // e.g. "IA licence no. XXXXXXXX" — blank hides the row
+  email: "hello@profitpulseally.com",
+  phone: "",              // blank hides the row
+  office: "",             // full building + address — blank hides the row
+  photo: "",              // /agents/prisken.jpg — blank shows initials
+  caseStudy: null as null | {
+    industryZh: string; industryEn: string; headcount: string; comparedOn: string;
+    before: string; after: string; diff: string; coverageZh: string; coverageEn: string;
+    firstYearOnly: string;
   },
+};
+
+const OFFER = null as null | {
+  nameZh: string; nameEn: string;
+  whoZh: string; whoEn: string;
+  whatZh: string; whatEn: string;
+  scopeZh: string; scopeEn: string;
+  deadlineZh: string; deadlineEn: string;
+};
+
+const copy = {
   "zh-Hant": {
-    kicker: "PPA 團體醫療",
-    title: "團體醫療保險，唔需要六十頁 PDF。",
-    sub: "填四個欄位。一個工作天內，你會收到一頁報價：計劃、保費，同埋推銷時無人話你知的保障缺口。",
-    cta: "索取一頁報價",
-    micro: "60 秒 · 毋須開會 · 絕無壓力",
-    stats: [
-      ["1", "頁，唔係一本小冊子"],
-      ["1", "個工作天，唔係一個星期"],
-      ["0", "個推銷電話（除非你要求）"],
+    kicker: "AIA 友邦團體醫療｜獨立代理｜公司東主・HR・財務主管",
+    h1: "團體醫療就快續保？睇清楚可以慳幾多，保障又差幾多。",
+    lead: `我係 ${AGENT.name}，${AGENT.titleZh}。幫你比較現有續保方案同合適嘅 AIA 團體醫療方案，列清全年保費、主要保障差異同適用優惠。決定投保後，再協助你跟進申請、保障銜接同員工啟用。`,
+    cta: "索取一頁團體醫療報價及比較",
+    reassure: "免費查詢，毋須即時投保。資料齊備後提供報價；實際保費及承保條件以正式文件為準。",
+    strip: "公司團體醫療 12 月到期？先睇比較，再決定續保。",
+    bTitle: "唔係淨係畀個價你，係幫你交到份清楚嘅比較。",
+    bRows: [
+      ["現有續保保費", "建議 AIA 保費"],
+      ["年度公司支出", "每名員工年度成本"],
+      ["住院及手術", "門診及專科"],
+      ["網絡限制", "賠償上限與員工自付"],
+      ["已有病症處理", "相關等候期"],
+      ["適用優惠、資格及期限", "建議轉保日期"],
     ],
-    whatTitle: "你會收到什麼",
-    what: [
-      ["📄", "一頁，真數字", "三份入圍計劃並排比較，保費是你真正可以預算的數字。"],
-      ["⚠️", "缺口，講清楚", "已有病症、門診上限、牙科，以及索償時才發現的除外責任。"],
-      ["🧾", "清楚的下一步", "合適就幫你落實；不合適，我們也會直接告訴你。"],
+    sampleLabel: "示意樣本，並非實際報價",
+    bCopy: "平咗係因為優惠、保障組合唔同，定係員工要自己畀多咗？我會分開列清楚，方便你同老闆、財務同員工交代。",
+    cTitle: "慳錢，要睇實際數字，唔係淨係睇折扣。",
+    c1t: "公司保費：比較實際年度支出",
+    c1b: "按公司人數、員工資料同保障需要整理合適方案，睇清楚全年支出有冇下降，以及保障有咩改變。AIA Flexi Choice 3 為合資格公司提供不同核心保障級別及自選保障，適合按預算與保障需要作比較——並非劃一的減費承諾。",
+    c2t: "額外福利：列清楚已包括啲乜",
+    c2b: "除醫療保障外，我會核實合資格員工可用嘅增值服務，並協助介紹使用方法。例如 MindAid 為合資格受保成員提供文字形式嘅心理健康支援，受指定時段及供應情況限制，屬非保證增值服務，並非無限次心理治療。",
+    c3t: "員工自選保障：同公司保費分開計",
+    c3b: "合資格員工可另行了解自費加強保障，例如 StepUp 2；是否參加由員工自行決定，不會與公司基本團體醫療保費混算。",
+    offerTitle: "優惠資料",
+    dTitle: "唔止幫你出單，仲幫你跟到同事識用。",
+    dStages: [
+      ["投保前", "一份文件清單、保障比較、建議轉保時間表"],
+      ["投保期間", "核對文件完整性、協調遞交、跟進待補項目"],
+      ["生效前", "確認獲批保障、生效日期及銜接安排"],
+      ["員工啟用", "簡介會、App 使用指引、簡明索償指南"],
+      ["持續支援", "指定聯絡人處理行政查詢及索償跟進"],
+      ["續保前", "按預算、人數及保障需要作檢視"],
     ],
-    whyTitle: "創辦人與 HR 為何找我們",
-    why: [
-      "獨立——我們跨保險公司報價，不只賣一間。",
-      "為香港團隊而設，2 人到 500 人皆可。",
-      "廣東話及英語索償支援，不是客服稿。",
-      "第一次通話不推銷產品，永遠不會。",
-    ],
-    formTitle: "索取報價",
-    trust: [
-      "獨立——跨保險公司報價",
-      "廣東話及英語索償支援",
-      "與香港銀行及專業機構合辦簡報",
-    ],
-    mockNote: "僅作示意，並非報價。真實 20 人團隊的數字會有所不同。",
-    humanTitle: "為你準備報價的人",
-    humanName: "Prisken Lo",
-    humanRole: "創辦人，Profit Pulse Ally",
-    humanBody: "報價由他親手準備，後續問題也由他回答。不會轉交客服中心。",
-    cta2: "索取一頁報價",
-    faqTitle: "大家真正想問的問題",
-    faq: [
-      ["真的免費嗎？", "索取報價免費。若你落實保單，保險公司會向我們支付佣金——任何簽署前，我們會以書面確認安排。"],
-      ["會有經紀致電我嗎？", "不會。除非你選擇 WhatsApp 或主動要求通話，我們以電郵聯絡。"],
-      ["最少幾多人？", "由兩名員工起，視乎各保險公司規則。"],
-      ["我們已有計劃，仍可報價嗎？", "可以。把續保資料給我們，我們會與市場作對比。"],
-      ["你們涵蓋哪些保險公司？", "我們跨香港主要團體醫療保險公司報價，亦可加入你現有的承保公司作同類比較。"],
-    ],
-    trustNote: "你的資料只留在 PPA，我們只會就這次查詢聯絡你。",
-    partnersHeading: "我們合作的場景",
+    dCopy: "HR 唔使自己逐份文件摸索。我會列清楚要交咩、邊一步由邊個跟，並協助向員工講解保障同索償流程。承保及理賠決定由保險公司按條款處理。",
+    eTitle: "你搵到嘅，係一位可以核實身份、直接聯絡嘅代理。",
+    eName: "姓名",
+    eTitleLabel: "職銜",
+    eLicence: "保險中介人牌照號碼",
+    eRegister: "於保險業監管局登記冊核實",
+    eOffice: "面對面會面",
+    eOfficeNote: "亦可安排視像傾談。",
+    eContact: "聯絡方式",
+    fTitle: "實際例子",
+    gTitle: "先畀幾項基本資料，我幫你開始比較。",
+    gNote: "我會先按你揀嘅方式聯絡，確認公司需要同報價所需資料。呢一步唔係投保申請。",
     disclaimer:
-      "本服務提供參考報價，並非保險合約。最終條款、保費及承保資格由保險公司決定。Profit Pulse Ally 並非保險公司，亦不提供醫療建議。",
+      "本頁由 AIA 保險代理提供，並非 AIA 官方網站，亦不代表 AIA 承保或認可任何內容。AIA 為保單承保人；保障範圍、保費、核保及理賠決定均由 AIA 按保單條款作出。頁內比較屬示意，並非實際報價或要約。優惠（如有）受條款、資格及期限限制。",
+    sourceNote: "產品資料來源：AIA 香港官方網站；牌照資料可於保險業監管局登記冊查核。",
+  },
+  en: {
+    kicker: "AIA group medical · independent agent · for owners, HR and finance",
+    h1: "Renewal coming up? See what you'd actually save — and what you'd give up.",
+    lead: `I'm ${AGENT.name}, an ${AGENT.titleEn}. I compare your existing renewal with suitable AIA group medical options, setting out the annual premium, the material coverage differences and any offer that applies. If you decide to proceed, I stay on to help with the application, the transition and employee onboarding.`,
+    cta: "Get my one-page comparison",
+    reassure: "Free to ask. No obligation to buy. A quote follows once we have the details; final premiums and terms are set by the insurer.",
+    strip: "Group medical renewing in December? Compare first, then decide.",
+    bTitle: "Not just a number — a comparison you can hand to your boss.",
+    bRows: [
+      ["Current renewal premium", "Proposed AIA premium"],
+      ["Annual company cost", "Annual cost per employee"],
+      ["Hospital and surgery", "Outpatient and specialist"],
+      ["Network limits", "Reimbursement caps and staff contributions"],
+      ["Pre-existing conditions", "Waiting periods"],
+      ["Discounts, eligibility, expiry", "Proposed transition date"],
+    ],
+    sampleLabel: "Illustrative sample — not a quotation",
+    bCopy: "Is the lower number a discount, a different benefit mix, or staff paying more themselves? I set those out separately so you can explain it to the owner, finance and your team.",
+    cTitle: "Savings need numbers, not a discount headline.",
+    c1t: "Company premium: compare the actual annual spend",
+    c1b: "We match options to headcount, employee data and coverage needs, then look at whether the annual outlay falls — and what changes in cover. AIA Flexi Choice 3 offers eligible companies different core benefit levels and optional benefits, which suits a budget-and-coverage comparison. It is not a blanket promise of cheaper cover.",
+    c2t: "Extra benefits: state exactly what is included",
+    c2b: "Beyond medical cover, I check which value-added services eligible employees can actually use and explain how to access them. For example, MindAid provides text-based mental-wellness support for eligible insured members, subject to set hours and availability — a non-guaranteed service, not unlimited psychotherapy.",
+    c3t: "Employee voluntary cover: kept separate from company cost",
+    c3b: "Eligible employees can separately look at employee-paid protection such as StepUp 2. Joining is their choice and it is never mixed into the employer's group premium.",
+    offerTitle: "Offer details",
+    dTitle: "Not just a policy — someone who gets your team using it.",
+    dStages: [
+      ["Before applying", "One document checklist, coverage comparison, proposed timetable"],
+      ["During application", "Completeness check, submission coordination, chasing outstanding items"],
+      ["Before commencement", "Confirm approved cover, effective dates, transition issues"],
+      ["Employee launch", "Intro session, app guidance, a one-page claims guide"],
+      ["Ongoing", "A named contact for admin questions and claims follow-up"],
+      ["Before renewal", "A scheduled review of budget, headcount and benefits"],
+    ],
+    dCopy: "HR shouldn't have to work out the paperwork alone. I list what's needed, who does which step, and explain cover and claims to staff. Underwriting and claims decisions rest with the insurer under the policy terms.",
+    eTitle: "You're dealing with someone whose identity you can check.",
+    eName: "Name",
+    eTitleLabel: "Title",
+    eLicence: "Insurance intermediary licence",
+    eRegister: "Verify on the Insurance Authority register",
+    eOffice: "Meet in person",
+    eOfficeNote: "Video calls are fine too.",
+    eContact: "Contact",
+    fTitle: "A real example",
+    gTitle: "A few basics, and I'll start the comparison.",
+    gNote: "I'll reply the way you choose, confirm what the company needs and what the quote requires. This step is not an application for cover.",
+    disclaimer:
+      "This page is provided by an AIA insurance agent. It is not an AIA website and does not represent AIA underwriting or endorsement of its content. AIA is the insurer; cover, premiums, underwriting and claims are decided by AIA under the policy terms. Comparisons shown are illustrative, not a quotation or an offer. Any offer is subject to terms, eligibility and expiry.",
+    sourceNote: "Product information: AIA Hong Kong. Licence details can be checked on the Insurance Authority register.",
   },
 } as const;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerSiteLocale();
   const t = copy[locale === "zh-Hant" ? "zh-Hant" : "en"];
-  return {
-    title: `${t.title} — Profit Pulse Ally`,
-    description: t.sub,
-  };
+  return { title: `${t.h1} — ${AGENT.name}`, description: t.lead };
 }
 
 export default async function GroupMedicalPage() {
   const locale = await getServerSiteLocale();
-  const t = copy[locale === "zh-Hant" ? "zh-Hant" : "en"];
+  const isZh = locale === "zh-Hant";
+  const t = copy[isZh ? "zh-Hant" : "en"];
+  const a = AGENT;
 
   return (
     <main className="overflow-x-hidden bg-background text-foreground">
-      <section className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 pb-12 pt-12 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14 lg:pb-16 lg:pt-20">
+      {/* A — offer, outcome, action */}
+      <section className="mx-auto grid w-full max-w-6xl items-start gap-10 px-4 pb-7 pt-12 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-14 lg:pt-16">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-gold">{t.kicker}</p>
-          <h1 className="mt-4 text-3xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.4rem]">
-            {t.title}
-          </h1>
-          <p className="mt-5 max-w-xl text-sm leading-relaxed text-foreground/75 sm:text-base">{t.sub}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-gold">{t.kicker}</p>
+          <h1 className="mt-4 text-3xl font-semibold leading-[1.08] tracking-tight sm:text-[2.6rem]">{t.h1}</h1>
+          <p className="mt-5 max-w-xl text-sm leading-relaxed text-foreground/75 sm:text-[15px]">{t.lead}</p>
 
           <div className="mt-7 flex flex-wrap items-center gap-4">
             <a href="#quote" className="inline-flex items-center justify-center rounded-full bg-brand-gold px-6 py-3.5 text-sm font-bold text-brand-black transition hover:bg-brand-gold-deep">
               {t.cta}
             </a>
-            <span className="text-xs text-foreground/50">{t.micro}</span>
           </div>
+          <p className="mt-3 max-w-xl text-xs leading-relaxed text-foreground/55">{t.reassure}</p>
 
-          <dl className="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-foreground/10 pt-6">
-            {t.stats.map(([n, label]) => (
-              <div key={label}>
-                <dt className="text-3xl font-bold tabular-nums text-brand-gold">{n}</dt>
-                <dd className="mt-1 text-xs leading-relaxed text-foreground/65">{label}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <ul className="mt-6 flex flex-wrap gap-2">
-            {t.trust.map((item) => (
-              <li key={item} className="rounded-full border border-foreground/12 bg-foreground/[0.03] px-3 py-1.5 text-[11px] font-medium text-foreground/70">
-                {item}
-              </li>
-            ))}
-          </ul>
+          <p className="mt-6 inline-flex rounded-full border border-brand-gold/30 bg-brand-gold/[0.07] px-4 py-2 text-xs font-semibold text-foreground/80">
+            {t.strip}
+          </p>
         </div>
 
-        <div className="relative">
-          <div className="absolute -inset-5 -z-10 rotate-2 rounded-[2rem] bg-brand-gold/15 blur-2xl" aria-hidden />
-          <div className="rotate-1 rounded-2xl border border-foreground/10 bg-background p-5 shadow-2xl transition hover:rotate-0">
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-foreground/40">
-              <span>PPA Quote</span>
-              <span className="rounded-full bg-brand-gold/15 px-2 py-0.5 font-semibold text-brand-gold">1 page</span>
+        <aside className="rounded-2xl border border-foreground/12 bg-foreground/[0.02] p-5">
+          <div className="flex items-start gap-4">
+            {a.photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={a.photo} alt={a.name} className="h-16 w-16 flex-none rounded-full object-cover" />
+            ) : (
+              <div className="flex h-16 w-16 flex-none items-center justify-center rounded-full bg-brand-gold/15 text-base font-bold text-brand-gold">
+                {a.name.split(" ").map((w) => w[0]).join("")}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-[15px] font-semibold">{a.name}</p>
+              <p className="text-xs text-foreground/65">{isZh ? a.titleZh : a.titleEn}</p>
+              {a.licence ? <p className="mt-1 text-[11px] text-foreground/55">{a.licence}</p> : null}
+              <p className="mt-2 text-[11px] text-foreground/55">
+                <a href="https://iir.ia.org.hk/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+                  {t.eRegister}
+                </a>
+              </p>
             </div>
-            <div className="mt-4 space-y-3">
-              {[["Plan A", "HKD 1,180 / staff / yr"], ["Plan B", "HKD 2,050 / staff / yr"], ["Plan C", "HKD 3,400 / staff / yr"]].map(([p, v], i) => (
-                <div key={p} className={`flex items-baseline justify-between rounded-xl border border-foreground/8 px-3 py-2.5 ${i === 1 ? "bg-brand-gold/[0.07]" : ""}`}>
-                  <span className="text-xs font-semibold">{p}</span>
-                  <span className="text-[13px] tabular-nums text-foreground/80">{v}</span>
-                </div>
-              ))}
+          </div>
+          <div className="mt-4 space-y-1 border-t border-foreground/10 pt-3 text-[11px] text-foreground/60">
+            <p className="break-all">{a.email}</p>
+            {a.phone ? <p>{a.phone}</p> : null}
+            {a.office ? <p className="mt-2">{t.eOffice}：{a.office}</p> : null}
+          </div>
+        </aside>
+      </section>
+
+      {/* B — the comparison you get */}
+      <section className="border-t border-foreground/10">
+        <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
+          <h2 className="max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl">{t.bTitle}</h2>
+
+          <div className="mt-7 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-foreground/40">Comparison sheet</p>
+                <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-bold text-amber-600">{t.sampleLabel}</span>
+              </div>
+              <dl className="mt-4 divide-y divide-foreground/10">
+                {t.bRows.map(([left, right]) => (
+                  <div key={left} className="grid grid-cols-2 gap-3 py-2.5 text-xs">
+                    <dt className="text-foreground/60">{left}</dt>
+                    <dd className="text-right font-medium text-foreground/85">{right}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
-            <p className="mt-3 text-[10px] leading-relaxed text-foreground/55">{t.mockNote}</p>
-            <div className="mt-4 rounded-xl border border-dashed border-foreground/15 px-3 py-2.5 text-[11px] leading-relaxed text-foreground/55">
-              ✅ Outpatient covered · ⚠️ Dental excluded · ⏳ Pre-existing: 12-month wait
+            <div className="flex items-center">
+              <p className="text-sm leading-relaxed text-foreground/70">{t.bCopy}</p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* C — financial value, in three parts */}
       <section className="border-t border-foreground/10">
         <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.whatTitle}</h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {t.what.map(([emoji, title, body]) => (
-              <div key={title} className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
-                <p className="text-2xl">{emoji}</p>
-                <h3 className="mt-2 text-sm font-semibold">{title}</h3>
-                <p className="mt-1.5 text-xs leading-relaxed text-foreground/60">{body}</p>
+          <h2 className="max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl">{t.cTitle}</h2>
+          <div className="mt-7 grid gap-4 lg:grid-cols-3">
+            {[[t.c1t, t.c1b], [t.c2t, t.c2b], [t.c3t, t.c3b]].map(([title, body]) => (
+              <div key={title} className="rounded-2xl border border-foreground/10 bg-background p-5">
+                <h3 className="text-sm font-semibold">{title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-foreground/65">{body}</p>
               </div>
             ))}
+          </div>
+
+          {OFFER ? (
+            <div className="mt-6 rounded-2xl border border-brand-gold/30 bg-brand-gold/[0.06] p-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-gold">{t.offerTitle}</p>
+              <p className="mt-2 text-sm font-semibold">{isZh ? OFFER.nameZh : OFFER.nameEn}</p>
+              <dl className="mt-3 grid gap-1.5 text-[11.5px] text-foreground/70 sm:grid-cols-2">
+                <div><dt className="inline font-semibold">{isZh ? "適用對象：" : "Who: "}</dt><dd className="inline">{isZh ? OFFER.whoZh : OFFER.whoEn}</dd></div>
+                <div><dt className="inline font-semibold">{isZh ? "優惠內容：" : "What: "}</dt><dd className="inline">{isZh ? OFFER.whatZh : OFFER.whatEn}</dd></div>
+                <div><dt className="inline font-semibold">{isZh ? "適用產品及保費部分：" : "Applies to: "}</dt><dd className="inline">{isZh ? OFFER.scopeZh : OFFER.scopeEn}</dd></div>
+                <div><dt className="inline font-semibold">{isZh ? "期限及條件：" : "Deadline: "}</dt><dd className="inline">{isZh ? OFFER.deadlineZh : OFFER.deadlineEn}</dd></div>
+              </dl>
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      {/* D — onboarding service */}
+      <section className="border-t border-foreground/10">
+        <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.dTitle}</h2>
+            <p className="mt-4 text-sm leading-relaxed text-foreground/70">{t.dCopy}</p>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-foreground/10">
+            <table className="w-full text-left text-xs">
+              <tbody className="divide-y divide-foreground/10">
+                {t.dStages.map(([stage, what]) => (
+                  <tr key={stage}>
+                    <th className="w-32 bg-foreground/[0.03] px-4 py-3 align-top font-semibold">{stage}</th>
+                    <td className="px-4 py-3 text-foreground/70">{what}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
 
-      <section className="border-t border-foreground/10 bg-brand-gold/[0.05]">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6">
-          <p className="text-sm font-semibold text-foreground/85">
-            {locale === "zh-Hant" ? "準備好睇一頁真數字？" : "Ready to see real numbers on one page?"}
-          </p>
-          <a href="#quote" className="inline-flex items-center justify-center rounded-full bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-black transition hover:bg-brand-gold-deep">
-            {t.cta2}
-          </a>
+      {/* E — verifiable identity */}
+      <section className="border-t border-foreground/10">
+        <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
+          <h2 className="max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl">{t.eTitle}</h2>
+          <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-foreground/10 p-4">
+              <dt className="text-[10px] uppercase tracking-[0.14em] text-foreground/40">{t.eName}</dt>
+              <dd className="mt-1 text-sm font-semibold">{a.name}</dd>
+            </div>
+            <div className="rounded-xl border border-foreground/10 p-4">
+              <dt className="text-[10px] uppercase tracking-[0.14em] text-foreground/40">{t.eTitleLabel}</dt>
+              <dd className="mt-1 text-sm font-semibold">{isZh ? a.titleZh : a.titleEn}</dd>
+            </div>
+            {a.licence ? (
+              <div className="rounded-xl border border-foreground/10 p-4">
+                <dt className="text-[10px] uppercase tracking-[0.14em] text-foreground/40">{t.eLicence}</dt>
+                <dd className="mt-1 text-sm font-semibold">{a.licence}</dd>
+              </div>
+            ) : null}
+            <div className="rounded-xl border border-foreground/10 p-4">
+              <dt className="text-[10px] uppercase tracking-[0.14em] text-foreground/40">{t.eContact}</dt>
+              <dd className="mt-1 text-sm font-semibold break-all">{a.email}</dd>
+              {a.phone ? <dd className="text-xs text-foreground/60">{a.phone}</dd> : null}
+            </div>
+          </dl>
+          {a.office ? (
+            <p className="mt-4 text-xs text-foreground/60">
+              {t.eOffice}：{a.office} · {t.eOfficeNote}
+            </p>
+          ) : null}
         </div>
       </section>
 
-      <section className="border-t border-foreground/10">
-        <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:gap-14">
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.whyTitle}</h2>
-            <ul className="mt-5 space-y-3">
-              {t.why.map((item) => (
-                <li key={item} className="flex gap-3 text-sm leading-relaxed text-foreground/75">
-                  <span className="mt-[7px] h-1.5 w-1.5 flex-none rounded-full bg-brand-gold" aria-hidden />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-8 flex items-start gap-4 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-4">
-              <div className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-brand-gold/15 text-sm font-bold text-brand-gold">PL</div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.16em] text-foreground/40">{t.humanTitle}</p>
-                <p className="mt-1 text-sm font-semibold">{t.humanName}</p>
-                <p className="text-[11px] text-foreground/50">{t.humanRole}</p>
-                <p className="mt-1.5 text-xs leading-relaxed text-foreground/65">{t.humanBody}</p>
-              </div>
+      {/* F — real case, only when supplied */}
+      {a.caseStudy ? (
+        <section className="border-t border-foreground/10">
+          <div className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6">
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.fTitle}</h2>
+            <div className="mt-5 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5 text-sm">
+              <p className="font-semibold">
+                {isZh ? a.caseStudy.industryZh : a.caseStudy.industryEn} · {a.caseStudy.headcount} · {a.caseStudy.comparedOn}
+              </p>
+              <dl className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div><dt className="text-[11px] text-foreground/50">{isZh ? "原有續保報價" : "Previous renewal"}</dt><dd className="font-semibold tabular-nums">{a.caseStudy.before}</dd></div>
+                <div><dt className="text-[11px] text-foreground/50">{isZh ? "最終採用方案" : "Adopted option"}</dt><dd className="font-semibold tabular-nums">{a.caseStudy.after}</dd></div>
+                <div><dt className="text-[11px] text-foreground/50">{isZh ? "年度保費差額" : "Annual difference"}</dt><dd className="font-semibold tabular-nums">{a.caseStudy.diff}</dd></div>
+                <div><dt className="text-[11px] text-foreground/50">{isZh ? "優惠是否只限首年" : "First-year only?"}</dt><dd className="font-semibold">{a.caseStudy.firstYearOnly}</dd></div>
+              </dl>
+              <p className="mt-3 text-xs leading-relaxed text-foreground/65">
+                {isZh ? a.caseStudy.coverageZh : a.caseStudy.coverageEn}
+              </p>
             </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* G — enquiry form */}
+      <section className="border-t border-foreground/10">
+        <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.85fr_1.15fr]">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.gTitle}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-foreground/65">{t.gNote}</p>
+            <p className="mt-6 text-xs leading-relaxed text-foreground/50">{t.sourceNote}</p>
           </div>
           <div id="quote" className="scroll-mt-24">
             <GroupMedicalForm locale={locale} />
@@ -232,23 +348,8 @@ export default async function GroupMedicalPage() {
         </div>
       </section>
 
-      <section className="border-t border-foreground/10">
-        <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.faqTitle}</h2>
-          <dl className="mt-6 divide-y divide-foreground/10">
-            {t.faq.map(([q, a]) => (
-              <div key={q} className="py-5">
-                <dt className="text-sm font-semibold">{q}</dt>
-                <dd className="mt-1.5 text-sm leading-relaxed text-foreground/65">{a}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
-
-      <section className="border-t border-foreground/10">
-        <CommunityPartnersSection />
-      </section>
+      {/* Partners and supporting organisations — always shown */}
+      <CommunityPartnersSection />
 
       <footer className="border-t border-foreground/10">
         <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">

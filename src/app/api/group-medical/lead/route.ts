@@ -13,6 +13,10 @@ export async function POST(request: Request) {
     companySize?: string;
     locale?: string;
     preferredContact?: string;
+    role?: string;
+    company?: string;
+    renewalMonth?: string;
+    existingPremium?: string;
   };
   try {
     body = await request.json();
@@ -25,6 +29,10 @@ export async function POST(request: Request) {
   const phone = String(body.phone ?? "").trim();
   const companySize = String(body.companySize ?? "").trim();
   const locale = String(body.locale ?? "").trim() || null;
+  const role = String(body.role ?? "").trim() || null;
+  const company = String(body.company ?? "").trim() || null;
+  const renewalMonth = String(body.renewalMonth ?? "").trim() || null;
+  const existingPremium = String(body.existingPremium ?? "").trim() || null;
   const preferredContact =
     String(body.preferredContact ?? "email").trim().toLowerCase() === "whatsapp"
       ? "whatsapp"
@@ -43,7 +51,10 @@ export async function POST(request: Request) {
 
   try {
     await prisma.groupMedicalLead.create({
-      data: { name, email, phone: phone || null, companySize, locale, preferredContact },
+      data: {
+        name, role, company, email, phone: phone || null, companySize,
+        renewalMonth, existingPremium, locale, preferredContact,
+      },
     });
   } catch (error) {
     console.error("[group-medical] lead save failed:", error);
@@ -59,7 +70,7 @@ export async function POST(request: Request) {
       contactNumber: phone || null,
       provider: "Profit Pulse Ally",
       role: "Group medical lead",
-      source: `Group medical quote — ${companySize} staff — via ${preferredContact}`,
+      source: `Group medical quote — ${companySize} staff${renewalMonth ? ` — renews ${renewalMonth}` : ""} — via ${preferredContact}`,
       signedUpAt: new Date().toISOString(),
     });
   } catch (error) {

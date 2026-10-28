@@ -5,82 +5,92 @@ import type { FormEvent } from "react";
 
 import type { SiteLocale } from "@/lib/i18n/locales";
 
-const SIZES = ["1-10", "11-50", "51-200", "201-500", "500+"] as const;
+const SIZES = ["1-2", "3-10", "11-50", "51-200", "201-500", "500+"] as const;
+const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+const MONTHS_ZH = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"] as const;
 
 const copy = {
   en: {
-    title: "Four fields. Your quote lands by tomorrow.",
-    note: "No call unless you ask for one.",
-    name: "Your name",
-    email: "Work email",
+    title: "A few basics, and I'll start the comparison.",
+    note: "Five fields marked * — the rest is optional and speeds things up.",
+    name: "Your name *",
+    role: "Role",
+    company: "Company name *",
+    companySize: "Employee count *",
+    renewalMonth: "Renewal month",
+    email: "Work email *",
     phone: "WhatsApp number",
-    contact: "Preferred contact",
+    contact: "Preferred contact *",
     contactEmail: "Email",
     contactWhatsApp: "WhatsApp",
-    companySize: "Team size",
-    sizePlaceholder: "How many people?",
-    submit: "Send me the one-page quote",
+    existing: "Current annual premium (optional)",
+    existingHint: "A rough figure is fine — it makes the comparison concrete.",
+    sizePlaceholder: "How many staff?",
+    monthPlaceholder: "When does it renew?",
+    submit: "Start my free comparison",
     sending: "Sending…",
-    successTitle: "On its way.",
+    successTitle: "Got it.",
     successBody:
-      "We’ll email a one-page quote within one working day — plans, premiums and the gaps worth knowing about. If you’d rather talk first, just reply to that email.",
-    needName: "Please tell us your name.",
+      "I'll reply the way you chose, confirm what the company needs and what the quote requires. A one-page comparison follows once I have the details. This step is not an application for cover.",
+    needName: "Please add your name.",
+    needCompany: "Please add the company name.",
     needEmail: "Please use a valid work email.",
     needPhone: "Add a WhatsApp number, or switch to email.",
-    needSize: "Pick your team size.",
-    error: "That didn’t send. Please try again, or email hello@profitpulseally.com.",
-    nextLabel: "What happens next",
-    steps: [
-      "You send this form",
-      "We may email one clarifying question",
-      "A one-page quote within 1 working day",
-      "You decide — no follow-up pressure",
-    ],
-    privacy: "We only contact you about this enquiry. No mailing list.",
+    needSize: "Pick the employee count.",
+    needContact: "Choose how you'd like to be contacted.",
+    error: "That didn't send. Please try again, or email hello@profitpulseally.com.",
+    privacy: "Your details are used for this enquiry only. No mailing list, no employee medical data collected here.",
   },
   "zh-Hant": {
-    title: "填四個欄位，明日收到報價。",
-    note: "除非你要求，否則不會致電。",
-    name: "你的名字",
-    email: "工作電郵",
+    title: "先畀幾項基本資料，我幫你開始比較。",
+    note: "五個必填欄位（*），其餘可選，填咗會快啲。",
+    name: "你的名字 *",
+    role: "職位",
+    company: "公司名稱 *",
+    companySize: "員工人數 *",
+    renewalMonth: "續保月份",
+    email: "工作電郵 *",
     phone: "WhatsApp 號碼",
-    contact: "聯絡偏好",
+    contact: "聯絡偏好 *",
     contactEmail: "電郵",
     contactWhatsApp: "WhatsApp",
-    companySize: "團隊人數",
+    existing: "現時全年保費（可選）",
+    existingHint: "大約數字就可以，有助做實際比較。",
     sizePlaceholder: "公司有幾多人？",
-    submit: "發送一頁報價給我",
+    monthPlaceholder: "幾時續保？",
+    submit: "開始免費比較",
     sending: "發送中…",
-    successTitle: "已送出。",
+    successTitle: "收到。",
     successBody:
-      "我們會於一個工作天內以電郵發送一頁報價：計劃、保費，以及值得知道的保障缺口。如想先傾談，直接回覆該電郵即可。",
+      "我會按你揀嘅方式回覆，確認公司需要同報價所需資料。資料齊備後，會提供一頁比較。呢一步唔係投保申請。",
     needName: "請填寫你的名字。",
+    needCompany: "請填寫公司名稱。",
     needEmail: "請使用有效的工作電郵。",
     needPhone: "請填寫 WhatsApp 號碼，或改為電郵聯絡。",
-    needSize: "請選擇團隊人數。",
+    needSize: "請選擇員工人數。",
+    needContact: "請選擇聯絡方式。",
     error: "發送失敗，請再試一次，或電郵 hello@profitpulseally.com。",
-    nextLabel: "之後會發生什麼",
-    steps: [
-      "你提交此表格",
-      "我們可能電郵一個澄清問題",
-      "一個工作天內收到一頁報價",
-      "由你決定——不會追問施壓",
-    ],
-    privacy: "我們只會就這次查詢聯絡你，不會加入群發名單。",
+    privacy: "你的資料只用於這次查詢，不會加入群發名單，亦不會在此收集員工醫療資料。",
   },
 } as const;
 
 const field =
-  "mt-1.5 w-full min-w-0 rounded-xl border border-foreground/15 bg-background px-4 py-3.5 text-sm text-foreground placeholder:text-foreground/35 focus:border-brand-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/25";
+  "mt-1.5 w-full min-w-0 rounded-xl border border-foreground/15 bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/35 focus:border-brand-gold/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/25";
 const label = "block text-[11px] uppercase tracking-[0.14em] text-foreground/50";
 
 export default function GroupMedicalForm({ locale }: { locale: SiteLocale }) {
-  const t = copy[locale === "zh-Hant" ? "zh-Hant" : "en"];
+  const isZh = locale === "zh-Hant";
+  const t = copy[isZh ? "zh-Hant" : "en"];
+
   const [name, setName] = useState("");
+  const [role, setRole] = useState("");
+  const [company, setCompany] = useState("");
+  const [companySize, setCompanySize] = useState("");
+  const [renewalMonth, setRenewalMonth] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [contact, setContact] = useState<"email" | "whatsapp">("email");
-  const [companySize, setCompanySize] = useState("");
+  const [existing, setExisting] = useState("");
   const [state, setState] = useState<"form" | "sending" | "done">("form");
   const [error, setError] = useState("");
 
@@ -88,6 +98,7 @@ export default function GroupMedicalForm({ locale }: { locale: SiteLocale }) {
     e.preventDefault();
     setError("");
     if (name.trim().length < 2) return setError(t.needName);
+    if (company.trim().length < 2) return setError(t.needCompany);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError(t.needEmail);
     if (contact === "whatsapp" && phone.replace(/\D/g, "").length < 6) return setError(t.needPhone);
     if (!companySize) return setError(t.needSize);
@@ -98,12 +109,9 @@ export default function GroupMedicalForm({ locale }: { locale: SiteLocale }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          email,
-          phone: contact === "whatsapp" ? phone : "",
-          companySize,
-          locale,
-          preferredContact: contact,
+          name, role, company, companySize, renewalMonth,
+          email, phone: contact === "whatsapp" ? phone : "",
+          preferredContact: contact, existingPremium: existing, locale,
         }),
       });
       if (!res.ok) throw new Error("failed");
@@ -117,7 +125,7 @@ export default function GroupMedicalForm({ locale }: { locale: SiteLocale }) {
   if (state === "done") {
     return (
       <div className="rounded-2xl border border-brand-gold/30 bg-brand-gold/[0.06] p-6 sm:p-8">
-        <p className="text-2xl">✉️</p>
+        <p className="text-2xl">✓</p>
         <h3 className="mt-2 text-xl font-semibold">{t.successTitle}</h3>
         <p className="mt-3 text-sm leading-relaxed text-foreground/75">{t.successBody}</p>
       </div>
@@ -130,10 +138,38 @@ export default function GroupMedicalForm({ locale }: { locale: SiteLocale }) {
       <p className="mt-1 text-xs text-foreground/60">{t.note}</p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <label className="block sm:col-span-2">
+        <label className="block">
           <span className={label}>{t.name}</span>
           <input className={field} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
         </label>
+        <label className="block">
+          <span className={label}>{t.role}</span>
+          <input className={field} value={role} onChange={(e) => setRole(e.target.value)} autoComplete="organization-title" placeholder={isZh ? "例如：HR 主管" : "e.g. HR lead"} />
+        </label>
+
+        <label className="block sm:col-span-2">
+          <span className={label}>{t.company}</span>
+          <input className={field} value={company} onChange={(e) => setCompany(e.target.value)} autoComplete="organization" />
+        </label>
+
+        <label className="block">
+          <span className={label}>{t.companySize}</span>
+          <select className={field} value={companySize} onChange={(e) => setCompanySize(e.target.value)}>
+            <option value="">{t.sizePlaceholder}</option>
+            {SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className={label}>{t.renewalMonth}</span>
+          <select className={field} value={renewalMonth} onChange={(e) => setRenewalMonth(e.target.value)}>
+            <option value="">{t.monthPlaceholder}</option>
+            {(isZh ? MONTHS_ZH : MONTHS_EN).map((m, i) => (
+              <option key={m} value={String(i + 1).padStart(2, "0")}>{m}</option>
+            ))}
+          </select>
+        </label>
+
         <label className="block sm:col-span-2">
           <span className={label}>{t.email}</span>
           <input className={field} type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" placeholder="you@company.com" />
@@ -168,13 +204,9 @@ export default function GroupMedicalForm({ locale }: { locale: SiteLocale }) {
         ) : null}
 
         <label className="block sm:col-span-2">
-          <span className={label}>{t.companySize}</span>
-          <select className={field} value={companySize} onChange={(e) => setCompanySize(e.target.value)}>
-            <option value="">{t.sizePlaceholder}</option>
-            {SIZES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+          <span className={label}>{t.existing}</span>
+          <input className={field} value={existing} onChange={(e) => setExisting(e.target.value)} placeholder={isZh ? "例如：HK$ 480,000 / 年" : "e.g. HK$480,000 / year"} inputMode="numeric" />
+          <span className="mt-1 block text-[11px] text-foreground/45">{t.existingHint}</span>
         </label>
       </div>
 
@@ -188,19 +220,7 @@ export default function GroupMedicalForm({ locale }: { locale: SiteLocale }) {
         {state === "sending" ? t.sending : t.submit}
       </button>
 
-      <div className="mt-5 rounded-xl border border-foreground/10 bg-background/60 px-3 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/40">{t.nextLabel}</p>
-        <ol className="mt-2 space-y-1.5">
-          {t.steps.map((step, i) => (
-            <li key={step} className="flex gap-2 text-[11.5px] leading-snug text-foreground/65">
-              <span className="font-semibold text-brand-gold tabular-nums">{i + 1}.</span>
-              <span>{step}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      <p className="mt-3 text-center text-[11px] text-foreground/50">{t.privacy}</p>
+      <p className="mt-3 text-center text-[11px] leading-relaxed text-foreground/50">{t.privacy}</p>
     </form>
   );
 }
