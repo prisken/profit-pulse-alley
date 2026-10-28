@@ -18,7 +18,7 @@ const AGENT = {
   email: "hello@profitpulseally.com",
   phone: "",              // blank hides the row
   office: "",             // full building + address — blank hides the row
-  photo: "",              // /agents/prisken.jpg — blank shows initials
+  photo: "/prisken-headshot.png",  // blank falls back to initials
   caseStudy: null as null | {
     industryZh: string; industryEn: string; headcount: string; comparedOn: string;
     before: string; after: string; diff: string; coverageZh: string; coverageEn: string;
@@ -240,7 +240,7 @@ export default async function GroupMedicalPage() {
           <div className="flex items-start gap-4">
             {a.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={a.photo} alt={a.name} className="h-16 w-16 flex-none rounded-full object-cover" />
+              <img src={a.photo} alt={a.name} className="h-20 w-20 flex-none rounded-2xl object-cover object-top ring-1 ring-foreground/10" />
             ) : (
               <div className="flex h-16 w-16 flex-none items-center justify-center rounded-full bg-brand-gold/15 text-base font-bold text-brand-gold">
                 {a.name.split(" ").map((w) => w[0]).join("")}
@@ -435,6 +435,24 @@ export default async function GroupMedicalPage() {
       </section>
 
       {/* Partners and supporting organisations — always shown */}
+      <section className="border-t border-foreground/10">
+        <div className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6">
+          <figure className="overflow-hidden rounded-2xl border border-foreground/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/event/strategy-collaboration.png"
+              alt={isZh ? "與合作機構進行方案討論" : "Working through options with partner organisations"}
+              className="h-48 w-full object-cover sm:h-64"
+              loading="lazy"
+            />
+            <figcaption className="bg-foreground/[0.02] px-4 py-3 text-[11px] leading-relaxed text-foreground/55">
+              {isZh
+                ? "與銀行、專業事務所及社區場地合辦簡報與工作坊——圖為方案討論現場。"
+                : "Briefings and workshops with banks, professional firms and community venues — shown here mid-discussion."}
+            </figcaption>
+          </figure>
+        </div>
+      </section>
       <CommunityPartnersSection />
 
       <footer className="border-t border-foreground/10">
