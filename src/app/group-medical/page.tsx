@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FileSpreadsheet, Scale, Users, Quote, ArrowRight } from "lucide-react";
 
 import CommunityPartnersSection from "@/components/home/CommunityPartnersSection";
 import GroupMedicalForm from "@/components/group-medical/GroupMedicalForm";
@@ -105,6 +106,22 @@ const copy = {
     ],
     tTitle: "決策點快咗，因為數字清楚。",
     moreQuotes: "再睇 7 段評語",
+    stepsTitle: "三步出比較",
+    steps: [
+      ["1", "填公司資料", "人數、續保月份、聯絡方式"],
+      ["2", "收到一頁比較", "現有續保 vs 建議方案，保費同保障分開列"],
+      ["3", "決定續定轉", "要跟進申請，我先幫手；唔轉都冇事"],
+    ],
+    sheetTitle: "你會收到嘅比較長咁樣",
+    sheetNow: "現有續保",
+    sheetNext: "建議方案",
+    sheetRows: [
+      ["全年公司保費", "現有數字", "建議數字"],
+      ["每名員工成本", "現有", "建議"],
+      ["住院 / 門診", "現有保障", "建議保障"],
+      ["員工自付", "現有", "分開列明"],
+    ],
+    sampleLabel: "示意樣本，並非實際報價",
     gNote: "我會按你揀嘅方式回覆。呢一步唔係投保申請。",
     sticky: "索取免費比較",
     eRegister: "於保險業監管局登記冊核實",
@@ -125,6 +142,22 @@ const copy = {
     ],
     tTitle: "Decisions moved faster when the numbers were clear.",
     moreQuotes: "7 more quotes",
+    stepsTitle: "Three steps to a comparison",
+    steps: [
+      ["1", "Company basics", "Headcount, renewal month, how to reach you"],
+      ["2", "One-page comparison", "Current renewal vs proposed — premium and cover split out"],
+      ["3", "Decide to stay or switch", "If you proceed, I handle the paperwork. No obligation if you don't."],
+    ],
+    sheetTitle: "What the comparison looks like",
+    sheetNow: "Current renewal",
+    sheetNext: "Proposed",
+    sheetRows: [
+      ["Annual company premium", "Your figure", "Proposed figure"],
+      ["Cost per employee", "Current", "Proposed"],
+      ["Hospital / outpatient", "Current cover", "Proposed cover"],
+      ["Staff contribution", "Current", "Shown separately"],
+    ],
+    sampleLabel: "Illustrative sample — not a quotation",
     gNote: "I'll reply the way you choose. This is not an application for cover.",
     sticky: "Get the free comparison",
     eRegister: "Verify on the Insurance Authority register",
@@ -160,15 +193,20 @@ export default async function GroupMedicalPage() {
           <p className="mt-4 text-xs font-semibold text-brand-gold">{t.strip}</p>
 
           <ul className="mt-7 space-y-3">
-            {t.chips.map(([title, body]) => (
-              <li key={title} className="flex gap-3">
-                <span className="mt-0.5 h-1.5 w-1.5 flex-none rounded-full bg-brand-gold" />
-                <div>
-                  <p className="text-sm font-semibold">{title}</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-foreground/60">{body}</p>
-                </div>
-              </li>
-            ))}
+            {t.chips.map(([title, body], i) => {
+              const Icon = [FileSpreadsheet, Scale, Users][i];
+              return (
+                <li key={title} className="flex gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-brand-gold/12 text-brand-gold">
+                    <Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold">{title}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-foreground/60">{body}</p>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
 
           <div className="mt-7 flex items-center gap-3">
@@ -191,6 +229,50 @@ export default async function GroupMedicalPage() {
         </div>
       </section>
 
+      <section className="border-t border-foreground/10">
+        <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.stepsTitle}</h2>
+            <ol className="mt-6 space-y-4">
+              {t.steps.map(([n, title, body], i) => (
+                <li key={n} className="flex gap-3">
+                  <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-brand-gold text-xs font-bold text-brand-black">{n}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{title}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-foreground/60">{body}</p>
+                    {i < t.steps.length - 1 ? <ArrowRight className="mt-2 h-3.5 w-3.5 text-brand-gold/70" aria-hidden /> : null}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold">{t.sheetTitle}</p>
+              <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[10px] font-bold text-amber-600">{t.sampleLabel}</span>
+            </div>
+            <div className="mt-4 overflow-hidden rounded-xl border border-foreground/10">
+              <div className="grid grid-cols-3 bg-foreground/[0.04] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground/45">
+                <span />
+                <span className="text-right">{t.sheetNow}</span>
+                <span className="text-right text-brand-gold">{t.sheetNext}</span>
+              </div>
+              {t.sheetRows.map(([label, left, right]) => (
+                <div key={label} className="grid grid-cols-3 items-center border-t border-foreground/8 px-3 py-2.5 text-xs">
+                  <span className="text-foreground/60">{label}</span>
+                  <span className="text-right text-foreground/45">{left}</span>
+                  <span className="text-right font-medium text-foreground/85">{right}</span>
+                </div>
+              ))}
+            </div>
+            <a href="#quote" className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-gold hover:underline">
+              {t.sticky} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </a>
+          </div>
+        </div>
+      </section>
+
       {OFFER ? (
         <section className="border-t border-foreground/10">
           <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
@@ -209,7 +291,8 @@ export default async function GroupMedicalPage() {
             <div className="mt-5 grid gap-4 md:grid-cols-3">
               {featured.map((x) => (
                 <figure key={x.whoEn} className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
-                  <blockquote className="text-sm leading-relaxed text-foreground/75">“{isZh ? x.quoteZh : x.quoteEn}”</blockquote>
+                  <Quote className="h-4 w-4 text-brand-gold/70" aria-hidden />
+                  <blockquote className="mt-2 text-sm leading-relaxed text-foreground/75">“{isZh ? x.quoteZh : x.quoteEn}”</blockquote>
                   <figcaption className="mt-3 text-[11px] text-foreground/50">{isZh ? x.whoZh : x.whoEn}</figcaption>
                 </figure>
               ))}
