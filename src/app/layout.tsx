@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Cinzel, Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import LayoutShell from "@/components/LayoutShell";
 import AuthSessionProvider from "@/components/providers/AuthSessionProvider";
@@ -58,6 +59,17 @@ export default async function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} ${cinzel.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="flex min-h-dvh min-w-0 flex-col overflow-x-clip bg-background font-sans text-foreground">
+        {/* Google tag (gtag.js) — site-wide, per Google's install instructions. */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-18543810851"
+          strategy="afterInteractive"
+        />
+        <Script id="google-ads-gtag" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'AW-18543810851');`}
+        </Script>
         <LocaleProvider initialLocale={locale}>
           <AuthSessionProvider session={session}>
             <LayoutShell>{children}</LayoutShell>
