@@ -20,6 +20,7 @@ const copy = {
     renewalMonth: "Renewal month",
     email: "Work email *",
     phone: "WhatsApp number",
+    phoneOptional: "Phone / WhatsApp (optional)",
     contact: "Preferred contact *",
     contactEmail: "Email",
     contactWhatsApp: "WhatsApp",
@@ -51,6 +52,7 @@ const copy = {
     renewalMonth: "續保月份",
     email: "工作電郵 *",
     phone: "WhatsApp 號碼",
+    phoneOptional: "電話 / WhatsApp（可選）",
     contact: "聯絡偏好 *",
     contactEmail: "電郵",
     contactWhatsApp: "WhatsApp",
@@ -116,7 +118,7 @@ export default function GroupMedicalForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name, role, company, companySize, renewalMonth,
-          email, phone: contact === "whatsapp" ? phone : "",
+          email, phone: phone.trim(),
           preferredContact: contact, existingPremium: existing, locale,
         }),
       });
@@ -205,12 +207,10 @@ export default function GroupMedicalForm({
           </div>
         </div>
 
-        {contact === "whatsapp" ? (
-          <label className="block sm:col-span-2">
-            <span className={label}>{t.phone}</span>
-            <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" placeholder="+852 …" />
-          </label>
-        ) : null}
+        <label className="block sm:col-span-2">
+          <span className={label}>{contact === "whatsapp" ? t.phone : t.phoneOptional}</span>
+          <input className={field} value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" placeholder="+852 …" inputMode="tel" />
+        </label>
 
         <label className="block sm:col-span-2">
           <span className={label}>{t.existing}</span>

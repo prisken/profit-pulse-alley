@@ -81,7 +81,11 @@ export default async function AdminGroupMedicalPage() {
                   <td className="whitespace-nowrap px-4 py-3 text-xs tabular-nums text-zinc-300">{r.existingPremium ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-300">{r.email}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-400">
-                    {r.preferredContact === "whatsapp" ? `WhatsApp ${r.phone ?? ""}` : "Email"}
+                    {r.preferredContact === "whatsapp"
+                      ? `WhatsApp ${r.phone ?? ""}`.trim()
+                      : r.phone
+                        ? `Email · ${r.phone}`
+                        : "Email"}
                   </td>
                   <td className="px-4 py-3 text-xs uppercase text-zinc-500">{r.locale === "zh-Hant" ? "ZH" : "EN"}</td>
                   <td className="px-4 py-3 text-[11px] text-zinc-500">{r.source}</td>
