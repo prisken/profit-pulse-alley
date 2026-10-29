@@ -12,7 +12,20 @@ export async function GET() {
   }
 
   const rows = await prisma.groupMedicalLead.findMany({ orderBy: { createdAt: "desc" } });
-  const header = ["received_hkt", "name", "email", "phone", "company_size", "locale"];
+  const header = [
+    "received_hkt",
+    "name",
+    "role",
+    "company",
+    "company_size",
+    "renewal_month",
+    "existing_premium",
+    "email",
+    "phone",
+    "preferred_contact",
+    "locale",
+    "source",
+  ];
   const lines = [header.map(cell).join(",")];
 
   for (const r of rows) {
@@ -24,10 +37,16 @@ export async function GET() {
           timeZone: "Asia/Hong_Kong",
         }).format(r.createdAt),
         r.name,
-        r.email,
-        r.phone,
+        r.role ?? "",
+        r.company ?? "",
         r.companySize,
+        r.renewalMonth ?? "",
+        r.existingPremium ?? "",
+        r.email,
+        r.phone ?? "",
+        r.preferredContact,
         r.locale ?? "",
+        r.source,
       ]
         .map(cell)
         .join(","),

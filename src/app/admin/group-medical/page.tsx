@@ -45,7 +45,7 @@ export default async function AdminGroupMedicalPage() {
       </header>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-800">
-        <table className="w-full min-w-[820px] border-collapse text-sm">
+        <table className="w-full min-w-[1080px] border-collapse text-sm">
           <thead>
             <tr className="bg-zinc-900/80 text-left text-[10px] uppercase tracking-[0.14em] text-zinc-500">
               <th className="px-4 py-3 font-semibold">Received</th>
@@ -53,15 +53,17 @@ export default async function AdminGroupMedicalPage() {
               <th className="px-4 py-3 font-semibold">Company</th>
               <th className="px-4 py-3 font-semibold">Size</th>
               <th className="px-4 py-3 font-semibold">Renews</th>
+              <th className="px-4 py-3 font-semibold">Current premium</th>
               <th className="px-4 py-3 font-semibold">Email</th>
               <th className="px-4 py-3 font-semibold">Contact</th>
               <th className="px-4 py-3 font-semibold">Lang</th>
+              <th className="px-4 py-3 font-semibold">Source</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-sm text-zinc-500">
+                <td colSpan={10} className="px-4 py-10 text-center text-sm text-zinc-500">
                   No quote requests yet.
                 </td>
               </tr>
@@ -76,11 +78,13 @@ export default async function AdminGroupMedicalPage() {
                   <td className="px-4 py-3 text-zinc-300">{r.company ?? "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-emerald-400">{r.companySize}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-zinc-400">{r.renewalMonth ?? "—"}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-xs tabular-nums text-zinc-300">{r.existingPremium ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-300">{r.email}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-400">
                     {r.preferredContact === "whatsapp" ? `WhatsApp ${r.phone ?? ""}` : "Email"}
                   </td>
                   <td className="px-4 py-3 text-xs uppercase text-zinc-500">{r.locale === "zh-Hant" ? "ZH" : "EN"}</td>
+                  <td className="px-4 py-3 text-[11px] text-zinc-500">{r.source}</td>
                 </tr>
               ))
             )}

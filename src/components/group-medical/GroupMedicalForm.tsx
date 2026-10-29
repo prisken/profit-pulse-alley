@@ -212,13 +212,11 @@ export default function GroupMedicalForm({
           </label>
         ) : null}
 
-        {!compact ? (
-          <label className="block sm:col-span-2">
-            <span className={label}>{t.existing}</span>
-            <input className={field} value={existing} onChange={(e) => setExisting(e.target.value)} placeholder={isZh ? "例如：HK$ 480,000 / 年" : "e.g. HK$480,000 / year"} inputMode="numeric" />
-            <span className="mt-1 block text-[11px] text-foreground/45">{t.existingHint}</span>
-          </label>
-        ) : null}
+        <label className="block sm:col-span-2">
+          <span className={label}>{t.existing}</span>
+          <input className={field} value={existing} onChange={(e) => setExisting(e.target.value)} placeholder={isZh ? "例如：HK$ 480,000 / 年" : "e.g. HK$480,000 / year"} inputMode="numeric" />
+          {!compact ? <span className="mt-1 block text-[11px] text-foreground/45">{t.existingHint}</span> : null}
+        </label>
       </div>
 
       {error ? <p className="mt-4 text-xs text-red-500">{error}</p> : null}

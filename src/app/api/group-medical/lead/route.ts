@@ -3,7 +3,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { syncMemberSignupToCrm } from "@/lib/crm-member-sync";
 
-const COMPANY_SIZES = ["1-10", "11-50", "51-200", "201-500", "500+"] as const;
+/**
+ * Canonical headcount bands. The landing form sends 1-2 / 3-10 (so the 3-19
+ * PROTECT band is visible); 1-10 is kept for older submissions.
+ */
+const COMPANY_SIZES = ["1-2", "3-10", "1-10", "11-50", "51-200", "201-500", "500+"] as const;
 
 export async function POST(request: Request) {
   let body: {
